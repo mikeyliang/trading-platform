@@ -109,6 +109,33 @@ CREATE TABLE IF NOT EXISTS ai_runs (
 
 CREATE INDEX IF NOT EXISTS ai_runs_contract_idx ON ai_runs (symbol, strike, expiry, right_, ran_at DESC);
 CREATE INDEX IF NOT EXISTS ai_runs_ran_at_idx ON ai_runs (ran_at DESC);
+
+-- Trade history: all executed trades with P&L tracking.
+-- Populated by agents after order fills and used by the dashboard's
+-- TradeHistoryPanel for filtering, stats, and export.
+CREATE TABLE IF NOT EXISTS trade_history (
+  id              BIGSERIAL PRIMARY KEY,
+  timestamp       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  symbol          TEXT NOT NULL,
+  side            TEXT NOT NULL CHECK (side IN ('buy', 'sell')),
+  quantity        NUMERIC NOT NULL CHECK (quantity > 0),
+  price           NUMERIC NOT NULL CHECK (price > 0),
+  order_type      TEXT NOT NULL DEFAULT 'market' CHECK (order_type IN ('market', 'limit', 'stop')),
+  status          TEXT NOT NULL DEFAULT 'filled' CHECK (status IN ('filled', 'partial', 'cancelled')),
+  pnl             NUMERIC,
+  pnl_percentage  NUMERIC,
+  strategy        TEXT,
+  agent_id        TEXT,
+  metadata_       JSONB,
+  is_deleted      BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS trade_history_symbol_idx ON trade_history (symbol, timestamp DESC);
+CREATE INDEX IF NOT EXISTS trade_history_agent_idx ON trade_history (agent_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS trade_history_strategy_idx ON trade_history (strategy, timestamp DESC);
+CREATE INDEX IF NOT EXISTS trade_history_timestamp_idx ON trade_history (timestamp DESC) WHERE is_deleted = FALSE;
 """
 
 
