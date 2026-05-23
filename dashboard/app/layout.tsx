@@ -10,6 +10,7 @@ import { CommandPalette } from "@/components/layout/CommandPalette";
 import { ChatDrawer } from "@/components/chat/ChatDrawer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
+import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "Trading Terminal",
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <CommandPalette />
               <ChatDrawer />
               <Toaster />
+              <ErrorBoundary />
             </WSProvider>
           </HealthProvider>
         </TooltipProvider>

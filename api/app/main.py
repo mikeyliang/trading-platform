@@ -2,9 +2,12 @@ import asyncio
 import logging
 import uuid
 from contextlib import asynccontextmanager
+from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from .config import settings
 from .nautilus import ib_depth, ib_options, ib_ticks
@@ -198,6 +201,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+class ErrorResponse(BaseModel):
+    """Standard error response model for OpenAPI documentation."""
+    error: str = Field(..., description="Error type or code")
+    message: str = Field(..., description="Human-readable error description")
+    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Return standardized JSON error responses for HTTP exceptions."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message=exc.detail,
+            details={"status_code": exc.status_code}
+        ).dict()
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    """Catch-all error handler for unhandled exceptions."""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(
+            error="InternalServerError",
+            message="An unexpected error occurred",
+            details={"type": exc.__class__.__name__}
+        ).dict()
+    )
+
+
 app.include_router(market.router)
 app.include_router(watchlist.router)
 app.include_router(strategies.router)
@@ -224,7 +262,28 @@ app.include_router(ticks.router)
 app.include_router(agent_tools.router)
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    response_model=Dict[str, Any],
+    summary="Health check endpoint",
+    response_description="Returns API health status including IBKR connection state",
+    responses={
+        200: {
+            "description": "Successful health check",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "healthy",
+                        "ib_connected": True,
+                        "mode": "live",
+                        "mock_mode": False,
+                        "ws_connections": 3
+                    }
+                }
+            }
+        }
+    }
+)
 def health_check():
     """Health probe. IBKR Gateway is the sole brokerage."""
     return {
@@ -236,9 +295,28 @@ def health_check():
     }
 
 
-@app.get("/")
+@app.get(
+    "/",
+    summary="Root endpoint",
+    response_description="Returns basic API information",
+    responses={
+        200: {
+            "description": "Successful response",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Trading API",
+                        "version": "1.0.0",
+                        "docs": "/docs",
+                        "redoc": "/redoc"
+                    }
+                }
+            }
+        }
+    }
+)
 def root():
-    return {"message": "Trading API", "version": "1.0.0", "docs": "/docs"}
+    return {"message": "Trading API", "version": "1.0.0", "docs": "/docs", "redoc": "/redoc"}
 
 
 @app.websocket("/ws")
