@@ -199,49 +199,6 @@ export const api = {
       "/api/agents/analyze", { symbol, trade_date }
     ),
 
-  // trade history
-  tradeHistory: (params: {
-    page?: number;
-    page_size?: number;
-    symbol?: string;
-    side?: string;
-    strategy?: string;
-    agent_id?: string;
-    start_date?: string;
-    end_date?: string;
-  } = {}) => {
-    const q = new URLSearchParams();
-    if (params.page) q.set("page", String(params.page));
-    if (params.page_size) q.set("page_size", String(params.page_size));
-    if (params.symbol) q.set("symbol", params.symbol);
-    if (params.side) q.set("side", params.side);
-    if (params.strategy) q.set("strategy", params.strategy);
-    if (params.agent_id) q.set("agent_id", params.agent_id);
-    if (params.start_date) q.set("start_date", params.start_date);
-    if (params.end_date) q.set("end_date", params.end_date);
-    const s = q.toString();
-    return get<{
-      trades: TradeHistoryRecord[];
-      total: number;
-      page: number;
-      page_size: number;
-      total_pages: number;
-    }>(`/api/trade-history${s ? "?" + s : ""}`);
-  },
-  tradeHistoryStats: (params: { start_date?: string; end_date?: string } = {}) => {
-    const q = new URLSearchParams();
-    if (params.start_date) q.set("start_date", params.start_date);
-    if (params.end_date) q.set("end_date", params.end_date);
-    const s = q.toString();
-    return get<TradeStats>(`/api/trade-history/stats${s ? "?" + s : ""}`);
-  },
-  tradeHistoryCreate: (trade: Partial<TradeHistoryRecord>) =>
-    post<TradeHistoryRecord>("/api/trade-history", trade),
-  tradeHistoryUpdate: (id: number, trade: Partial<TradeHistoryRecord>) =>
-    put<TradeHistoryRecord>(`/api/trade-history/${id}`, trade),
-  tradeHistoryDelete: (id: number) =>
-    del<void>(`/api/trade-history/${id}`),
-};
 };
 
 export interface OkwTrade {
