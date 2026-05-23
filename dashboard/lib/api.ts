@@ -24,9 +24,21 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+async function put<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`PUT ${path} failed: ${res.status}`);
+  return res.json();
+}
+
 async function del<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { method: "DELETE", cache: "no-store" });
   if (!res.ok) throw new Error(`DELETE ${path} failed: ${res.status}`);
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
@@ -199,7 +211,119 @@ export const api = {
       "/api/agents/analyze", { symbol, trade_date }
     ),
 
+  // trade history (paginated list + rolled-up stats)
+  tradeHistory: (params: {
+    symbol?: string;
+    status?: string;
+    side?: string;
+    strategy?: string;
+    agent_id?: string;
+    start?: string;
+    end?: string;
+    page?: number;
+    page_size?: number;
+  } = {}) => {
+    const q = new URLSearchParams();
+    if (params.symbol) q.set("symbol", params.symbol);
+    if (params.status) q.set("status", params.status);
+    if (params.side) q.set("side", params.side);
+    if (params.strategy) q.set("strategy", params.strategy);
+    if (params.agent_id) q.set("agent_id", params.agent_id);
+    if (params.start) q.set("start", params.start);
+    if (params.end) q.set("end", params.end);
+    if (params.page) q.set("page", String(params.page));
+    if (params.page_size) q.set("page_size", String(params.page_size));
+    const s = q.toString();
+    return get<TradeHistoryListResponse>(`/api/trade-history/${s ? "?" + s : ""}`);
+  },
+  tradeHistoryStats: (params: {
+    symbol?: string;
+    strategy?: string;
+    agent_id?: string;
+    start?: string;
+    end?: string;
+  } = {}) => {
+    const q = new URLSearchParams();
+    if (params.symbol) q.set("symbol", params.symbol);
+    if (params.strategy) q.set("strategy", params.strategy);
+    if (params.agent_id) q.set("agent_id", params.agent_id);
+    if (params.start) q.set("start", params.start);
+    if (params.end) q.set("end", params.end);
+    const s = q.toString();
+    return get<TradeStats>(`/api/trade-history/stats${s ? "?" + s : ""}`);
+  },
+  tradeHistoryCreate: (payload: TradeHistoryCreatePayload) =>
+    post<TradeHistoryRecord>("/api/trade-history/", payload),
+  tradeHistoryUpdate: (id: number, payload: TradeHistoryUpdatePayload) =>
+    put<TradeHistoryRecord>(`/api/trade-history/${id}`, payload),
+  tradeHistoryDelete: (id: number) => del<void>(`/api/trade-history/${id}`),
+
 };
+
+export type TradeSide = "BUY" | "SELL";
+export type TradeStatus =
+  | "PENDING"
+  | "FILLED"
+  | "PARTIALLY_FILLED"
+  | "CANCELLED"
+  | "REJECTED"
+  | "CLOSED";
+
+export interface TradeHistoryRecord {
+  id: number;
+  symbol: string;
+  side: TradeSide;
+  quantity: number;
+  price: number;
+  order_type: string;
+  strategy?: string | null;
+  agent_id?: string | null;
+  status: TradeStatus;
+  pnl?: number | null;
+  pnl_percentage?: number | null;
+  timestamp: string;
+  created_at: string;
+  updated_at: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface TradeHistoryCreatePayload {
+  symbol: string;
+  side: TradeSide;
+  quantity: number;
+  price: number;
+  order_type?: string;
+  strategy?: string | null;
+  agent_id?: string | null;
+  status?: TradeStatus;
+  timestamp?: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface TradeHistoryUpdatePayload {
+  pnl?: number | null;
+  pnl_percentage?: number | null;
+  status?: TradeStatus;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface TradeHistoryListResponse {
+  trades: TradeHistoryRecord[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface TradeStats {
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate: number;
+  total_pnl: number;
+  avg_pnl: number;
+  profit_factor: number;
+}
 
 export interface OkwTrade {
   id: number;
