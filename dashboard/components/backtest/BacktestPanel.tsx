@@ -12,7 +12,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Stat, StatGroup } from "@/components/ui/stat";
 import {
   Select,
   SelectTrigger,
@@ -29,8 +28,13 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toaster";
+import { MetricsTable } from "./MetricsTable";
 
 const BacktestChart = dynamic(() => import("./BacktestChart").then((m) => m.BacktestChart), { ssr: false });
+const EquityCurveChart = dynamic(
+  () => import("./EquityCurveChart").then((m) => m.EquityCurveChart),
+  { ssr: false }
+);
 
 const STRATEGIES = ["smi-short", "smi-mid", "ema-cross"];
 const SYMBOLS = ["AAPL", "MSFT", "NVDA", "TSLA", "GOOGL", "META", "AMD", "JPM", "XOM", "AMZN"];
@@ -229,52 +233,20 @@ export function BacktestPanel() {
 
         {result && !running && (
           <>
+            <MetricsTable result={result} />
+
             <Card>
-              <CardContent className="flex flex-col md:flex-row gap-4 md:items-center p-4">
-                <Stat
-                  size="lg"
-                  label="Total return"
-                  tone={result.total_return >= 0 ? "up" : "down"}
-                  value={fmtPct(result.total_return_pct)}
-                  hint={fmtCurrency(result.total_return)}
-                  className="md:w-44 md:pr-4 md:border-r md:border-border/40"
+              <CardHeader>
+                <CardTitle>Equity & drawdown</CardTitle>
+                <Badge variant="muted">
+                  {result.equity_curve.length} points
+                </Badge>
+              </CardHeader>
+              <CardContent>
+                <EquityCurveChart
+                  equity={result.equity_curve as { time: number; value: number }[]}
+                  initialCapital={result.initial_capital}
                 />
-                <StatGroup className="flex-1">
-                  <Stat
-                    label="Final"
-                    value={fmtCurrency(result.final_capital)}
-                    hint={`from ${fmtCurrency(result.initial_capital)}`}
-                  />
-                  <Stat
-                    label="Max drawdown"
-                    tone="down"
-                    value={fmtPct(result.max_drawdown_pct)}
-                    hint={fmtCurrency(result.max_drawdown)}
-                  />
-                  <Stat
-                    label="Sharpe"
-                    tone={
-                      result.sharpe_ratio > 1 ? "up" : result.sharpe_ratio < 0 ? "down" : "default"
-                    }
-                    value={result.sharpe_ratio.toFixed(2)}
-                  />
-                  <Stat
-                    label="Win rate"
-                    tone={result.win_rate > 50 ? "up" : "down"}
-                    value={result.win_rate.toFixed(1) + "%"}
-                    hint={`${result.winning_trades}W / ${result.losing_trades}L`}
-                  />
-                  <Stat
-                    label="Profit factor"
-                    tone={result.profit_factor > 1 ? "up" : "down"}
-                    value={result.profit_factor.toFixed(2)}
-                  />
-                  <Stat
-                    label="Trades"
-                    value={result.total_trades.toString()}
-                    hint={`avg win ${fmtCurrency(result.avg_win)}`}
-                  />
-                </StatGroup>
               </CardContent>
             </Card>
 
