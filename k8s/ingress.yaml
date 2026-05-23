@@ -1,0 +1,91 @@
+# Traefik IngressRoute — routes:
+#   dashboard.trading.local → trading-dashboard:3000
+#   api.trading.local       → trading-api:8000 (HTTP + WebSocket /ws)
+# Assumes Traefik is installed in the cluster with the `websecure` (TLS) and
+# `web` (plain HTTP) entrypoints, plus a cert-manager / Traefik resolver named
+# `letsencrypt`. Adjust hosts and tls.certResolver to match your environment.
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  namespace: trading-platform
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: trading-platform
+spec:
+  headers:
+    stsSeconds: 31536000
+    stsIncludeSubdomains: true
+    stsPreload: true
+    contentTypeNosniff: true
+    browserXssFilter: true
+    referrerPolicy: "strict-origin-when-cross-origin"
+    frameDeny: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: trading-dashboard
+  namespace: trading-platform
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`dashboard.trading.local`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+      services:
+        - name: trading-dashboard
+          port: 3000
+  tls:
+    certResolver: letsencrypt
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: trading-api
+  namespace: trading-platform
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`api.trading.local`) && PathPrefix(`/ws`)
+      kind: Rule
+      services:
+        - name: trading-api
+          port: 8000
+    - match: Host(`api.trading.local`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+      services:
+        - name: trading-api
+          port: 8000
+  tls:
+    certResolver: letsencrypt
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: trading-platform-http-redirect
+  namespace: trading-platform
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`dashboard.trading.local`) || Host(`api.trading.local`)
+      kind: Rule
+      middlewares:
+        - name: redirect-to-https
+      services:
+        - name: noop@internal
+          kind: TraefikService
