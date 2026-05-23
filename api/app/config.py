@@ -29,6 +29,23 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     mock_mode: bool = True
 
+    # Security: when True, CORS uses the cors_origins allowlist and credentials
+    # are permitted. When False (development), allows all origins with no creds.
+    production_mode: bool = False
+
+    # Rate limit: max requests per client IP per ``rate_limit_window_seconds``.
+    # Counts are in-process, so this is per-uvicorn-worker. For multi-worker
+    # deployment use a Redis-backed limiter instead.
+    rate_limit_requests: int = 120
+    rate_limit_window_seconds: int = 60
+    # Paths excluded from rate limiting — health/probe endpoints and the WS
+    # endpoint (which handles its own subscription throttling).
+    rate_limit_exempt_paths: str = "/health,/,/ws"
+
+    # Input sanitization: hard cap on any single string field/query param. Stops
+    # accidental and adversarial megabyte-string payloads from reaching pydantic.
+    max_string_length: int = 10_000
+
     # Postgres connection for scan history + future durable state.
     database_url: str = "postgresql://trading:trading@postgres:5432/trading"
 

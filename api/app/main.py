@@ -10,6 +10,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from .config import settings
+from .middleware import (
+    QueryParamSanitizationMiddleware,
+    RateLimitMiddleware,
+    RequestLoggingMiddleware,
+)
 from .nautilus import ib_depth, ib_options, ib_ticks
 from .nautilus.ib_node import ib_node
 from .nautilus.ib_orders import orders_client
@@ -193,12 +198,31 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Middleware ordering: Starlette wraps last-added on the OUTSIDE. We want
+#   CORS (outer) -> Logging -> RateLimit -> Sanitize -> route
+# so that rate-limit 429s and sanitization 400s still carry CORS headers
+# (otherwise browsers drop the error and surface "CORS failure" instead).
+app.add_middleware(
+    QueryParamSanitizationMiddleware,
+    max_string_length=settings.max_string_length,
+)
+app.add_middleware(
+    RateLimitMiddleware,
+    max_requests=settings.rate_limit_requests,
+    window_seconds=settings.rate_limit_window_seconds,
+    exempt_paths=[p.strip() for p in settings.rate_limit_exempt_paths.split(",") if p.strip()],
+)
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.cors_origins if settings.production_mode else ["*"],
+    allow_credentials=settings.production_mode,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    if settings.production_mode else ["*"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"]
+    if settings.production_mode else ["*"],
+    expose_headers=["X-Request-ID"],
+    max_age=600,
 )
 
 
