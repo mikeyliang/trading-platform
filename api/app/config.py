@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     rate_limit_window_seconds: int = 60
     # Paths excluded from rate limiting — health/probe endpoints and the WS
     # endpoint (which handles its own subscription throttling).
-    rate_limit_exempt_paths: str = "/health,/,/ws,/metrics"
+    rate_limit_exempt_paths: str = "/health,/,/ws"
 
     # Input sanitization: hard cap on any single string field/query param. Stops
     # accidental and adversarial megabyte-string payloads from reaching pydantic.
