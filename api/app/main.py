@@ -18,7 +18,7 @@ from .middleware import (
 from .nautilus import ib_depth, ib_options, ib_ticks
 from .nautilus.ib_node import ib_node
 from .nautilus.ib_orders import orders_client
-from .routers import agent_tools, agents, analyze, backtest, chat, depth, fundamentals, logos, market, monitor as monitor_router, okw, option_analyzer, options, orders, scans, strategies, ticks, trade_history, watchlist
+from .routers import agent_tools, agents, analyze, backtest, chat, depth, fundamentals, logos, market, monitor as monitor_router, okw, option_analyzer, options, orders, scans, strategies, ticks, watchlist
 from .services import db, scheduler as job_scheduler
 from .ws.manager import manager
 
@@ -284,7 +284,6 @@ app.include_router(okw.router)
 app.include_router(depth.router)
 app.include_router(ticks.router)
 app.include_router(agent_tools.router)
-app.include_router(trade_history.router)
 
 
 @app.get(
