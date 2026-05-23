@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime
 from enum import Enum
@@ -121,6 +121,76 @@ class Order(BaseModel):
             "strategy": "bull-put-spy",
         }
     })
+
+
+class CreateOrderRequest(BaseModel):
+    """Validated request payload for placing a brokerage order.
+
+    Order placement is not yet exposed (see ``routers/orders.py`` docstring)
+    — this model defines the validated request shape for when the endpoint
+    is added behind explicit user confirmation."""
+
+    symbol: str = Field(
+        ...,
+        min_length=1,
+        max_length=12,
+        pattern=r"^[A-Z0-9\.\-]+$",
+        description="Uppercase ticker (1-12 chars). Only A-Z, 0-9, '.' and '-'.",
+    )
+    side: OrderSide = Field(..., description="BUY or SELL.")
+    quantity: float = Field(..., gt=0, le=1_000_000, description="Order quantity (shares/contracts).")
+    order_type: Literal["market", "limit", "stop", "stop_limit"] = Field(
+        "market", description="Brokerage order type.",
+    )
+    limit_price: Optional[float] = Field(
+        None, gt=0, le=1_000_000,
+        description="Required when order_type is 'limit' or 'stop_limit'.",
+    )
+    stop_price: Optional[float] = Field(
+        None, gt=0, le=1_000_000,
+        description="Required when order_type is 'stop' or 'stop_limit'.",
+    )
+    tif: Literal["day", "gtc", "ioc", "fok"] = Field(
+        "day", description="Time-in-force.",
+    )
+    strategy: Optional[str] = Field(
+        None, max_length=64,
+        description="Optional strategy tag for attribution.",
+    )
+
+    @field_validator("symbol", mode="before")
+    @classmethod
+    def _norm_symbol(cls, v: Any) -> Any:
+        return v.strip().upper() if isinstance(v, str) else v
+
+    @model_validator(mode="after")
+    def _check_prices(self) -> "CreateOrderRequest":
+        needs_limit = self.order_type in ("limit", "stop_limit")
+        needs_stop = self.order_type in ("stop", "stop_limit")
+        if needs_limit and self.limit_price is None:
+            raise ValueError(f"limit_price is required when order_type is '{self.order_type}'")
+        if needs_stop and self.stop_price is None:
+            raise ValueError(f"stop_price is required when order_type is '{self.order_type}'")
+        if not needs_limit and self.limit_price is not None:
+            raise ValueError(f"limit_price must be omitted when order_type is '{self.order_type}'")
+        if not needs_stop and self.stop_price is not None:
+            raise ValueError(f"stop_price must be omitted when order_type is '{self.order_type}'")
+        return self
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "symbol": "SPY",
+                "side": "BUY",
+                "quantity": 10,
+                "order_type": "limit",
+                "limit_price": 458.00,
+                "tif": "day",
+                "strategy": "bull-put-spy",
+            }
+        },
+    )
 
 
 class Trade(BaseModel):
@@ -589,6 +659,37 @@ class SpreadPosition(BaseModel):
 
 # ── Monitor / scheduler ───────────────────────────────────────────────
 
+class MonitorRefreshRequest(BaseModel):
+    """Optional payload for triggering an exit-monitor refresh.
+
+    The body is optional — clients can POST an empty body. When supplied,
+    unknown fields are rejected so typos don't silently no-op."""
+
+    note: Optional[str] = Field(
+        None, max_length=200,
+        description="Free-form human note logged with the manual refresh.",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"example": {"note": "checking after IBKR reconnect"}},
+    )
+
+
+class PreflightRunRequest(BaseModel):
+    """Optional payload for the manual pre-flight scan trigger."""
+
+    scope: Literal["manual", "scheduled", "test"] = Field(
+        "manual",
+        description="Tag stored alongside the scan result for later filtering.",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"example": {"scope": "manual"}},
+    )
+
+
 class MonitorRefreshResponse(BaseModel):
     """Result of forcing the exit-monitor to re-evaluate every open spread."""
 
@@ -653,31 +754,73 @@ class AgentStatusResponse(BaseModel):
 
 # ── OKW trade tracker ─────────────────────────────────────────────────
 
+OkwTradeType = Literal["rut", "mars", "marsmax", "space", "custom"]
+
+
 class OkwTradeCreate(BaseModel):
     """Open a new OKW-tracked credit spread."""
 
-    symbol: str = Field(..., min_length=1, max_length=12)
-    trade_type: str = Field(..., description="rut | mars | marsmax | space | custom")
+    symbol: str = Field(
+        ...,
+        min_length=1,
+        max_length=12,
+        pattern=r"^[A-Z0-9\.\-]+$",
+        description="Uppercase ticker (1-12 chars). Only A-Z, 0-9, '.' and '-'.",
+    )
+    trade_type: OkwTradeType = Field(
+        ..., description="rut | mars | marsmax | space | custom",
+    )
     side: Literal["put", "call"] = "put"
-    expiry: str = Field(..., description="YYYYMMDD")
+    expiry: str = Field(
+        ...,
+        pattern=r"^\d{8}$",
+        description="YYYYMMDD",
+    )
     dte: int = Field(..., ge=0, le=365)
-    short_strike: float = Field(..., gt=0)
-    long_strike: float = Field(..., gt=0)
+    short_strike: float = Field(..., gt=0, le=1_000_000)
+    long_strike: float = Field(..., gt=0, le=1_000_000)
     contracts: int = Field(1, ge=1, le=1000)
-    credit: float = Field(..., description="Per-contract credit at open (positive).")
-    spot_at_open: Optional[float] = None
-    short_delta: Optional[float] = None
-    aroc_pct: Optional[float] = None
-    kelly_pct: Optional[float] = None
-    adj_distance_pct: Optional[float] = None
-    fib_floor1: Optional[float] = None
-    fib_floor2: Optional[float] = None
+    credit: float = Field(
+        ..., gt=0, le=10_000,
+        description="Per-contract credit at open (positive USD).",
+    )
+    spot_at_open: Optional[float] = Field(None, gt=0, le=1_000_000)
+    short_delta: Optional[float] = Field(None, ge=-1.0, le=1.0)
+    aroc_pct: Optional[float] = Field(None, ge=-1000.0, le=1000.0)
+    kelly_pct: Optional[float] = Field(None, ge=-1000.0, le=1000.0)
+    adj_distance_pct: Optional[float] = Field(None, ge=-1000.0, le=1000.0)
+    fib_floor1: Optional[float] = Field(None, gt=0, le=1_000_000)
+    fib_floor2: Optional[float] = Field(None, gt=0, le=1_000_000)
     notes: Optional[str] = Field(None, max_length=2000)
 
-    @field_validator("symbol", "trade_type")
+    @field_validator("symbol", mode="before")
     @classmethod
-    def _strip_upper(cls, v: str) -> str:
-        return v.strip()
+    def _norm_symbol(cls, v: Any) -> Any:
+        return v.strip().upper() if isinstance(v, str) else v
+
+    @field_validator("trade_type", mode="before")
+    @classmethod
+    def _norm_trade_type(cls, v: Any) -> Any:
+        return v.strip().lower() if isinstance(v, str) else v
+
+    @field_validator("expiry")
+    @classmethod
+    def _check_expiry(cls, v: str) -> str:
+        try:
+            datetime.strptime(v, "%Y%m%d")
+        except ValueError as e:
+            raise ValueError("expiry must be a real calendar date in YYYYMMDD form") from e
+        return v
+
+    @model_validator(mode="after")
+    def _check_strikes(self) -> "OkwTradeCreate":
+        if self.short_strike == self.long_strike:
+            raise ValueError("short_strike and long_strike must differ")
+        if self.side == "put" and self.long_strike >= self.short_strike:
+            raise ValueError("for a put credit spread, long_strike must be below short_strike")
+        if self.side == "call" and self.long_strike <= self.short_strike:
+            raise ValueError("for a call credit spread, long_strike must be above short_strike")
+        return self
 
     @property
     def width(self) -> float:
@@ -700,11 +843,17 @@ class OkwTradeClose(BaseModel):
     exit_reason: Literal["delta", "2pct", "profit", "manual"] = Field(
         ..., description="What triggered the close.",
     )
-    realized_pnl: Optional[float] = Field(None, description="Per-contract realized P&L (USD).")
+    realized_pnl: Optional[float] = Field(
+        None, ge=-1_000_000, le=1_000_000,
+        description="Per-contract realized P&L (USD).",
+    )
 
-    model_config = ConfigDict(json_schema_extra={
-        "example": {"exit_reason": "profit", "realized_pnl": 1.65}
-    })
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {"exit_reason": "profit", "realized_pnl": 1.65}
+        },
+    )
 
 
 # ── Chat (Claude side panel) ──────────────────────────────────────────

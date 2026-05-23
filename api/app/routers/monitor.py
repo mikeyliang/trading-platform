@@ -1,11 +1,15 @@
 """Endpoints for the exit monitor + monthly pre-flight."""
 from __future__ import annotations
 
-from typing import Any, Dict
+import logging
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter
 
+from ..models.schemas import MonitorRefreshRequest, PreflightRunRequest
 from ..services import monitor, preflight, scheduler
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/monitor", tags=["monitor"])
 
@@ -50,7 +54,9 @@ def monitor_state() -> Dict[str, Any]:
         }
     },
 )
-async def monitor_refresh() -> Dict[str, Any]:
+async def monitor_refresh(payload: Optional[MonitorRefreshRequest] = None) -> Dict[str, Any]:
+    if payload and payload.note:
+        logger.info("monitor.refresh manual trigger: %s", payload.note)
     return await monitor.refresh()
 
 
@@ -69,8 +75,9 @@ def preflight_state() -> Dict[str, Any]:
     summary="Force a pre-flight scan now",
     description="Manual trigger; useful when you want to re-evaluate outside the monthly cron.",
 )
-async def preflight_run() -> Dict[str, Any]:
-    return await preflight.run(scope="manual")
+async def preflight_run(payload: Optional[PreflightRunRequest] = None) -> Dict[str, Any]:
+    scope = payload.scope if payload else "manual"
+    return await preflight.run(scope=scope)
 
 
 @router.get(
