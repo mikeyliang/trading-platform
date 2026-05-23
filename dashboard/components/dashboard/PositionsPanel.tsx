@@ -13,9 +13,10 @@ import {
   TableHeader,
   TableBody,
   TableRow,
-  TableHead,
   TableCell,
   TableEmpty,
+  SortableTableHead,
+  useTableSort,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -318,28 +319,63 @@ function classifyPositions(positions: Position[]): PositionKind[] {
   });
 }
 
+type PositionSortKey =
+  | "symbol"
+  | "type"
+  | "sector"
+  | "qty"
+  | "avg"
+  | "price"
+  | "pnl"
+  | "pnl_pct";
+
+const POSITION_ACCESSORS: Record<
+  PositionSortKey,
+  (row: { p: Position; kind: PositionKind }) => string | number | null | undefined
+> = {
+  symbol: (r) => r.p.symbol,
+  type: (r) => r.kind,
+  sector: (r) => r.p.sector ?? null,
+  qty: (r) => r.p.quantity,
+  avg: (r) => r.p.avg_price,
+  price: (r) => r.p.current_price,
+  pnl: (r) => r.p.unrealized_pnl,
+  pnl_pct: (r) => r.p.unrealized_pnl_pct,
+};
+
+const POSITION_NUMERIC: PositionSortKey[] = ["qty", "avg", "price", "pnl", "pnl_pct"];
+
 function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: PositionKind[] }) {
   const router = useRouter();
+  const rows = useMemo(
+    () => positions.map((p, i) => ({ p, kind: kinds[i] })),
+    [positions, kinds]
+  );
+  const { sorted, sort, toggleSort } = useTableSort<typeof rows[number], PositionSortKey>(
+    rows,
+    POSITION_ACCESSORS,
+    { key: "pnl", direction: "desc" },
+    POSITION_NUMERIC
+  );
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>symbol</TableHead>
-          <TableHead>type</TableHead>
-          <TableHead>sector</TableHead>
-          <TableHead className="text-right">qty</TableHead>
-          <TableHead className="text-right">avg</TableHead>
-          <TableHead className="text-right">price</TableHead>
-          <TableHead className="text-right">unr. P&amp;L</TableHead>
-          <TableHead className="text-right">unr. %</TableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
+          <SortableTableHead sortKey="type" sort={sort} onSort={toggleSort}>type</SortableTableHead>
+          <SortableTableHead sortKey="sector" sort={sort} onSort={toggleSort}>sector</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
+          <SortableTableHead sortKey="avg" sort={sort} onSort={toggleSort} align="right">avg</SortableTableHead>
+          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">price</SortableTableHead>
+          <SortableTableHead sortKey="pnl" sort={sort} onSort={toggleSort} align="right">unr. P&amp;L</SortableTableHead>
+          <SortableTableHead sortKey="pnl_pct" sort={sort} onSort={toggleSort} align="right">unr. %</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {positions.length === 0 ? (
+        {sorted.length === 0 ? (
           <TableEmpty colSpan={8}>no open positions</TableEmpty>
         ) : (
-          positions.map((p, i) => {
-            const kind = kinds[i];
+          sorted.map(({ p, kind }, i) => {
             return (
             <TableRow
               key={`${p.symbol}-${p.strike ?? ""}-${p.expiry ?? ""}-${p.right ?? ""}-${i}`}
@@ -414,27 +450,65 @@ function KindPill({ kind }: { kind: PositionKind }) {
   );
 }
 
+type SpreadSortKey =
+  | "symbol"
+  | "spread_type"
+  | "expiry"
+  | "short_strike"
+  | "qty"
+  | "credit"
+  | "max_profit"
+  | "max_loss";
+
+const SPREAD_ACCESSORS: Record<
+  SpreadSortKey,
+  (row: Spread) => string | number | null | undefined
+> = {
+  symbol: (s) => s.symbol,
+  spread_type: (s) => s.spread_type,
+  expiry: (s) => s.expiry,
+  short_strike: (s) => s.short_strike,
+  qty: (s) => s.quantity,
+  credit: (s) => s.credit_received,
+  max_profit: (s) => s.max_profit,
+  max_loss: (s) => s.max_loss,
+};
+
+const SPREAD_NUMERIC: SpreadSortKey[] = [
+  "short_strike",
+  "qty",
+  "credit",
+  "max_profit",
+  "max_loss",
+];
+
 function SpreadsTable({ spreads }: { spreads: Spread[] }) {
   const router = useRouter();
+  const { sorted, sort, toggleSort } = useTableSort<Spread, SpreadSortKey>(
+    spreads,
+    SPREAD_ACCESSORS,
+    { key: "expiry", direction: "asc" },
+    SPREAD_NUMERIC
+  );
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>symbol</TableHead>
-          <TableHead>type</TableHead>
-          <TableHead>expiry</TableHead>
-          <TableHead>strikes</TableHead>
-          <TableHead className="text-right">qty</TableHead>
-          <TableHead className="text-right">credit</TableHead>
-          <TableHead className="text-right">max profit</TableHead>
-          <TableHead className="text-right">max loss</TableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
+          <SortableTableHead sortKey="spread_type" sort={sort} onSort={toggleSort}>type</SortableTableHead>
+          <SortableTableHead sortKey="expiry" sort={sort} onSort={toggleSort}>expiry</SortableTableHead>
+          <SortableTableHead sortKey="short_strike" sort={sort} onSort={toggleSort}>strikes</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
+          <SortableTableHead sortKey="credit" sort={sort} onSort={toggleSort} align="right">credit</SortableTableHead>
+          <SortableTableHead sortKey="max_profit" sort={sort} onSort={toggleSort} align="right">max profit</SortableTableHead>
+          <SortableTableHead sortKey="max_loss" sort={sort} onSort={toggleSort} align="right">max loss</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {spreads.length === 0 ? (
+        {sorted.length === 0 ? (
           <TableEmpty colSpan={8}>no open spreads</TableEmpty>
         ) : (
-          spreads.map((s) => (
+          sorted.map((s) => (
             <TableRow
               key={s.id}
               onClick={() => router.push(`/chart/${s.symbol}`)}
@@ -471,25 +545,55 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
   );
 }
 
+type TradeSortKey =
+  | "symbol"
+  | "side"
+  | "qty"
+  | "price"
+  | "pnl"
+  | "strategy"
+  | "timestamp";
+
+const TRADE_ACCESSORS: Record<
+  TradeSortKey,
+  (row: Trade) => string | number | null | undefined
+> = {
+  symbol: (t) => t.symbol,
+  side: (t) => t.side,
+  qty: (t) => t.quantity,
+  price: (t) => t.price,
+  pnl: (t) => t.pnl ?? null,
+  strategy: (t) => t.strategy ?? null,
+  timestamp: (t) => Date.parse(t.timestamp) || 0,
+};
+
+const TRADE_NUMERIC: TradeSortKey[] = ["qty", "price", "pnl", "timestamp"];
+
 function TradesTable({ trades }: { trades: Trade[] }) {
+  const { sorted, sort, toggleSort } = useTableSort<Trade, TradeSortKey>(
+    trades,
+    TRADE_ACCESSORS,
+    { key: "timestamp", direction: "desc" },
+    TRADE_NUMERIC
+  );
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>symbol</TableHead>
-          <TableHead>side</TableHead>
-          <TableHead className="text-right">qty</TableHead>
-          <TableHead className="text-right">price</TableHead>
-          <TableHead className="text-right">P&amp;L</TableHead>
-          <TableHead>strategy</TableHead>
-          <TableHead>time</TableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
+          <SortableTableHead sortKey="side" sort={sort} onSort={toggleSort}>side</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
+          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">price</SortableTableHead>
+          <SortableTableHead sortKey="pnl" sort={sort} onSort={toggleSort} align="right">P&amp;L</SortableTableHead>
+          <SortableTableHead sortKey="strategy" sort={sort} onSort={toggleSort}>strategy</SortableTableHead>
+          <SortableTableHead sortKey="timestamp" sort={sort} onSort={toggleSort}>time</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {trades.length === 0 ? (
+        {sorted.length === 0 ? (
           <TableEmpty colSpan={7}>no trades yet</TableEmpty>
         ) : (
-          trades.map((t) => (
+          sorted.map((t) => (
             <TableRow key={t.id}>
               <TableCell className="font-medium">{t.symbol}</TableCell>
               <TableCell>
