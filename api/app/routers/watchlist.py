@@ -3,7 +3,7 @@ import time
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Optional, Tuple
 from ..config import settings
-from ..models.schemas import WatchlistItem, WatchlistAddRequest
+from ..models.schemas import WatchlistAddRequest, WatchlistDeleteResponse, WatchlistItem
 from ..nautilus import ib_options
 from ..nautilus.ib_node import ib_node
 from ..nautilus.mock.data import (
@@ -84,7 +84,16 @@ async def _fetch_quote(sym: str) -> Tuple[Optional[float], Optional[float], Opti
     return last, change_pct, volume
 
 
-@router.get("", response_model=List[WatchlistItem])
+@router.get(
+    "",
+    response_model=List[WatchlistItem],
+    summary="Get watchlist with live quotes",
+    description=(
+        "Returns every watchlist symbol with its most recent quote. "
+        "Quotes are served from a 5s in-memory cache when warm, otherwise "
+        "they're fetched from IBKR in parallel."
+    ),
+)
 async def get_watchlist():
     now = time.monotonic()
 
@@ -125,7 +134,20 @@ async def get_watchlist():
     return items
 
 
-@router.post("", response_model=WatchlistItem)
+@router.post(
+    "",
+    response_model=WatchlistItem,
+    status_code=201,
+    summary="Add a symbol to the watchlist",
+    description=(
+        "Adds ``symbol`` to the in-memory watchlist. Idempotent — re-adding "
+        "an existing symbol returns the existing row without modifying it."
+    ),
+    responses={
+        201: {"description": "Symbol added (or already present)."},
+        422: {"description": "Symbol failed validation."},
+    },
+)
 def add_to_watchlist(req: WatchlistAddRequest):
     sym = req.symbol.upper()
     if sym in _watchlist:
@@ -140,10 +162,15 @@ def add_to_watchlist(req: WatchlistAddRequest):
     return item
 
 
-@router.delete("/{symbol}")
-def remove_from_watchlist(symbol: str):
+@router.delete(
+    "/{symbol}",
+    response_model=WatchlistDeleteResponse,
+    summary="Remove a symbol from the watchlist",
+    responses={404: {"description": "Symbol is not in the watchlist."}},
+)
+def remove_from_watchlist(symbol: str) -> WatchlistDeleteResponse:
     sym = symbol.upper()
     if sym not in _watchlist:
         raise HTTPException(status_code=404, detail=f"{sym} not in watchlist")
     del _watchlist[sym]
-    return {"removed": sym}
+    return WatchlistDeleteResponse(removed=sym)
