@@ -22,7 +22,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
-import { Briefcase, Layers, Activity, Target, Search, X } from "lucide-react";
+import { TableRowSkeleton } from "@/components/ui/skeleton";
+import { Briefcase, Layers, Activity, Target, Search, X, SearchX } from "lucide-react";
 
 // Beyond this row count, virtual scrolling cuts DOM nodes by >10x. Below
 // the threshold, real <table> rows still render so sticky headers + native
@@ -48,6 +49,10 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
   const setStorePositions = useStore((s) => s.setPositions);
   const [spreads, setSpreads] = useState<Spread[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
+  // Track first-fetch completion per tab so we can distinguish "loading" from
+  // "actually empty". After the first response (success or error), the tab
+  // switches from skeleton to data/empty-state and stops flashing on each poll.
+  const [loaded, setLoaded] = useState({ positions: false, spreads: false, trades: false });
 
   // Filter state — reset when the parent re-feeds a different symbol prop.
   const [symbolQ, setSymbolQ] = useState(initialSymbol.toUpperCase());
@@ -59,10 +64,12 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
   }, [initialSymbol]);
 
   useEffect(() => {
+    const markLoaded = (k: "positions" | "spreads" | "trades") =>
+      setLoaded((l) => (l[k] ? l : { ...l, [k]: true }));
     const load = () => {
-      api.positions().then(setStorePositions).catch(() => null);
-      api.spreads().then(setSpreads).catch(() => null);
-      api.trades().then(setTrades).catch(() => null);
+      api.positions().then(setStorePositions).catch(() => null).finally(() => markLoaded("positions"));
+      api.spreads().then(setSpreads).catch(() => null).finally(() => markLoaded("spreads"));
+      api.trades().then(setTrades).catch(() => null).finally(() => markLoaded("trades"));
     };
     load();
     const id = setInterval(load, 30000);
@@ -187,20 +194,27 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
       </div>
 
       <TabsContent value="positions" className="flex-1 overflow-auto mt-0">
-        {positions.length === 0 ? (
+        {!loaded.positions && positions.length === 0 ? (
+          <TableSkeleton cols={8} headers={POSITION_HEADERS} />
+        ) : positions.length === 0 ? (
           <EmptyState
             icon={Briefcase}
             title="No open positions"
             description="Positions sync from IBKR Gateway once you have any open."
           />
         ) : filteredPositions.length === 0 ? (
-          <FilterEmpty label={`No positions match "${symbolQ}"${side !== "all" ? ` · ${side}` : ""}${kind !== "all" ? ` · ${kind}` : ""}`} />
+          <FilterEmpty
+            label={`No positions match "${symbolQ}"${side !== "all" ? ` · ${side}` : ""}${kind !== "all" ? ` · ${kind}` : ""}`}
+            onClear={clearAll}
+          />
         ) : (
           <PositionsTable positions={filteredPositions} kinds={filteredKinds} />
         )}
       </TabsContent>
       <TabsContent value="spreads" className="flex-1 overflow-auto mt-0">
-        {spreads.length === 0 ? (
+        {!loaded.spreads && spreads.length === 0 ? (
+          <TableSkeleton cols={8} headers={SPREAD_HEADERS} />
+        ) : spreads.length === 0 ? (
           <EmptyState
             icon={Layers}
             title="No open spreads"
@@ -215,20 +229,22 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
             }
           />
         ) : filteredSpreads.length === 0 ? (
-          <FilterEmpty label={`No spreads in ${symbolQ}`} />
+          <FilterEmpty label={`No spreads match "${symbolQ}"`} onClear={clearAll} />
         ) : (
           <SpreadsTable spreads={filteredSpreads} />
         )}
       </TabsContent>
       <TabsContent value="trades" className="flex-1 overflow-auto mt-0">
-        {trades.length === 0 ? (
+        {!loaded.trades && trades.length === 0 ? (
+          <TableSkeleton cols={7} headers={TRADE_HEADERS} />
+        ) : trades.length === 0 ? (
           <EmptyState
             icon={Activity}
             title="No trades yet"
             description="Trade history will populate once orders fill via your connected broker."
           />
         ) : filteredTrades.length === 0 ? (
-          <FilterEmpty label={`No trades in ${symbolQ}`} />
+          <FilterEmpty label={`No trades match "${symbolQ}"`} onClear={clearAll} />
         ) : (
           <TradesTable trades={filteredTrades} />
         )}
@@ -279,11 +295,60 @@ function FilterGroup<T extends string>({
   );
 }
 
-function FilterEmpty({ label }: { label: string }) {
+function FilterEmpty({ label, onClear }: { label: string; onClear?: () => void }) {
   return (
-    <div className="flex items-center justify-center h-full text-[11px] text-text-muted px-3 py-6">
-      {label}
+    <div className="flex flex-col items-center justify-center gap-2 px-3 py-10 text-center animate-fade-in">
+      <div className="w-7 h-7 rounded-full bg-surface-2 border border-border flex items-center justify-center">
+        <SearchX size={13} className="text-text-muted" strokeWidth={1.75} aria-hidden="true" />
+      </div>
+      <p className="text-[11px] text-text-secondary max-w-xs">{label}</p>
+      {onClear && (
+        <button
+          onClick={onClear}
+          className="mt-0.5 inline-flex items-center gap-1 h-5 px-2 rounded-sm border border-border bg-surface-2/60 hover:bg-surface-2 text-[10px] text-text-secondary hover:text-text-primary transition-colors"
+        >
+          <X size={9} />
+          Clear filters
+        </button>
+      )}
     </div>
+  );
+}
+
+const POSITION_HEADERS = ["symbol", "type", "sector", "qty", "avg", "price", "unr. P&L", "unr. %"] as const;
+const SPREAD_HEADERS = ["symbol", "type", "expiry", "strikes", "qty", "credit", "max profit", "max loss"] as const;
+const TRADE_HEADERS = ["symbol", "side", "qty", "price", "P&L", "strategy", "time"] as const;
+
+/**
+ * Loading state for tabular data. Matches the real table chrome (sticky
+ * header, column count, row density) so the layout doesn't shift when data
+ * arrives. Renders a fixed batch of skeleton rows — enough to fill a
+ * typical viewport without overflowing if data lands quickly.
+ */
+function TableSkeleton({ cols, headers, rows = 6 }: { cols: number; headers: readonly string[]; rows?: number }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          {headers.map((h, i) => (
+            <th
+              key={h}
+              className={cn(
+                "h-6 px-2 align-middle font-normal text-[10px] uppercase tracking-wider text-text-muted border-b border-border",
+                i >= cols - 2 ? "text-right" : "text-left"
+              )}
+            >
+              {h}
+            </th>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: rows }).map((_, i) => (
+          <TableRowSkeleton key={i} cols={cols} />
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -383,11 +448,20 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
           <TableEmpty colSpan={8}>no open positions</TableEmpty>
         ) : (
           sorted.map(({ p, kind }, i) => {
+            const pnlUp = p.unrealized_pnl > 0;
+            const pnlDown = p.unrealized_pnl < 0;
             return (
             <TableRow
               key={`${p.symbol}-${p.strike ?? ""}-${p.expiry ?? ""}-${p.right ?? ""}-${i}`}
               onClick={() => router.push(positionHref(p))}
-              className="cursor-pointer group"
+              className={cn(
+                "cursor-pointer group relative",
+                // Subtle left accent on hover — signals "row is the click target"
+                // without shifting layout. Uses box-shadow inset so the row stays
+                // the same height.
+                "hover:shadow-[inset_2px_0_0_0_#3b82f6]",
+                "hover:bg-surface-2/80 transition-[background,box-shadow] duration-100"
+              )}
               title={p.is_option ? "Open in option analyzer" : "Analyze position"}
             >
               <TableCell className="font-medium">
@@ -395,7 +469,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                   <Logo symbol={p.symbol} size={16} />
                   <div className="flex flex-col leading-tight">
                     <span className="inline-flex items-center gap-1.5">
-                      {p.symbol}
+                      <span className="group-hover:text-accent transition-colors">{p.symbol}</span>
                       {p.is_option && (
                         <span className={cn(
                           "text-[9px] uppercase tracking-wider px-1 py-px rounded-sm",
@@ -418,14 +492,14 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                 <KindPill kind={kind} />
               </TableCell>
               <TableCell className="text-text-muted">{p.sector ?? "—"}</TableCell>
-              <TableCell className="text-right tabular">{p.quantity}</TableCell>
-              <TableCell className="text-right tabular">{p.avg_price.toFixed(2)}</TableCell>
-              <TableCell className="text-right tabular">{p.current_price.toFixed(2)}</TableCell>
+              <TableCell className={cn("text-right tabular", p.quantity < 0 && "text-down")}>{p.quantity}</TableCell>
+              <TableCell className="text-right tabular text-text-secondary">{fmtCurrency(p.avg_price)}</TableCell>
+              <TableCell className="text-right tabular">{fmtCurrency(p.current_price)}</TableCell>
               <TableCell className={cn("text-right tabular font-medium", pnlClass(p.unrealized_pnl))}>
-                {fmtCurrency(p.unrealized_pnl)}
+                {pnlUp ? "+" : ""}{fmtCurrency(p.unrealized_pnl)}
               </TableCell>
               <TableCell className="text-right">
-                <Badge variant={p.unrealized_pnl_pct >= 0 ? "up" : "down"} className="tabular">
+                <Badge variant={pnlDown ? "down" : "up"} className="tabular">
                   {fmtPct(p.unrealized_pnl_pct)}
                 </Badge>
               </TableCell>
@@ -519,13 +593,17 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
             <TableRow
               key={s.id}
               onClick={() => router.push(`/chart/${s.symbol}`)}
-              className="cursor-pointer group"
+              className={cn(
+                "cursor-pointer group relative",
+                "hover:shadow-[inset_2px_0_0_0_#3b82f6]",
+                "hover:bg-surface-2/80 transition-[background,box-shadow] duration-100"
+              )}
               title="Open chart with cycle overlay"
             >
               <TableCell className="font-medium">
                 <span className="inline-flex items-center gap-2">
                   <Logo symbol={s.symbol} size={16} />
-                  {s.symbol}
+                  <span className="group-hover:text-accent transition-colors">{s.symbol}</span>
                   <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent transition-opacity" />
                 </span>
               </TableCell>
@@ -539,8 +617,8 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
                 <span className="text-up">{s.short_strike}</span>
               </TableCell>
               <TableCell className="text-right tabular">{s.quantity}</TableCell>
-              <TableCell className="text-right tabular text-up">{s.credit_received.toFixed(2)}</TableCell>
-              <TableCell className="text-right tabular text-up">{fmtCurrency(s.max_profit)}</TableCell>
+              <TableCell className="text-right tabular text-up font-medium">{fmtCurrency(s.credit_received)}</TableCell>
+              <TableCell className="text-right tabular text-up">+{fmtCurrency(s.max_profit)}</TableCell>
               <TableCell className="text-right tabular text-down">
                 {fmtCurrency(-Math.abs(s.max_loss))}
               </TableCell>
@@ -601,18 +679,21 @@ function TradesTable({ trades }: { trades: Trade[] }) {
           <TableEmpty colSpan={7}>no trades yet</TableEmpty>
         ) : (
           sorted.map((t) => (
-            <TableRow key={t.id}>
+            <TableRow
+              key={t.id}
+              className="group hover:bg-surface-2/80 hover:shadow-[inset_2px_0_0_0_#3b82f6] transition-[background,box-shadow] duration-100"
+            >
               <TableCell className="font-medium">{t.symbol}</TableCell>
               <TableCell>
                 <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
               </TableCell>
               <TableCell className="text-right tabular">{t.quantity}</TableCell>
-              <TableCell className="text-right tabular">{t.price.toFixed(2)}</TableCell>
-              <TableCell className={cn("text-right tabular", pnlClass(t.pnl ?? 0))}>
-                {t.pnl != null ? fmtCurrency(t.pnl) : "—"}
+              <TableCell className="text-right tabular text-text-secondary">{fmtCurrency(t.price)}</TableCell>
+              <TableCell className={cn("text-right tabular font-medium", pnlClass(t.pnl ?? 0))}>
+                {t.pnl != null ? `${t.pnl > 0 ? "+" : ""}${fmtCurrency(t.pnl)}` : "—"}
               </TableCell>
               <TableCell className="text-text-muted">{t.strategy ?? "—"}</TableCell>
-              <TableCell className="text-text-muted">{new Date(t.timestamp).toLocaleString()}</TableCell>
+              <TableCell className="text-text-muted tabular">{new Date(t.timestamp).toLocaleString()}</TableCell>
             </TableRow>
           ))
         )}

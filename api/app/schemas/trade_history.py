@@ -200,6 +200,115 @@ class TradeStats(BaseModel):
     })
 
 
+class TradeAnalysisTrade(BaseModel):
+    """Compact snapshot of a single trade highlighted by the analysis endpoint."""
+    id: int = Field(..., description="Database row ID.")
+    symbol: Optional[str] = Field(None, description="Ticker.")
+    side: Optional[str] = Field(None, description="BUY or SELL.")
+    quantity: Optional[float] = Field(None, description="Trade quantity.")
+    price: Optional[float] = Field(None, description="Execution price per unit.")
+    pnl: Optional[float] = Field(None, description="Realized P&L (USD).")
+    pnl_percentage: Optional[float] = Field(None, description="Realized P&L percentage.")
+    timestamp: datetime = Field(..., description="Execution timestamp.")
+    strategy: Optional[str] = Field(None, description="Strategy tag.")
+
+
+class StrategyInsight(BaseModel):
+    strategy: str = Field(..., description="Strategy tag.")
+    count: int = Field(..., ge=0, description="Number of trades using this strategy.")
+    total_pnl: float = Field(..., description="Sum of realized P&L for this strategy.")
+    win_rate: float = Field(..., ge=0.0, le=1.0, description="Winning closed trades / closed trades for this strategy.")
+
+
+class TimeOfDayInsight(BaseModel):
+    hour: int = Field(..., ge=0, le=23, description="Hour of day in UTC (0-23).")
+    count: int = Field(..., ge=0, description="Number of trades executed during this hour.")
+    total_pnl: float = Field(..., description="Sum of realized P&L for this hour.")
+    avg_pnl: float = Field(..., description="Mean realized P&L per closed trade in this hour.")
+    win_rate: float = Field(..., ge=0.0, le=1.0, description="Winning closed trades / closed trades for this hour.")
+
+
+class TradeAnalysisResponse(BaseModel):
+    best_trade: Optional[TradeAnalysisTrade] = Field(
+        None, description="Trade with the highest pnl_percentage.",
+    )
+    worst_trade: Optional[TradeAnalysisTrade] = Field(
+        None, description="Trade with the lowest pnl_percentage.",
+    )
+    biggest_win: Optional[TradeAnalysisTrade] = Field(
+        None, description="Trade with the largest positive pnl (USD).",
+    )
+    biggest_loss: Optional[TradeAnalysisTrade] = Field(
+        None, description="Trade with the largest negative pnl (USD).",
+    )
+    avg_hold_time_seconds: Optional[float] = Field(
+        None,
+        description="Average BUY→SELL holding period in seconds; null when no paired trades exist.",
+    )
+    common_strategies: List[StrategyInsight] = Field(
+        default_factory=list,
+        description="Top strategies by trade count (up to 10).",
+    )
+    time_of_day_patterns: List[TimeOfDayInsight] = Field(
+        default_factory=list,
+        description="Per-hour-of-day breakdown (UTC).",
+    )
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "best_trade": {
+                "id": 9001, "symbol": "SPY", "side": "SELL", "quantity": 10, "price": 470.0,
+                "pnl": 119.0, "pnl_percentage": 2.6, "timestamp": "2026-05-23T14:32:11Z",
+                "strategy": "bull-put-spy",
+            },
+            "worst_trade": {
+                "id": 9020, "symbol": "TSLA", "side": "SELL", "quantity": 5, "price": 170.0,
+                "pnl": -82.5, "pnl_percentage": -4.7, "timestamp": "2026-05-21T18:02:00Z",
+                "strategy": "mean-reversion",
+            },
+            "biggest_win": {
+                "id": 9001, "symbol": "SPY", "side": "SELL", "quantity": 10, "price": 470.0,
+                "pnl": 119.0, "pnl_percentage": 2.6, "timestamp": "2026-05-23T14:32:11Z",
+                "strategy": "bull-put-spy",
+            },
+            "biggest_loss": {
+                "id": 9020, "symbol": "TSLA", "side": "SELL", "quantity": 5, "price": 170.0,
+                "pnl": -82.5, "pnl_percentage": -4.7, "timestamp": "2026-05-21T18:02:00Z",
+                "strategy": "mean-reversion",
+            },
+            "avg_hold_time_seconds": 3725.4,
+            "common_strategies": [
+                {"strategy": "bull-put-spy", "count": 12, "total_pnl": 540.25, "win_rate": 0.75},
+            ],
+            "time_of_day_patterns": [
+                {"hour": 14, "count": 8, "total_pnl": 220.0, "avg_pnl": 27.5, "win_rate": 0.625},
+            ],
+        }
+    })
+
+
+class TradeHistoryImportError(BaseModel):
+    row: int = Field(..., ge=0, description="0-based row index in the uploaded file.")
+    error: str = Field(..., description="Validation / parse error for this row.")
+
+
+class TradeHistoryImportResult(BaseModel):
+    total: int = Field(0, ge=0, description="Rows parsed from the upload.")
+    inserted: int = Field(0, ge=0, description="Rows persisted to trade_history.")
+    errors: List[TradeHistoryImportError] = Field(
+        default_factory=list,
+        description="Per-row validation errors; rejected rows are skipped, valid rows still commit.",
+    )
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "total": 3,
+            "inserted": 2,
+            "errors": [{"row": 1, "error": "side must be one of ['BUY', 'SELL']"}],
+        }
+    })
+
+
 class TradeHistoryListResponse(BaseModel):
     trades: List[TradeHistoryResponse] = Field(default_factory=list)
     total: int = Field(0, ge=0, description="Total matching rows across all pages.")

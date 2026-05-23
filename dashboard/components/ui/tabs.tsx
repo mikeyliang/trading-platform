@@ -29,7 +29,7 @@ const TabsTrigger = React.forwardRef<
       // matching the rest of the page's section markers, with an
       // accent-rule active state and a subtle hover lift. Bumped padding
       // to py-2.5 for finger-friendly click targets without bloat.
-      "inline-flex items-center gap-1.5 px-3 py-2.5 text-[10px] uppercase tracking-wider font-medium border-b-2 border-transparent text-text-muted transition-colors hover:text-text-secondary hover:bg-surface-2/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-accent data-[state=active]:text-text-primary data-[state=active]:bg-surface-2/30",
+      "inline-flex items-center gap-1.5 px-3 py-2.5 text-[10px] uppercase tracking-wider font-medium border-b-2 border-transparent text-text-muted transition-colors hover:text-text-secondary hover:bg-surface-2/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-accent data-[state=active]:text-text-primary data-[state=active]:bg-surface-2/30",
       className
     )}
     {...props}

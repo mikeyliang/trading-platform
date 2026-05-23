@@ -64,6 +64,109 @@ async def create_trade(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return None
 
 
+async def bulk_insert_trades(payloads: List[Dict[str, Any]]) -> int:
+    """Insert many trade rows in a single transaction. Returns the number
+    of rows inserted, or 0 if the DB is unavailable / the batch failed
+    (the transaction is rolled back, so partial inserts can't happen)."""
+    if not payloads:
+        return 0
+    pool = db.pool()
+    if pool is None:
+        return 0
+    cols = [
+        "timestamp", "symbol", "side", "quantity", "price", "order_type",
+        "status", "pnl", "pnl_percentage", "strategy", "agent_id", "metadata_",
+    ]
+    placeholders = [
+        f"${i}::jsonb" if c == "metadata_" else f"${i}"
+        for i, c in enumerate(cols, start=1)
+    ]
+    sql = (
+        f"INSERT INTO trade_history ({','.join(cols)}) "
+        f"VALUES ({','.join(placeholders)})"
+    )
+    batch: list[tuple] = []
+    for p in payloads:
+        side = p.get("side")
+        if isinstance(side, str):
+            side = side.strip().lower()
+        meta = p.get("metadata_") if "metadata_" in p else p.get("metadata")
+        batch.append((
+            p.get("timestamp"),
+            p.get("symbol"),
+            side,
+            p.get("quantity"),
+            p.get("price"),
+            p.get("order_type"),
+            p.get("status"),
+            p.get("pnl"),
+            p.get("pnl_percentage"),
+            p.get("strategy"),
+            p.get("agent_id"),
+            json.dumps(meta) if meta is not None else None,
+        ))
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.executemany(sql, batch)
+        return len(batch)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("bulk_insert_trades failed: %s", e)
+        return 0
+
+
+async def export_trades(
+    symbol: Optional[str] = None,
+    status: Optional[str] = None,
+    side: Optional[str] = None,
+    strategy: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+) -> List[Dict[str, Any]]:
+    """All matching trades, unpaginated, newest-first. Same filter semantics
+    as ``list_trades`` but skips the COUNT/LIMIT/OFFSET — callers stream
+    the result straight into CSV."""
+    pool = db.pool()
+    if pool is None:
+        return []
+    clauses = ["is_deleted = FALSE"]
+    args: list[Any] = []
+    if symbol:
+        args.append(symbol.strip().upper())
+        clauses.append(f"symbol = ${len(args)}")
+    if status:
+        args.append(status)
+        clauses.append(f"status = ${len(args)}")
+    if side:
+        args.append(side.strip().lower())
+        clauses.append(f"side = ${len(args)}")
+    if strategy:
+        args.append(strategy)
+        clauses.append(f"strategy = ${len(args)}")
+    if agent_id:
+        args.append(agent_id)
+        clauses.append(f"agent_id = ${len(args)}")
+    if start is not None:
+        args.append(start)
+        clauses.append(f"timestamp >= ${len(args)}")
+    if end is not None:
+        args.append(end)
+        clauses.append(f"timestamp <= ${len(args)}")
+    where = f"WHERE {' AND '.join(clauses)}"
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                f"SELECT * FROM trade_history {where} "
+                f"ORDER BY timestamp DESC, id DESC",
+                *args,
+            )
+            return [_row_to_dict(r) for r in rows]
+    except Exception as e:  # noqa: BLE001
+        logger.warning("export_trades failed: %s", e)
+        return []
+
+
 async def list_trades(
     symbol: Optional[str] = None,
     status: Optional[str] = None,
@@ -221,6 +324,182 @@ async def get_trade_stats(
     except Exception as e:  # noqa: BLE001
         logger.warning("get_trade_stats failed: %s", e)
         return empty
+
+
+async def get_trade_analysis(
+    symbol: Optional[str] = None,
+    strategy: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """Insight bundle over the (optionally filtered) trade set.
+
+    Surfaces highlight trades (best/worst by pct, biggest win/loss by USD),
+    the average BUY→SELL holding period per symbol, the most common
+    strategies, and a per-hour-of-day breakdown. Rows without a non-null
+    ``pnl`` / ``pnl_percentage`` are skipped from the relevant ranking so
+    open trades don't masquerade as the worst loss.
+    """
+    empty: Dict[str, Any] = {
+        "best_trade": None,
+        "worst_trade": None,
+        "biggest_win": None,
+        "biggest_loss": None,
+        "avg_hold_time_seconds": None,
+        "common_strategies": [],
+        "time_of_day_patterns": [],
+    }
+    pool = db.pool()
+    if pool is None:
+        return empty
+    clauses = ["is_deleted = FALSE"]
+    args: list[Any] = []
+    if symbol:
+        args.append(symbol.strip().upper())
+        clauses.append(f"symbol = ${len(args)}")
+    if strategy:
+        args.append(strategy)
+        clauses.append(f"strategy = ${len(args)}")
+    if agent_id:
+        args.append(agent_id)
+        clauses.append(f"agent_id = ${len(args)}")
+    if start is not None:
+        args.append(start)
+        clauses.append(f"timestamp >= ${len(args)}")
+    if end is not None:
+        args.append(end)
+        clauses.append(f"timestamp <= ${len(args)}")
+    where = f"WHERE {' AND '.join(clauses)}"
+    try:
+        async with pool.acquire() as conn:
+            best = await conn.fetchrow(
+                f"SELECT * FROM trade_history {where} AND pnl_percentage IS NOT NULL "
+                f"ORDER BY pnl_percentage DESC, id DESC LIMIT 1",
+                *args,
+            )
+            worst = await conn.fetchrow(
+                f"SELECT * FROM trade_history {where} AND pnl_percentage IS NOT NULL "
+                f"ORDER BY pnl_percentage ASC, id DESC LIMIT 1",
+                *args,
+            )
+            biggest_win = await conn.fetchrow(
+                f"SELECT * FROM trade_history {where} AND pnl IS NOT NULL "
+                f"ORDER BY pnl DESC, id DESC LIMIT 1",
+                *args,
+            )
+            biggest_loss = await conn.fetchrow(
+                f"SELECT * FROM trade_history {where} AND pnl IS NOT NULL "
+                f"ORDER BY pnl ASC, id DESC LIMIT 1",
+                *args,
+            )
+            # Avg hold time: pair each SELL with the immediately preceding
+            # BUY on the same symbol via LAG and average the gap. Rough
+            # approximation when buys/sells don't pair 1:1, but good enough
+            # for a dashboard insight.
+            hold = await conn.fetchval(
+                f"""
+                WITH paired AS (
+                  SELECT
+                    timestamp,
+                    side,
+                    LAG(timestamp) OVER (PARTITION BY symbol ORDER BY timestamp, id) AS prev_ts,
+                    LAG(side)      OVER (PARTITION BY symbol ORDER BY timestamp, id) AS prev_side
+                  FROM trade_history {where}
+                )
+                SELECT AVG(EXTRACT(EPOCH FROM (timestamp - prev_ts)))
+                FROM paired
+                WHERE prev_side = 'buy' AND side = 'sell' AND prev_ts IS NOT NULL
+                """,
+                *args,
+            )
+            strategies = await conn.fetch(
+                f"""
+                SELECT
+                  strategy,
+                  COUNT(*)                                            AS trade_count,
+                  COALESCE(SUM(pnl), 0)                               AS total_pnl,
+                  CASE
+                    WHEN COUNT(*) FILTER (WHERE pnl IS NOT NULL) > 0
+                    THEN COUNT(*) FILTER (WHERE pnl > 0)::float
+                         / COUNT(*) FILTER (WHERE pnl IS NOT NULL)
+                    ELSE 0.0
+                  END                                                 AS win_rate
+                FROM trade_history {where} AND strategy IS NOT NULL
+                GROUP BY strategy
+                ORDER BY trade_count DESC, strategy ASC
+                LIMIT 10
+                """,
+                *args,
+            )
+            hours = await conn.fetch(
+                f"""
+                SELECT
+                  EXTRACT(HOUR FROM timestamp)::int                   AS hour,
+                  COUNT(*)                                            AS trade_count,
+                  COALESCE(SUM(pnl), 0)                               AS total_pnl,
+                  COALESCE(AVG(pnl) FILTER (WHERE pnl IS NOT NULL), 0) AS avg_pnl,
+                  CASE
+                    WHEN COUNT(*) FILTER (WHERE pnl IS NOT NULL) > 0
+                    THEN COUNT(*) FILTER (WHERE pnl > 0)::float
+                         / COUNT(*) FILTER (WHERE pnl IS NOT NULL)
+                    ELSE 0.0
+                  END                                                 AS win_rate
+                FROM trade_history {where}
+                GROUP BY hour
+                ORDER BY hour ASC
+                """,
+                *args,
+            )
+            return {
+                "best_trade": _trade_summary(best),
+                "worst_trade": _trade_summary(worst),
+                "biggest_win": _trade_summary(biggest_win),
+                "biggest_loss": _trade_summary(biggest_loss),
+                "avg_hold_time_seconds": float(hold) if hold is not None else None,
+                "common_strategies": [
+                    {
+                        "strategy": r["strategy"],
+                        "count": int(r["trade_count"]),
+                        "total_pnl": float(r["total_pnl"]),
+                        "win_rate": float(r["win_rate"]),
+                    }
+                    for r in strategies
+                ],
+                "time_of_day_patterns": [
+                    {
+                        "hour": int(r["hour"]),
+                        "count": int(r["trade_count"]),
+                        "total_pnl": float(r["total_pnl"]),
+                        "avg_pnl": float(r["avg_pnl"]),
+                        "win_rate": float(r["win_rate"]),
+                    }
+                    for r in hours
+                ],
+            }
+    except Exception as e:  # noqa: BLE001
+        logger.warning("get_trade_analysis failed: %s", e)
+        return empty
+
+
+def _trade_summary(row: Any) -> Optional[Dict[str, Any]]:
+    if row is None:
+        return None
+    d = _row_to_dict(row)
+    side = d.get("side")
+    if isinstance(side, str):
+        side = side.upper()
+    return {
+        "id": int(d["id"]),
+        "symbol": d.get("symbol"),
+        "side": side,
+        "quantity": d.get("quantity"),
+        "price": d.get("price"),
+        "pnl": d.get("pnl"),
+        "pnl_percentage": d.get("pnl_percentage"),
+        "timestamp": d.get("timestamp"),
+        "strategy": d.get("strategy"),
+    }
 
 
 async def update_trade(

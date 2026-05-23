@@ -252,6 +252,22 @@ export const api = {
     const s = q.toString();
     return get<TradeStats>(`/api/trade-history/stats${s ? "?" + s : ""}`);
   },
+  tradeHistoryAnalysis: (params: {
+    symbol?: string;
+    strategy?: string;
+    agent_id?: string;
+    start?: string;
+    end?: string;
+  } = {}) => {
+    const q = new URLSearchParams();
+    if (params.symbol) q.set("symbol", params.symbol);
+    if (params.strategy) q.set("strategy", params.strategy);
+    if (params.agent_id) q.set("agent_id", params.agent_id);
+    if (params.start) q.set("start", params.start);
+    if (params.end) q.set("end", params.end);
+    const s = q.toString();
+    return get<TradeAnalysisResponse>(`/api/trade-history/analysis${s ? "?" + s : ""}`);
+  },
   tradeHistoryCreate: (payload: TradeHistoryCreatePayload) =>
     post<TradeHistoryRecord>("/api/trade-history/", payload),
   tradeHistoryUpdate: (id: number, payload: TradeHistoryUpdatePayload) =>
@@ -323,6 +339,43 @@ export interface TradeStats {
   total_pnl: number;
   avg_pnl: number;
   profit_factor: number;
+}
+
+export interface TradeAnalysisTrade {
+  id: number;
+  symbol?: string | null;
+  side?: TradeSide | null;
+  quantity?: number | null;
+  price?: number | null;
+  pnl?: number | null;
+  pnl_percentage?: number | null;
+  timestamp: string;
+  strategy?: string | null;
+}
+
+export interface StrategyInsight {
+  strategy: string;
+  count: number;
+  total_pnl: number;
+  win_rate: number;
+}
+
+export interface TimeOfDayInsight {
+  hour: number;
+  count: number;
+  total_pnl: number;
+  avg_pnl: number;
+  win_rate: number;
+}
+
+export interface TradeAnalysisResponse {
+  best_trade: TradeAnalysisTrade | null;
+  worst_trade: TradeAnalysisTrade | null;
+  biggest_win: TradeAnalysisTrade | null;
+  biggest_loss: TradeAnalysisTrade | null;
+  avg_hold_time_seconds: number | null;
+  common_strategies: StrategyInsight[];
+  time_of_day_patterns: TimeOfDayInsight[];
 }
 
 export interface OkwTrade {
