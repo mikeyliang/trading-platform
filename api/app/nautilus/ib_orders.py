@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
@@ -67,11 +67,11 @@ class OpenSpread:
 
     @property
     def short_strike(self) -> float:
-        return next(l.strike for l in self.legs if l.action == "SELL")
+        return next(leg.strike for leg in self.legs if leg.action == "SELL")
 
     @property
     def long_strike(self) -> float:
-        return next(l.strike for l in self.legs if l.action == "BUY")
+        return next(leg.strike for leg in self.legs if leg.action == "BUY")
 
     @property
     def width(self) -> float:
@@ -233,10 +233,10 @@ class OrdersClient:
             currency="USD",
             exchange="SMART",
             comboLegs=[
-                ComboLeg(conId=l.con_id, ratio=1,
-                         action="BUY" if l.action == "SELL" else "SELL",
+                ComboLeg(conId=leg.con_id, ratio=1,
+                         action="BUY" if leg.action == "SELL" else "SELL",
                          exchange="SMART")
-                for l in spread.legs
+                for leg in spread.legs
             ],
         )
         # closing a credit spread means buying it back — pay debit, action=BUY, positive limit

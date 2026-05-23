@@ -19,15 +19,13 @@ Threshold semantics:
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from ..nautilus import ib_options
 from ..nautilus.ib_orders import OpenSpread, orders_client
-from ..services.spread_finder import TRADE_SPECS
 from ..ws.manager import manager
 
 logger = logging.getLogger(__name__)
@@ -285,7 +283,7 @@ async def refresh() -> Dict[str, Any]:
 
 def _row_for_short_leg(chain: Dict[str, Any], sp: OpenSpread) -> Optional[Dict[str, Any]]:
     """Find the chain row matching the spread's short leg (strike + right)."""
-    short_leg = next((l for l in sp.legs if l.action == "SELL"), None)
+    short_leg = next((leg for leg in sp.legs if leg.action == "SELL"), None)
     if not short_leg:
         return None
     rows = chain.get("puts") if short_leg.right == "P" else chain.get("calls")

@@ -14,7 +14,7 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
+from typing import Any, Awaitable, Dict, List, Optional, Set
 
 from ..config import settings
 from ..ws.manager import manager
@@ -45,7 +45,6 @@ try:
     )
     from nautilus_trader.live.node import TradingNode
     from nautilus_trader.model.data import Bar, BarType, QuoteTick, TradeTick
-    from nautilus_trader.model.enums import AccountType, OmsType
     from nautilus_trader.model.identifiers import InstrumentId, TraderId, Venue
     from nautilus_trader.trading.strategy import Strategy, StrategyConfig
 

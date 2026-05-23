@@ -22,7 +22,6 @@ from fastapi import APIRouter, HTTPException, Query
 from ..forecast import chronos, ensemble as forecast_ensemble
 from ..forecast import calibration as forecast_calibration
 from ..nautilus import ib_options
-from ..nautilus.ib_node import ib_node
 from ..nautilus.strategies.smi import (
     compute_ema_series,
     compute_macd_series,
@@ -1299,11 +1298,16 @@ def _recommended_chart_tf(dte: int) -> str:
         61-270d           → 1d
         270d+ (LEAPs)     → 1w   (multi-year horizon needed)
     """
-    if dte <= 1: return "5m"
-    if dte <= 7: return "15m"
-    if dte <= 30: return "1h"
-    if dte <= 60: return "4h"
-    if dte <= 270: return "1d"
+    if dte <= 1:
+        return "5m"
+    if dte <= 7:
+        return "15m"
+    if dte <= 30:
+        return "1h"
+    if dte <= 60:
+        return "4h"
+    if dte <= 270:
+        return "1d"
     return "1w"
 
 
@@ -1390,19 +1394,29 @@ def _classify_trend(
     neutral' label for the TF. Used by the matrix UI + cross-TF consensus."""
     score = 0
     if rsi is not None:
-        if rsi >= 60: score += 1
-        elif rsi <= 40: score -= 1
+        if rsi >= 60:
+            score += 1
+        elif rsi <= 40:
+            score -= 1
     if macd_h is not None:
-        if macd_h > 0: score += 1
-        elif macd_h < 0: score -= 1
+        if macd_h > 0:
+            score += 1
+        elif macd_h < 0:
+            score -= 1
     if smi is not None:
-        if smi > 0: score += 1
-        elif smi < 0: score -= 1
+        if smi > 0:
+            score += 1
+        elif smi < 0:
+            score -= 1
     if ema9 is not None and ema21 is not None:
-        if ema9 > ema21: score += 1
-        elif ema9 < ema21: score -= 1
-    if score >= 2: return "bull"
-    if score <= -2: return "bear"
+        if ema9 > ema21:
+            score += 1
+        elif ema9 < ema21:
+            score -= 1
+    if score >= 2:
+        return "bull"
+    if score <= -2:
+        return "bear"
     return "neutral"
 
 

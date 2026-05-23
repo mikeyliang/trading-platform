@@ -112,11 +112,6 @@ CREATE INDEX IF NOT EXISTS ai_runs_ran_at_idx ON ai_runs (ran_at DESC);
 """
 
 
-def pool():
-    """Acquire-with-context-manager wrapper. None if init failed."""
-    return _pool
-
-
 async def init() -> None:
     """Create the connection pool + apply schema. Idempotent."""
     global _pool

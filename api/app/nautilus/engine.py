@@ -13,25 +13,12 @@ from ..models.schemas import (
     OrderSide, StrategyInfo, StrategyStatus,
 )
 from ..strategies.bull_put_spread import BullPutSpreadConfig, BullPutSpreadStrategy
-from .strategies.smi import generate_signals, compute_smi_series, compute_ema_series
-from .mock.data import generate_historical_bars, BASE_PRICES
+from .strategies.smi import generate_signals
+from .mock.data import generate_historical_bars
 
 logger = logging.getLogger(__name__)
 
 try:
-    from nautilus_trader.backtest.engine import BacktestEngine, BacktestEngineConfig
-    from nautilus_trader.config import LoggingConfig
-    from nautilus_trader.model.currencies import USD
-    from nautilus_trader.model.data import Bar, BarType, BarSpecification
-    from nautilus_trader.model.enums import (
-        AccountType, OmsType, BarAggregation, PriceType, AggregationSource,
-    )
-    from nautilus_trader.model.identifiers import InstrumentId, TraderId, Venue
-    from nautilus_trader.model.instruments import Equity
-    from nautilus_trader.model.objects import Money, Price, Quantity
-    from nautilus_trader.core.datetime import dt_to_unix_nanos
-    from nautilus_trader.test_kit.providers import TestInstrumentProvider
-    import pandas as pd
 
     NAUTILUS_AVAILABLE = True
     logger.info("NautilusTrader loaded successfully")
@@ -187,7 +174,6 @@ class TradingEngine:
 
     def _run_builtin_backtest(self, request: BacktestRequest) -> BacktestResult:
         """custom backtest using SMI signals on synthetic or fetched data"""
-        from datetime import timedelta
 
         result_id = str(uuid.uuid4())[:8]
         bars = self._fetch_bars_for_backtest(request)
@@ -324,18 +310,6 @@ class TradingEngine:
 
     def _run_nautilus_backtest(self, request: BacktestRequest) -> BacktestResult:
         """run using NautilusTrader BacktestEngine"""
-        import pandas as pd
-        from nautilus_trader.backtest.engine import BacktestEngine, BacktestEngineConfig
-        from nautilus_trader.config import LoggingConfig
-        from nautilus_trader.model.currencies import USD
-        from nautilus_trader.model.data import Bar, BarType, BarSpecification
-        from nautilus_trader.model.enums import (
-            AccountType, OmsType, BarAggregation, PriceType, AggregationSource,
-        )
-        from nautilus_trader.model.identifiers import InstrumentId, TraderId, Venue
-        from nautilus_trader.model.instruments import Equity
-        from nautilus_trader.model.objects import Money, Price, Quantity
-        from nautilus_trader.test_kit.providers import TestInstrumentProvider
 
         # for now, delegate to built-in until full NT strategy is wired
         return self._run_builtin_backtest(request)

@@ -4,9 +4,7 @@ SMI (Stochastic Momentum Index) + EMA crossover strategy
 - EMA filter confirms trend direction
 - suitable for short (15m) and mid-term (4h/1d) timeframes
 """
-from collections import deque
-from typing import List, Optional
-import numpy as np
+from typing import List
 
 
 def compute_ema(values: List[float], period: int) -> float:
@@ -91,15 +89,15 @@ def compute_rsi_series(closes: List[float], period: int = 14) -> List[float]:
     for i in range(1, n):
         if i <= period:
             g = avg_gain
-            l = avg_loss
+            loss = avg_loss
         else:
             g = (avg_gain * (period - 1) + gains[i - 1]) / period
-            l = (avg_loss * (period - 1) + losses[i - 1]) / period
-            avg_gain, avg_loss = g, l
-        if l == 0:
+            loss = (avg_loss * (period - 1) + losses[i - 1]) / period
+            avg_gain, avg_loss = g, loss
+        if loss == 0:
             out.append(100.0)
         else:
-            rs = g / l
+            rs = g / loss
             out.append(round(100.0 - (100.0 / (1.0 + rs)), 2))
     return out
 

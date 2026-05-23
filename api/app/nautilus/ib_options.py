@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from ..config import settings
@@ -21,7 +20,7 @@ from ..config import settings
 logger = logging.getLogger(__name__)
 
 try:
-    from ib_async import IB, Stock, Index, Option, util  # type: ignore
+    from ib_async import IB, Stock, Index, Option  # type: ignore
     IB_ASYNC_AVAILABLE = True
 except Exception as e:  # noqa: BLE001
     IB_ASYNC_AVAILABLE = False

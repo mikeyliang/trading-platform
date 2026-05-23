@@ -7,7 +7,6 @@ unambiguous "no data" state instead of stale fallbacks.
 """
 import asyncio
 import logging
-from typing import List, Optional
 
 from fastapi import APIRouter, Query
 

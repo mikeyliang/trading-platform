@@ -10,18 +10,13 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 
 from ..forecast import chronos
 from ..nautilus.ib_node import ib_node
 from ..nautilus.ib_orders import orders_client
-from ..util.cache import TTLCache
-
-# 60s cache — analyze re-runs Chronos every call (slow ~200ms) plus indicators.
-# Frontend auto-refreshes positions every ~30s, so 60s keeps the bar low.
-_analyze_cache = TTLCache(ttl_seconds=60)
 from ..nautilus.strategies.smi import (
     compute_ema_series,
     compute_macd_series,
@@ -29,7 +24,12 @@ from ..nautilus.strategies.smi import (
     compute_smi_series,
     compute_vwap_series,
 )
+from ..util.cache import TTLCache
 from .market import get_bars
+
+# 60s cache — analyze re-runs Chronos every call (slow ~200ms) plus indicators.
+# Frontend auto-refreshes positions every ~30s, so 60s keeps the bar low.
+_analyze_cache = TTLCache(ttl_seconds=60)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/analyze", tags=["analyze"])
@@ -269,17 +269,24 @@ def _verdict_label(score: int, spread: bool, position: bool) -> str:
     """
     held = spread or position
     if held:
-        if score >= 40: return "Hold — bullish setup"
-        if score >= 15: return "Hold with caution"
-        if score >= -15: return "Mixed — review manually"
-        if score >= -40: return "Reduce or close"
+        if score >= 40:
+            return "Hold — bullish setup"
+        if score >= 15:
+            return "Hold with caution"
+        if score >= -15:
+            return "Mixed — review manually"
+        if score >= -40:
+            return "Reduce or close"
         return "Sell — bearish setup"
-    else:
-        if score >= 40: return "Strong buy setup"
-        if score >= 15: return "Buy on pullback"
-        if score >= -15: return "Wait — mixed signals"
-        if score >= -40: return "Avoid — momentum weak"
-        return "Avoid — bearish"
+    if score >= 40:
+        return "Strong buy setup"
+    if score >= 15:
+        return "Buy on pullback"
+    if score >= -15:
+        return "Wait — mixed signals"
+    if score >= -40:
+        return "Avoid — momentum weak"
+    return "Avoid — bearish"
 
 
 def _parse_yyyymmdd(s: str):

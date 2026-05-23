@@ -9,11 +9,13 @@ interface ErrorBoundaryState {
   error?: Error;
 }
 
-export class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback?: React.ReactNode },
-  ErrorBoundaryState
-> {
-  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+interface ErrorBoundaryProps {
+  children?: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
@@ -48,6 +50,6 @@ export class ErrorBoundary extends React.Component<
       );
     }
 
-    return this.props.children;
+    return this.props.children ?? null;
   }
 }

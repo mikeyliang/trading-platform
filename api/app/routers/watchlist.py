@@ -8,7 +8,7 @@ from ..nautilus import ib_options
 from ..nautilus.ib_node import ib_node
 from ..nautilus.mock.data import (
     get_sector_for_symbol, get_name_for_symbol,
-    simulate_tick, SECTORS,
+    simulate_tick,
 )
 
 router = APIRouter(prefix="/api/watchlist", tags=["watchlist"])

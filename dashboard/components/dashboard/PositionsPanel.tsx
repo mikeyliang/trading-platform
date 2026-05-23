@@ -235,7 +235,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
       </TabsContent>
     </Tabs>
   );
-}
+});
 
 /**
  * Labeled segmented control: a small uppercase label sits to the left of a
