@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -20,6 +20,26 @@ import {
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AgentConfigPanel,
+  type AgentConfig,
+  type AgentKey,
+  DEFAULT_CONFIG,
+  loadConfig,
+  saveConfig,
+} from "./AgentConfigPanel";
+import {
+  AgentHistory,
+  appendHistory,
+  clearHistory,
+  loadHistory,
+  type HistoryEntry,
+} from "./AgentHistory";
+import {
+  AgentStatusRail,
+  type AgentRailItem,
+  type AgentStatus,
+} from "./AgentStatusRail";
 
 type AgentsStatus = {
   installed: boolean;
@@ -37,7 +57,7 @@ type AnalyzeResult = {
 };
 
 const SECTION_META: Record<
-  string,
+  AgentKey,
   { label: string; icon: typeof Brain; color: string; description: string }
 > = {
   market_report: {
@@ -90,35 +110,186 @@ const SECTION_META: Record<
   },
 };
 
-const SECTION_ORDER = Object.keys(SECTION_META);
+const SECTION_ORDER: AgentKey[] = Object.keys(SECTION_META) as AgentKey[];
 
 export function AgentDebate() {
   const [status, setStatus] = useState<AgentsStatus | null>(null);
-  const [symbol, setSymbol] = useState("RUT");
-  const [pending, setPending] = useState("RUT");
+  const [config, setConfig] = useState<AgentConfig>(DEFAULT_CONFIG);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
+  const [symbol, setSymbol] = useState(DEFAULT_CONFIG.defaultSymbol);
+  const [pending, setPending] = useState(DEFAULT_CONFIG.defaultSymbol);
   const [tradeDate, setTradeDate] = useState(() =>
     new Date().toISOString().slice(0, 10)
   );
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [streamingStatus, setStreamingStatus] = useState<
+    Record<AgentKey, { status: AgentStatus; durationMs?: number }>
+  >(initStreamingStatus);
+  const [revealed, setRevealed] = useState<Set<AgentKey>>(new Set());
+  const streamTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // hydrate config + history on mount (client-only)
+  useEffect(() => {
+    const cfg = loadConfig();
+    setConfig(cfg);
+    setSymbol(cfg.defaultSymbol);
+    setPending(cfg.defaultSymbol);
+    setHistory(loadHistory());
+  }, []);
+
+  useEffect(() => {
+    saveConfig(config);
+  }, [config]);
 
   useEffect(() => {
     api.agentsStatus().then(setStatus).catch(() => setStatus(null));
   }, []);
 
+  // Clean up scheduled stream timers on unmount.
+  useEffect(() => {
+    return () => streamTimers.current.forEach(clearTimeout);
+  }, []);
+
   async function run(sym = symbol, date = tradeDate) {
+    clearStreamTimers();
     setLoading(true);
     setError(null);
     setResult(null);
+    setRevealed(new Set());
+    setCurrentEntryId(null);
+
+    // While the request is in-flight, every focused agent is "thinking".
+    const initial: Record<AgentKey, { status: AgentStatus; durationMs?: number }> =
+      initStreamingStatus();
+    for (const key of SECTION_ORDER) {
+      initial[key] = {
+        status: config.focused[key] ? "thinking" : "idle",
+      };
+    }
+    setStreamingStatus(initial);
+
+    const startedAt = performance.now();
     try {
       const r = await api.agentsAnalyze(sym, date);
+      const duration = performance.now() - startedAt;
       setResult(r);
+      scheduleStreamReveal(r, duration);
+      const entry: HistoryEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        ran_at: new Date().toISOString(),
+        symbol: r.symbol,
+        trade_date: r.trade_date,
+        decision: r.decision,
+        duration_ms: Math.round(duration),
+        final_state: r.final_state || {},
+      };
+      setHistory(appendHistory(entry));
+      setCurrentEntryId(entry.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      // Mark every "thinking" agent as errored so the UI doesn't dangle.
+      setStreamingStatus((prev) => {
+        const next = { ...prev };
+        for (const key of SECTION_ORDER) {
+          if (next[key]?.status === "thinking") next[key] = { status: "error" };
+        }
+        return next;
+      });
     } finally {
       setLoading(false);
     }
+  }
+
+  function clearStreamTimers() {
+    streamTimers.current.forEach(clearTimeout);
+    streamTimers.current = [];
+  }
+
+  function scheduleStreamReveal(r: AnalyzeResult, totalDurationMs: number) {
+    // Walk through agents in canonical order. Each agent goes
+    // thinking → responding → done with a small delay to mimic
+    // a real streaming pipeline. Only sections the model actually
+    // returned (and that aren't muted via the config) are revealed.
+    const present = SECTION_ORDER.filter(
+      (key) => r.final_state?.[key] && config.focused[key]
+    );
+    const per = Math.max(config.streamingSpeedMs, 50);
+    const respondingLead = Math.max(80, Math.floor(per * 0.4));
+    const perAgentDuration = totalDurationMs / Math.max(present.length, 1);
+
+    present.forEach((key, idx) => {
+      const respondAt = idx * per;
+      const doneAt = respondAt + respondingLead;
+      streamTimers.current.push(
+        setTimeout(() => {
+          setStreamingStatus((prev) => ({
+            ...prev,
+            [key]: { status: "responding" },
+          }));
+        }, respondAt)
+      );
+      streamTimers.current.push(
+        setTimeout(() => {
+          setStreamingStatus((prev) => ({
+            ...prev,
+            [key]: {
+              status: "done",
+              durationMs: Math.round(perAgentDuration),
+            },
+          }));
+          setRevealed((prev) => {
+            const next = new Set(prev);
+            next.add(key);
+            return next;
+          });
+        }, doneAt)
+      );
+    });
+
+    // Anything focused but missing from the response: mark as idle.
+    SECTION_ORDER.filter(
+      (key) => config.focused[key] && !r.final_state?.[key]
+    ).forEach((key) => {
+      setStreamingStatus((prev) => ({ ...prev, [key]: { status: "idle" } }));
+    });
+  }
+
+  function loadFromHistory(entry: HistoryEntry) {
+    clearStreamTimers();
+    setError(null);
+    setLoading(false);
+    setSymbol(entry.symbol);
+    setPending(entry.symbol);
+    setTradeDate(entry.trade_date);
+    const restored: AnalyzeResult = {
+      cached: true,
+      symbol: entry.symbol,
+      trade_date: entry.trade_date,
+      decision: entry.decision,
+      final_state: entry.final_state,
+    };
+    setResult(restored);
+    setCurrentEntryId(entry.id);
+    const next: Record<AgentKey, { status: AgentStatus; durationMs?: number }> =
+      initStreamingStatus();
+    const revealedSet = new Set<AgentKey>();
+    for (const key of SECTION_ORDER) {
+      if (entry.final_state?.[key]) {
+        next[key] = { status: "done" };
+        revealedSet.add(key);
+      }
+    }
+    setStreamingStatus(next);
+    setRevealed(revealedSet);
+  }
+
+  function onClearHistory() {
+    setHistory(clearHistory());
+    setCurrentEntryId(null);
   }
 
   const hasAnyLLMKey =
@@ -128,6 +299,17 @@ export function AgentDebate() {
     setSymbol(pending);
     run(pending, tradeDate);
   };
+
+  const railItems: AgentRailItem[] = useMemo(
+    () =>
+      SECTION_ORDER.filter((key) => config.focused[key]).map((key) => ({
+        key,
+        label: SECTION_META[key].label,
+        status: streamingStatus[key]?.status ?? "idle",
+        durationMs: streamingStatus[key]?.durationMs,
+      })),
+    [config.focused, streamingStatus]
+  );
 
   return (
     <PageShell>
@@ -171,6 +353,17 @@ export function AgentDebate() {
 
       <StatusBanner status={status} hasAnyLLMKey={!!hasAnyLLMKey} />
 
+      <AgentConfigPanel
+        config={config}
+        onChange={setConfig}
+        open={configOpen}
+        onToggle={() => setConfigOpen((v) => !v)}
+      />
+
+      {config.showAgentChips && railItems.length > 0 && (
+        <AgentStatusRail items={railItems} />
+      )}
+
       {result?.cached && (
         <div className="text-[11px] text-text-muted">
           Cached (1hr TTL) — re-runs are free.
@@ -200,13 +393,43 @@ export function AgentDebate() {
       {result && (
         <div className="grid gap-2">
           {SECTION_ORDER.map((key) => {
+            if (!config.focused[key]) return null;
             const content = result.final_state[key];
             if (!content) return null;
-            return <ReportSection key={key} sectionKey={key} content={content} />;
+            const isRevealed = revealed.has(key);
+            return (
+              <ReportSection
+                key={key}
+                sectionKey={key}
+                content={content}
+                visible={isRevealed}
+                forceExpanded={config.autoExpandSections}
+              />
+            );
           })}
         </div>
       )}
+
+      <AgentHistory
+        history={history}
+        onSelect={loadFromHistory}
+        onClear={onClearHistory}
+        currentId={currentEntryId}
+      />
     </PageShell>
+  );
+}
+
+function initStreamingStatus(): Record<
+  AgentKey,
+  { status: AgentStatus; durationMs?: number }
+> {
+  return SECTION_ORDER.reduce(
+    (acc, key) => {
+      acc[key] = { status: "idle" };
+      return acc;
+    },
+    {} as Record<AgentKey, { status: AgentStatus; durationMs?: number }>
   );
 }
 
@@ -330,14 +553,21 @@ function DecisionBanner({ result }: { result: AnalyzeResult }) {
 function ReportSection({
   sectionKey,
   content,
+  visible,
+  forceExpanded,
 }: {
-  sectionKey: string;
+  sectionKey: AgentKey;
   content: string | object;
+  visible: boolean;
+  forceExpanded: boolean;
 }) {
   const meta = SECTION_META[sectionKey];
-  const [expanded, setExpanded] = useState(
-    sectionKey === "final_trade_decision" || sectionKey === "trader_investment_plan"
-  );
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
+  const defaultExpanded =
+    forceExpanded ||
+    sectionKey === "final_trade_decision" ||
+    sectionKey === "trader_investment_plan";
+  const expanded = userExpanded ?? defaultExpanded;
 
   const Icon = meta?.icon ?? Brain;
   const accent = meta?.color ?? "text-text-secondary";
@@ -350,9 +580,14 @@ function ReportSection({
       : JSON.stringify(content, null, 2);
 
   return (
-    <section className="rounded-lg border border-border bg-surface overflow-hidden">
+    <section
+      className={cn(
+        "rounded-lg border border-border bg-surface overflow-hidden transition-all",
+        visible ? "opacity-100 translate-y-0" : "opacity-40 translate-y-1"
+      )}
+    >
       <button
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => setUserExpanded(!expanded)}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-surface-2/40"
       >
         <div className="flex items-center gap-3">
