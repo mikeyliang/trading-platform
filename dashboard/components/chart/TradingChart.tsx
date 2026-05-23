@@ -147,6 +147,7 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
     o: number; h: number; l: number; c: number; v: number;
     chg: number; chgPct: number;
   } | null>(null);
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 
   const smiContainerRef = useRef<HTMLDivElement>(null);
 
@@ -454,6 +455,10 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
         setHover(null);
         return;
       }
+      // Update cursor position for tooltip
+      if (param.point) {
+        setCursorPos({ x: param.point.x, y: param.point.y });
+      }
       const data = param.seriesData.get(candle) as CandlestickData | undefined;
       if (!data) {
         setHover(null);
@@ -590,6 +595,31 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
           <span className="text-[88px] font-medium text-text-muted/[0.04] tracking-[0.2em]">{symbol}</span>
         </div>
+
+        {/* Custom floating tooltip */}
+        {hover && (
+          <div 
+            className="absolute z-30 bg-gray-900/90 text-white p-2 rounded-md text-xs tabular shadow-lg pointer-events-none"
+            style={{ 
+              left: `${cursorPos.x + 10}px`, 
+              top: `${cursorPos.y + 10}px`,
+              transform: 'translate(-50%, -100%)'
+            }}
+          >
+            <div className="font-semibold mb-1">{new Date(hover.time * 1000).toLocaleDateString()}</div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+              <span className="text-text-muted">Open:</span> <span>{hover.o.toFixed(2)}</span>
+              <span className="text-text-muted">High:</span> <span className="text-up">{hover.h.toFixed(2)}</span>
+              <span className="text-text-muted">Low:</span> <span className="text-down">{hover.l.toFixed(2)}</span>
+              <span className="text-text-muted">Close:</span> <span>{hover.c.toFixed(2)}</span>
+              <span className="text-text-muted">Volume:</span> <span>{hover.v.toLocaleString()}</span>
+              <span className="text-text-muted">Change:</span> 
+              <span className={hover.chg >= 0 ? 'text-up' : 'text-down'}>
+                {hover.chg >= 0 ? '+' : ''}{hover.chg.toFixed(2)} ({hover.chgPct.toFixed(2)}%)
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Top-left overlay stack — cycle card on top, spread cards below. */}
         <div className="absolute top-4 left-4 z-20 flex flex-col gap-3 pointer-events-auto max-w-[300px]">
