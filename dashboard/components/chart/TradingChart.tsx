@@ -13,7 +13,7 @@ import {
   UTCTimestamp,
   createChart,
 } from "lightweight-charts";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type RuleOneCycle, type RuleOneHistoryCycle } from "@/lib/api";
 import { ws } from "@/lib/ws";
 import type { Bar, Quote, Timeframe, WSMessage } from "@/types";
@@ -80,7 +80,7 @@ interface Props {
   pinnedSpread?: PinnedSpread | null;
 }
 
-export function TradingChart({ symbol, initialTimeframe = "15m", height, showIndicators = true, pinnedSpread = null }: Props) {
+function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndicators = true, pinnedSpread = null }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -759,6 +759,12 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
     </div>
   );
 }
+
+// Skip re-renders triggered by parent state changes when the chart's own
+// props are stable. The chart is one of the most expensive components in the
+// dashboard (lightweight-charts series + multiple overlay hooks), so cutting
+// no-op renders is a real win when the dashboard layout reflows around it.
+export const TradingChart = memo(TradingChartImpl);
 
 function Val({
   n,

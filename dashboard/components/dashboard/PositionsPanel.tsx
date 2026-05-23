@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { List, type RowComponentProps } from "react-window";
 import { api, type Spread } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import { fmtCurrency, fmtPct, pnlClass, cn } from "@/lib/utils";
@@ -23,6 +24,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
 import { Briefcase, Layers, Activity, Target, Search, X } from "lucide-react";
 
+// Beyond this row count, virtual scrolling cuts DOM nodes by >10x. Below
+// the threshold, real <table> rows still render so sticky headers + native
+// scrollbars behave normally.
+const VIRTUAL_THRESHOLD = 40;
+const VIRTUAL_ROW_HEIGHT = 36;
+
 type Tab = "positions" | "spreads" | "trades";
 type SideFilter = "all" | "long" | "short";
 type KindFilter = "all" | "stock" | "option" | "leg";
@@ -33,7 +40,7 @@ interface Props {
   symbolFilter?: string;
 }
 
-export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {}) {
+export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {}) {
   const [tab, setTab] = useState<Tab>("positions");
   // Positions are WS-pushed via the store snapshot. Slow REST poll is the
   // safety net for cold start + stale-WS recovery.
