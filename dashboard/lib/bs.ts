@@ -154,3 +154,113 @@ export function samplePriceAxis(spot: number, range: number, n = 161): number[] 
   }
   return out;
 }
+
+// ── Multi-leg strategies ────────────────────────────────────────────────
+
+/** One leg of a multi-leg strategy. `entry` is the premium paid/collected
+ *  per share (positive number). Action sign is folded in via `action`. */
+export interface StrategyLeg {
+  strike: number;
+  isCall: boolean;
+  action: "BUY" | "SELL";
+  entry: number;
+  /** Per-leg quantity (contracts). Defaults to 1 when undefined. */
+  qty?: number;
+}
+
+/**
+ * P/L of a multi-leg position at (s, tRemaining, sigma). Each leg is a
+ * vanilla European option priced with the shared BS formula. The legs
+ * share `t`, `sigma`, `r`, `q` — i.e. one expiry and a single IV (the
+ * trading convention; per-leg IV would require a vol surface).
+ */
+export function strategyPnl(
+  s: number,
+  tRemaining: number,
+  sigma: number,
+  legs: StrategyLeg[],
+  r = 0.05,
+  q = 0.0,
+): number {
+  let total = 0;
+  for (const leg of legs) {
+    const qty = leg.qty ?? 1;
+    const sign = leg.action === "BUY" ? 1 : -1;
+    const price = bsPrice(s, leg.strike, tRemaining, sigma, r, q, leg.isCall);
+    total += sign * (price - leg.entry) * qty * 100;
+  }
+  return total;
+}
+
+/** P/L curve for a multi-leg strategy across a price axis. */
+export function strategyPnlCurve(
+  prices: number[],
+  daysFromNow: number,
+  ivMult: number,
+  legs: StrategyLeg[],
+  dteYears: number,
+  baseIv: number,
+  r = 0.05,
+  q = 0.0,
+): number[] {
+  const t = Math.max(0, dteYears - daysFromNow / 365.25);
+  const sigma = Math.max(0, baseIv * ivMult);
+  return prices.map((p) => strategyPnl(p, t, sigma, legs, r, q));
+}
+
+/** Expiry intrinsic curve for a multi-leg strategy. */
+export function strategyExpiryCurve(
+  prices: number[],
+  legs: StrategyLeg[],
+): number[] {
+  return prices.map((p) => strategyPnl(p, 0, 0, legs));
+}
+
+// ── Greeks (per-contract, equity-option 100× multiplier applied) ────────
+
+/**
+ * Analytic Black-Scholes Greeks. All returned values are PER-SHARE — the
+ * UI multiplies by 100 for per-contract presentation, mirroring how the
+ * existing GreeksPanel works.
+ *
+ *   delta   ∂price/∂spot
+ *   gamma   ∂²price/∂spot²
+ *   theta   ∂price/∂t  (per CALENDAR DAY, sign as in trading convention:
+ *                       long calls have negative theta)
+ *   vega    ∂price/∂sigma · 0.01  (per 1 vol point, e.g. 25%→26%)
+ */
+export function bsGreeks(
+  s: number,
+  k: number,
+  t: number,
+  sigma: number,
+  r: number,
+  q: number,
+  isCall: boolean,
+): { delta: number; gamma: number; theta: number; vega: number } {
+  if (t <= 0 || sigma <= 0 || s <= 0) {
+    // Degenerate: only delta and a step at the strike survive.
+    const intrinsic = isCall ? (s > k ? 1 : 0) : (s < k ? -1 : 0);
+    return { delta: intrinsic, gamma: 0, theta: 0, vega: 0 };
+  }
+  const sqrtT = Math.sqrt(t);
+  const d1 = (Math.log(s / k) + (r - q + (sigma * sigma) / 2) * t) / (sigma * sqrtT);
+  const d2 = d1 - sigma * sqrtT;
+  const Nd1 = normCdf(d1);
+  const Nd2 = normCdf(d2);
+  const nd1 = (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * d1 * d1);
+  const eqT = Math.exp(-q * t);
+  const erT = Math.exp(-r * t);
+
+  const delta = isCall ? eqT * Nd1 : eqT * (Nd1 - 1);
+  const gamma = (eqT * nd1) / (s * sigma * sqrtT);
+  // theta annualized, then converted to per-calendar-day. Sign matches the
+  // industry "theta = ∂V/∂t with t increasing toward expiry" convention.
+  const thetaAnnual = isCall
+    ? -(s * eqT * nd1 * sigma) / (2 * sqrtT) - r * k * erT * Nd2 + q * s * eqT * Nd1
+    : -(s * eqT * nd1 * sigma) / (2 * sqrtT) + r * k * erT * normCdf(-d2) - q * s * eqT * normCdf(-d1);
+  const theta = thetaAnnual / 365.25;
+  const vega = s * eqT * nd1 * sqrtT * 0.01;
+
+  return { delta, gamma, theta, vega };
+}
