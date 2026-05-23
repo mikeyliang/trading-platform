@@ -1,0 +1,35 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# build tools needed for nautilus-trader (Cython) and other native deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    g++ \
+    curl \
+    git \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# rust toolchain — needed by nautilus-trader's native build
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# TradingAgents — multi-agent LLM library. Installed from the sibling repo
+# under /home/coder/tradingagents (mounted via the build context above the
+# api dir, see compose volume note). For now we install from PyPI's mirror
+# of the public repo to keep the Dockerfile self-contained; swap to a
+# local COPY + pip install -e if you want to develop tradingagents itself.
+RUN pip install --no-cache-dir \
+    git+https://github.com/tauricresearch/tradingagents.git@main || \
+    echo "tradingagents install failed — /agents endpoints will return 503"
+
+# bake the source so the container doesn't depend on a bind mount
+COPY . .
+
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
