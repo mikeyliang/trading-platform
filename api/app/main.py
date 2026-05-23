@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 from .config import settings
 from .middleware import (
     QueryParamSanitizationMiddleware,
@@ -284,6 +286,22 @@ app.include_router(okw.router)
 app.include_router(depth.router)
 app.include_router(ticks.router)
 app.include_router(agent_tools.router)
+
+
+# Prometheus instrumentation. Must run AFTER routers are registered so the
+# instrumentator can walk app.routes and emit per-endpoint labels; exposing
+# /metrics here also picks up any custom counters defined in app.metrics.
+Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_respect_env_var=False,
+    excluded_handlers=["/metrics"],
+).instrument(app).expose(
+    app,
+    endpoint="/metrics",
+    include_in_schema=False,
+    tags=["monitoring"],
+)
 
 
 @app.get(

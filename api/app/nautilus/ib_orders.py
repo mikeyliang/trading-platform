@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
 from ..config import settings
+from ..metrics import ORDERS_PLACED, POSITIONS_CLOSED, POSITIONS_OPENED
 
 logger = logging.getLogger(__name__)
 
@@ -199,6 +200,8 @@ class OrdersClient:
         logger.info("submitted bull-put-spread %s %s %s/%s qty=%s credit=%.2f orderId=%s",
                     symbol, expiry, short_strike, long_strike, quantity, limit_credit,
                     trade.order.orderId)
+        ORDERS_PLACED.labels(symbol=symbol.upper(), side="SELL", order_type="bull_put_spread").inc()
+        POSITIONS_OPENED.labels(symbol=symbol.upper(), strategy="bull_put_spread").inc()
 
         spread = OpenSpread(
             id=f"sp_{uuid.uuid4().hex[:8]}",
@@ -251,6 +254,8 @@ class OrdersClient:
         spread.status = "closing"
         spread.close_credit = -round(limit_debit, 2)
         logger.info("closing spread %s at debit %.2f", spread_id, limit_debit)
+        ORDERS_PLACED.labels(symbol=spread.symbol, side="BUY", order_type="bull_put_spread_close").inc()
+        POSITIONS_CLOSED.labels(symbol=spread.symbol, strategy="bull_put_spread").inc()
         return True
 
     def mark_closed(self, spread_id: str):
