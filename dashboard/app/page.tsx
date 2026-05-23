@@ -5,11 +5,15 @@ import { StatsBar } from "@/components/dashboard/StatsBar";
 import { PositionsPanel } from "@/components/dashboard/PositionsPanel";
 import { WatchlistPanel } from "@/components/watchlist/WatchlistPanel";
 import { ResizableSplit } from "@/components/ui/resizable-split";
+import { ErrorBoundary, LoadingState } from "@/components/ErrorBoundary";
 import dynamic from "next/dynamic";
 
 const TradingChart = dynamic(
   () => import("@/components/chart/TradingChart").then((m) => m.TradingChart),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <LoadingState message="Loading chart..." />
+  }
 );
 
 export default function DashboardPage() {
@@ -18,22 +22,32 @@ export default function DashboardPage() {
   const symbol = useStore((s) => s.activeSymbol);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <StatsBar />
-      <div className="flex flex-1 min-h-0">
-        <div className="flex flex-col flex-1 min-w-0">
-          <ResizableSplit
-            storageKey="dash:bottom-h"
-            defaultBottomHeight={220}
-            minPx={100}
-            top={<TradingChart symbol={symbol} height={undefined} />}
-            bottom={<PositionsPanel />}
-          />
-        </div>
-        <div className="w-56 bg-bg shrink-0 border-l border-border">
-          <WatchlistPanel />
+    <ErrorBoundary>
+      <div className="flex flex-col h-full min-h-0">
+        <ErrorBoundary fallback={<LoadingState message="Loading stats..." />}>
+          <StatsBar />
+        </ErrorBoundary>
+        <div className="flex flex-1 min-h-0">
+          <div className="flex flex-col flex-1 min-w-0">
+            <ResizableSplit
+              storageKey="dash:bottom-h"
+              defaultBottomHeight={220}
+              minPx={100}
+              top={<TradingChart symbol={symbol} height={undefined} />}
+              bottom={
+                <ErrorBoundary fallback={<LoadingState message="Loading positions..." />}>
+                  <PositionsPanel />
+                </ErrorBoundary>
+              }
+            />
+          </div>
+          <div className="w-56 bg-bg shrink-0 border-l border-border">
+            <ErrorBoundary fallback={<LoadingState message="Loading watchlist..." />}>
+              <WatchlistPanel />
+            </ErrorBoundary>
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

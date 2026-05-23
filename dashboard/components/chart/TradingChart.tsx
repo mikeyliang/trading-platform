@@ -552,6 +552,13 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
         )}
 
         <div className="ml-auto flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => chartRef.current?.timeScale().resetTimeScale()}
+            className="px-2 py-1 text-xs bg-gray-700 text-white rounded hover:bg-gray-600"
+            title="Reset Zoom"
+          >
+            Reset Zoom
+          </button>
           <OverlaysMenu groups={buildOverlayGroups({
             emaOn, setEmaOn, smiOn, setSmiOn, vwapOn, setVwapOn,
             opexOn, setOpexOn, fibOn, setFibOn,
