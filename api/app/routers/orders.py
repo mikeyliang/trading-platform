@@ -18,7 +18,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter
 
 from ..config import settings
-from ..models.schemas import Order, OrderSide, Position, Trade
+from ..models.schemas import AccountSummary, Order, OrderSide, Position, SpreadPosition, Trade
 from ..nautilus import ib_options
 from ..nautilus.ib_node import ib_node
 
@@ -81,7 +81,15 @@ def _to_trade(raw: Dict[str, Any]) -> Trade:
     )
 
 
-@router.get("/positions", response_model=List[Position])
+@router.get(
+    "/positions",
+    response_model=List[Position],
+    summary="List open positions",
+    description=(
+        "Live positions from IBKR. Returns an empty list when the gateway "
+        "is disconnected. Option positions include strike / expiry / right / multiplier."
+    ),
+)
 async def get_positions():
     from ..main import _refresh_position_marks  # local to avoid cycle at import
     # Always read positions from ib_async (single source of truth — see
@@ -93,20 +101,34 @@ async def get_positions():
     return [_to_position(p) for p in raw]
 
 
-@router.get("/orders", response_model=List[Order])
+@router.get(
+    "/orders",
+    response_model=List[Order],
+    summary="List recent orders (read-only)",
+    description="Order placement isn't exposed — this endpoint always returns an empty list.",
+)
 def get_orders():
-    """Read-only — order placement isn't exposed."""
     return []
 
 
-@router.get("/spreads")
+@router.get(
+    "/spreads",
+    response_model=List[SpreadPosition],
+    summary="List multi-leg option spreads",
+    description=(
+        "Tracked by the strategy engine. Returns an empty list until the engine is enabled."
+    ),
+)
 def get_spreads():
-    """Multi-leg option spreads tracked by the strategy engine (currently
-    disabled). Returns empty until the engine is re-enabled."""
     return []
 
 
-@router.get("/trades", response_model=List[Trade])
+@router.get(
+    "/trades",
+    response_model=List[Trade],
+    summary="List recent trades",
+    description="Fills from the IBKR Gateway. Empty when the gateway is disconnected.",
+)
 def get_trades():
     if ib_node.is_connected:
         live = ib_node.latest_trades()
@@ -115,14 +137,18 @@ def get_trades():
     return []
 
 
-@router.get("/account")
-async def get_account():
-    """Account summary from IBKR Gateway when connected, zeros otherwise.
-
-    Reads directly from ib_async's ``accountSummaryAsync`` so EQ/BP reflect
-    IBKR's own NetLiquidation / BuyingPower tags, not Nautilus's cash-only
-    ``balances_total / balances_free`` abstraction.
-    """
+@router.get(
+    "/account",
+    response_model=AccountSummary,
+    summary="Account summary (equity, BP, P&L)",
+    description=(
+        "Reads directly from ib_async's ``accountSummaryAsync`` so EQ/BP reflect IBKR's own "
+        "NetLiquidation / BuyingPower tags, not Nautilus's cash-only "
+        "``balances_total / balances_free`` abstraction. Returns zeroed fields when "
+        "the gateway is disconnected."
+    ),
+)
+async def get_account() -> AccountSummary:
     if ib_node.is_connected:
         acct = await ib_options.get_account_summary()
         if acct is None:
@@ -135,10 +161,11 @@ async def get_account():
             positions = await _refresh_position_marks(positions)
         upnl = sum(float(p.get("unrealized_pnl", 0)) for p in positions)
         if acct:
-            return {
+            merged = {
                 **_EMPTY_ACCOUNT,
                 **acct,
                 "unrealized_pnl": round(upnl, 2),
                 "mode": acct.get("mode") or settings.trading_mode,
             }
-    return {**_EMPTY_ACCOUNT, "mode": settings.trading_mode}
+            return AccountSummary(**merged)
+    return AccountSummary(**{**_EMPTY_ACCOUNT, "mode": settings.trading_mode})
