@@ -18,11 +18,13 @@ import { api, type RuleOneCycle, type RuleOneHistoryCycle } from "@/lib/api";
 import { ws } from "@/lib/ws";
 import type { Bar, Quote, Timeframe, WSMessage } from "@/types";
 import { cn, fmt, fmtCompact } from "@/lib/utils";
-import { Activity, BarChart2, CalendarDays, Loader2, Ruler, TrendingUp, Waves, Layers, Search } from "lucide-react";
+import { Activity, BarChart2, BarChart3, CalendarDays, Gauge, Loader2, Ruler, TrendingUp, Waves, Layers, Search } from "lucide-react";
 import { useSpreadOverlay, SUPPORTED_OVERLAY_SYMBOLS } from "./useSpreadOverlay";
 import { useSpreadFinderOverlay } from "./useSpreadFinderOverlay";
 import { usePinnedSpreadOverlay, type PinnedSpread } from "./usePinnedSpreadOverlay";
 import { useSmiOverlay } from "./useSmiOverlay";
+import { useRsiOverlay } from "./useRsiOverlay";
+import { useMacdOverlay } from "./useMacdOverlay";
 import { useMonthlyExpiryOverlay, MONTHLY_OPEX_SYMBOLS } from "./useMonthlyExpiryOverlay";
 import { useFibLevelsOverlay, type FibRange } from "./useFibLevelsOverlay";
 import { useCycleOverlay } from "./useCycleOverlay";
@@ -97,6 +99,11 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   const [loading, setLoading] = useState(true);
   const [emaOn, setEmaOn] = useState(showIndicators);
   const [vwapOn, setVwapOn] = useState(false);
+  const [rsiOn, setRsiOn] = useState(false);
+  const [macdOn, setMacdOn] = useState(false);
+  // Volume bars at the bottom of the main pane — on by default since
+  // the histogram is part of the chart's default visual frame.
+  const [volumeOn, setVolumeOn] = useState(true);
   // Default the strategy overlay ON — it's a no-op when there are no spreads
   // or projection for the symbol, and the toggle is visible if anything renders.
   const [spreadsOn, setSpreadsOn] = useState(true);
@@ -150,6 +157,8 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 
   const smiContainerRef = useRef<HTMLDivElement>(null);
+  const rsiContainerRef = useRef<HTMLDivElement>(null);
+  const macdContainerRef = useRef<HTMLDivElement>(null);
 
   const { openSpreads, projected } = useSpreadOverlay({
     candleSeries: candleRef,
@@ -183,6 +192,24 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     timeframe,
     days: daysForTimeframe,
     enabled: smiOn,
+  });
+
+  const { snapshot: rsiSnap } = useRsiOverlay({
+    mainChart: chartRef,
+    subpaneContainer: rsiContainerRef,
+    symbol,
+    timeframe,
+    days: daysForTimeframe,
+    enabled: rsiOn,
+  });
+
+  const { snapshot: macdSnap } = useMacdOverlay({
+    mainChart: chartRef,
+    subpaneContainer: macdContainerRef,
+    symbol,
+    timeframe,
+    days: daysForTimeframe,
+    enabled: macdOn,
   });
 
   useMonthlyExpiryOverlay({
@@ -304,11 +331,15 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           time: b.time as UTCTimestamp,
           open: b.open, high: b.high, low: b.low, close: b.close,
         })));
-        volRef.current?.setData(bars.map((b: Bar) => ({
-          time: b.time as UTCTimestamp,
-          value: b.volume,
-          color: b.close >= b.open ? "rgba(38,166,154,0.3)" : "rgba(239,83,80,0.3)",
-        })));
+        if (volumeOn) {
+          volRef.current?.setData(bars.map((b: Bar) => ({
+            time: b.time as UTCTimestamp,
+            value: b.volume,
+            color: b.close >= b.open ? "rgba(38,166,154,0.3)" : "rgba(239,83,80,0.3)",
+          })));
+        } else {
+          volRef.current?.setData([]);
+        }
         chartRef.current?.timeScale().fitContent();
       } catch {
         // Series got disposed mid-setData (rapid symbol switch). Safe to ignore.
@@ -351,7 +382,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     } finally {
       setLoading(false);
     }
-  }, [symbol, emaOn, vwapOn]);
+  }, [symbol, emaOn, vwapOn, volumeOn]);
 
   // init chart
   useEffect(() => {
@@ -433,7 +464,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     };
   }, []);
 
-  useEffect(() => { loadData(timeframe); }, [symbol, timeframe, emaOn, loadData]);
+  useEffect(() => { loadData(timeframe); }, [symbol, timeframe, emaOn, volumeOn, loadData]);
 
   // Crosshair hover → live OHLCV readout. Re-binds when bars change so the
   // prior-bar lookup (for chg/chgPct) reflects the current dataset. Index by
@@ -566,6 +597,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           </button>
           <OverlaysMenu groups={buildOverlayGroups({
             emaOn, setEmaOn, smiOn, setSmiOn, vwapOn, setVwapOn,
+            rsiOn, setRsiOn, macdOn, setMacdOn, volumeOn, setVolumeOn,
             opexOn, setOpexOn, fibOn, setFibOn,
             fibRange, setFibRange,
             applicableStrategies, currentStrategy, setStrategyId,
@@ -756,6 +788,61 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           <div ref={smiContainerRef} className="w-full h-[114px]" />
         </div>
       )}
+
+      {/* RSI subpane */}
+      {rsiOn && (
+        <div className="border-t border-border bg-bg shrink-0" style={{ height: 120 }}>
+          <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
+            <span className="text-[10px] uppercase tracking-wider text-text-muted">RSI</span>
+            <span className="text-[10px] tabular text-text-muted">14</span>
+            {rsiSnap?.rsi != null && (
+              <span className="text-[10px] tabular text-text-secondary">
+                {rsiSnap.rsi.toFixed(1)}
+              </span>
+            )}
+            {rsiSnap?.zone === "overbought" && (
+              <span className="text-[10px] tabular text-down">overbought</span>
+            )}
+            {rsiSnap?.zone === "oversold" && (
+              <span className="text-[10px] tabular text-up">oversold</span>
+            )}
+            <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-0.5 bg-[#a855f7]" /> rsi
+              </span>
+            </div>
+          </div>
+          <div ref={rsiContainerRef} className="w-full h-[94px]" />
+        </div>
+      )}
+
+      {/* MACD subpane */}
+      {macdOn && (
+        <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }}>
+          <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
+            <span className="text-[10px] uppercase tracking-wider text-text-muted">MACD</span>
+            <span className="text-[10px] tabular text-text-muted">12 · 26 · 9</span>
+            {macdSnap?.cross === "bullish" && (
+              <span className="text-[10px] tabular text-up">bullish</span>
+            )}
+            {macdSnap?.cross === "bearish" && (
+              <span className="text-[10px] tabular text-down">bearish</span>
+            )}
+            <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-0.5 bg-[#60a5fa]" /> macd
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-0.5 bg-[#f59e0b]" /> signal
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 bg-up/60" /> hist
+              </span>
+            </div>
+          </div>
+          <div ref={macdContainerRef} className="w-full h-[114px]" />
+        </div>
+      )}
     </div>
   );
 }
@@ -911,6 +998,9 @@ function buildOverlayGroups(args: {
   emaOn: boolean; setEmaOn: (fn: (v: boolean) => boolean) => void;
   smiOn: boolean; setSmiOn: (fn: (v: boolean) => boolean) => void;
   vwapOn: boolean; setVwapOn: (fn: (v: boolean) => boolean) => void;
+  rsiOn: boolean; setRsiOn: (fn: (v: boolean) => boolean) => void;
+  macdOn: boolean; setMacdOn: (fn: (v: boolean) => boolean) => void;
+  volumeOn: boolean; setVolumeOn: (fn: (v: boolean) => boolean) => void;
   opexOn: boolean; setOpexOn: (fn: (v: boolean) => boolean) => void;
   fibOn: boolean; setFibOn: (fn: (v: boolean) => boolean) => void;
   fibRange: FibRange; setFibRange: (r: FibRange) => void;
@@ -930,6 +1020,9 @@ function buildOverlayGroups(args: {
     toggles: [
       { id: "ema",  label: "EMA",  icon: TrendingUp,   hint: "9 / 21",  active: args.emaOn,  onToggle: () => args.setEmaOn((v) => !v),  title: "9/21 EMA pair" },
       { id: "smi",  label: "SMI",  icon: Waves,        hint: "subpane", active: args.smiOn,  onToggle: () => args.setSmiOn((v) => !v),  title: "Stochastic momentum index sub-pane" },
+      { id: "rsi",  label: "RSI",  icon: Gauge,        hint: "14",      active: args.rsiOn,  onToggle: () => args.setRsiOn((v) => !v),  title: "Relative strength index (14)" },
+      { id: "macd", label: "MACD", icon: Activity,     hint: "12/26/9", active: args.macdOn, onToggle: () => args.setMacdOn((v) => !v), title: "Moving average convergence/divergence (12/26/9)" },
+      { id: "volume", label: "Volume", icon: BarChart3, hint: "bars",   active: args.volumeOn, onToggle: () => args.setVolumeOn((v) => !v), title: "Volume bars at the bottom of the price pane" },
       { id: "vwap", label: "VWAP", icon: BarChart2,    hint: "intraday", active: args.vwapOn, onToggle: () => args.setVwapOn((v) => !v), title: "Volume-weighted average price (intraday daily-reset)" },
       { id: "opex", label: "OPEX", icon: CalendarDays, hint: "3rd Fri", active: args.opexOn, onToggle: () => args.setOpexOn((v) => !v), title: "Monthly OPEX guide lines (3rd Friday)" },
       { id: "fib",  label: "Fib floors", icon: Ruler,  active: args.fibOn,  onToggle: () => args.setFibOn((v) => !v),  title: "Fibonacci floors over loaded range" },
