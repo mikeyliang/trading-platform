@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     chat_model: str = "claude-opus-4-7"
 
+    # Shared secret that callers of /api/agent/* must send as X-Agent-Key.
+    # Empty disables auth (dev only) — production deployments must set this.
+    agent_api_key: str = ""
+
     @property
     def cors_origins(self) -> List[str]:
         return [s.strip() for s in self.cors_origins_raw.split(",") if s.strip()]

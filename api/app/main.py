@@ -18,9 +18,10 @@ from .middleware import (
 from .nautilus import ib_depth, ib_options, ib_ticks
 from .nautilus.ib_node import ib_node
 from .nautilus.ib_orders import orders_client
-from .routers import agent_tools, agents, analyze, backtest, chat, depth, fundamentals, logos, market, monitor as monitor_router, okw, option_analyzer, options, orders, scans, strategies, ticks, trade_history, watchlist
+from .routers import agent, agent_tools, agents, analyze, backtest, chat, depth, fundamentals, logos, market, monitor as monitor_router, okw, option_analyzer, options, orders, scans, strategies, ticks, trade_history, watchlist
 from .services import db, scheduler as job_scheduler
 from .ws.manager import manager
+from .ws.trades import trades_channel
 
 logging.basicConfig(level=getattr(logging, settings.log_level, logging.INFO))
 logger = logging.getLogger(__name__)
@@ -284,6 +285,7 @@ app.include_router(okw.router)
 app.include_router(depth.router)
 app.include_router(ticks.router)
 app.include_router(agent_tools.router)
+app.include_router(agent.router)
 app.include_router(trade_history.router)
 
 
@@ -342,6 +344,24 @@ def health_check():
 )
 def root():
     return {"message": "Trading API", "version": "1.0.0", "docs": "/docs", "redoc": "/redoc"}
+
+
+@app.websocket("/api/ws/trades")
+async def trades_websocket(websocket: WebSocket):
+    """Real-time trade event stream: fill, cancel, error.
+
+    Server-pushed only — incoming messages are drained and ignored so clients
+    can send pings without crashing the receive loop.
+    """
+    await trades_channel.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        trades_channel.disconnect(websocket)
+    except Exception as e:
+        logger.debug("trades ws error: %s", e)
+        trades_channel.disconnect(websocket)
 
 
 @app.websocket("/ws")

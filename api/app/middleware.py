@@ -95,7 +95,14 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Logs one line per request with method, path, status, latency, and a
     short request ID (also echoed in the ``X-Request-ID`` response header so
     clients can quote it when reporting issues).
+
+    Health/liveness paths are logged at DEBUG instead of INFO so polled probes
+    don't drown out real traffic in the console.
     """
+
+    # Polled by orchestrators / the dashboard every few seconds — at INFO
+    # they bury everything else.
+    QUIET_PATHS: frozenset[str] = frozenset({"/health", "/"})
 
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get("x-request-id") or uuid.uuid4().hex[:12]
@@ -112,8 +119,13 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             raise
 
         elapsed_ms = (time.monotonic() - start) * 1000
-        # WARN on 5xx, INFO otherwise — keeps the happy path quiet.
-        log_fn = logger.warning if response.status_code >= 500 else logger.info
+        # WARN on 5xx, DEBUG for health probes, INFO otherwise.
+        if response.status_code >= 500:
+            log_fn = logger.warning
+        elif request.url.path in self.QUIET_PATHS:
+            log_fn = logger.debug
+        else:
+            log_fn = logger.info
         log_fn(
             "%s %s %s -> %s (%.1fms) rid=%s",
             client, request.method, request.url.path,

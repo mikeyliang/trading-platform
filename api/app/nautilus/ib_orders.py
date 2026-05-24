@@ -25,12 +25,13 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
 from ..config import settings
+from ..ws.trades import trades_channel
 
 logger = logging.getLogger(__name__)
 
 try:
     from ib_async import (  # type: ignore
-        Bag, ComboLeg, IB, LimitOrder, Option, Stock,
+        Bag, ComboLeg, IB, LimitOrder, MarketOrder, Option, Stock,
     )
     IB_ASYNC_AVAILABLE = True
 except Exception as e:  # noqa: BLE001
@@ -102,6 +103,56 @@ class OrdersClient:
     def __init__(self):
         self._ib: Optional[Any] = None
         self._open: Dict[str, OpenSpread] = {}
+        self._error_handler_attached: bool = False
+
+    def _attach_trade_handlers(self, ib: Any, trade: Any) -> None:
+        """Wire fill/cancel events on a Trade and (once per IB connection)
+        the connection-level errorEvent to the trades WS channel.
+
+        ib_async dispatches coroutine handlers via asyncio.ensure_future,
+        so the async broadcast_* methods can be attached directly.
+        """
+        async def on_fill(t: Any, fill: Any) -> None:
+            try:
+                exe = getattr(fill, "execution", None)
+                await trades_channel.broadcast_fill({
+                    "order_id": str(t.order.orderId),
+                    "symbol": getattr(t.contract, "symbol", ""),
+                    "shares": float(getattr(exe, "shares", 0) or 0),
+                    "price": float(getattr(exe, "price", 0) or 0),
+                    "side": getattr(exe, "side", ""),
+                    "time": exe.time.isoformat() if exe and getattr(exe, "time", None) else None,
+                })
+            except Exception as e:  # noqa: BLE001
+                logger.debug("broadcast_fill failed: %s", e)
+
+        async def on_cancel(t: Any) -> None:
+            try:
+                await trades_channel.broadcast_cancel({
+                    "order_id": str(t.order.orderId),
+                    "symbol": getattr(t.contract, "symbol", ""),
+                    "status": getattr(t.orderStatus, "status", "Cancelled"),
+                })
+            except Exception as e:  # noqa: BLE001
+                logger.debug("broadcast_cancel failed: %s", e)
+
+        trade.filledEvent += on_fill
+        trade.cancelledEvent += on_cancel
+
+        if not self._error_handler_attached:
+            async def on_error(reqId: int, errorCode: int, errorString: str, contract: Any) -> None:
+                try:
+                    await trades_channel.broadcast_error({
+                        "req_id": reqId,
+                        "code": errorCode,
+                        "message": errorString,
+                        "symbol": getattr(contract, "symbol", "") if contract else "",
+                    })
+                except Exception as e:  # noqa: BLE001
+                    logger.debug("broadcast_error failed: %s", e)
+
+            ib.errorEvent += on_error
+            self._error_handler_attached = True
 
     async def connect(self):
         if not IB_ASYNC_AVAILABLE or settings.mock_mode:
@@ -127,6 +178,55 @@ class OrdersClient:
         if self._ib and self._ib.isConnected():
             self._ib.disconnect()
         self._ib = None
+        self._error_handler_attached = False
+
+    # -- stocks -----------------------------------------------------------
+
+    async def place_stock_order(
+        self,
+        symbol: str,
+        quantity: float,
+        side: Literal["BUY", "SELL"],
+        order_type: Literal["MARKET", "LIMIT"],
+        limit_price: Optional[float] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Place a single-leg stock order. Returns ``{order_id, status}`` or
+        ``None`` when the gateway isn't reachable (mock_mode or down)."""
+        if order_type == "LIMIT" and limit_price is None:
+            raise ValueError("limit_price required for LIMIT orders")
+
+        ib = await self.connect()
+        if ib is None:
+            return None
+
+        contract = Stock(symbol.upper(), "SMART", "USD")
+        await ib.qualifyContractsAsync(contract)
+        if not getattr(contract, "conId", 0):
+            logger.error("could not qualify stock contract for %s", symbol)
+            return None
+
+        if order_type == "LIMIT":
+            order = LimitOrder(
+                action=side,
+                totalQuantity=quantity,
+                lmtPrice=round(float(limit_price), 4),
+                tif="DAY",
+                transmit=True,
+            )
+        else:
+            order = MarketOrder(action=side, totalQuantity=quantity, tif="DAY")
+
+        trade = ib.placeOrder(contract, order)
+        self._attach_trade_handlers(ib, trade)
+        logger.info(
+            "submitted stock order %s %s %s type=%s limit=%s orderId=%s",
+            side, quantity, symbol.upper(),
+            order_type, limit_price, trade.order.orderId,
+        )
+        return {
+            "order_id": str(trade.order.orderId),
+            "status": getattr(trade.orderStatus, "status", None) or "Submitted",
+        }
 
     # -- spreads ----------------------------------------------------------
 
@@ -194,6 +294,7 @@ class OrdersClient:
         )
 
         trade = ib.placeOrder(bag, order)
+        self._attach_trade_handlers(ib, trade)
         # fire and don't await fill — strategy loop polls. Capture the trade
         # so we can read fill events later if needed.
         logger.info("submitted bull-put-spread %s %s %s/%s qty=%s credit=%.2f orderId=%s",
@@ -247,7 +348,8 @@ class OrdersClient:
             tif="DAY",
             transmit=True,
         )
-        ib.placeOrder(bag, order)
+        trade = ib.placeOrder(bag, order)
+        self._attach_trade_handlers(ib, trade)
         spread.status = "closing"
         spread.close_credit = -round(limit_debit, 2)
         logger.info("closing spread %s at debit %.2f", spread_id, limit_debit)
