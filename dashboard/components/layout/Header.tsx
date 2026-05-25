@@ -14,7 +14,7 @@ import { ConnectionPill } from "@/components/layout/ConnectionPill";
 
 // IBKR-style top bar: search, active-symbol quote pill, connection pill,
 // mode badge, copilot. The full per-line breakdown stays in StatusFooter.
-export function Header() {
+export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
   const { activeSymbol, quotes } = useStore();
   const { health } = useHealth();
   const chatAvailable = useChatAvailable();

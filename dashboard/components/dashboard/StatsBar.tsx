@@ -30,8 +30,12 @@ export const StatsBar = memo(function StatsBar() {
 
   const positions = restHydrated || wsPositions.length > 0 ? wsPositions : null;
 
-
-  const totalUpnl = (positions ?? []).reduce((s, p) => s + (p.unrealized_pnl ?? 0), 0);
+  // Recompute only when positions change. Without memo, this fires on every
+  // render (including every quote tick that re-renders an ancestor).
+  const totalUpnl = useMemo(
+    () => (positions ?? []).reduce((s, p) => s + (p.unrealized_pnl ?? 0), 0),
+    [positions]
+  );
   const winRate = account?.win_rate ?? 0;
   const loading = initialLoad && !account;
 

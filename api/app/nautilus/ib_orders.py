@@ -179,6 +179,54 @@ class OrdersClient:
     def start_heartbeat(self) -> None:
         _orders_resilient.start_heartbeat()
 
+    # -- stocks -----------------------------------------------------------
+
+    async def place_stock_order(
+        self,
+        symbol: str,
+        quantity: float,
+        side: Literal["BUY", "SELL"],
+        order_type: Literal["MARKET", "LIMIT"],
+        limit_price: Optional[float] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Place a single-leg stock order. Returns ``{order_id, status}`` or
+        ``None`` when the gateway isn't reachable (mock_mode or down)."""
+        if order_type == "LIMIT" and limit_price is None:
+            raise ValueError("limit_price required for LIMIT orders")
+
+        ib = await self.connect()
+        if ib is None:
+            return None
+
+        contract = Stock(symbol.upper(), "SMART", "USD")
+        await ib.qualifyContractsAsync(contract)
+        if not getattr(contract, "conId", 0):
+            logger.error("could not qualify stock contract for %s", symbol)
+            return None
+
+        if order_type == "LIMIT":
+            order = LimitOrder(
+                action=side,
+                totalQuantity=quantity,
+                lmtPrice=round(float(limit_price), 4),
+                tif="DAY",
+                transmit=True,
+            )
+        else:
+            order = MarketOrder(action=side, totalQuantity=quantity, tif="DAY")
+
+        trade = ib.placeOrder(contract, order)
+        self._attach_trade_handlers(ib, trade)
+        logger.info(
+            "submitted stock order %s %s %s type=%s limit=%s orderId=%s",
+            side, quantity, symbol.upper(),
+            order_type, limit_price, trade.order.orderId,
+        )
+        return {
+            "order_id": str(trade.order.orderId),
+            "status": getattr(trade.orderStatus, "status", None) or "Submitted",
+        }
+
     # -- spreads ----------------------------------------------------------
 
     def list_open(self) -> List[OpenSpread]:

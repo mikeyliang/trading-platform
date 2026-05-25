@@ -13,7 +13,6 @@ import {
   Bot,
   Layers,
   FlaskConical,
-  History,
   type LucideIcon,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -39,9 +38,10 @@ const market: NavEntry[] = [
 ];
 
 const research: NavEntry[] = [
-
-  { href: "/trade/history", icon: Clock, label: "Trade History" },
-    { href: "/monitor/journal", icon: BookOpen, label: "Journal" },
+  { href: "/backtest",        icon: FlaskConical, label: "Backtest" },
+  { href: "/agents",          icon: Bot,          label: "AI Debate" },
+  { href: "/trade/history",   icon: Clock,        label: "Trade History" },
+  { href: "/monitor/journal", icon: BookOpen,     label: "Journal" },
 ];
 
 interface SidebarProps {
