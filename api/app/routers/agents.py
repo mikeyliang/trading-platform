@@ -11,11 +11,11 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
 
+from ..models.schemas import AgentAnalyzeRequest, AgentStatusResponse
 from ..util.cache import TTLCache
 
 logger = logging.getLogger(__name__)
@@ -25,11 +25,6 @@ router = APIRouter(prefix="/api/agents", tags=["agents"])
 # decision rarely changes minute-to-minute, so we serve repeated requests
 # for the same (symbol, date) from cache.
 _cache = TTLCache(ttl_seconds=3600)
-
-
-class AgentRequest(BaseModel):
-    symbol: str
-    trade_date: Optional[str] = None  # YYYY-MM-DD; defaults to today UTC
 
 
 def _run_graph_sync(symbol: str, trade_date: str) -> Dict[str, Any]:
@@ -61,8 +56,33 @@ def _summarize_state(state: Dict[str, Any]) -> Dict[str, Any]:
     return {k: state.get(k) for k in keys if state.get(k) is not None}
 
 
-@router.post("/analyze")
-async def analyze(req: AgentRequest):
+@router.post(
+    "/analyze",
+    summary="Run the multi-agent debate",
+    description=(
+        "Heavy multi-agent LangGraph debate (~30s + tokens) for one ``(symbol, trade_date)``. "
+        "Results are cached for one hour so re-clicks are free. The response shape is dynamic — "
+        "it includes the model's final decision plus a summarized state blob from each analyst."
+    ),
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "cached": False,
+                        "symbol": "TSLA",
+                        "trade_date": "2026-05-23",
+                        "decision": "BUY",
+                        "final_state": {"market_report": "...", "final_trade_decision": "BUY"},
+                    }
+                }
+            }
+        },
+        503: {"description": "tradingagents package not installed in this image."},
+        500: {"description": "agent run raised."},
+    },
+)
+async def analyze(req: AgentAnalyzeRequest) -> Dict[str, Any]:
     trade_date = req.trade_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     cache_key = (req.symbol.upper(), trade_date)
     cached = _cache.get(cache_key)
@@ -81,10 +101,16 @@ async def analyze(req: AgentRequest):
     return {"cached": False, **result}
 
 
-@router.get("/status")
-def status():
-    """Quick capability probe: is the tradingagents package importable, and
-    does it have an LLM key? Used by the dashboard to gate the agents tab."""
+@router.get(
+    "/status",
+    response_model=AgentStatusResponse,
+    summary="Agents capability probe",
+    description=(
+        "Is the tradingagents package importable, and which LLM keys are set in the env? "
+        "Used by the dashboard to gate the agents tab."
+    ),
+)
+def status() -> AgentStatusResponse:
     import os
 
     try:
@@ -93,9 +119,9 @@ def status():
     except ImportError:
         installed = False
 
-    return {
-        "installed": installed,
-        "has_openai_key": bool(os.environ.get("OPENAI_API_KEY")),
-        "has_anthropic_key": bool(os.environ.get("ANTHROPIC_API_KEY")),
-        "has_google_key": bool(os.environ.get("GOOGLE_API_KEY")),
-    }
+    return AgentStatusResponse(
+        installed=installed,
+        has_openai_key=bool(os.environ.get("OPENAI_API_KEY")),
+        has_anthropic_key=bool(os.environ.get("ANTHROPIC_API_KEY")),
+        has_google_key=bool(os.environ.get("GOOGLE_API_KEY")),
+    )

@@ -4,11 +4,17 @@ import { Loader2 } from "lucide-react";
 export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-surface-2", className)}
+      role="status"
+      aria-label="Loading"
+      className={cn(
+        "animate-pulse rounded-md bg-surface-2/70 border border-border/40",
+        className
+      )}
       {...props}
     />
   );
 }
+
 
 // Lightweight inline spinner — sized by the parent text size via `currentColor`.
 export function Spinner({ className, size = 12 }: { className?: string; size?: number }) {

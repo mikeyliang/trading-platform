@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { fmtCurrency, pnlClass, cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHealth } from "@/lib/health";
 
-export function StatsBar() {
+export const StatsBar = memo(function StatsBar() {
   const { account, initialLoad } = useHealth();
   // Positions are now WS-pushed by the API every ~10s (via the `snapshot`
   // event in WSProvider) and on every IB position-update. We keep a slow
@@ -29,6 +29,7 @@ export function StatsBar() {
   }, [setStorePositions]);
 
   const positions = restHydrated || wsPositions.length > 0 ? wsPositions : null;
+
 
   const totalUpnl = (positions ?? []).reduce((s, p) => s + (p.unrealized_pnl ?? 0), 0);
   const winRate = account?.win_rate ?? 0;
@@ -100,7 +101,7 @@ export function StatsBar() {
       </Group>
     </div>
   );
-}
+});
 
 function Group({ children, last }: { children: React.ReactNode; last?: boolean }) {
   return (
@@ -124,7 +125,7 @@ interface StatProps {
   muted?: boolean;
 }
 
-function Stat({ label, value, valueClassName, loading, primary, muted }: StatProps) {
+const Stat = memo(function Stat({ label, value, valueClassName, loading, primary, muted }: StatProps) {
   return (
     <div className="flex items-baseline gap-1.5 shrink-0">
       <span
@@ -153,4 +154,4 @@ function Stat({ label, value, valueClassName, loading, primary, muted }: StatPro
       )}
     </div>
   );
-}
+});

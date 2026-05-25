@@ -20,18 +20,19 @@ from __future__ import annotations
 
 import logging
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
 from ..config import settings
+
 from .ib_client_base import ResilientIBClient
 
 logger = logging.getLogger(__name__)
 
 try:
     from ib_async import (  # type: ignore
-        Bag, ComboLeg, IB, LimitOrder, Option, Stock,
+        Bag, ComboLeg, IB, LimitOrder, MarketOrder, Option, Stock,
     )
     IB_ASYNC_AVAILABLE = True
 except Exception as e:  # noqa: BLE001
@@ -78,11 +79,11 @@ class OpenSpread:
 
     @property
     def short_strike(self) -> float:
-        return next(l.strike for l in self.legs if l.action == "SELL")
+        return next(leg.strike for leg in self.legs if leg.action == "SELL")
 
     @property
     def long_strike(self) -> float:
-        return next(l.strike for l in self.legs if l.action == "BUY")
+        return next(leg.strike for leg in self.legs if leg.action == "BUY")
 
     @property
     def width(self) -> float:
@@ -117,11 +118,62 @@ class OrdersClient:
 
     def __init__(self):
         self._open: Dict[str, OpenSpread] = {}
+        self._error_handler_attached: bool = False
+
+    def _attach_trade_handlers(self, ib: Any, trade: Any) -> None:
+        """Wire fill/cancel events on a Trade and (once per IB connection)
+        the connection-level errorEvent to the trades WS channel.
+
+        ib_async dispatches coroutine handlers via asyncio.ensure_future,
+        so the async broadcast_* methods can be attached directly.
+        """
+        async def on_fill(t: Any, fill: Any) -> None:
+            try:
+                exe = getattr(fill, "execution", None)
+                await trades_channel.broadcast_fill({
+                    "order_id": str(t.order.orderId),
+                    "symbol": getattr(t.contract, "symbol", ""),
+                    "shares": float(getattr(exe, "shares", 0) or 0),
+                    "price": float(getattr(exe, "price", 0) or 0),
+                    "side": getattr(exe, "side", ""),
+                    "time": exe.time.isoformat() if exe and getattr(exe, "time", None) else None,
+                })
+            except Exception as e:  # noqa: BLE001
+                logger.debug("broadcast_fill failed: %s", e)
+
+        async def on_cancel(t: Any) -> None:
+            try:
+                await trades_channel.broadcast_cancel({
+                    "order_id": str(t.order.orderId),
+                    "symbol": getattr(t.contract, "symbol", ""),
+                    "status": getattr(t.orderStatus, "status", "Cancelled"),
+                })
+            except Exception as e:  # noqa: BLE001
+                logger.debug("broadcast_cancel failed: %s", e)
+
+        trade.filledEvent += on_fill
+        trade.cancelledEvent += on_cancel
+
+        if not self._error_handler_attached:
+            async def on_error(reqId: int, errorCode: int, errorString: str, contract: Any) -> None:
+                try:
+                    await trades_channel.broadcast_error({
+                        "req_id": reqId,
+                        "code": errorCode,
+                        "message": errorString,
+                        "symbol": getattr(contract, "symbol", "") if contract else "",
+                    })
+                except Exception as e:  # noqa: BLE001
+                    logger.debug("broadcast_error failed: %s", e)
+
+            ib.errorEvent += on_error
+            self._error_handler_attached = True
 
     async def connect(self):
         return await _orders_resilient.get()
 
     async def disconnect(self):
+
         await _orders_resilient.disconnect()
 
     def start_heartbeat(self) -> None:
@@ -193,6 +245,7 @@ class OrdersClient:
         )
 
         trade = ib.placeOrder(bag, order)
+        self._attach_trade_handlers(ib, trade)
         # fire and don't await fill — strategy loop polls. Capture the trade
         # so we can read fill events later if needed.
         logger.info("submitted bull-put-spread %s %s %s/%s qty=%s credit=%.2f orderId=%s",
@@ -232,10 +285,10 @@ class OrdersClient:
             currency="USD",
             exchange="SMART",
             comboLegs=[
-                ComboLeg(conId=l.con_id, ratio=1,
-                         action="BUY" if l.action == "SELL" else "SELL",
+                ComboLeg(conId=leg.con_id, ratio=1,
+                         action="BUY" if leg.action == "SELL" else "SELL",
                          exchange="SMART")
-                for l in spread.legs
+                for leg in spread.legs
             ],
         )
         # closing a credit spread means buying it back — pay debit, action=BUY, positive limit
@@ -246,7 +299,8 @@ class OrdersClient:
             tif="DAY",
             transmit=True,
         )
-        ib.placeOrder(bag, order)
+        trade = ib.placeOrder(bag, order)
+        self._attach_trade_handlers(ib, trade)
         spread.status = "closing"
         spread.close_credit = -round(limit_debit, 2)
         logger.info("closing spread %s at debit %.2f", spread_id, limit_debit)

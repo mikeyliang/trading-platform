@@ -2,7 +2,6 @@
 synthetic price data generator for dev/demo without IB connection
 """
 import random
-import time
 import math
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Tuple
@@ -172,8 +171,6 @@ def generate_historical_bars(
 ) -> List[Dict]:
     """generate synthetic OHLCV bars for backtesting/charting"""
     tf_minutes = _timeframe_to_minutes(timeframe)
-    bars_per_day = int(6.5 * 60 / tf_minutes)
-    total_bars = days * bars_per_day
 
     base = BASE_PRICES.get(symbol, 100.0)
     price = base * random.uniform(0.7, 0.9)  # start lower to show movement
@@ -201,7 +198,7 @@ def generate_historical_bars(
             cum = np.cumsum(changes)
             intrabar = o * (1 + np.concatenate([[0], cum]))
             h = float(np.max(intrabar))
-            l = float(np.min(intrabar))
+            lo = float(np.min(intrabar))
             c = float(intrabar[-1])
 
             volume = random.randint(50_000, 500_000)
@@ -210,7 +207,7 @@ def generate_historical_bars(
                 "time": int(bar_t.timestamp()),
                 "open": round(o, 2),
                 "high": round(max(o, h, c) * random.uniform(1.0, 1.002), 2),
-                "low": round(min(o, l, c) * random.uniform(0.998, 1.0), 2),
+                "low": round(min(o, lo, c) * random.uniform(0.998, 1.0), 2),
                 "close": round(c, 2),
                 "volume": volume,
             })

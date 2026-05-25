@@ -32,7 +32,7 @@ import asyncio
 import logging
 import math
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
 from ..nautilus import ib_options

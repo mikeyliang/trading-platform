@@ -109,12 +109,29 @@ CREATE TABLE IF NOT EXISTS ai_runs (
 
 CREATE INDEX IF NOT EXISTS ai_runs_contract_idx ON ai_runs (symbol, strike, expiry, right_, ran_at DESC);
 CREATE INDEX IF NOT EXISTS ai_runs_ran_at_idx ON ai_runs (ran_at DESC);
+
+CREATE TABLE IF NOT EXISTS trade_history (
+  id               BIGSERIAL PRIMARY KEY,
+  timestamp        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  symbol           TEXT,
+  side             TEXT CHECK (side IN ('buy', 'sell')),
+  quantity         NUMERIC,
+  price            NUMERIC,
+  order_type       TEXT,
+  status           TEXT,
+  pnl              NUMERIC,
+  pnl_percentage   NUMERIC,
+  strategy         TEXT,
+  agent_id         TEXT,
+  metadata_        JSONB,
+  is_deleted       BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS trade_history_symbol_idx ON trade_history (symbol);
+CREATE INDEX IF NOT EXISTS trade_history_agent_id_idx ON trade_history (agent_id);
+CREATE INDEX IF NOT EXISTS trade_history_strategy_idx ON trade_history (strategy);
+CREATE INDEX IF NOT EXISTS trade_history_timestamp_idx ON trade_history (timestamp DESC);
 """
-
-
-def pool():
-    """Acquire-with-context-manager wrapper. None if init failed."""
-    return _pool
 
 
 async def init() -> None:

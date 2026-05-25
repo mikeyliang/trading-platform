@@ -9,12 +9,21 @@ from ..strategies.schemas import get_schema, STRATEGY_SCHEMAS
 router = APIRouter(prefix="/api/strategies", tags=["strategies"])
 
 
-@router.get("", response_model=List[StrategyInfo])
+@router.get(
+    "",
+    response_model=List[StrategyInfo],
+    summary="List all registered strategies",
+)
 def list_strategies():
     return engine.list_strategies()
 
 
-@router.get("/{strategy_id}", response_model=StrategyInfo)
+@router.get(
+    "/{strategy_id}",
+    response_model=StrategyInfo,
+    summary="Get one strategy by id",
+    responses={404: {"description": "Strategy not found."}},
+)
 def get_strategy(strategy_id: str):
     s = engine.get_strategy(strategy_id)
     if not s:
@@ -47,16 +56,29 @@ def all_schemas():
     return {sid: get_schema(sid) for sid in STRATEGY_SCHEMAS.keys()}
 
 
-@router.post("/{strategy_id}/start", response_model=StrategyInfo)
-async def start_strategy(strategy_id: str, req: StrategyStartRequest):
-    s = await engine.start_strategy(strategy_id, req.symbols, req.timeframe, req.params)
+@router.post(
+    "/{strategy_id}/start",
+    response_model=StrategyInfo,
+    summary="Start a strategy",
+    description=(
+        "Subscribes the strategy to the given symbols/timeframe and starts the runner."
+    ),
+    responses={404: {"description": "Strategy not found."}},
+)
+async def start_strategy(strategy_id: str, req: StrategyStartRequest) -> StrategyInfo:
+    s = await engine.start_strategy(strategy_id, req.symbols, req.timeframe.value, req.params)
     if not s:
         raise HTTPException(status_code=404, detail="strategy not found")
     return s
 
 
-@router.post("/{strategy_id}/stop", response_model=StrategyInfo)
-async def stop_strategy(strategy_id: str):
+@router.post(
+    "/{strategy_id}/stop",
+    response_model=StrategyInfo,
+    summary="Stop a running strategy",
+    responses={404: {"description": "Strategy not found."}},
+)
+async def stop_strategy(strategy_id: str) -> StrategyInfo:
     s = await engine.stop_strategy(strategy_id)
     if not s:
         raise HTTPException(status_code=404, detail="strategy not found")

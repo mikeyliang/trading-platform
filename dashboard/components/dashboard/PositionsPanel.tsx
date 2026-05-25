@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { List, type RowComponentProps } from "react-window";
 import { api, type Spread } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import { fmt, fmtCurrency, fmtPct, pnlClass, cn } from "@/lib/utils";
@@ -13,13 +14,15 @@ import {
   TableHeader,
   TableBody,
   TableRow,
-  TableHead,
   TableCell,
   TableEmpty,
+  SortableTableHead,
+  useTableSort,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
+
 import { TableSkeletonRows } from "@/components/ui/skeleton";
 import { Briefcase, Layers, Activity, Target, Search, X } from "lucide-react";
 
@@ -33,7 +36,7 @@ interface Props {
   symbolFilter?: string;
 }
 
-export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {}) {
+export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {}) {
   const [tab, setTab] = useState<Tab>("positions");
   // Positions are WS-pushed via the store snapshot. Slow REST poll is the
   // safety net for cold start + stale-WS recovery.
@@ -41,6 +44,7 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
   const setStorePositions = useStore((s) => s.setPositions);
   const [spreads, setSpreads] = useState<Spread[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
+
   const [loaded, setLoaded] = useState({ positions: false, spreads: false, trades: false });
 
   // Filter state — reset when the parent re-feeds a different symbol prop.
@@ -53,7 +57,10 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
   }, [initialSymbol]);
 
   useEffect(() => {
+    const markLoaded = (k: "positions" | "spreads" | "trades") =>
+      setLoaded((l) => (l[k] ? l : { ...l, [k]: true }));
     const load = () => {
+
       api.positions()
         .then((p) => { setStorePositions(p); })
         .catch(() => null)
@@ -191,6 +198,7 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
 
       <TabsContent value="positions" className="flex-1 overflow-auto mt-0">
         {!loaded.positions && positions.length === 0 ? (
+
           <PositionsTableSkeleton />
         ) : positions.length === 0 ? (
           <EmptyState
@@ -199,13 +207,17 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
             description="Positions sync from IBKR Gateway once you have any open."
           />
         ) : filteredPositions.length === 0 ? (
-          <FilterEmpty label={`No positions match "${symbolQ}"${side !== "all" ? ` · ${side}` : ""}${kind !== "all" ? ` · ${kind}` : ""}`} />
+          <FilterEmpty
+            label={`No positions match "${symbolQ}"${side !== "all" ? ` · ${side}` : ""}${kind !== "all" ? ` · ${kind}` : ""}`}
+            onClear={clearAll}
+          />
         ) : (
           <PositionsTable positions={filteredPositions} kinds={filteredKinds} />
         )}
       </TabsContent>
       <TabsContent value="spreads" className="flex-1 overflow-auto mt-0">
         {!loaded.spreads && spreads.length === 0 ? (
+
           <SpreadsTableSkeleton />
         ) : spreads.length === 0 ? (
           <EmptyState
@@ -222,13 +234,14 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
             }
           />
         ) : filteredSpreads.length === 0 ? (
-          <FilterEmpty label={`No spreads in ${symbolQ}`} />
+          <FilterEmpty label={`No spreads match "${symbolQ}"`} onClear={clearAll} />
         ) : (
           <SpreadsTable spreads={filteredSpreads} />
         )}
       </TabsContent>
       <TabsContent value="trades" className="flex-1 overflow-auto mt-0">
         {!loaded.trades && trades.length === 0 ? (
+
           <TradesTableSkeleton />
         ) : trades.length === 0 ? (
           <EmptyState
@@ -237,14 +250,14 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
             description="Trade history will populate once orders fill via your connected broker."
           />
         ) : filteredTrades.length === 0 ? (
-          <FilterEmpty label={`No trades in ${symbolQ}`} />
+          <FilterEmpty label={`No trades match "${symbolQ}"`} onClear={clearAll} />
         ) : (
           <TradesTable trades={filteredTrades} />
         )}
       </TabsContent>
     </Tabs>
   );
-}
+});
 
 /**
  * Labeled segmented control: a small uppercase label sits to the left of a
@@ -288,11 +301,60 @@ function FilterGroup<T extends string>({
   );
 }
 
-function FilterEmpty({ label }: { label: string }) {
+function FilterEmpty({ label, onClear }: { label: string; onClear?: () => void }) {
   return (
-    <div className="flex items-center justify-center h-full text-[11px] text-text-muted px-3 py-6">
-      {label}
+    <div className="flex flex-col items-center justify-center gap-2 px-3 py-10 text-center animate-fade-in">
+      <div className="w-7 h-7 rounded-full bg-surface-2 border border-border flex items-center justify-center">
+        <SearchX size={13} className="text-text-muted" strokeWidth={1.75} aria-hidden="true" />
+      </div>
+      <p className="text-[11px] text-text-secondary max-w-xs">{label}</p>
+      {onClear && (
+        <button
+          onClick={onClear}
+          className="mt-0.5 inline-flex items-center gap-1 h-5 px-2 rounded-sm border border-border bg-surface-2/60 hover:bg-surface-2 text-[10px] text-text-secondary hover:text-text-primary transition-colors"
+        >
+          <X size={9} />
+          Clear filters
+        </button>
+      )}
     </div>
+  );
+}
+
+const POSITION_HEADERS = ["symbol", "type", "sector", "qty", "avg", "price", "unr. P&L", "unr. %"] as const;
+const SPREAD_HEADERS = ["symbol", "type", "expiry", "strikes", "qty", "credit", "max profit", "max loss"] as const;
+const TRADE_HEADERS = ["symbol", "side", "qty", "price", "P&L", "strategy", "time"] as const;
+
+/**
+ * Loading state for tabular data. Matches the real table chrome (sticky
+ * header, column count, row density) so the layout doesn't shift when data
+ * arrives. Renders a fixed batch of skeleton rows — enough to fill a
+ * typical viewport without overflowing if data lands quickly.
+ */
+function TableSkeleton({ cols, headers, rows = 6 }: { cols: number; headers: readonly string[]; rows?: number }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          {headers.map((h, i) => (
+            <th
+              key={h}
+              className={cn(
+                "h-6 px-2 align-middle font-normal text-[10px] uppercase tracking-wider text-text-muted border-b border-border",
+                i >= cols - 2 ? "text-right" : "text-left"
+              )}
+            >
+              {h}
+            </th>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: rows }).map((_, i) => (
+          <TableRowSkeleton key={i} cols={cols} />
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -335,33 +397,77 @@ function classifyPositions(positions: Position[]): PositionKind[] {
   });
 }
 
+type PositionSortKey =
+  | "symbol"
+  | "type"
+  | "sector"
+  | "qty"
+  | "avg"
+  | "price"
+  | "pnl"
+  | "pnl_pct";
+
+const POSITION_ACCESSORS: Record<
+  PositionSortKey,
+  (row: { p: Position; kind: PositionKind }) => string | number | null | undefined
+> = {
+  symbol: (r) => r.p.symbol,
+  type: (r) => r.kind,
+  sector: (r) => r.p.sector ?? null,
+  qty: (r) => r.p.quantity,
+  avg: (r) => r.p.avg_price,
+  price: (r) => r.p.current_price,
+  pnl: (r) => r.p.unrealized_pnl,
+  pnl_pct: (r) => r.p.unrealized_pnl_pct,
+};
+
+const POSITION_NUMERIC: PositionSortKey[] = ["qty", "avg", "price", "pnl", "pnl_pct"];
+
 function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: PositionKind[] }) {
   const router = useRouter();
+  const rows = useMemo(
+    () => positions.map((p, i) => ({ p, kind: kinds[i] })),
+    [positions, kinds]
+  );
+  const { sorted, sort, toggleSort } = useTableSort<typeof rows[number], PositionSortKey>(
+    rows,
+    POSITION_ACCESSORS,
+    { key: "pnl", direction: "desc" },
+    POSITION_NUMERIC
+  );
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>symbol</TableHead>
-          <TableHead>type</TableHead>
-          <TableHead>sector</TableHead>
-          <TableHead className="text-right">qty</TableHead>
-          <TableHead className="text-right">avg</TableHead>
-          <TableHead className="text-right">price</TableHead>
-          <TableHead className="text-right">unr. P&amp;L</TableHead>
-          <TableHead className="text-right">unr. %</TableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
+          <SortableTableHead sortKey="type" sort={sort} onSort={toggleSort}>type</SortableTableHead>
+          <SortableTableHead sortKey="sector" sort={sort} onSort={toggleSort}>sector</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
+          <SortableTableHead sortKey="avg" sort={sort} onSort={toggleSort} align="right">avg</SortableTableHead>
+          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">price</SortableTableHead>
+          <SortableTableHead sortKey="pnl" sort={sort} onSort={toggleSort} align="right">unr. P&amp;L</SortableTableHead>
+          <SortableTableHead sortKey="pnl_pct" sort={sort} onSort={toggleSort} align="right">unr. %</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {positions.length === 0 ? (
+        {sorted.length === 0 ? (
           <TableEmpty colSpan={8}>no open positions</TableEmpty>
         ) : (
-          positions.map((p, i) => {
-            const kind = kinds[i];
+          sorted.map(({ p, kind }, i) => {
+            const pnlUp = p.unrealized_pnl > 0;
+            const pnlDown = p.unrealized_pnl < 0;
             return (
             <TableRow
               key={`${p.symbol}-${p.strike ?? ""}-${p.expiry ?? ""}-${p.right ?? ""}-${i}`}
               onClick={() => router.push(positionHref(p))}
-              className="cursor-pointer group"
+              className={cn(
+                "cursor-pointer group relative",
+                // Subtle left accent on hover — signals "row is the click target"
+                // without shifting layout. Uses box-shadow inset so the row stays
+                // the same height.
+                "hover:shadow-[inset_2px_0_0_0_#3b82f6]",
+                "hover:bg-surface-2/80 transition-[background,box-shadow] duration-100"
+              )}
               title={p.is_option ? "Open in option analyzer" : "Analyze position"}
             >
               <TableCell className="font-medium">
@@ -369,7 +475,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                   <Logo symbol={p.symbol} size={16} />
                   <div className="flex flex-col leading-tight">
                     <span className="inline-flex items-center gap-1.5">
-                      {p.symbol}
+                      <span className="group-hover:text-accent transition-colors">{p.symbol}</span>
                       {p.is_option && (
                         <span className={cn(
                           "text-[9px] uppercase tracking-wider px-1 py-px rounded-sm",
@@ -392,13 +498,15 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                 <KindPill kind={kind} />
               </TableCell>
               <TableCell className="text-text-muted">{p.sector ?? "—"}</TableCell>
+
               <TableCell className="text-right tabular">{p.quantity}</TableCell>
               <TableCell className="text-right tabular">{fmt(p.avg_price)}</TableCell>
               <TableCell className="text-right tabular">{fmt(p.current_price)}</TableCell>
               <TableCell className={cn("text-right tabular font-medium", pnlClass(p.unrealized_pnl))}>
-                {fmtCurrency(p.unrealized_pnl)}
+                {pnlUp ? "+" : ""}{fmtCurrency(p.unrealized_pnl)}
               </TableCell>
               <TableCell className="text-right">
+
                 {p.unrealized_pnl_pct == null || !Number.isFinite(p.unrealized_pnl_pct) ? (
                   <span className="tabular text-text-muted">—</span>
                 ) : (
@@ -435,37 +543,79 @@ function KindPill({ kind }: { kind: PositionKind }) {
   );
 }
 
+type SpreadSortKey =
+  | "symbol"
+  | "spread_type"
+  | "expiry"
+  | "short_strike"
+  | "qty"
+  | "credit"
+  | "max_profit"
+  | "max_loss";
+
+const SPREAD_ACCESSORS: Record<
+  SpreadSortKey,
+  (row: Spread) => string | number | null | undefined
+> = {
+  symbol: (s) => s.symbol,
+  spread_type: (s) => s.spread_type,
+  expiry: (s) => s.expiry,
+  short_strike: (s) => s.short_strike,
+  qty: (s) => s.quantity,
+  credit: (s) => s.credit_received,
+  max_profit: (s) => s.max_profit,
+  max_loss: (s) => s.max_loss,
+};
+
+const SPREAD_NUMERIC: SpreadSortKey[] = [
+  "short_strike",
+  "qty",
+  "credit",
+  "max_profit",
+  "max_loss",
+];
+
 function SpreadsTable({ spreads }: { spreads: Spread[] }) {
   const router = useRouter();
+  const { sorted, sort, toggleSort } = useTableSort<Spread, SpreadSortKey>(
+    spreads,
+    SPREAD_ACCESSORS,
+    { key: "expiry", direction: "asc" },
+    SPREAD_NUMERIC
+  );
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>symbol</TableHead>
-          <TableHead>type</TableHead>
-          <TableHead>expiry</TableHead>
-          <TableHead>strikes</TableHead>
-          <TableHead className="text-right">qty</TableHead>
-          <TableHead className="text-right">credit</TableHead>
-          <TableHead className="text-right">max profit</TableHead>
-          <TableHead className="text-right">max loss</TableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
+          <SortableTableHead sortKey="spread_type" sort={sort} onSort={toggleSort}>type</SortableTableHead>
+          <SortableTableHead sortKey="expiry" sort={sort} onSort={toggleSort}>expiry</SortableTableHead>
+          <SortableTableHead sortKey="short_strike" sort={sort} onSort={toggleSort}>strikes</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
+          <SortableTableHead sortKey="credit" sort={sort} onSort={toggleSort} align="right">credit</SortableTableHead>
+          <SortableTableHead sortKey="max_profit" sort={sort} onSort={toggleSort} align="right">max profit</SortableTableHead>
+          <SortableTableHead sortKey="max_loss" sort={sort} onSort={toggleSort} align="right">max loss</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {spreads.length === 0 ? (
+        {sorted.length === 0 ? (
           <TableEmpty colSpan={8}>no open spreads</TableEmpty>
         ) : (
-          spreads.map((s) => (
+          sorted.map((s) => (
             <TableRow
               key={s.id}
               onClick={() => router.push(`/chart/${s.symbol}`)}
-              className="cursor-pointer group"
+              className={cn(
+                "cursor-pointer group relative",
+                "hover:shadow-[inset_2px_0_0_0_#3b82f6]",
+                "hover:bg-surface-2/80 transition-[background,box-shadow] duration-100"
+              )}
               title="Open chart with cycle overlay"
             >
               <TableCell className="font-medium">
                 <span className="inline-flex items-center gap-2">
                   <Logo symbol={s.symbol} size={16} />
-                  {s.symbol}
+                  <span className="group-hover:text-accent transition-colors">{s.symbol}</span>
                   <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent transition-opacity" />
                 </span>
               </TableCell>
@@ -479,6 +629,7 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
                 <span className="text-up">{s.short_strike}</span>
               </TableCell>
               <TableCell className="text-right tabular">{s.quantity}</TableCell>
+
               <TableCell className="text-right tabular text-up">{fmt(s.credit_received)}</TableCell>
               <TableCell className="text-right tabular text-up">{fmtCurrency(s.max_profit)}</TableCell>
               <TableCell className="text-right tabular text-down">
@@ -492,37 +643,71 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
   );
 }
 
+type TradeSortKey =
+  | "symbol"
+  | "side"
+  | "qty"
+  | "price"
+  | "pnl"
+  | "strategy"
+  | "timestamp";
+
+const TRADE_ACCESSORS: Record<
+  TradeSortKey,
+  (row: Trade) => string | number | null | undefined
+> = {
+  symbol: (t) => t.symbol,
+  side: (t) => t.side,
+  qty: (t) => t.quantity,
+  price: (t) => t.price,
+  pnl: (t) => t.pnl ?? null,
+  strategy: (t) => t.strategy ?? null,
+  timestamp: (t) => Date.parse(t.timestamp) || 0,
+};
+
+const TRADE_NUMERIC: TradeSortKey[] = ["qty", "price", "pnl", "timestamp"];
+
 function TradesTable({ trades }: { trades: Trade[] }) {
+  const { sorted, sort, toggleSort } = useTableSort<Trade, TradeSortKey>(
+    trades,
+    TRADE_ACCESSORS,
+    { key: "timestamp", direction: "desc" },
+    TRADE_NUMERIC
+  );
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>symbol</TableHead>
-          <TableHead>side</TableHead>
-          <TableHead className="text-right">qty</TableHead>
-          <TableHead className="text-right">price</TableHead>
-          <TableHead className="text-right">P&amp;L</TableHead>
-          <TableHead>strategy</TableHead>
-          <TableHead>time</TableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
+          <SortableTableHead sortKey="side" sort={sort} onSort={toggleSort}>side</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
+          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">price</SortableTableHead>
+          <SortableTableHead sortKey="pnl" sort={sort} onSort={toggleSort} align="right">P&amp;L</SortableTableHead>
+          <SortableTableHead sortKey="strategy" sort={sort} onSort={toggleSort}>strategy</SortableTableHead>
+          <SortableTableHead sortKey="timestamp" sort={sort} onSort={toggleSort}>time</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {trades.length === 0 ? (
+        {sorted.length === 0 ? (
           <TableEmpty colSpan={7}>no trades yet</TableEmpty>
         ) : (
-          trades.map((t) => (
-            <TableRow key={t.id}>
+          sorted.map((t) => (
+            <TableRow
+              key={t.id}
+              className="group hover:bg-surface-2/80 hover:shadow-[inset_2px_0_0_0_#3b82f6] transition-[background,box-shadow] duration-100"
+            >
               <TableCell className="font-medium">{t.symbol}</TableCell>
               <TableCell>
                 <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
               </TableCell>
               <TableCell className="text-right tabular">{t.quantity}</TableCell>
+
               <TableCell className="text-right tabular">{fmt(t.price)}</TableCell>
               <TableCell className={cn("text-right tabular", pnlClass(t.pnl))}>
                 {fmtCurrency(t.pnl)}
               </TableCell>
               <TableCell className="text-text-muted">{t.strategy ?? "—"}</TableCell>
-              <TableCell className="text-text-muted">{new Date(t.timestamp).toLocaleString()}</TableCell>
+              <TableCell className="text-text-muted tabular">{new Date(t.timestamp).toLocaleString()}</TableCell>
             </TableRow>
           ))
         )}

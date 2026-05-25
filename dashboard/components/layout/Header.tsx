@@ -1,14 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { cn, fmt, fmtPct, pnlClass } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { Search, Sparkles } from "lucide-react";
+import { Menu, Moon, Search, Sparkles, Sun } from "lucide-react";
 import { useChatAvailable } from "@/lib/chat-availability";
 import { useHealth } from "@/lib/health";
 import { ConnectionPill } from "@/components/layout/ConnectionPill";
+
 
 // IBKR-style top bar: search, active-symbol quote pill, connection pill,
 // mode badge, copilot. The full per-line breakdown stays in StatusFooter.
@@ -20,8 +22,28 @@ export function Header() {
   const mode = health?.mode?.toUpperCase() ?? "PAPER";
   const q = quotes[activeSymbol];
 
+  useEffect(() => {
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  };
+
   return (
     <header className="h-9 flex items-center px-3 gap-3 bg-bg border-b border-border/60 shrink-0">
+      <button
+        type="button"
+        onClick={onMenuClick}
+        className="sm:hidden flex items-center justify-center w-6 h-6 rounded-sm text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
+        aria-label="Open menu"
+      >
+        <Menu size={14} />
+      </button>
+
       <button
         type="button"
         onClick={openPalette}
@@ -41,6 +63,20 @@ export function Header() {
       <div className="ml-auto flex items-center gap-2">
         <ConnectionPill />
         <Badge variant={mode === "LIVE" ? "up" : "warning"}>{mode}</Badge>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex items-center justify-center w-6 h-6 rounded-sm text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
+              aria-label="Toggle theme"
+            >
+              <Sun size={12} className="hidden dark:block" />
+              <Moon size={12} className="block dark:hidden" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Toggle theme</TooltipContent>
+        </Tooltip>
         {chatAvailable && (
           <Tooltip>
             <TooltipTrigger asChild>

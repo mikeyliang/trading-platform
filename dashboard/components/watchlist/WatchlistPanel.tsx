@@ -1,13 +1,16 @@
 "use client";
 
+
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { ws } from "@/lib/ws";
 import { cn, fmtPct } from "@/lib/utils";
+
 import type { Position, WatchlistItem } from "@/types";
 import { Plus, X, Eye } from "lucide-react";
 import Link from "next/link";
+import { List, type RowComponentProps } from "react-window";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,12 +20,17 @@ import { Logo } from "@/components/ui/logo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toaster";
 
+
 export function WatchlistPanel() {
   const { quotes, positions, setWatchlist, updateQuote } = useStore();
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [input, setInput] = useState("");
+  const [filter, setFilter] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("symbol");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
 
   // Aggregate unrealized P&L per underlying so we can surface a "total gain"
   // alongside each watchlist row when the user has open positions in it.
@@ -41,7 +49,7 @@ export function WatchlistPanel() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   // Subscribe every watchlist symbol over WS so push-ticks update the store.
   useEffect(() => {
@@ -71,7 +79,7 @@ export function WatchlistPanel() {
     return () => { alive = false; clearInterval(id); };
   }, [items, updateQuote]);
 
-  const add = async () => {
+  const add = useCallback(async () => {
     if (!input.trim()) return;
     const sym = input.trim().toUpperCase();
     try {
@@ -83,9 +91,9 @@ export function WatchlistPanel() {
     setInput("");
     setAdding(false);
     load();
-  };
+  }, [input, load]);
 
-  const remove = async (sym: string) => {
+  const remove = useCallback(async (sym: string) => {
     try {
       await api.watchlistRemove(sym);
       toast(`${sym} removed`, { description: "Symbol dropped from watchlist." });
@@ -93,15 +101,59 @@ export function WatchlistPanel() {
       toast.error(`Failed to remove ${sym}`);
     }
     load();
-  };
+  }, [load]);
 
-  // group by sector
-  const grouped = items.reduce<Record<string, WatchlistItem[]>>((acc, item) => {
-    const s = item.sector || "Other";
-    if (!acc[s]) acc[s] = [];
-    acc[s].push(item);
-    return acc;
-  }, {});
+  // Pick the sort key. Clicking the active column flips direction; clicking
+  // a new column adopts that column's natural default (alpha → asc, numeric → desc).
+  const handleSort = useCallback((key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(SORT_OPTIONS.find((o) => o.key === key)!.defaultDir);
+    }
+  }, [sortKey]);
+
+  // Filter + decorate with live quote values so sort sees current numbers,
+  // not the stale REST snapshot baked into the item.
+  const decorated = useMemo(() => {
+    const q = filter.trim().toUpperCase();
+    return items
+      .filter((i) => !q || i.symbol.toUpperCase().includes(q))
+      .map((item) => {
+        const live = quotes[item.symbol];
+        const last = live?.last ?? item.last ?? null;
+        const changePct = live?.change_pct ?? item.change_pct ?? 0;
+        return { item, last, changePct };
+      });
+  }, [items, filter, quotes]);
+
+  const sortedFlat = useMemo(() => {
+    const factor = sortDir === "asc" ? 1 : -1;
+    return [...decorated].sort((a, b) => {
+      if (sortKey === "symbol") return a.item.symbol.localeCompare(b.item.symbol) * factor;
+      if (sortKey === "change_pct") return (a.changePct - b.changePct) * factor;
+      // price — nulls sort to the bottom regardless of direction
+      if (a.last == null && b.last == null) return 0;
+      if (a.last == null) return 1;
+      if (b.last == null) return -1;
+      return (a.last - b.last) * factor;
+    });
+  }, [decorated, sortKey, sortDir]);
+
+  // When sorting by symbol, keep sector grouping — that's the org-chart view.
+  // When sorting by a numeric column the trader wants top movers globally, so
+  // flatten the list and drop the sector headers.
+  const groupBySector = sortKey === "symbol";
+  const grouped = useMemo(() => {
+    if (!groupBySector) return null;
+    return sortedFlat.reduce<Record<string, typeof sortedFlat>>((acc, row) => {
+      const s = row.item.sector || "Other";
+      if (!acc[s]) acc[s] = [];
+      acc[s].push(row);
+      return acc;
+    }, {});
+  }, [groupBySector, sortedFlat]);
 
   return (
     <div className="flex flex-col h-full">
@@ -143,6 +195,7 @@ export function WatchlistPanel() {
         </div>
       )}
 
+
       <ScrollArea className="flex-1">
         {loading && items.length === 0 && (
           <div className="px-2.5 py-2 space-y-2">
@@ -180,10 +233,19 @@ export function WatchlistPanel() {
               const hasPosition = totalGain != null && totalGain !== 0;
 
               return (
-                <div
-                  key={item.symbol}
-                  className="group flex items-center gap-2 px-2.5 py-1.5 hover:bg-surface-2 transition-colors border-b border-border/20 last:border-b-0"
+                <button
+                  key={o.key}
+                  onClick={() => handleSort(o.key)}
+                  className={cn(
+                    "px-1.5 text-[10px] inline-flex items-center gap-0.5 transition-colors",
+                    i > 0 && "border-l border-border",
+                    active
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+                  )}
+                  aria-label={`Sort by ${o.label} ${active ? (sortDir === "asc" ? "ascending" : "descending") : ""}`}
                 >
+
                   <Link
                     href={`/chart/${item.symbol}`}
                     className="flex-1 flex items-center gap-2 min-w-0"
@@ -247,11 +309,84 @@ export function WatchlistPanel() {
             title="Empty watchlist"
             description="Click + to track a symbol."
           />
-        )}
-      </ScrollArea>
+        </ScrollArea>
+      ) : sortedFlat.length === 0 ? (
+        <div className="flex-1 px-3 py-6 text-center text-[11px] text-text-muted">
+          No matches for &ldquo;{filter}&rdquo;
+        </div>
+      ) : groupBySector && grouped ? (
+        // Sector-grouped view keeps sticky headers, so render with normal
+        // scrolling — virtualization would break the sector boundaries.
+        <ScrollArea className="flex-1">
+          {Object.entries(grouped).map(([sector, rows]) => (
+            <div key={sector}>
+              <SectorHeader sector={sector} count={rows.length} />
+              {rows.map(({ item, last, changePct }) => (
+                <WatchRow
+                  key={item.symbol}
+                  symbol={item.symbol}
+                  last={last}
+                  changePct={changePct}
+                  onRemove={remove}
+                />
+              ))}
+            </div>
+          ))}
+        </ScrollArea>
+      ) : sortedFlat.length >= VIRTUAL_THRESHOLD ? (
+        // Flat sorted view → virtualize. Each row is a fixed height div so the
+        // List can compute scroll offsets without measuring.
+        <div className="flex-1 min-h-0">
+          <List
+            rowComponent={VirtualWatchRow}
+            rowCount={sortedFlat.length}
+            rowHeight={ROW_HEIGHT}
+            rowProps={{ rows: sortedFlat, onRemove: remove }}
+            style={{ height: "100%" }}
+            overscanCount={4}
+          />
+        </div>
+      ) : (
+        <ScrollArea className="flex-1">
+          {sortedFlat.map(({ item, last, changePct }) => (
+            <WatchRow
+              key={item.symbol}
+              symbol={item.symbol}
+              last={last}
+              changePct={changePct}
+              onRemove={remove}
+            />
+          ))}
+        </ScrollArea>
+      )}
+    </div>
+  );
+});
+
+type WatchRowDecorated = { item: WatchlistItem; last: number | null; changePct: number };
+
+function VirtualWatchRow({
+  index,
+  style,
+  rows,
+  onRemove,
+}: RowComponentProps<{
+  rows: WatchRowDecorated[];
+  onRemove: (sym: string) => void;
+}>) {
+  const { item, last, changePct } = rows[index];
+  return (
+    <div style={style}>
+      <WatchRow
+        symbol={item.symbol}
+        last={last}
+        changePct={changePct}
+        onRemove={onRemove}
+      />
     </div>
   );
 }
+
 
 // Pick the first numeric value. The NT bridge emits 0 placeholders for
 // change/change_pct until a real prior-close comparison is available;

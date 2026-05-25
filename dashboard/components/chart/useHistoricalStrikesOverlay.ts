@@ -119,14 +119,16 @@ export function useHistoricalStrikesOverlay({
     };
 
     render();
-    const unsubTime = c.timeScale().subscribeVisibleTimeRangeChange(render);
+    c.timeScale().subscribeVisibleTimeRangeChange(render);
     const ro = new ResizeObserver(render);
     ro.observe(el);
 
     return () => {
       try {
-        unsubTime?.();
-      } catch {}
+        c.timeScale().unsubscribeVisibleTimeRangeChange(render);
+      } catch {
+        // chart already disposed
+      }
       ro.disconnect();
       if (svg.parentNode) svg.parentNode.removeChild(svg);
     };

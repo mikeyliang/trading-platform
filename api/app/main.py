@@ -2,17 +2,26 @@ import asyncio
 import logging
 import uuid
 from contextlib import asynccontextmanager
+from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from .config import settings
+from .middleware import (
+    QueryParamSanitizationMiddleware,
+    RateLimitMiddleware,
+    RequestLoggingMiddleware,
+)
 from .nautilus import ib_depth, ib_options, ib_ticks
 from .nautilus.ib_node import ib_node
 from .nautilus.ib_orders import orders_client
-from .routers import agent_tools, agents, analyze, backtest, chat, depth, fundamentals, logos, market, monitor as monitor_router, okw, option_analyzer, options, orders, scans, strategies, ticks, watchlist
+from .routers import agent, agent_tools, agents, analyze, backtest, chat, depth, fundamentals, logos, market, monitor as monitor_router, okw, option_analyzer, options, orders, scans, strategies, ticks, trade_history, watchlist
 from .services import db, scheduler as job_scheduler
 from .ws.manager import manager
+from .ws.trades import trades_channel
 
 logging.basicConfig(level=getattr(logging, settings.log_level, logging.INFO))
 logger = logging.getLogger(__name__)
@@ -199,13 +208,67 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Middleware ordering: Starlette wraps last-added on the OUTSIDE. We want
+#   CORS (outer) -> Logging -> RateLimit -> Sanitize -> route
+# so that rate-limit 429s and sanitization 400s still carry CORS headers
+# (otherwise browsers drop the error and surface "CORS failure" instead).
+app.add_middleware(
+    QueryParamSanitizationMiddleware,
+    max_string_length=settings.max_string_length,
+)
+app.add_middleware(
+    RateLimitMiddleware,
+    max_requests=settings.rate_limit_requests,
+    window_seconds=settings.rate_limit_window_seconds,
+    exempt_paths=[p.strip() for p in settings.rate_limit_exempt_paths.split(",") if p.strip()],
+)
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.cors_origins if settings.production_mode else ["*"],
+    allow_credentials=settings.production_mode,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    if settings.production_mode else ["*"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"]
+    if settings.production_mode else ["*"],
+    expose_headers=["X-Request-ID"],
+    max_age=600,
 )
+
+
+class ErrorResponse(BaseModel):
+    """Standard error response model for OpenAPI documentation."""
+    error: str = Field(..., description="Error type or code")
+    message: str = Field(..., description="Human-readable error description")
+    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Return standardized JSON error responses for HTTP exceptions."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message=exc.detail,
+            details={"status_code": exc.status_code}
+        ).dict()
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    """Catch-all error handler for unhandled exceptions."""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(
+            error="InternalServerError",
+            message="An unexpected error occurred",
+            details={"type": exc.__class__.__name__}
+        ).dict()
+    )
+
 
 app.include_router(market.router)
 app.include_router(watchlist.router)
@@ -231,9 +294,32 @@ app.include_router(okw.router)
 app.include_router(depth.router)
 app.include_router(ticks.router)
 app.include_router(agent_tools.router)
+app.include_router(agent.router)
+app.include_router(trade_history.router)
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    response_model=Dict[str, Any],
+    summary="Health check endpoint",
+    response_description="Returns API health status including IBKR connection state",
+    responses={
+        200: {
+            "description": "Successful health check",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "healthy",
+                        "ib_connected": True,
+                        "mode": "live",
+                        "mock_mode": False,
+                        "ws_connections": 3
+                    }
+                }
+            }
+        }
+    }
+)
 def health_check():
     """Health probe. IBKR Gateway is the sole brokerage."""
     return {
@@ -245,9 +331,46 @@ def health_check():
     }
 
 
-@app.get("/")
+@app.get(
+    "/",
+    summary="Root endpoint",
+    response_description="Returns basic API information",
+    responses={
+        200: {
+            "description": "Successful response",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Trading API",
+                        "version": "1.0.0",
+                        "docs": "/docs",
+                        "redoc": "/redoc"
+                    }
+                }
+            }
+        }
+    }
+)
 def root():
-    return {"message": "Trading API", "version": "1.0.0", "docs": "/docs"}
+    return {"message": "Trading API", "version": "1.0.0", "docs": "/docs", "redoc": "/redoc"}
+
+
+@app.websocket("/api/ws/trades")
+async def trades_websocket(websocket: WebSocket):
+    """Real-time trade event stream: fill, cancel, error.
+
+    Server-pushed only — incoming messages are drained and ignored so clients
+    can send pings without crashing the receive loop.
+    """
+    await trades_channel.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        trades_channel.disconnect(websocket)
+    except Exception as e:
+        logger.debug("trades ws error: %s", e)
+        trades_channel.disconnect(websocket)
 
 
 @app.websocket("/ws")

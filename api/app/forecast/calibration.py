@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import logging
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
 from ..services import db

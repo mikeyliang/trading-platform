@@ -12,6 +12,8 @@ import {
   Filter,
   Bot,
   Layers,
+  FlaskConical,
+  History,
   type LucideIcon,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -37,21 +39,35 @@ const market: NavEntry[] = [
 ];
 
 const research: NavEntry[] = [
+
   { href: "/trade/history", icon: Clock, label: "Trade History" },
     { href: "/monitor/journal", icon: BookOpen, label: "Journal" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const path = usePathname();
   const { health } = useHealth();
   const connected = !!health?.ib_connected;
 
   return (
-    <aside className="w-12 flex flex-col items-center py-2 gap-0.5 bg-bg border-r border-border/60 shrink-0">
+    <aside
+      className={cn(
+        "w-12 flex flex-col items-center py-2 gap-0.5 bg-bg border-r border-border/60 shrink-0",
+        "fixed inset-y-0 left-0 z-40 transform transition-transform duration-200",
+        mobileOpen ? "translate-x-0" : "-translate-x-full",
+        "md:static md:translate-x-0 md:transition-none"
+      )}
+    >
       <Tooltip>
         <TooltipTrigger asChild>
           <Link
             href="/"
+            onClick={onMobileClose}
             className="relative w-7 h-7 rounded-sm bg-accent flex items-center justify-center mb-1 shrink-0"
           >
             <BookOpen size={12} className="text-white" />
@@ -71,19 +87,19 @@ export function Sidebar() {
       <Separator className="my-1 w-5" />
 
       {primary.map((n) => (
-        <NavItem key={n.href} {...n} active={isActive(path, n.href)} />
+        <NavItem key={n.href} {...n} active={isActive(path, n.href)} onNavigate={onMobileClose} />
       ))}
 
       <Separator className="my-1 w-5" />
 
       {market.map((n) => (
-        <NavItem key={n.href} {...n} active={isActive(path, n.href)} />
+        <NavItem key={n.href} {...n} active={isActive(path, n.href)} onNavigate={onMobileClose} />
       ))}
 
       <Separator className="my-1 w-5" />
 
       {research.map((n) => (
-        <NavItem key={n.href} {...n} active={isActive(path, n.href)} />
+        <NavItem key={n.href} {...n} active={isActive(path, n.href)} onNavigate={onMobileClose} />
       ))}
 
       <div className="mt-auto">
@@ -92,6 +108,7 @@ export function Sidebar() {
           icon={Settings}
           label="Settings"
           active={isActive(path, "/settings")}
+          onNavigate={onMobileClose}
         />
       </div>
     </aside>
@@ -108,7 +125,8 @@ function NavItem({
   icon: Icon,
   label,
   active,
-}: NavEntry & { active: boolean }) {
+  onNavigate,
+}: NavEntry & { active: boolean; onNavigate?: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -116,6 +134,7 @@ function NavItem({
           href={href}
           prefetch
           aria-label={label}
+          onClick={onNavigate}
           className={cn(
             "relative w-8 h-8 flex items-center justify-center rounded-sm transition-colors",
             active
