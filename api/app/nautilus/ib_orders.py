@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
 from ..config import settings
+from .ib_client_base import ResilientIBClient
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,16 @@ except Exception as e:  # noqa: BLE001
 
 # Distinct from the chain-query client (50) and NT clients (1, 2).
 _ORDERS_CLIENT_ID = 51
+
+
+class _OrdersResilientClient(ResilientIBClient):
+    """Resilient connection for placing options orders.
+
+    No subscriptions to restore on reconnect — every order call is a
+    one-shot placeOrder/qualify roundtrip."""
+
+
+_orders_resilient = _OrdersResilientClient(client_id=_ORDERS_CLIENT_ID, name="orders")
 
 
 @dataclass
@@ -97,36 +108,24 @@ class OpenSpread:
 
 
 class OrdersClient:
-    """Lazy ib_async connection for options order placement."""
+    """Lazy ib_async connection for options order placement.
+
+    Wraps the shared ResilientIBClient so order placement automatically
+    benefits from exponential-backoff reconnect + heartbeat monitoring.
+    Open-spread state is kept on this wrapper so we can still report on
+    in-flight spreads across reconnects."""
 
     def __init__(self):
-        self._ib: Optional[Any] = None
         self._open: Dict[str, OpenSpread] = {}
 
     async def connect(self):
-        if not IB_ASYNC_AVAILABLE or settings.mock_mode:
-            return None
-        if self._ib is not None and self._ib.isConnected():
-            return self._ib
-        ib = IB()
-        try:
-            await ib.connectAsync(
-                settings.ib_gateway_host,
-                settings.ib_gateway_port,
-                clientId=_ORDERS_CLIENT_ID,
-                timeout=10,
-            )
-            self._ib = ib
-            logger.info("orders client connected to gateway")
-            return ib
-        except Exception as e:  # noqa: BLE001
-            logger.warning("orders client connect failed: %s", e)
-            return None
+        return await _orders_resilient.get()
 
     async def disconnect(self):
-        if self._ib and self._ib.isConnected():
-            self._ib.disconnect()
-        self._ib = None
+        await _orders_resilient.disconnect()
+
+    def start_heartbeat(self) -> None:
+        _orders_resilient.start_heartbeat()
 
     # -- spreads ----------------------------------------------------------
 

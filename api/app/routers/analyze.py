@@ -214,20 +214,59 @@ async def analyze_symbol(
         logger.debug("position context fetch failed: %s", e)
 
     # 4b. probabilistic forecast (Chronos)
-    fc = chronos.forecast(closes, horizon=5)
+    # DTE + Delta for horizon + moneyness
+    dte_value = None
+    delta_value = None
+    moneyness = "Unknown"
+    
+    if position_info:
+        dte_value = position_info.get("dte")
+        delta_value = position_info.get("delta")
+    elif spread_info:
+        dte_value = spread_info.get("dte")
+        delta_value = spread_info.get("delta")
+    
+    # Moneyness by delta
+    if delta_value is not None:
+        abs_delta = abs(delta_value)
+        if abs_delta > 0.7:
+            moneyness = "Deep ITM"
+        elif abs_delta > 0.55:
+            moneyness = "ITM"
+        elif abs_delta > 0.45:
+            moneyness = "ATM"
+        elif abs_delta > 0.25:
+            moneyness = "OTM"
+        else:
+            moneyness = "Far OTM"
+    
+    # Horizon by DTE
+    if dte_value:
+        if dte_value <= 1:
+            horizon = 1
+        elif dte_value <= 7:
+            horizon = 5
+        elif dte_value <= 90:
+            horizon = 30
+        else:
+            horizon = 60
+    else:
+        horizon = 5  # default for unknown
+    
+    fc = chronos.forecast(closes, horizon=horizon)
     if fc:
         expected = fc["expected_return_pct"]
         band = fc["band_pct"]
         if expected > 3.0:
-            signals.append({"name": "Forecast bullish", "score": +2, "detail": f"5d model median +{expected:.1f}% (±{band:.1f}%)"})
+            signals.append({"name": "Forecast bullish", "score": +2, "detail": f"DTE={dte_value}d (δ={delta_value:.2f if delta_value else "N/A"}), {horizon}d forecast: +{expected:.1f}% (±{band:.1f}%)"})
         elif expected > 0.5:
-            signals.append({"name": "Forecast mild bull", "score": +1, "detail": f"5d model median +{expected:.1f}% (±{band:.1f}%)"})
+            signals.append({"name": "Forecast mild bull", "score": +1, "detail": f"DTE={dte_value}d (δ={delta_value:.2f if delta_value else "N/A"}), {horizon}d forecast: +{expected:.1f}% (±{band:.1f}%)"})
         elif expected < -3.0:
-            signals.append({"name": "Forecast bearish", "score": -2, "detail": f"5d model median {expected:.1f}% (±{band:.1f}%)"})
+            signals.append({"name": "Forecast bearish", "score": -2, "detail": f"DTE={dte_value}d, {moneyness} (δ={delta_value:.2f if delta_value else "N/A"}), {horizon}d forecast: {expected:.1f}% (±{band:.1f}%)"})
         elif expected < -0.5:
-            signals.append({"name": "Forecast mild bear", "score": -1, "detail": f"5d model median {expected:.1f}% (±{band:.1f}%)"})
+            signals.append({"name": "Forecast mild bear", "score": -1, "detail": f"DTE={dte_value}d, {moneyness} (δ={delta_value:.2f if delta_value else "N/A"}), {horizon}d forecast: {expected:.1f}% (±{band:.1f}%)"})
         else:
-            signals.append({"name": "Forecast flat", "score": 0, "detail": f"5d model median {expected:+.1f}% (±{band:.1f}%)"})
+            signals.append({"name": "Forecast flat", "score": 0, "detail": f"{horizon}d model median {expected:+.1f}% (±{band:.1f}%)"})
 
     # 5. roll up into a verdict
     total = sum(s["score"] for s in signals)
@@ -253,6 +292,9 @@ async def analyze_symbol(
         },
         "spread": spread_info,
         "position": position_info,
+        "dte": dte_value,
+        "moneyness": moneyness,
+        "delta": delta_value,
         "forecast": fc,
         "signals": signals,
         "verdict": {"score": score, "label": label, "reasons": [s["name"] for s in signals if abs(s["score"]) >= 1]},

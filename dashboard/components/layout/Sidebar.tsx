@@ -8,6 +8,7 @@ import {
   BookOpen,
   Settings,
   Activity,
+  Clock,
   Filter,
   Bot,
   Layers,
@@ -36,7 +37,8 @@ const market: NavEntry[] = [
 ];
 
 const research: NavEntry[] = [
-  { href: "/agents", icon: Bot, label: "AI Debate" },
+  { href: "/trade/history", icon: Clock, label: "Trade History" },
+    { href: "/monitor/journal", icon: BookOpen, label: "Journal" },
 ];
 
 export function Sidebar() {

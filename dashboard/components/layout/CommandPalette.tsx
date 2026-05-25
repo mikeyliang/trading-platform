@@ -67,8 +67,8 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search symbols or jump to a page…" />
-      <CommandList>
+      <CommandInput placeholder="Search symbols or jump to a page…" className="text-sm" />
+      <CommandList className="max-h-[400px] overflow-y-auto">
         <CommandEmpty>No results.</CommandEmpty>
 
         <CommandGroup heading="Pages">

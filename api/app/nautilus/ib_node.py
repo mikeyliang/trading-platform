@@ -58,6 +58,17 @@ except Exception as e:  # noqa: BLE001
 
 IB_VENUE = "INTERACTIVE_BROKERS"
 
+# Watchdog cadence: how often we check the NautilusTrader node is still
+# running. The IB Gateway can silently stop pushing ticks while the
+# underlying socket stays up; this lets us detect and restart faster than
+# waiting for the next request to fail.
+_NODE_WATCHDOG_INTERVAL_S = 20.0
+# Backoff for restarting a dead node — the gateway often refuses fresh
+# API sessions for a minute or two after it relogs in.
+_NODE_RECONNECT_INITIAL_S = 5.0
+_NODE_RECONNECT_MAX_S = 120.0
+_NODE_RECONNECT_FACTOR = 2.0
+
 
 @dataclass
 class _LiveState:
@@ -89,6 +100,16 @@ class IBNode:
         self._ready = asyncio.Event()
         self._lock = asyncio.Lock()
         self._strategy: Optional[Any] = None
+        self._run_task: Optional[asyncio.Task] = None
+        self._watchdog_task: Optional[asyncio.Task] = None
+        # Set during stop()/shutdown so the watchdog doesn't fight the
+        # explicit shutdown path.
+        self._closing = False
+        # Symbols any caller has asked us to subscribe to. Survives a node
+        # rebuild so the watchdog can replay them onto the fresh bridge
+        # strategy — without this, after a gateway flap the WS clients stay
+        # connected (no resubscribe event fires) and quotes silently freeze.
+        self._desired_subscriptions: Set[str] = set()
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -98,7 +119,50 @@ class IBNode:
 
     @property
     def is_connected(self) -> bool:
-        return bool(self._node) and self._ready.is_set()
+        """True when the IBKR Gateway is reachable from this process.
+
+        Truth source is the live ib_async socket on our auxiliary clients
+        (options / depth / ticks / orders): each opens its own connection
+        with a distinct clientId, ``isConnected()`` reflects the actual
+        TCP socket state, and ``ResilientIBClient``'s heartbeat performs
+        a real round-trip every ~15s so a half-open socket flips to
+        False within one cycle. As long as the gateway is up and any of
+        these heartbeats has succeeded, we report connected — even when
+        NT's ``TradingNode.is_running`` is still false (startup window
+        before the bridge boots, or mid-restart after a gateway relogin).
+
+        NT's ``is_running`` is kept as a secondary signal so a brand-new
+        process whose auxiliary clients haven't completed their first
+        connect attempt yet still reports connected the moment NT comes
+        up.
+        """
+        aux_connected = _aux_clients_connected()
+        if aux_connected:
+            if not self._ready.is_set():
+                self._ready.set()
+            logger.debug("is_connected=True (aux clients reachable)")
+            return True
+        node = self._node
+        if node is None:
+            logger.debug(
+                "is_connected=False (aux clients down, NT node not built; "
+                "mock_mode=%s nt_ib=%s)",
+                settings.mock_mode, NT_IB_AVAILABLE,
+            )
+            return False
+        try:
+            running = bool(getattr(node, "is_running", False))
+        except Exception as e:  # noqa: BLE001
+            logger.debug("is_connected=False (node.is_running raised: %s)", e)
+            return False
+        # Heal the stale ``_ready`` flag opportunistically so log lines
+        # and the ``_start_locked`` fast-path stay accurate.
+        if running and not self._ready.is_set():
+            self._ready.set()
+        logger.debug(
+            "is_connected=%s (aux down, NT node.is_running=%s)", running, running,
+        )
+        return running
 
     async def start(self) -> None:
         if not self.is_available:
@@ -110,38 +174,132 @@ class IBNode:
             return
 
         async with self._lock:
-            if self._node is not None:
-                return
+            await self._start_locked()
+
+        # Watchdog starts even if the first attempt failed — it'll keep
+        # retrying in the background so the rest of the app can serve
+        # requests with whatever it has (mock fallback or partial state).
+        self._start_watchdog()
+
+    async def _start_locked(self) -> bool:
+        """Single attempt to build + start the TradingNode. Caller holds ``_lock``."""
+        if self._node is not None and self._ready.is_set():
+            return True
+        # Best-effort cleanup of any half-constructed previous attempt.
+        await self._teardown_node_locked()
+        try:
+            account_id = await self._discover_account_id()
+            if not account_id:
+                logger.error(
+                    "IBNode: could not discover an account on ib-gateway %s:%s — "
+                    "gateway may not be fully logged in yet",
+                    settings.ib_gateway_host, settings.ib_gateway_port,
+                )
+                return False
+            logger.info("IBNode: using account %s", account_id)
+            self._node = self._build_node(account_id)
+            self._node.build()
+            # run_async() blocks until shutdown — spawn it as a background
+            # task and poll is_running so FastAPI startup can complete.
+            self._loop = asyncio.get_running_loop()
+            self._run_task = asyncio.create_task(self._node.run_async())
+            for _ in range(120):  # up to 60s
+                if self._node.is_running:
+                    break
+                await asyncio.sleep(0.5)
+            if not self._node.is_running:
+                logger.error("IBNode: timed out waiting for TradingNode to start")
+                await self._teardown_node_locked()
+                return False
+            self._ready.set()
+            logger.info("IBNode connected to ib-gateway %s:%s",
+                        settings.ib_gateway_host, settings.ib_gateway_port)
+            # Replay any previously-requested subscriptions onto the fresh
+            # bridge strategy. The strategy needs a beat to finish on_start
+            # before subscribe_quote_ticks works cleanly.
+            if self._desired_subscriptions:
+                asyncio.create_task(self._replay_subscriptions())
+            return True
+        except Exception as e:  # noqa: BLE001
+            logger.exception("IBNode start failed: %s", e)
+            await self._teardown_node_locked()
+            return False
+
+    async def _teardown_node_locked(self) -> None:
+        """Tear down the current node so we can rebuild from scratch.
+        Caller must hold ``_lock``. Tolerant of partial state."""
+        node = self._node
+        self._node = None
+        self._ready.clear()
+        # Forget previously-subscribed symbols so the new bridge strategy
+        # re-subscribes them fresh.
+        self.state.subscriptions.clear()
+        if node is None:
+            return
+        try:
+            await node.stop_async()
+        except Exception as e:  # noqa: BLE001
+            logger.debug("IBNode teardown stop_async: %s", e)
+        try:
+            node.dispose()
+        except Exception as e:  # noqa: BLE001
+            logger.debug("IBNode teardown dispose: %s", e)
+        if self._run_task is not None:
+            self._run_task.cancel()
             try:
-                account_id = await self._discover_account_id()
-                if not account_id:
-                    logger.error(
-                        "IBNode: could not discover an account on ib-gateway %s:%s — "
-                        "gateway may not be fully logged in yet",
-                        settings.ib_gateway_host, settings.ib_gateway_port,
-                    )
+                await self._run_task
+            except (asyncio.CancelledError, Exception):  # noqa: BLE001
+                pass
+            self._run_task = None
+
+    def _start_watchdog(self) -> None:
+        """Spawn the background watchdog. Idempotent."""
+        if self._watchdog_task and not self._watchdog_task.done():
+            return
+        if not self.is_available:
+            return
+        self._watchdog_task = asyncio.create_task(
+            self._watchdog_loop(), name="ib_node_watchdog"
+        )
+
+    async def _watchdog_loop(self) -> None:
+        """Detect a dead TradingNode and rebuild with exponential backoff.
+
+        The IB Gateway can drop the API session without closing the
+        socket cleanly (the user-visible symptom is "logged in but data
+        stopped"). NautilusTrader's ``is_running`` flag goes false in that
+        case; we use that as the trigger and rebuild from scratch — the
+        bridge strategy will resubscribe everything in its on_start."""
+        delay = _NODE_RECONNECT_INITIAL_S
+        while not self._closing:
+            try:
+                await asyncio.sleep(_NODE_WATCHDOG_INTERVAL_S)
+                if self._closing:
                     return
-                logger.info("IBNode: using account %s", account_id)
-                self._node = self._build_node(account_id)
-                self._node.build()
-                # run_async() blocks until shutdown — spawn it as a background
-                # task and poll is_running so FastAPI startup can complete.
-                self._loop = asyncio.get_running_loop()
-                self._run_task = asyncio.create_task(self._node.run_async())
-                for _ in range(120):  # up to 60s
-                    if self._node.is_running:
-                        break
-                    await asyncio.sleep(0.5)
-                if not self._node.is_running:
-                    logger.error("IBNode: timed out waiting for TradingNode to start")
-                    return
-                self._ready.set()
-                logger.info("IBNode connected to ib-gateway %s:%s",
-                            settings.ib_gateway_host, settings.ib_gateway_port)
+                node = self._node
+                running = bool(node and getattr(node, "is_running", False))
+                if running:
+                    # Healthy — reset backoff for the next failure.
+                    delay = _NODE_RECONNECT_INITIAL_S
+                    continue
+                logger.warning(
+                    "IBNode watchdog: TradingNode not running (node=%s ready=%s) — "
+                    "attempting restart with %.1fs backoff",
+                    bool(node), self._ready.is_set(), delay,
+                )
+                async with self._lock:
+                    ok = await self._start_locked()
+                if ok:
+                    delay = _NODE_RECONNECT_INITIAL_S
+                else:
+                    await asyncio.sleep(delay)
+                    delay = min(delay * _NODE_RECONNECT_FACTOR, _NODE_RECONNECT_MAX_S)
+            except asyncio.CancelledError:
+                return
             except Exception as e:  # noqa: BLE001
-                logger.exception("IBNode start failed: %s", e)
-                self._node = None
-                self._ready.clear()
+                logger.exception("IBNode watchdog error: %s", e)
+                await asyncio.sleep(delay)
+                delay = min(delay * _NODE_RECONNECT_FACTOR, _NODE_RECONNECT_MAX_S)
 
     async def _discover_account_id(self) -> Optional[str]:
         """Connect briefly with ib_async to grab the managed account list, then drop.
@@ -181,17 +339,18 @@ class IBNode:
                 pass
 
     async def stop(self) -> None:
-        async with self._lock:
-            if not self._node:
-                return
+        self._closing = True
+        # Cancel the watchdog first so it doesn't race us trying to start
+        # a new node while we're tearing the current one down.
+        if self._watchdog_task and not self._watchdog_task.done():
+            self._watchdog_task.cancel()
             try:
-                await self._node.stop_async()
-                self._node.dispose()
-            except Exception as e:  # noqa: BLE001
-                logger.warning("IBNode stop error: %s", e)
-            finally:
-                self._node = None
-                self._ready.clear()
+                await self._watchdog_task
+            except (asyncio.CancelledError, Exception):  # noqa: BLE001
+                pass
+            self._watchdog_task = None
+        async with self._lock:
+            await self._teardown_node_locked()
 
     # -- node config --------------------------------------------------------
 
@@ -242,6 +401,9 @@ class IBNode:
     async def ensure_subscribed(self, symbol: str) -> None:
         """Subscribe the bridge strategy to quote ticks for symbol if not already."""
         symbol = symbol.upper()
+        # Remember the request even when we're not currently connected — the
+        # watchdog will replay desired subs once the node is back up.
+        self._desired_subscriptions.add(symbol)
         if not self.is_connected or symbol in self.state.subscriptions:
             return
         try:
@@ -249,6 +411,24 @@ class IBNode:
             self.state.subscriptions.add(symbol)
         except Exception as e:  # noqa: BLE001
             logger.debug("subscribe %s failed: %s", symbol, e)
+
+    async def _replay_subscriptions(self) -> None:
+        """Re-subscribe every symbol in ``_desired_subscriptions`` after a
+        node rebuild. Called on every successful (re)start. Tolerant of
+        per-symbol failures so one bad ticker doesn't block the rest."""
+        # Give the bridge strategy a chance to receive on_start before we
+        # start firing subscribe_quote_ticks at it.
+        await asyncio.sleep(0.5)
+        if not self.is_connected:
+            return
+        for sym in list(self._desired_subscriptions):
+            if sym in self.state.subscriptions:
+                continue
+            try:
+                self._strategy.subscribe_symbol(sym)
+                self.state.subscriptions.add(sym)
+            except Exception as e:  # noqa: BLE001
+                logger.debug("replay subscribe %s failed: %s", sym, e)
 
     # -- accessors ----------------------------------------------------------
 
@@ -315,6 +495,59 @@ class IBNode:
         if len(self.state.trades) > 1000:
             self.state.trades = self.state.trades[-1000:]
         _schedule(manager.broadcast({"type": "trade", "data": payload}))
+
+
+def _aux_clients_connected() -> bool:
+    """Return True if any long-lived ``ResilientIBClient`` has an open socket.
+
+    Imports are intentionally lazy: those modules import ``ib_node``
+    indirectly through the routers, and a top-level import here would
+    risk a cycle during app startup. Each ``try`` block is independent
+    so a partially-built sibling module doesn't mask a healthy one.
+    """
+    statuses: List[str] = []
+
+    def _probe(name: str, client: Any) -> bool:
+        ib = getattr(client, "_ib", None)
+        if ib is None:
+            statuses.append(f"{name}:no-ib")
+            return False
+        try:
+            sock_ok = bool(ib.isConnected())
+        except Exception as e:  # noqa: BLE001
+            statuses.append(f"{name}:isConnected-raised({e})")
+            return False
+        statuses.append(f"{name}:{'up' if sock_ok else 'down'}")
+        return sock_ok
+
+    any_up = False
+    try:
+        from .ib_options import _client as opts_client
+        if _probe("options", opts_client):
+            any_up = True
+    except Exception as e:  # noqa: BLE001
+        statuses.append(f"options:import-failed({e})")
+    try:
+        from .ib_depth import _client as depth_client
+        if _probe("depth", depth_client):
+            any_up = True
+    except Exception as e:  # noqa: BLE001
+        statuses.append(f"depth:import-failed({e})")
+    try:
+        from .ib_ticks import _client as ticks_client
+        if _probe("ticks", ticks_client):
+            any_up = True
+    except Exception as e:  # noqa: BLE001
+        statuses.append(f"ticks:import-failed({e})")
+    try:
+        from .ib_orders import _orders_resilient as orders_client_base
+        if _probe("orders", orders_client_base):
+            any_up = True
+    except Exception as e:  # noqa: BLE001
+        statuses.append(f"orders:import-failed({e})")
+
+    logger.debug("_aux_clients_connected: any_up=%s [%s]", any_up, ", ".join(statuses))
+    return any_up
 
 
 def _schedule(coro: Awaitable[Any]) -> None:
@@ -515,14 +748,20 @@ if NT_IB_AVAILABLE:
 
         def on_quote_tick(self, tick: QuoteTick) -> None:  # type: ignore[override]
             symbol = str(tick.instrument_id.symbol)
+            # change / change_pct require a prior-close reference, which NT
+            # quote ticks don't carry. Leave them None so downstream
+            # consumers (REST + WS) render "—" instead of misleading
+            # "$0.00 +0.00%" placeholders. The REST quote path's snapshot
+            # call still populates change_pct from ticker.close when
+            # available.
             payload = {
                 "symbol": symbol,
                 "bid": float(tick.bid_price),
                 "ask": float(tick.ask_price),
                 "last": (float(tick.bid_price) + float(tick.ask_price)) / 2,
                 "volume": 0.0,
-                "change": 0.0,
-                "change_pct": 0.0,
+                "change": None,
+                "change_pct": None,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
             self._ibnode._on_quote(symbol, payload)

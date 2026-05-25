@@ -7,7 +7,8 @@ unambiguous "no data" state instead of stale fallbacks.
 """
 import asyncio
 import logging
-from typing import List, Optional
+import time
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Query
 
@@ -42,6 +43,43 @@ _bars_inflight: dict[tuple, asyncio.Future] = {}
 # the chart still has something meaningful. The strategy overlays (fib,
 # adjusted-OTM) are scale-invariant so IWM works fine in place of RUT.
 _INDEX_PROXY = {"RUT": "IWM", "SPX": "SPY", "NDX": "QQQ", "DJX": "DIA"}
+
+# Last-good quote cache for /quotes. When IBKR has no live tick (closed
+# market, brief disconnect, slow snapshot), returning null would blank the
+# watchlist on every 15s poll even though we had a valid quote moments
+# ago. We keep a per-symbol "last useful" payload for ~5 minutes so the
+# dashboard rides through gaps.
+_QUOTE_STALE_S = 300.0
+_last_good_quotes: Dict[str, tuple[float, Dict[str, Any]]] = {}
+
+
+def _is_useful_quote(q: Optional[Dict[str, Any]]) -> bool:
+    """A quote is worth caching when it has a real ``last`` price. Bid/ask
+    alone aren't enough — they may be IBKR's -1 sentinels that ib_options
+    has already nulled out, leaving a row that displays as "—" anyway.
+    """
+    if not q:
+        return False
+    last = q.get("last")
+    return isinstance(last, (int, float)) and last > 0
+
+
+def _remember_quote(sym: str, q: Dict[str, Any]) -> None:
+    if _is_useful_quote(q):
+        _last_good_quotes[sym] = (time.monotonic(), q)
+
+
+def _stale_quote(sym: str) -> Optional[Dict[str, Any]]:
+    """Last known-good quote for ``sym`` if still inside the staleness
+    window — annotated with ``stale: true`` so the UI can dim or tag it."""
+    cached = _last_good_quotes.get(sym)
+    if not cached:
+        return None
+    ts, q = cached
+    if time.monotonic() - ts > _QUOTE_STALE_S:
+        return None
+    return {**q, "stale": True}
+
 
 router = APIRouter(prefix="/api/market", tags=["market"])
 
@@ -126,43 +164,66 @@ async def _fetch_bars(symbol: str, timeframe: str, days: int, cache_key: tuple):
     return empty
 
 
-@router.get("/quote/{symbol}")
-async def get_quote(symbol: str):
-    symbol = symbol.upper()
+async def _resolve_quote(sym: str) -> Dict[str, Any]:
+    """Best-effort quote for one symbol with last-good fallback.
+
+    Order: live NT tick (topped up with snapshot change/change_pct since
+    NT quote ticks don't carry a prior-close reference) → ib_async
+    snapshot → mock (dev only) → last-good cache → null sentinel. Anything
+    that yields a real ``last`` is remembered for ~5 minutes so a transient
+    miss doesn't blank the dashboard.
+    """
     if ib_node.is_connected:
-        await ib_node.ensure_subscribed(symbol)
-        live = ib_node.latest_quote(symbol)
-        if live and live.get("last") is not None:
+        await ib_node.ensure_subscribed(sym)
+        live = ib_node.latest_quote(sym)
+        if live:
+            if live.get("last") is not None and (
+                live.get("change_pct") is None or live.get("change") is None
+            ):
+                snap = await ib_options.get_quote(sym)
+                if snap:
+                    merged = {**live}
+                    if merged.get("change_pct") is None and snap.get("change_pct") is not None:
+                        merged["change_pct"] = snap["change_pct"]
+                    if merged.get("change") is None and snap.get("change") is not None:
+                        merged["change"] = snap["change"]
+                    live = merged
+            _remember_quote(sym, live)
             return live
-        # NT bridge hasn't delivered ticks yet — fall back to an ib_async snapshot.
-        snap = await ib_options.get_quote(symbol)
-        if snap:
+        snap = await ib_options.get_quote(sym)
+        if _is_useful_quote(snap):
+            _remember_quote(sym, snap)
             return snap
     if settings.mock_mode:
-        return simulate_tick(symbol)
-    return {"symbol": symbol, "last": None, "bid": None, "ask": None, "change_pct": None, "volume": None}
+        tick = simulate_tick(sym)
+        _remember_quote(sym, tick)
+        return tick
+    stale = _stale_quote(sym)
+    if stale is not None:
+        return stale
+    return {
+        "symbol": sym,
+        "last": None,
+        "bid": None,
+        "ask": None,
+        "change": None,
+        "change_pct": None,
+        "volume": None,
+    }
+
+
+@router.get("/quote/{symbol}")
+async def get_quote(symbol: str):
+    return await _resolve_quote(symbol.upper())
 
 
 @router.get("/quotes")
 async def get_quotes(symbols: str = Query(..., description="comma-separated symbols")):
     syms = [s.strip().upper() for s in symbols.split(",")]
-    out = []
-    for s in syms:
-        if ib_node.is_connected:
-            await ib_node.ensure_subscribed(s)
-            live = ib_node.latest_quote(s)
-            if live and live.get("last") is not None:
-                out.append(live)
-                continue
-            snap = await ib_options.get_quote(s)
-            if snap:
-                out.append(snap)
-                continue
-        if settings.mock_mode:
-            out.append(simulate_tick(s))
-        else:
-            out.append({"symbol": s, "last": None, "bid": None, "ask": None, "change_pct": None, "volume": None})
-    return out
+    # Parallel — each snapshot is independent and ib_async takes ~1s per
+    # call. Sequential would push the response into multi-second territory
+    # on every 15s poll.
+    return await asyncio.gather(*(_resolve_quote(s) for s in syms))
 
 
 @router.get("/indicators/{symbol}")

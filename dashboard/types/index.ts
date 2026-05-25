@@ -9,13 +9,17 @@ export interface Bar {
 
 export interface Quote {
   symbol: string;
-  bid: number;
-  ask: number;
-  last: number;
-  volume: number;
-  change: number;
-  change_pct: number;
-  timestamp: string;
+  // Live ticks from the NT bridge fill bid/ask/last; REST snapshots may
+  // include them as null when IBKR's frozen-data path has nothing yet.
+  bid?: number | null;
+  ask?: number | null;
+  last?: number | null;
+  volume?: number | null;
+  // Computed against the prior close; null until that comparison is
+  // available (NT quote ticks don't carry it).
+  change?: number | null;
+  change_pct?: number | null;
+  timestamp?: string;
 }
 
 export interface WatchlistItem {
@@ -23,6 +27,7 @@ export interface WatchlistItem {
   sector: string;
   name: string;
   last?: number;
+  change?: number;       // absolute $ change vs. previous close
   change_pct?: number;
   volume?: number;
 }

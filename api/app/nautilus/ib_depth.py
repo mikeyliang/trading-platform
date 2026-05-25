@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Set
 from fastapi import WebSocket
 
 from ..config import settings
+from .ib_client_base import ResilientIBClient
 
 logger = logging.getLogger(__name__)
 
@@ -43,42 +44,19 @@ DEFAULT_DEPTH_ROWS = 10
 PUSH_INTERVAL_S = 0.25
 
 
-class _IBClient:
-    """Dedicated IB connection for depth subscriptions."""
+class _DepthClient(ResilientIBClient):
+    """Dedicated IB connection for depth subscriptions.
 
-    def __init__(self):
-        self._ib: Optional[Any] = None
-        self._lock = asyncio.Lock()
+    Restores every active DOM subscription on reconnect; without this the
+    ladder UI silently freezes whenever the gateway flaps."""
 
-    async def get(self):
-        if not IB_ASYNC_AVAILABLE or settings.mock_mode:
-            return None
-        async with self._lock:
-            if self._ib is not None and self._ib.isConnected():
-                return self._ib
-            ib = IB()
-            try:
-                await ib.connectAsync(
-                    settings.ib_gateway_host,
-                    settings.ib_gateway_port,
-                    clientId=_DEPTH_CLIENT_ID,
-                    timeout=10,
-                )
-                self._ib = ib
-                logger.info("depth client connected to %s:%s",
-                            settings.ib_gateway_host, settings.ib_gateway_port)
-                return ib
-            except Exception as e:  # noqa: BLE001
-                logger.warning("depth client connect failed: %s", e)
-                return None
-
-    async def disconnect(self):
-        if self._ib and self._ib.isConnected():
-            self._ib.disconnect()
-        self._ib = None
+    async def on_reconnect(self, ib: Any) -> None:
+        # Replay every known subscription. _resubscribe_all handles the
+        # logging / per-symbol error trapping.
+        await _resubscribe_all(ib)
 
 
-_client = _IBClient()
+_client = _DepthClient(client_id=_DEPTH_CLIENT_ID, name="depth")
 
 
 @dataclass
@@ -90,6 +68,8 @@ class _DepthSub:
     last_push: float = 0.0
     # Last serialized snapshot — used for REST and for hydration on connect.
     snapshot: Dict[str, Any] = field(default_factory=dict)
+    # Remembered numRows so we can replay reqMktDepth after a reconnect.
+    rows: int = 10
 
 
 _subs: Dict[str, _DepthSub] = {}
@@ -137,6 +117,45 @@ def _serialize(ticker: Any, symbol: str) -> Dict[str, Any]:
     }
 
 
+async def _open_sub(ib: Any, sub: _DepthSub) -> bool:
+    """(Re-)open the IBKR depth subscription on the given ib handle and
+    wire the update callback into ``sub``. Returns True on success.
+
+    Split out from ``_ensure_sub`` so the reconnect hook can call it
+    without needing the global ``_lock`` (we're already under the client
+    lock at that point)."""
+    symbol = sub.symbol
+    try:
+        contract = _resolve_contract(symbol)
+        await ib.qualifyContractsAsync(contract)
+        # isSmartDepth=False is required for index DOM and works fine for
+        # equities when the user has a single-exchange entitlement
+        # (ArcaBook etc.). isSmartDepth=True requires a SMART depth bundle.
+        ticker = ib.reqMktDepth(contract, numRows=sub.rows, isSmartDepth=False)
+        sub.contract = contract
+        sub.ticker = ticker
+
+        def _on_update(tk):
+            # Fires on every DOM update. We throttle the WS fan-out so
+            # bursty updates don't drown the event loop.
+            now = time.time()
+            if now - sub.last_push < PUSH_INTERVAL_S:
+                return
+            sub.last_push = now
+            snap = _serialize(tk, symbol)
+            sub.snapshot = snap
+            if sub.subscribers:
+                asyncio.create_task(_broadcast(sub, snap))
+
+        ticker.updateEvent += _on_update
+        return True
+    except Exception as e:  # noqa: BLE001
+        logger.warning("reqMktDepth(%s) failed: %s", symbol, e)
+        sub.ticker = None
+        sub.contract = None
+        return False
+
+
 async def _ensure_sub(symbol: str, rows: int) -> Optional[_DepthSub]:
     """Open (or return existing) depth subscription for ``symbol``."""
     symbol = symbol.upper()
@@ -151,38 +170,30 @@ async def _ensure_sub(symbol: str, rows: int) -> Optional[_DepthSub]:
         if symbol in _subs and _subs[symbol].ticker is not None:
             return _subs[symbol]
 
-        sub = _subs.get(symbol) or _DepthSub(symbol=symbol)
-        try:
-            contract = _resolve_contract(symbol)
-            await ib.qualifyContractsAsync(contract)
-            # isSmartDepth=False is required for index DOM and works fine for
-            # equities when the user has a single-exchange entitlement
-            # (ArcaBook etc.). isSmartDepth=True requires a SMART depth bundle.
-            ticker = ib.reqMktDepth(contract, numRows=rows, isSmartDepth=False)
-            sub.contract = contract
-            sub.ticker = ticker
-
-            def _on_update(tk):
-                # Fires on every DOM update. We throttle the WS fan-out so
-                # bursty updates don't drown the event loop.
-                now = time.time()
-                if now - sub.last_push < PUSH_INTERVAL_S:
-                    return
-                sub.last_push = now
-                snap = _serialize(tk, symbol)
-                sub.snapshot = snap
-                if sub.subscribers:
-                    asyncio.create_task(_broadcast(sub, snap))
-
-            ticker.updateEvent += _on_update
-            _subs[symbol] = sub
-            # Seed the snapshot once so the first REST/WS hit has data.
-            await asyncio.sleep(0.5)
-            sub.snapshot = _serialize(ticker, symbol)
-            return sub
-        except Exception as e:  # noqa: BLE001
-            logger.warning("reqMktDepth(%s) failed: %s", symbol, e)
+        sub = _subs.get(symbol) or _DepthSub(symbol=symbol, rows=rows)
+        sub.rows = rows
+        ok = await _open_sub(ib, sub)
+        if not ok:
             return None
+        _subs[symbol] = sub
+        # Seed the snapshot once so the first REST/WS hit has data.
+        await asyncio.sleep(0.5)
+        sub.snapshot = _serialize(sub.ticker, symbol)
+        return sub
+
+
+async def _resubscribe_all(ib: Any) -> None:
+    """Replay every active depth subscription on a freshly reconnected
+    socket. Called from ResilientIBClient.on_reconnect; runs sequentially
+    to respect IBKR's per-message pacing."""
+    if not _subs:
+        return
+    logger.info("depth: replaying %d subscription(s) after reconnect", len(_subs))
+    for sub in list(_subs.values()):
+        # Stale ticker is owned by the dead socket — drop the reference.
+        sub.ticker = None
+        sub.contract = None
+        await _open_sub(ib, sub)
 
 
 async def _broadcast(sub: _DepthSub, snap: Dict[str, Any]) -> None:
@@ -232,6 +243,11 @@ def remove_subscriber(symbol: str, ws: WebSocket) -> None:
     sub = _subs.get(symbol.upper())
     if sub is not None:
         sub.subscribers.discard(ws)
+
+
+def start_heartbeat() -> None:
+    """Start the resilient client's heartbeat loop. Idempotent."""
+    _client.start_heartbeat()
 
 
 async def shutdown():

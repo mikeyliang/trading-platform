@@ -7,7 +7,7 @@ import { api, type OptionRow, type OptionsChain } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { TableSkeletonRows } from "@/components/ui/skeleton";
 
 const DEFAULT_SYMBOL = "RUT";
 const STRIKE_WINDOW = 16; // strikes per side of spot
@@ -113,8 +113,12 @@ export function OptionChain() {
       />
 
       {loading && !chain && (
-        <div className="flex items-center justify-center py-16 text-text-muted gap-2 text-sm">
-          <Loader2 size={14} className="animate-spin" /> Loading chain…
+        <div className="overflow-x-auto -mx-1">
+          <table className="w-full text-[11px] tabular">
+            <tbody>
+              <TableSkeletonRows rows={12} cols={11} />
+            </tbody>
+          </table>
         </div>
       )}
 

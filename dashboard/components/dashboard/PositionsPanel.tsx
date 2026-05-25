@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, type Spread } from "@/lib/api";
 import { useStore } from "@/lib/store";
-import { fmtCurrency, fmtPct, pnlClass, cn } from "@/lib/utils";
+import { fmt, fmtCurrency, fmtPct, pnlClass, cn } from "@/lib/utils";
 import type { Position, Trade } from "@/types";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
+import { TableSkeletonRows } from "@/components/ui/skeleton";
 import { Briefcase, Layers, Activity, Target, Search, X } from "lucide-react";
 
 type Tab = "positions" | "spreads" | "trades";
@@ -40,6 +41,7 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
   const setStorePositions = useStore((s) => s.setPositions);
   const [spreads, setSpreads] = useState<Spread[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [loaded, setLoaded] = useState({ positions: false, spreads: false, trades: false });
 
   // Filter state — reset when the parent re-feeds a different symbol prop.
   const [symbolQ, setSymbolQ] = useState(initialSymbol.toUpperCase());
@@ -52,9 +54,18 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
 
   useEffect(() => {
     const load = () => {
-      api.positions().then(setStorePositions).catch(() => null);
-      api.spreads().then(setSpreads).catch(() => null);
-      api.trades().then(setTrades).catch(() => null);
+      api.positions()
+        .then((p) => { setStorePositions(p); })
+        .catch(() => null)
+        .finally(() => setLoaded((l) => (l.positions ? l : { ...l, positions: true })));
+      api.spreads()
+        .then(setSpreads)
+        .catch(() => null)
+        .finally(() => setLoaded((l) => (l.spreads ? l : { ...l, spreads: true })));
+      api.trades()
+        .then(setTrades)
+        .catch(() => null)
+        .finally(() => setLoaded((l) => (l.trades ? l : { ...l, trades: true })));
     };
     load();
     const id = setInterval(load, 30000);
@@ -179,7 +190,9 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
       </div>
 
       <TabsContent value="positions" className="flex-1 overflow-auto mt-0">
-        {positions.length === 0 ? (
+        {!loaded.positions && positions.length === 0 ? (
+          <PositionsTableSkeleton />
+        ) : positions.length === 0 ? (
           <EmptyState
             icon={Briefcase}
             title="No open positions"
@@ -192,7 +205,9 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
         )}
       </TabsContent>
       <TabsContent value="spreads" className="flex-1 overflow-auto mt-0">
-        {spreads.length === 0 ? (
+        {!loaded.spreads && spreads.length === 0 ? (
+          <SpreadsTableSkeleton />
+        ) : spreads.length === 0 ? (
           <EmptyState
             icon={Layers}
             title="No open spreads"
@@ -213,7 +228,9 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
         )}
       </TabsContent>
       <TabsContent value="trades" className="flex-1 overflow-auto mt-0">
-        {trades.length === 0 ? (
+        {!loaded.trades && trades.length === 0 ? (
+          <TradesTableSkeleton />
+        ) : trades.length === 0 ? (
           <EmptyState
             icon={Activity}
             title="No trades yet"
@@ -376,15 +393,19 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
               </TableCell>
               <TableCell className="text-text-muted">{p.sector ?? "—"}</TableCell>
               <TableCell className="text-right tabular">{p.quantity}</TableCell>
-              <TableCell className="text-right tabular">{p.avg_price.toFixed(2)}</TableCell>
-              <TableCell className="text-right tabular">{p.current_price.toFixed(2)}</TableCell>
+              <TableCell className="text-right tabular">{fmt(p.avg_price)}</TableCell>
+              <TableCell className="text-right tabular">{fmt(p.current_price)}</TableCell>
               <TableCell className={cn("text-right tabular font-medium", pnlClass(p.unrealized_pnl))}>
                 {fmtCurrency(p.unrealized_pnl)}
               </TableCell>
               <TableCell className="text-right">
-                <Badge variant={p.unrealized_pnl_pct >= 0 ? "up" : "down"} className="tabular">
-                  {fmtPct(p.unrealized_pnl_pct)}
-                </Badge>
+                {p.unrealized_pnl_pct == null || !Number.isFinite(p.unrealized_pnl_pct) ? (
+                  <span className="tabular text-text-muted">—</span>
+                ) : (
+                  <Badge variant={p.unrealized_pnl_pct >= 0 ? "up" : "down"} className="tabular">
+                    {fmtPct(p.unrealized_pnl_pct)}
+                  </Badge>
+                )}
               </TableCell>
             </TableRow>
             );
@@ -458,7 +479,7 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
                 <span className="text-up">{s.short_strike}</span>
               </TableCell>
               <TableCell className="text-right tabular">{s.quantity}</TableCell>
-              <TableCell className="text-right tabular text-up">{s.credit_received.toFixed(2)}</TableCell>
+              <TableCell className="text-right tabular text-up">{fmt(s.credit_received)}</TableCell>
               <TableCell className="text-right tabular text-up">{fmtCurrency(s.max_profit)}</TableCell>
               <TableCell className="text-right tabular text-down">
                 {fmtCurrency(-Math.abs(s.max_loss))}
@@ -496,15 +517,92 @@ function TradesTable({ trades }: { trades: Trade[] }) {
                 <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
               </TableCell>
               <TableCell className="text-right tabular">{t.quantity}</TableCell>
-              <TableCell className="text-right tabular">{t.price.toFixed(2)}</TableCell>
-              <TableCell className={cn("text-right tabular", pnlClass(t.pnl ?? 0))}>
-                {t.pnl != null ? fmtCurrency(t.pnl) : "—"}
+              <TableCell className="text-right tabular">{fmt(t.price)}</TableCell>
+              <TableCell className={cn("text-right tabular", pnlClass(t.pnl))}>
+                {fmtCurrency(t.pnl)}
               </TableCell>
               <TableCell className="text-text-muted">{t.strategy ?? "—"}</TableCell>
               <TableCell className="text-text-muted">{new Date(t.timestamp).toLocaleString()}</TableCell>
             </TableRow>
           ))
         )}
+      </TableBody>
+    </Table>
+  );
+}
+
+function PositionsTableSkeleton() {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>symbol</TableHead>
+          <TableHead>type</TableHead>
+          <TableHead>sector</TableHead>
+          <TableHead className="text-right">qty</TableHead>
+          <TableHead className="text-right">avg</TableHead>
+          <TableHead className="text-right">price</TableHead>
+          <TableHead className="text-right">unr. P&amp;L</TableHead>
+          <TableHead className="text-right">unr. %</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableSkeletonRows
+          rows={4}
+          cols={8}
+          widths={["w-16", "w-10", "w-14", "w-8", "w-12", "w-12", "w-16", "w-12"]}
+        />
+      </TableBody>
+    </Table>
+  );
+}
+
+function SpreadsTableSkeleton() {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>symbol</TableHead>
+          <TableHead>type</TableHead>
+          <TableHead>expiry</TableHead>
+          <TableHead>strikes</TableHead>
+          <TableHead className="text-right">qty</TableHead>
+          <TableHead className="text-right">credit</TableHead>
+          <TableHead className="text-right">max profit</TableHead>
+          <TableHead className="text-right">max loss</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableSkeletonRows
+          rows={3}
+          cols={8}
+          widths={["w-16", "w-12", "w-16", "w-20", "w-8", "w-12", "w-16", "w-16"]}
+        />
+      </TableBody>
+    </Table>
+  );
+}
+
+function TradesTableSkeleton() {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>symbol</TableHead>
+          <TableHead>side</TableHead>
+          <TableHead className="text-right">qty</TableHead>
+          <TableHead className="text-right">price</TableHead>
+          <TableHead className="text-right">P&amp;L</TableHead>
+          <TableHead>strategy</TableHead>
+          <TableHead>time</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableSkeletonRows
+          rows={4}
+          cols={7}
+          widths={["w-16", "w-10", "w-8", "w-12", "w-12", "w-16", "w-24"]}
+        />
       </TableBody>
     </Table>
   );

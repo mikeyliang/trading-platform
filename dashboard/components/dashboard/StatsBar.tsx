@@ -30,7 +30,7 @@ export function StatsBar() {
 
   const positions = restHydrated || wsPositions.length > 0 ? wsPositions : null;
 
-  const totalUpnl = (positions ?? []).reduce((s, p) => s + p.unrealized_pnl, 0);
+  const totalUpnl = (positions ?? []).reduce((s, p) => s + (p.unrealized_pnl ?? 0), 0);
   const winRate = account?.win_rate ?? 0;
   const loading = initialLoad && !account;
 

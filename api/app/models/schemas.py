@@ -90,6 +90,7 @@ class WatchlistItem(BaseModel):
     sector: str
     name: str
     last: Optional[float] = None
+    change: Optional[float] = None        # absolute $ change vs. previous close
     change_pct: Optional[float] = None
     volume: Optional[float] = None
 

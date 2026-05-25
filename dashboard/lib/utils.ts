@@ -13,7 +13,8 @@ export function fmt(n: number | null | undefined, decimals = 2): string {
   });
 }
 
-export function fmtCurrency(n: number): string {
+export function fmtCurrency(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -21,19 +22,22 @@ export function fmtCurrency(n: number): string {
   }).format(n);
 }
 
-export function fmtPct(n: number, showSign = true): string {
+export function fmtPct(n: number | null | undefined, showSign = true): string {
+  if (n == null || !Number.isFinite(n)) return "—";
   const s = Math.abs(n).toFixed(2) + "%";
   if (!showSign) return s;
   return (n >= 0 ? "+" : "-") + s;
 }
 
-export function fmtCompact(n: number): string {
+export function fmtCompact(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
   if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
   if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(1) + "K";
   return n.toFixed(0);
 }
 
-export function pnlClass(n: number): string {
+export function pnlClass(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "text-text-secondary";
   if (n > 0) return "text-up";
   if (n < 0) return "text-down";
   return "text-text-secondary";

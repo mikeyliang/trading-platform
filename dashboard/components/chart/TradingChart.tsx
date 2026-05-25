@@ -491,7 +491,9 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
       if (disposedRef.current) return;
       if (msg.type === "quote" && msg.symbol === symbol && msg.data) {
         const q = msg.data as Quote;
-        setOhlcv((prev) => prev ? { ...prev, c: q.last } : null);
+        if (q.last != null) {
+          setOhlcv((prev) => prev ? { ...prev, c: q.last as number } : null);
+        }
       }
       if (msg.type === "bar" && msg.symbol === symbol && msg.data && candleRef.current) {
         const b = msg.data as Bar;

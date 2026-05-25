@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from ..config import settings
+from .ib_client_base import ResilientIBClient
 
 logger = logging.getLogger(__name__)
 
@@ -43,42 +44,15 @@ STRIKE_WINDOW = 60
 TICK_WAIT_DEADLINE_S = 15.0
 
 
-class _IBClient:
-    """Lazy singleton IB connection for options queries."""
+class _OptionsClient(ResilientIBClient):
+    """Lazy singleton IB connection for options queries.
 
-    def __init__(self):
-        self._ib: Optional[Any] = None
-        self._lock = asyncio.Lock()
-
-    async def get(self):
-        if not IB_ASYNC_AVAILABLE or settings.mock_mode:
-            return None
-        async with self._lock:
-            if self._ib is not None and self._ib.isConnected():
-                return self._ib
-            ib = IB()
-            try:
-                await ib.connectAsync(
-                    settings.ib_gateway_host,
-                    settings.ib_gateway_port,
-                    clientId=_OPTIONS_CLIENT_ID,
-                    timeout=10,
-                )
-                self._ib = ib
-                logger.info("options client connected to %s:%s",
-                            settings.ib_gateway_host, settings.ib_gateway_port)
-                return ib
-            except Exception as e:  # noqa: BLE001
-                logger.warning("options client connect failed: %s", e)
-                return None
-
-    async def disconnect(self):
-        if self._ib and self._ib.isConnected():
-            self._ib.disconnect()
-        self._ib = None
+    No subscriptions to restore on reconnect — every options call here uses
+    short-lived snapshot subscriptions that auto-cancel, so a fresh socket
+    just works."""
 
 
-_client = _IBClient()
+_client = _OptionsClient(client_id=_OPTIONS_CLIENT_ID, name="options")
 
 # Short-lived cache keyed on (symbol, expiration). Repeated clicks on the
 # same expiry within CHAIN_CACHE_TTL_S re-use the last result instead of
@@ -255,6 +229,18 @@ def _merge_ticker(snap: Any, stream: Any) -> Any:
 
 def _ticker_to_row(contract: Any, ticker: Any) -> Dict[str, Any]:
     greeks = ticker.modelGreeks or ticker.bidGreeks or ticker.askGreeks
+    bid = _safe_price(ticker.bid)
+    ask = _safe_price(ticker.ask)
+    last = _safe_price(ticker.last)
+    mid = None
+    if bid and ask:
+        mid = (bid + ask) / 2
+    elif last:
+        mid = last
+    elif bid:
+        mid = bid
+    elif ask:
+        mid = ask
     return {
         "strike": float(contract.strike),
         "expiry": contract.lastTradeDateOrContractMonth,
@@ -271,6 +257,7 @@ def _ticker_to_row(contract: Any, ticker: Any) -> Dict[str, Any]:
                           if contract.right == "C"
                           else getattr(ticker, "putOpenInterest", None)),
         "vol": _safe_price(ticker.volume),
+        "mid": round(mid, 4) if mid else None,
     }
 
 
@@ -476,6 +463,15 @@ async def get_quote(symbol: str) -> Optional[Dict[str, Any]]:
     if ib is None:
         return None
     try:
+        # Frozen quotes (type 2) — when the market is closed, realtime
+        # (type 1) returns -1 sentinels and the watchlist / position-mark
+        # refresh both blank out. Frozen falls back to the last live tick
+        # before close, which is what we want for unrealized P&L. During
+        # RTH it returns the same value as realtime.
+        try:
+            ib.reqMarketDataType(2)
+        except Exception:  # noqa: BLE001
+            pass
         contract = _resolve_contract(symbol)
         await ib.qualifyContractsAsync(contract)
         ticker = ib.reqMktData(contract, "", snapshot=True, regulatorySnapshot=False)
@@ -488,14 +484,17 @@ async def get_quote(symbol: str) -> Optional[Dict[str, Any]]:
         last = _safe_price(last_raw)
         prev = _safe_price(ticker.close)
         change_pct: Optional[float] = None
+        change: Optional[float] = None
         if last is not None and prev and prev != 0:
             change_pct = round((last - prev) / prev * 100, 2)
+            change = round(last - prev, 4)
         ib.cancelMktData(contract)
         return {
             "symbol": symbol.upper(),
             "last": last,
             "bid": _safe_price(ticker.bid),
             "ask": _safe_price(ticker.ask),
+            "change": change,
             "change_pct": change_pct,
             "volume": _safe_price(ticker.volume),
         }
@@ -867,6 +866,11 @@ async def get_option_mark(conid: int) -> Optional[float]:
     except Exception as e:  # noqa: BLE001
         logger.warning("get_option_mark(conid=%s) failed: %s", conid, e)
         return None
+
+
+def start_heartbeat() -> None:
+    """Start the resilient client's heartbeat loop. Idempotent."""
+    _client.start_heartbeat()
 
 
 async def shutdown():

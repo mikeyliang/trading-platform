@@ -88,9 +88,24 @@ async def get_positions():
     # the WS broadcaster in main.py for the same logic). Nautilus's
     # latest_positions() is unreliable when InstrumentProvider rejects
     # option contracts.
-    raw = await ib_options.get_positions()
-    raw = await _refresh_position_marks(raw)
-    return [_to_position(p) for p in raw]
+    try:
+        raw = await ib_options.get_positions()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("get_positions failed at ib_async read: %s", e)
+        return []
+    try:
+        raw = await _refresh_position_marks(raw)
+    except Exception as e:  # noqa: BLE001
+        # Mark refresh is best-effort — fall through with stale marks
+        # rather than 500ing the dashboard's positions table.
+        logger.warning("_refresh_position_marks failed: %s", e)
+    out: List[Position] = []
+    for p in raw:
+        try:
+            out.append(_to_position(p))
+        except Exception as e:  # noqa: BLE001
+            logger.warning("position row map failed for %s: %s", p, e)
+    return out
 
 
 @router.get("/orders", response_model=List[Order])

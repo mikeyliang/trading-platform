@@ -84,9 +84,10 @@ async def _status_broadcaster():
 
 async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
     """Refresh ``current_price`` on each position with a fresh ib_async
-    snapshot and recompute unrealized P&L. For option positions the mark
-    comes through ``get_option_mark`` (by conId) so the decorated display
-    symbol doesn't have to be parsed back into a contract.
+    snapshot and recompute unrealized P&L. Option positions go through
+    ``get_option_snapshot`` (by symbol/strike/expiry/right) — qualifying
+    the contract from the full spec is more reliable than the conId-only
+    path, which can miss when IBKR fails to resolve the bare conId.
 
     Multiplier-aware: option PnL = (mark - avg) * qty * multiplier, where
     avg is per-contract premium and the multiplier is typically 100. Stock
@@ -102,20 +103,28 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
             return p
         multiplier = float(p.get("_multiplier") or 1) or 1
         sec_type = p.get("_secType") or ""
-        conid = p.get("_conId")
+        sym = p.get("symbol")
 
         new_price = None
-        if sec_type == "OPT" and conid:
-            new_price = await ib_options.get_option_mark(conid)
-        elif sec_type != "OPT":
-            sym = p.get("symbol")
+        if sec_type == "OPT":
+            strike = p.get("strike")
+            expiry = p.get("expiry")
+            right = p.get("right")
+            if sym and strike and expiry and right:
+                try:
+                    snap = await ib_options.get_option_snapshot(sym, strike, expiry, right)
+                except Exception:
+                    snap = None
+                if snap:
+                    new_price = snap.get("mid") or snap.get("last") or snap.get("bid") or snap.get("ask")
+        else:
             if sym:
                 try:
                     snap = await ib_options.get_quote(sym)
                 except Exception:
                     snap = None
                 if snap:
-                    new_price = snap.get("last") or snap.get("bid") or snap.get("ask")
+                    new_price = snap.get("mid") or snap.get("last") or snap.get("bid") or snap.get("ask")
 
         if not new_price:
             return p

@@ -8,9 +8,10 @@ import { Separator } from "@/components/ui/separator";
 import { Search, Sparkles } from "lucide-react";
 import { useChatAvailable } from "@/lib/chat-availability";
 import { useHealth } from "@/lib/health";
+import { ConnectionPill } from "@/components/layout/ConnectionPill";
 
-// IBKR-style top bar: search, active-symbol quote pill, mode badge, copilot.
-// Connection status now lives in the StatusFooter; keep this bar lean.
+// IBKR-style top bar: search, active-symbol quote pill, connection pill,
+// mode badge, copilot. The full per-line breakdown stays in StatusFooter.
 export function Header() {
   const { activeSymbol, quotes } = useStore();
   const { health } = useHealth();
@@ -24,12 +25,12 @@ export function Header() {
       <button
         type="button"
         onClick={openPalette}
-        className="flex items-center gap-2 h-6 w-64 px-2 rounded-sm bg-surface-2/50 hover:bg-surface-2 transition-colors text-text-muted"
+        className="flex items-center gap-2 h-7 w-72 px-3 rounded-md bg-surface-2 hover:bg-surface-3 hover:border-border transition-all text-text-muted border border-border/40 hover:shadow-sm"
         aria-label="Open command palette"
       >
-        <Search size={11} className="shrink-0 opacity-60" />
+        <Search size={12} className="shrink-0 text-text-secondary" />
         <span className="text-[11px] flex-1 text-left">Search symbol, strategy, page…</span>
-        <kbd className="text-[10px] tabular font-mono text-text-muted/60">⌘K</kbd>
+        <kbd className="text-[10px] tabular font-mono bg-bg/80 px-1.5 py-0.5 rounded border border-border/60">⌘K</kbd>
       </button>
 
       <Separator orientation="vertical" className="h-4" />
@@ -38,6 +39,7 @@ export function Header() {
       <ActiveQuote symbol={activeSymbol} quote={q} />
 
       <div className="ml-auto flex items-center gap-2">
+        <ConnectionPill />
         <Badge variant={mode === "LIVE" ? "up" : "warning"}>{mode}</Badge>
         {chatAvailable && (
           <Tooltip>
@@ -64,20 +66,39 @@ function ActiveQuote({
   quote,
 }: {
   symbol: string;
-  quote?: { last: number; change: number; change_pct: number; bid: number; ask: number };
+  quote?: {
+    last?: number | null;
+    change?: number | null;
+    change_pct?: number | null;
+    bid?: number | null;
+    ask?: number | null;
+  };
 }) {
+  const last = quote?.last ?? null;
+  const change = quote?.change ?? null;
+  const changePct = quote?.change_pct ?? null;
+  const bid = quote?.bid ?? null;
+  const ask = quote?.ask ?? null;
+  const hasAnything = last != null || bid != null || ask != null;
   return (
     <div className="flex items-center gap-2 tabular font-mono text-[11px]">
       <span className="text-text-primary font-medium tracking-tight">{symbol}</span>
-      {quote ? (
+      {hasAnything ? (
         <>
-          <span className="text-text-primary">{fmt(quote.last, 2)}</span>
-          <span className={cn(pnlClass(quote.change))}>
-            {quote.change >= 0 ? "+" : ""}
-            {fmt(quote.change, 2)} {fmtPct(quote.change_pct)}
-          </span>
+          <span className="text-text-primary">{last != null ? fmt(last, 2) : "—"}</span>
+          {(change != null || changePct != null) && (
+            <span className={cn(pnlClass(change ?? changePct ?? 0))}>
+              {change != null && (
+                <>
+                  {change >= 0 ? "+" : ""}
+                  {fmt(change, 2)}{" "}
+                </>
+              )}
+              {changePct != null && fmtPct(changePct)}
+            </span>
+          )}
           <span className="text-text-muted">
-            B {fmt(quote.bid, 2)} · A {fmt(quote.ask, 2)}
+            B {bid != null ? fmt(bid, 2) : "—"} · A {ask != null ? fmt(ask, 2) : "—"}
           </span>
         </>
       ) : (

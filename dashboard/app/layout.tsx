@@ -7,6 +7,7 @@ import { WSProvider } from "@/components/layout/WSProvider";
 import { HealthProvider } from "@/lib/health";
 import { NotConnectedBanner } from "@/components/layout/NotConnectedBanner";
 import { CommandPalette } from "@/components/layout/CommandPalette";
+import { ConnectionToasts } from "@/components/layout/ConnectionToasts";
 import { ChatDrawer } from "@/components/chat/ChatDrawer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
               <CommandPalette />
               <ChatDrawer />
+              <ConnectionToasts />
               <Toaster />
             </WSProvider>
           </HealthProvider>

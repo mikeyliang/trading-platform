@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useStore } from "@/lib/store";
 import { useHealth } from "@/lib/health";
 import { cn, fmtCurrency } from "@/lib/utils";
+import { useConnectionStatus, type ConnState } from "@/lib/connection";
 
 // Slim status bar pinned to the bottom of every page, modeled on the IBKR TWS
 // footer: connection state, data stream, mode, server time, last update.
 export function StatusFooter() {
-  const { wsConnected } = useStore();
-  const { health, account, lastCheckedAt, apiReachable } = useHealth();
+  const { health, account, lastCheckedAt } = useHealth();
+  const { ib, ws, api } = useConnectionStatus();
   const [now, setNow] = useState<Date | null>(null);
 
   // Avoid hydration mismatch — only mount the clock after the client renders.
@@ -19,7 +19,6 @@ export function StatusFooter() {
     return () => clearInterval(id);
   }, []);
 
-  const ibOk = !!health?.ib_connected;
   const mode = (health?.mode ?? "paper").toUpperCase();
   const session = marketSession(now);
 
@@ -28,11 +27,11 @@ export function StatusFooter() {
       role="contentinfo"
       className="h-5 flex items-center gap-3 px-3 bg-bg border-t border-border/60 text-[10px] tabular font-mono text-text-muted shrink-0 select-none"
     >
-      <StatusDot ok={ibOk} label={ibOk ? "IB" : "IB OFFLINE"} />
+      <StatusDot state={ib} label={ibLabel(ib)} />
       <Sep />
-      <StatusDot ok={wsConnected} label={wsConnected ? "STREAM" : "STREAM DOWN"} />
+      <StatusDot state={ws} label={wsLabel(ws)} />
       <Sep />
-      <StatusDot ok={apiReachable !== false} label={apiReachable === false ? "API DOWN" : "API"} />
+      <StatusDot state={api} label={apiLabel(api)} />
       <Sep />
       <span className={cn("uppercase tracking-wider", mode === "LIVE" ? "text-warning" : "text-text-secondary")}>
         {mode}
@@ -66,18 +65,37 @@ export function StatusFooter() {
   );
 }
 
-function StatusDot({ ok, label }: { ok: boolean; label: string }) {
+function StatusDot({ state, label }: { state: ConnState; label: string }) {
+  const color =
+    state === "connected" ? "bg-up"
+      : state === "reconnecting" ? "bg-warning"
+        : "bg-down";
+  const text =
+    state === "connected" ? "text-text-muted"
+      : state === "reconnecting" ? "text-warning"
+        : "text-down";
+
   return (
     <span className="flex items-center gap-1.5">
-      <span
-        className={cn(
-          "inline-block w-1.5 h-1.5 rounded-full",
-          ok ? "bg-up" : "bg-down"
+      <span className="relative inline-flex items-center justify-center w-1.5 h-1.5">
+        <span className={cn("absolute inset-0 rounded-full", color)} />
+        {state === "reconnecting" && (
+          <span className={cn("absolute inset-0 rounded-full animate-ping opacity-75", color)} />
         )}
-      />
-      <span className="uppercase tracking-wider">{label}</span>
+      </span>
+      <span className={cn("uppercase tracking-wider", text)}>{label}</span>
     </span>
   );
+}
+
+function ibLabel(s: ConnState) {
+  return s === "connected" ? "IB" : s === "reconnecting" ? "IB RECONNECTING" : "IB OFFLINE";
+}
+function wsLabel(s: ConnState) {
+  return s === "connected" ? "STREAM" : s === "reconnecting" ? "STREAM RECONNECTING" : "STREAM DOWN";
+}
+function apiLabel(s: ConnState) {
+  return s === "connected" ? "API" : s === "reconnecting" ? "API CHECKING" : "API DOWN";
 }
 
 function Sep() {
