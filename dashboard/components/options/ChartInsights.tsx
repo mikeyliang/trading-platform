@@ -52,17 +52,22 @@ function InsightList({ items }: { items: Insight[] }) {
         <li key={i} className="flex items-start gap-2">
           <ToneDot tone={it.tone} />
           <div className="min-w-0">
-            <span className={cn(
-              "text-[11px] tabular font-medium",
-              it.tone === "up" && "text-up",
-              it.tone === "down" && "text-down",
-              it.tone === "warning" && "text-warning",
-              it.tone === "neutral" && "text-text-primary",
-            )}>
+            <span
+              className={cn(
+                "text-[11px] tabular font-medium",
+                it.tone === "up" && "text-up",
+                it.tone === "down" && "text-down",
+                it.tone === "warning" && "text-warning",
+                it.tone === "neutral" && "text-text-primary",
+              )}
+            >
               {it.label}
             </span>
             {it.detail && (
-              <span className="text-[11px] text-text-secondary"> — {it.detail}</span>
+              <span className="text-[11px] text-text-secondary">
+                {" "}
+                — {it.detail}
+              </span>
             )}
           </div>
         </li>
@@ -79,10 +84,18 @@ function buildUnderlyingInsights(result: OptionAnalyzeResult): Insight[] {
   const fc = fe?.ensemble.horizons["5"] ?? null;
   const rsi = u.rsi;
   const mh = u.macd_hist;
-  const emaBull = u.ema9 != null && u.ema21 != null && u.ema200 != null
-    && u.ema9 > u.ema21 && u.ema21 > u.ema200;
-  const emaBear = u.ema9 != null && u.ema21 != null && u.ema200 != null
-    && u.ema9 < u.ema21 && u.ema21 < u.ema200;
+  const emaBull =
+    u.ema9 != null &&
+    u.ema21 != null &&
+    u.ema200 != null &&
+    u.ema9 > u.ema21 &&
+    u.ema21 > u.ema200;
+  const emaBear =
+    u.ema9 != null &&
+    u.ema21 != null &&
+    u.ema200 != null &&
+    u.ema9 < u.ema21 &&
+    u.ema21 < u.ema200;
 
   // Multi-timeframe momentum alignment — if every TF agrees, that's a
   // huge signal. If the chart TF disagrees with the daily, that's a
@@ -99,25 +112,29 @@ function buildUnderlyingInsights(result: OptionAnalyzeResult): Insight[] {
     out.push({
       tone: "up",
       label: "Trend: confirmed up",
-      detail: "EMAs stacked 9 > 21 > 200, MACD expanding, RSI bullish — three independent reads in alignment",
+      detail:
+        "EMAs stacked 9 > 21 > 200, MACD expanding, RSI bullish — three independent reads in alignment",
     });
   } else if (emaBear && mh < 0 && rsi <= 45) {
     out.push({
       tone: "down",
       label: "Trend: confirmed down",
-      detail: "EMAs stacked bearish, MACD expanding red, RSI weak — three independent reads in alignment",
+      detail:
+        "EMAs stacked bearish, MACD expanding red, RSI weak — three independent reads in alignment",
     });
   } else if (emaBull && (mh < 0 || rsi < 50)) {
     out.push({
       tone: "warning",
       label: "Trend: up, momentum cooling",
-      detail: "EMA stack still bullish but MACD/RSI rolling over — watch for pullback or reversal",
+      detail:
+        "EMA stack still bullish but MACD/RSI rolling over — watch for pullback or reversal",
     });
   } else if (emaBear && (mh > 0 || rsi > 50)) {
     out.push({
       tone: "warning",
       label: "Trend: down, bottoming?",
-      detail: "EMA stack still bearish but momentum turning up — potential reversal forming",
+      detail:
+        "EMA stack still bearish but momentum turning up — potential reversal forming",
     });
   } else {
     out.push({
@@ -129,15 +146,26 @@ function buildUnderlyingInsights(result: OptionAnalyzeResult): Insight[] {
 
   // ─ RSI extreme call-out ─
   if (Number.isFinite(rsi)) {
-    if (rsi >= 75) out.push({ tone: "warning", label: `RSI ${rsi.toFixed(0)} extreme`, detail: "overbought — entry here pays at-the-extreme prices" });
-    else if (rsi <= 25) out.push({ tone: "warning", label: `RSI ${rsi.toFixed(0)} extreme`, detail: "oversold — counter-trade risk if you're chasing the move" });
+    if (rsi >= 75)
+      out.push({
+        tone: "warning",
+        label: `RSI ${rsi.toFixed(0)} extreme`,
+        detail: "overbought — entry here pays at-the-extreme prices",
+      });
+    else if (rsi <= 25)
+      out.push({
+        tone: "warning",
+        label: `RSI ${rsi.toFixed(0)} extreme`,
+        detail: "oversold — counter-trade risk if you're chasing the move",
+      });
   }
 
   // ─ Forecast consensus + disagreement risk ─
   if (fc) {
     const er = fc.expected_return_pct;
     const agree = fe?.agreement["5"] ?? 1;
-    const tone: Insight["tone"] = er > 0.5 ? "up" : er < -0.5 ? "down" : "neutral";
+    const tone: Insight["tone"] =
+      er > 0.5 ? "up" : er < -0.5 ? "down" : "neutral";
     out.push({
       tone,
       label: `5d ensemble ${er >= 0 ? "+" : ""}${er.toFixed(1)}%`,
@@ -147,7 +175,8 @@ function buildUnderlyingInsights(result: OptionAnalyzeResult): Insight[] {
       out.push({
         tone: "warning",
         label: "Forecast: low confidence",
-        detail: "models split — at least one expects the opposite move; treat the headline as one opinion, not consensus",
+        detail:
+          "models split — at least one expects the opposite move; treat the headline as one opinion, not consensus",
       });
     }
   }
@@ -160,13 +189,15 @@ function buildUnderlyingInsights(result: OptionAnalyzeResult): Insight[] {
       out.push({
         tone: "warning",
         label: "Forecast vs trend conflict",
-        detail: "uptrend on the chart but models lean down — likely a calls-overpriced setup",
+        detail:
+          "uptrend on the chart but models lean down — likely a calls-overpriced setup",
       });
     } else if (emaBear && fcUp) {
       out.push({
         tone: "warning",
         label: "Forecast vs trend conflict",
-        detail: "downtrend on the chart but models lean up — possible mean-reversion setup",
+        detail:
+          "downtrend on the chart but models lean up — possible mean-reversion setup",
       });
     }
   }
@@ -177,13 +208,15 @@ function buildUnderlyingInsights(result: OptionAnalyzeResult): Insight[] {
       out.push({
         tone: "up",
         label: `${totalTfs}/${totalTfs} timeframes bullish`,
-        detail: "every timeframe checked agrees — high-conviction up-trend across micro and macro",
+        detail:
+          "every timeframe checked agrees — high-conviction up-trend across micro and macro",
       });
     } else if (bearCount === totalTfs) {
       out.push({
         tone: "down",
         label: `${totalTfs}/${totalTfs} timeframes bearish`,
-        detail: "every timeframe checked agrees — high-conviction down-trend across micro and macro",
+        detail:
+          "every timeframe checked agrees — high-conviction down-trend across micro and macro",
       });
     } else if (bullCount >= totalTfs - 1 || bearCount >= totalTfs - 1) {
       const dom = bullCount > bearCount ? "bull" : "bear";
@@ -204,17 +237,19 @@ function buildUnderlyingInsights(result: OptionAnalyzeResult): Insight[] {
   // ─ Calibration coverage (how well-calibrated are recent forecasts?) ─
   const cov = fe?.ensemble.calibration?.coverage_observed_per_h?.["5"];
   if (cov != null && Number.isFinite(cov)) {
-    if (cov >= 0.70 && cov <= 0.90) {
+    if (cov >= 0.7 && cov <= 0.9) {
       out.push({
         tone: "up",
         label: `Forecast calibrated (${(cov * 100).toFixed(0)}% cov)`,
-        detail: "p10-p90 band historically captured ~80% of realized outcomes — bands are honest",
+        detail:
+          "p10-p90 band historically captured ~80% of realized outcomes — bands are honest",
       });
-    } else if (cov < 0.50) {
+    } else if (cov < 0.5) {
       out.push({
         tone: "warning",
         label: `Forecast under-covers (${(cov * 100).toFixed(0)}%)`,
-        detail: "past bands have missed ≥50% of moves — true uncertainty likely larger than shown",
+        detail:
+          "past bands have missed ≥50% of moves — true uncertainty likely larger than shown",
       });
     }
   }
@@ -267,9 +302,18 @@ function buildOptionInsights(result: OptionAnalyzeResult): Insight[] {
   const orsi = oc.rsi[oc.rsi.length - 1];
   if (Number.isFinite(orsi)) {
     if (orsi >= 75) {
-      out.push({ tone: "warning", label: `Option RSI ${orsi.toFixed(0)} · extended`, detail: "the contract itself has run far — quick reversal of fortune possible" });
+      out.push({
+        tone: "warning",
+        label: `Option RSI ${orsi.toFixed(0)} · extended`,
+        detail:
+          "the contract itself has run far — quick reversal of fortune possible",
+      });
     } else if (orsi <= 25) {
-      out.push({ tone: "warning", label: `Option RSI ${orsi.toFixed(0)} · oversold`, detail: "contract beaten down — bounce risk if you're short" });
+      out.push({
+        tone: "warning",
+        label: `Option RSI ${orsi.toFixed(0)} · oversold`,
+        detail: "contract beaten down — bounce risk if you're short",
+      });
     }
   }
 
@@ -301,9 +345,10 @@ function buildPnlInsights(result: OptionAnalyzeResult): Insight[] {
     out.push({
       tone: dailyDollar >= 0 ? "up" : "down",
       label: `Theta ${dailyDollar >= 0 ? "+" : ""}${fmtCurrency(dailyDollar)} / day`,
-      detail: dailyDollar >= 0
-        ? "time decay works in your favor — every passing day adds value"
-        : "every day that passes costs this much in time decay, all else equal",
+      detail:
+        dailyDollar >= 0
+          ? "time decay works in your favor — every passing day adds value"
+          : "every day that passes costs this much in time decay, all else equal",
     });
   }
 
@@ -312,10 +357,16 @@ function buildPnlInsights(result: OptionAnalyzeResult): Insight[] {
   const spot = result.spot;
   if (Number.isFinite(be) && spot > 0) {
     const moveNeededPct = ((be - spot) / spot) * 100;
-    const dir = (isLong && (result.right === "C" ? be > spot : be < spot)) ||
-                (!isLong && (result.right === "C" ? be < spot : be > spot));
+    const dir =
+      (isLong && (result.right === "C" ? be > spot : be < spot)) ||
+      (!isLong && (result.right === "C" ? be < spot : be > spot));
     out.push({
-      tone: Math.abs(moveNeededPct) < 2 ? "up" : Math.abs(moveNeededPct) < 8 ? "neutral" : "warning",
+      tone:
+        Math.abs(moveNeededPct) < 2
+          ? "up"
+          : Math.abs(moveNeededPct) < 8
+            ? "neutral"
+            : "warning",
       label: `BE @ ${fmt(be)} · ${moveNeededPct >= 0 ? "+" : ""}${moveNeededPct.toFixed(1)}% from spot`,
       detail: `spot needs to ${dir ? "stay on its current side of" : "cross"} this line at expiry to avoid a loss`,
     });
@@ -329,9 +380,12 @@ function buildPnlInsights(result: OptionAnalyzeResult): Insight[] {
     out.push({
       tone: rr >= 2 ? "up" : rr >= 1 ? "neutral" : "down",
       label: `R/R ${rr.toFixed(2)} : 1`,
-      detail: rr >= 2
-        ? "asymmetric — risking $1 to make $2+"
-        : rr >= 1 ? "symmetric — even payoff" : "you're risking more than you can make at max",
+      detail:
+        rr >= 2
+          ? "asymmetric — risking $1 to make $2+"
+          : rr >= 1
+            ? "symmetric — even payoff"
+            : "you're risking more than you can make at max",
     });
   }
 
@@ -341,9 +395,12 @@ function buildPnlInsights(result: OptionAnalyzeResult): Insight[] {
     out.push({
       tone: pop >= 0.6 ? "up" : pop >= 0.4 ? "warning" : "down",
       label: `POP ${(pop * 100).toFixed(0)}%`,
-      detail: pop >= 0.6
-        ? "lopsided in your favor at expiry under current IV"
-        : pop >= 0.4 ? "coin-flip territory — IV is doing more than direction" : "low base-rate — needs a thesis stronger than IV",
+      detail:
+        pop >= 0.6
+          ? "lopsided in your favor at expiry under current IV"
+          : pop >= 0.4
+            ? "coin-flip territory — IV is doing more than direction"
+            : "low base-rate — needs a thesis stronger than IV",
     });
   }
 

@@ -10,7 +10,11 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { Info, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -44,7 +48,13 @@ interface Props {
   showReset?: boolean;
 }
 
-export function SchemaForm({ schema, value, onChange, className, showReset = true }: Props) {
+export function SchemaForm({
+  schema,
+  value,
+  onChange,
+  className,
+  showReset = true,
+}: Props) {
   if (!schema || !schema.properties) {
     return (
       <div className="text-[11px] text-text-muted py-4 text-center">
@@ -55,8 +65,9 @@ export function SchemaForm({ schema, value, onChange, className, showReset = tru
 
   const groups = groupFields(schema);
   const defaults = schema.defaults ?? {};
-  const dirty =
-    Object.keys(defaults).some((k) => value[k] !== undefined && value[k] !== defaults[k]);
+  const dirty = Object.keys(defaults).some(
+    (k) => value[k] !== undefined && value[k] !== defaults[k],
+  );
 
   const reset = () => onChange({});
 
@@ -121,11 +132,16 @@ function FieldRow({
   return (
     <div className="flex items-center justify-between gap-3 min-h-[26px]">
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className="text-[11px] text-text-secondary truncate">{label}</span>
+        <span className="text-[11px] text-text-secondary truncate">
+          {label}
+        </span>
         {field.description && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Info size={11} className="text-text-muted shrink-0 cursor-help" />
+              <Info
+                size={11}
+                className="text-text-muted shrink-0 cursor-help"
+              />
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-xs">
               {field.description}
@@ -155,7 +171,9 @@ function FieldRow({
             min={field.minimum}
             max={field.maximum}
             value={(value ?? "") as number | string}
-            onChange={(e) => onChange(e.target.value === "" ? "" : +e.target.value)}
+            onChange={(e) =>
+              onChange(e.target.value === "" ? "" : +e.target.value)
+            }
             className="h-7 w-20 text-right tabular text-[11px]"
           />
         ) : (
@@ -171,9 +189,7 @@ function FieldRow({
 }
 
 function prettyName(s: string): string {
-  return s
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function resolveEnum(field: JsonSchemaField): (string | number)[] | null {
@@ -187,7 +203,9 @@ function resolveEnum(field: JsonSchemaField): (string | number)[] | null {
   return null;
 }
 
-function groupFields(schema: JsonSchema): [string, [string, JsonSchemaField][]][] {
+function groupFields(
+  schema: JsonSchema,
+): [string, [string, JsonSchemaField][]][] {
   const props = schema.properties ?? {};
   const buckets = new Map<string, [string, JsonSchemaField][]>();
   for (const [name, field] of Object.entries(props)) {

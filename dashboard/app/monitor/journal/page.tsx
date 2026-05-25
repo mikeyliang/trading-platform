@@ -14,7 +14,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { toast } from "@/components/ui/toaster";
@@ -51,12 +55,15 @@ export default function JournalPage() {
     return entries.filter((e) => {
       if (tagFilter && !e.tags.includes(tagFilter)) return false;
       if (!q) return true;
-      const hay = `${e.title} ${e.body} ${e.tags.join(" ")} ${e.symbol ?? ""}`.toLowerCase();
+      const hay =
+        `${e.title} ${e.body} ${e.tags.join(" ")} ${e.symbol ?? ""}`.toLowerCase();
       return hay.includes(q);
     });
   }, [entries, filter, tagFilter]);
 
-  const active = activeId ? entries.find((e) => e.id === activeId) ?? null : null;
+  const active = activeId
+    ? (entries.find((e) => e.id === activeId) ?? null)
+    : null;
 
   const create = () => {
     const e = newEntry();
@@ -115,7 +122,10 @@ export default function JournalPage() {
           <Card className="flex flex-col min-h-0 overflow-hidden">
             <div className="p-2 border-b border-border/60 shrink-0 flex flex-col gap-2">
               <div className="relative">
-                <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted" />
+                <Search
+                  size={11}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted"
+                />
                 <Input
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
@@ -133,7 +143,7 @@ export default function JournalPage() {
                         "text-[10px] px-1.5 py-0.5 rounded border transition-colors",
                         tagFilter === t
                           ? "bg-accent/15 text-accent border-accent/30"
-                          : "bg-surface-2 text-text-muted border-border hover:text-text-secondary"
+                          : "bg-surface-2 text-text-muted border-border hover:text-text-secondary",
                       )}
                     >
                       #{t}
@@ -161,7 +171,9 @@ export default function JournalPage() {
 
             <div className="flex-1 overflow-y-auto">
               {filtered.length === 0 ? (
-                <div className="text-center py-6 text-[11px] text-text-muted">no matches</div>
+                <div className="text-center py-6 text-[11px] text-text-muted">
+                  no matches
+                </div>
               ) : (
                 filtered.map((e) => (
                   <button
@@ -172,18 +184,24 @@ export default function JournalPage() {
                     }}
                     className={cn(
                       "w-full text-left px-3 py-2 border-b border-border/40 hover:bg-surface-2 transition-colors flex flex-col gap-0.5",
-                      activeId === e.id && "bg-surface-2"
+                      activeId === e.id && "bg-surface-2",
                     )}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      {e.mood && <span className="text-xs leading-none shrink-0">{e.mood}</span>}
+                      {e.mood && (
+                        <span className="text-xs leading-none shrink-0">
+                          {e.mood}
+                        </span>
+                      )}
                       <span className="text-xs font-medium text-text-primary truncate min-w-0">
                         {e.title || "(untitled)"}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[10px] text-text-muted tabular">
                       <span>{e.date}</span>
-                      {e.symbol && <span className="text-accent">{e.symbol}</span>}
+                      {e.symbol && (
+                        <span className="text-accent">{e.symbol}</span>
+                      )}
                       {e.tags.slice(0, 2).map((t) => (
                         <span key={t}>#{t}</span>
                       ))}
@@ -236,20 +254,32 @@ function Viewer({
   return (
     <>
       <div className="flex items-center gap-2 px-4 h-10 border-b border-border/60 shrink-0">
-        {entry.mood && <span className="text-base leading-none">{entry.mood}</span>}
+        {entry.mood && (
+          <span className="text-base leading-none">{entry.mood}</span>
+        )}
         <div className="min-w-0">
           <div className="text-sm font-medium text-text-primary leading-tight truncate">
             {entry.title || "(untitled)"}
           </div>
           <div className="text-[10px] text-text-muted tabular">
             {entry.date}
-            {entry.symbol && <> · <span className="text-accent">{entry.symbol}</span></>}
+            {entry.symbol && (
+              <>
+                {" "}
+                · <span className="text-accent">{entry.symbol}</span>
+              </>
+            )}
           </div>
         </div>
         <div className="ml-auto flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm" onClick={onEdit} aria-label="Edit">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onEdit}
+                aria-label="Edit"
+              >
                 <Edit3 />
               </Button>
             </TooltipTrigger>
@@ -257,7 +287,12 @@ function Viewer({
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm" onClick={onDelete} aria-label="Delete">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onDelete}
+                aria-label="Delete"
+              >
                 <Trash2 />
               </Button>
             </TooltipTrigger>
@@ -279,10 +314,14 @@ function Viewer({
       <div className="flex-1 overflow-y-auto p-3">
         {entry.body.trim() ? (
           <div className="prose-chat">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.body}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {entry.body}
+            </ReactMarkdown>
           </div>
         ) : (
-          <p className="text-[11px] text-text-muted">No body yet. Click edit to add one.</p>
+          <p className="text-[11px] text-text-muted">
+            No body yet. Click edit to add one.
+          </p>
         )}
       </div>
     </>
@@ -303,16 +342,20 @@ function Editor({
   const [draft, setDraft] = useState<JournalEntry>(initial);
   const [tagInput, setTagInput] = useState("");
 
-  const update = <K extends keyof JournalEntry>(key: K, value: JournalEntry[K]) =>
-    setDraft((d) => ({ ...d, [key]: value }));
+  const update = <K extends keyof JournalEntry>(
+    key: K,
+    value: JournalEntry[K],
+  ) => setDraft((d) => ({ ...d, [key]: value }));
 
   const addTag = () => {
     const v = tagInput.trim().toLowerCase().replace(/^#/, "");
     if (!v) return;
-    if (!draft.tags.includes(v)) setDraft((d) => ({ ...d, tags: [...d.tags, v] }));
+    if (!draft.tags.includes(v))
+      setDraft((d) => ({ ...d, tags: [...d.tags, v] }));
     setTagInput("");
   };
-  const removeTag = (t: string) => setDraft((d) => ({ ...d, tags: d.tags.filter((x) => x !== t) }));
+  const removeTag = (t: string) =>
+    setDraft((d) => ({ ...d, tags: d.tags.filter((x) => x !== t) }));
 
   return (
     <>
@@ -337,7 +380,9 @@ function Editor({
 
       <div className="px-3 py-2 border-b border-border/60 grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0 text-[11px]">
         <label className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">Date</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            Date
+          </span>
           <Input
             type="date"
             value={draft.date}
@@ -346,16 +391,22 @@ function Editor({
           />
         </label>
         <label className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">Symbol</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            Symbol
+          </span>
           <Input
             value={draft.symbol ?? ""}
-            onChange={(e) => update("symbol", e.target.value.toUpperCase() || undefined)}
+            onChange={(e) =>
+              update("symbol", e.target.value.toUpperCase() || undefined)
+            }
             placeholder="optional"
             className="h-7 flex-1 text-[11px] uppercase tabular"
           />
         </label>
         <label className="flex items-center gap-2 col-span-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">Mood</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            Mood
+          </span>
           <div className="flex gap-1">
             {MOODS.map((m) => (
               <button
@@ -365,7 +416,7 @@ function Editor({
                   "w-6 h-6 rounded text-sm transition-all leading-none",
                   draft.mood === m
                     ? "bg-accent/20 border border-accent/40 scale-110"
-                    : "bg-surface-2 border border-border hover:border-surface-3"
+                    : "bg-surface-2 border border-border hover:border-surface-3",
                 )}
                 aria-label={`mood ${m}`}
               >

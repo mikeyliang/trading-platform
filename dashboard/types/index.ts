@@ -41,7 +41,7 @@ export interface Position {
   // option analyzer with these fields prefilled.
   is_option?: boolean;
   strike?: number;
-  expiry?: string;  // YYYYMMDD
+  expiry?: string; // YYYYMMDD
   right?: "C" | "P";
   multiplier?: number;
 }
@@ -146,7 +146,17 @@ export interface AccountInfo {
 export type Timeframe = "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1d";
 
 export interface WSMessage {
-  type: "connected" | "disconnected" | "quote" | "bar" | "signal" | "order" | "position" | "subscribed" | "monitor_alert" | "snapshot";
+  type:
+    | "connected"
+    | "disconnected"
+    | "quote"
+    | "bar"
+    | "signal"
+    | "order"
+    | "position"
+    | "subscribed"
+    | "monitor_alert"
+    | "snapshot";
   symbol?: string;
   data?: unknown;
   [key: string]: unknown;

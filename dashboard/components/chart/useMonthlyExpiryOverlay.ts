@@ -31,7 +31,7 @@ export function useMonthlyExpiryOverlay({ chart, container, enabled }: Args) {
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute(
       "style",
-      "position:absolute;inset:0;pointer-events:none;z-index:6;overflow:visible;"
+      "position:absolute;inset:0;pointer-events:none;z-index:6;overflow:visible;",
     );
     svg.classList.add("opex-overlay");
     el.appendChild(svg);
@@ -73,7 +73,7 @@ export function useMonthlyExpiryOverlay({ chart, container, enabled }: Args) {
         label.setAttribute("font-size", "9");
         label.setAttribute(
           "font-family",
-          "ui-monospace, SFMono-Regular, monospace"
+          "ui-monospace, SFMono-Regular, monospace",
         );
         label.setAttribute("font-weight", "500");
         label.textContent = monthLabel(t);
@@ -82,13 +82,13 @@ export function useMonthlyExpiryOverlay({ chart, container, enabled }: Args) {
     };
 
     render();
-    const unsubTime = c.timeScale().subscribeVisibleTimeRangeChange(render);
+    c.timeScale().subscribeVisibleTimeRangeChange(render);
     const ro = new ResizeObserver(render);
     ro.observe(el);
 
     return () => {
       try {
-        unsubTime?.();
+        c.timeScale().unsubscribeVisibleTimeRangeChange(render);
       } catch {}
       ro.disconnect();
       if (svg.parentNode) svg.parentNode.removeChild(svg);

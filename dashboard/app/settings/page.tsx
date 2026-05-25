@@ -33,14 +33,30 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle>Runtime</CardTitle>
             <span className="text-[10px] tabular font-mono text-text-muted">
-              {lastCheckedAt ? new Date(lastCheckedAt).toLocaleTimeString() : "—"}
+              {lastCheckedAt
+                ? new Date(lastCheckedAt).toLocaleTimeString()
+                : "—"}
             </span>
           </CardHeader>
           <CardContent className="p-0">
             <Rows>
-              <Row label="Mode" value={mode} valueClass={mode === "LIVE" ? "text-warning" : "text-text-primary"} />
-              <Row label="IBKR Gateway" value={ibOk ? "Connected" : "Offline"} valueClass={ibOk ? "text-up" : "text-down"} />
-              <Row label="Realtime stream" value={wsConnected ? "Live" : "Offline"} valueClass={wsConnected ? "text-up" : "text-down"} />
+              <Row
+                label="Mode"
+                value={mode}
+                valueClass={
+                  mode === "LIVE" ? "text-warning" : "text-text-primary"
+                }
+              />
+              <Row
+                label="IBKR Gateway"
+                value={ibOk ? "Connected" : "Offline"}
+                valueClass={ibOk ? "text-up" : "text-down"}
+              />
+              <Row
+                label="Realtime stream"
+                value={wsConnected ? "Live" : "Offline"}
+                valueClass={wsConnected ? "text-up" : "text-down"}
+              />
               <Row
                 label="API"
                 value={apiReachable === false ? "Unreachable" : "OK"}
@@ -54,15 +70,32 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Account</CardTitle>
-            <span className={cn("text-[10px] tabular font-mono", account ? "text-text-secondary" : "text-text-muted")}>
+            <span
+              className={cn(
+                "text-[10px] tabular font-mono",
+                account ? "text-text-secondary" : "text-text-muted",
+              )}
+            >
               {account ? "live" : "no binding"}
             </span>
           </CardHeader>
           <CardContent className="p-0">
             <Rows>
-              <Row label="Equity" value={account ? fmtCurrency(account.equity ?? 0) : "—"} mono />
-              <Row label="Buying power" value={account ? fmtCurrency(account.buying_power ?? 0) : "—"} mono />
-              <Row label="Balance" value={account ? fmtCurrency(account.balance ?? 0) : "—"} mono />
+              <Row
+                label="Equity"
+                value={account ? fmtCurrency(account.equity ?? 0) : "—"}
+                mono
+              />
+              <Row
+                label="Buying power"
+                value={account ? fmtCurrency(account.buying_power ?? 0) : "—"}
+                mono
+              />
+              <Row
+                label="Balance"
+                value={account ? fmtCurrency(account.balance ?? 0) : "—"}
+                mono
+              />
               <Row
                 label="Unrealized PnL"
                 value={account ? fmtCurrency(account.unrealized_pnl ?? 0) : "—"}
@@ -75,7 +108,15 @@ export default function SettingsPage() {
                 valueClass={pnlColor(account?.realized_pnl ?? 0)}
                 mono
               />
-              <Row label="Trades · win-rate" value={account ? `${account.total_trades} · ${(account.win_rate * 100).toFixed(1)}%` : "—"} mono />
+              <Row
+                label="Trades · win-rate"
+                value={
+                  account
+                    ? `${account.total_trades} · ${(account.win_rate * 100).toFixed(1)}%`
+                    : "—"
+                }
+                mono
+              />
             </Rows>
           </CardContent>
         </Card>
@@ -109,8 +150,8 @@ export default function SettingsPage() {
       </div>
 
       <p className="text-[10px] text-text-muted">
-        Persistent preferences (theme switching, custom layouts, API endpoint overrides) are not yet wired —
-        runtime values shown here are read-only.
+        Persistent preferences (theme switching, custom layouts, API endpoint
+        overrides) are not yet wired — runtime values shown here are read-only.
       </p>
     </PageShell>
   );
@@ -138,7 +179,7 @@ function Row({
         className={cn(
           "text-[11px]",
           mono && "tabular font-mono",
-          valueClass ?? "text-text-primary"
+          valueClass ?? "text-text-primary",
         )}
       >
         {value}

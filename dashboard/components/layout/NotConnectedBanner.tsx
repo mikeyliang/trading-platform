@@ -26,12 +26,28 @@ export function NotConnectedBanner() {
   if (apiReachable === null && !health) return null;
   // API down: hard error
   if (apiReachable === false) {
-    return <BannerImpl apiDown lastCheckedAt={lastCheckedAt} now={now} retry={retry} retrying={retrying} />;
+    return (
+      <BannerImpl
+        apiDown
+        lastCheckedAt={lastCheckedAt}
+        now={now}
+        retry={retry}
+        retrying={retrying}
+      />
+    );
   }
   // API up, IBKR gateway down: hard warning. IBKR is the only data source,
   // so no bars / quotes / chains until the gateway authenticates.
   if (apiReachable && health && health.ib_connected === false) {
-    return <BannerImpl apiDown={false} lastCheckedAt={lastCheckedAt} now={now} retry={retry} retrying={retrying} />;
+    return (
+      <BannerImpl
+        apiDown={false}
+        lastCheckedAt={lastCheckedAt}
+        now={now}
+        retry={retry}
+        retrying={retrying}
+      />
+    );
   }
   return null;
 }
@@ -56,13 +72,25 @@ function BannerImpl({
   const Icon = apiDown ? WifiOff : AlertTriangle;
 
   return (
-    <div className={cn(
-      "flex items-center gap-3 px-4 h-9 border-b text-[11px] shrink-0 animate-fade-in",
-      apiDown ? "bg-down/10 border-down/20" : "bg-warning/10 border-warning/20",
-    )}>
-      <Icon size={13} className={cn("shrink-0", apiDown ? "text-down" : "text-warning")} />
+    <div
+      className={cn(
+        "flex items-center gap-3 px-4 h-9 border-b text-[11px] shrink-0 animate-fade-in",
+        apiDown
+          ? "bg-down/10 border-down/20"
+          : "bg-warning/10 border-warning/20",
+      )}
+    >
+      <Icon
+        size={13}
+        className={cn("shrink-0", apiDown ? "text-down" : "text-warning")}
+      />
       <div className="flex-1 flex items-center gap-2 min-w-0">
-        <span className={cn("font-medium uppercase tracking-wider", apiDown ? "text-down" : "text-warning")}>
+        <span
+          className={cn(
+            "font-medium uppercase tracking-wider",
+            apiDown ? "text-down" : "text-warning",
+          )}
+        >
           {label}
         </span>
         <span className="text-text-secondary truncate">{message}</span>

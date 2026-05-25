@@ -6,18 +6,18 @@ import { cn } from "@/lib/utils";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 
 const TRADE_FILTERS = [
-  { value: "",        label: "All" },
-  { value: "rut",     label: "RUT" },
-  { value: "mars",    label: "Mars" },
+  { value: "", label: "All" },
+  { value: "rut", label: "RUT" },
+  { value: "mars", label: "Mars" },
   { value: "marsmax", label: "Max" },
-  { value: "space",   label: "Space" },
+  { value: "space", label: "Space" },
 ];
 
 const TRADE_TONE: Record<string, string> = {
-  rut:     "text-text-secondary",
-  mars:    "text-accent",
+  rut: "text-text-secondary",
+  mars: "text-accent",
   marsmax: "text-warning",
-  space:   "text-up",
+  space: "text-up",
 };
 
 export function ScanHistory() {
@@ -28,10 +28,17 @@ export function ScanHistory() {
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    api.scansHistory({ limit: 50, trade_type: filter || undefined })
-      .then((r) => { if (alive) setScans(r.scans); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
+    api
+      .scansHistory({ limit: 50, trade_type: filter || undefined })
+      .then((r) => {
+        if (alive) setScans(r.scans);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, [filter]);
 
   const stats = useMemo(() => summarize(scans), [scans]);
@@ -53,7 +60,7 @@ export function ScanHistory() {
                   "h-7 px-2.5 text-[11px] tabular rounded-sm transition-colors",
                   filter === f.value
                     ? "text-text-primary bg-surface-2"
-                    : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
+                    : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60",
                 )}
               >
                 {f.label}
@@ -112,7 +119,9 @@ interface Stats {
 }
 
 function summarize(scans: ScanRecord[]): Stats {
-  let total = 0, withPick = 0, bestAroc: number | null = null;
+  let total = 0,
+    withPick = 0,
+    bestAroc: number | null = null;
   const byType: Record<string, number> = {};
   for (const s of scans) {
     total++;
@@ -121,7 +130,10 @@ function summarize(scans: ScanRecord[]): Stats {
       withPick++;
       byType[s.recommendation] = (byType[s.recommendation] ?? 0) + 1;
     }
-    if (cand?.aroc_pct != null && (bestAroc == null || cand.aroc_pct > bestAroc)) {
+    if (
+      cand?.aroc_pct != null &&
+      (bestAroc == null || cand.aroc_pct > bestAroc)
+    ) {
       bestAroc = cand.aroc_pct;
     }
   }
@@ -136,7 +148,11 @@ function SummaryStrip({ stats }: { stats: Stats }) {
       <Metric
         label="With a pick"
         value={stats.withPick.toString()}
-        sub={stats.total > 0 ? `${Math.round((stats.withPick / stats.total) * 100)}%` : undefined}
+        sub={
+          stats.total > 0
+            ? `${Math.round((stats.withPick / stats.total) * 100)}%`
+            : undefined
+        }
       />
       <Metric
         label="Best AROC"
@@ -166,12 +182,18 @@ function Metric({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">{label}</div>
+      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">
+        {label}
+      </div>
       <div className="flex items-baseline gap-2">
         <span
           className={cn(
             "text-xl md:text-2xl font-semibold tabular tracking-tight",
-            tone === "up" ? "text-up" : tone === "accent" ? "text-accent" : "text-text-primary",
+            tone === "up"
+              ? "text-up"
+              : tone === "accent"
+                ? "text-accent"
+                : "text-text-primary",
           )}
         >
           {value}
@@ -188,24 +210,52 @@ function Row({ scan }: { scan: ScanRecord }) {
     ? `${ran.toLocaleDateString(undefined, { month: "short", day: "numeric" })} · ${ran.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
     : "—";
   const reco = scan.recommendation;
-  const tone = reco ? (TRADE_TONE[reco] ?? "text-text-secondary") : "text-text-muted";
+  const tone = reco
+    ? (TRADE_TONE[reco] ?? "text-text-secondary")
+    : "text-text-muted";
   const cand = scan.payload?.recommendation?.candidate;
 
   return (
     <tr className="border-t border-border/30 hover:bg-surface-2/30 transition-colors">
-      <td className="px-3 py-2.5 text-text-secondary tabular whitespace-nowrap">{dateStr}</td>
-      <td className="px-3 py-2.5 text-text-muted text-[10px] uppercase tracking-wider whitespace-nowrap">{scan.scope ?? "—"}</td>
+      <td className="px-3 py-2.5 text-text-secondary tabular whitespace-nowrap">
+        {dateStr}
+      </td>
+      <td className="px-3 py-2.5 text-text-muted text-[10px] uppercase tracking-wider whitespace-nowrap">
+        {scan.scope ?? "—"}
+      </td>
       <td className="px-3 py-2.5 text-text-secondary">{scan.symbol ?? "—"}</td>
-      <td className={cn("px-3 py-2.5 uppercase text-[10px] tracking-wider", tone)}>
+      <td
+        className={cn("px-3 py-2.5 uppercase text-[10px] tracking-wider", tone)}
+      >
         {reco ?? "—"}
       </td>
       <td className="px-3 py-2.5 text-right font-mono text-text-primary">
-        {cand ? <>{cand.short_strike}<span className="text-text-muted">/</span>{cand.long_strike}</> : "—"}
+        {cand ? (
+          <>
+            {cand.short_strike}
+            <span className="text-text-muted">/</span>
+            {cand.long_strike}
+          </>
+        ) : (
+          "—"
+        )}
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary whitespace-nowrap">
-        {cand ? <>{formatExpiry(cand.expiry)} <span className="text-text-muted">· {cand.dte}d</span></> : "—"}
+        {cand ? (
+          <>
+            {formatExpiry(cand.expiry)}{" "}
+            <span className="text-text-muted">· {cand.dte}d</span>
+          </>
+        ) : (
+          "—"
+        )}
       </td>
-      <td className={cn("px-3 py-2.5 text-right", cand ? "text-up" : "text-text-muted")}>
+      <td
+        className={cn(
+          "px-3 py-2.5 text-right",
+          cand ? "text-up" : "text-text-muted",
+        )}
+      >
         {cand ? `${cand.aroc_pct.toFixed(0)}%` : "—"}
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary">

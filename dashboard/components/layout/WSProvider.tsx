@@ -12,7 +12,13 @@ interface SnapshotPayload {
 }
 
 export function WSProvider({ children }: { children: React.ReactNode }) {
-  const { setWsConnected, updateQuote, setAccount, setPositions, setLiveHealth } = useStore();
+  const {
+    setWsConnected,
+    updateQuote,
+    setAccount,
+    setPositions,
+    setLiveHealth,
+  } = useStore();
 
   useEffect(() => {
     ws.connect();
@@ -24,7 +30,8 @@ export function WSProvider({ children }: { children: React.ReactNode }) {
       if (msg.type === "snapshot" && msg.data) {
         const snap = msg.data as SnapshotPayload;
         if (snap.health) setLiveHealth(snap.health);
-        if (snap.account !== undefined && snap.account !== null) setAccount(snap.account);
+        if (snap.account !== undefined && snap.account !== null)
+          setAccount(snap.account);
         if (snap.positions) setPositions(snap.positions);
       }
       // Single-position deltas — broadcast on every IB fill / mark update.

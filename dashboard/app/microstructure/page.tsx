@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -11,10 +11,18 @@ import { TimeAndSales } from "@/components/microstructure/TimeAndSales";
 import { VolumeProfile } from "@/components/microstructure/VolumeProfile";
 import { OpenInterestByStrike } from "@/components/microstructure/OpenInterest";
 
+export default function MicrostructurePage() {
+  return (
+    <Suspense fallback={null}>
+      <MicrostructurePageInner />
+    </Suspense>
+  );
+}
+
 /** Market microstructure page — the four "where did real activity happen"
  *  views grouped together. Single symbol selector, dense four-quadrant grid
  *  (depth + tape on top, volume profile + OI on bottom). */
-export default function MicrostructurePage() {
+function MicrostructurePageInner() {
   const router = useRouter();
   const params = useSearchParams();
   const initial = (params?.get("symbol") || "SPY").toUpperCase();
@@ -39,7 +47,10 @@ export default function MicrostructurePage() {
           <div className="flex items-center gap-2">
             <Logo symbol={symbol} size={20} />
             <form
-              onSubmit={(e) => { e.preventDefault(); commit(pending); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                commit(pending);
+              }}
             >
               <Input
                 value={pending}

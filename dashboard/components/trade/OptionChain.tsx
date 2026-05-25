@@ -36,15 +36,22 @@ export function OptionChain() {
     let alive = true;
     setLoading(true);
     setChain(null);
-    api.optionsChain(symbol)
+    api
+      .optionsChain(symbol)
       .then((r) => {
         if (!alive) return;
         setExpirations(r.expirations);
         setExpiry(r.expirations[0] ?? null);
       })
-      .catch(() => { if (alive) setExpirations([]); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
+      .catch(() => {
+        if (alive) setExpirations([]);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, [symbol]);
 
   // Step 2: fetch the chain for the chosen expiry.
@@ -52,17 +59,29 @@ export function OptionChain() {
     if (!expiry) return;
     let alive = true;
     setLoading(true);
-    api.optionsChain(symbol, expiry)
-      .then((r) => { if (alive) setChain(r); })
-      .catch(() => { if (alive) setChain(null); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
+    api
+      .optionsChain(symbol, expiry)
+      .then((r) => {
+        if (alive) setChain(r);
+      })
+      .catch(() => {
+        if (alive) setChain(null);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, [symbol, expiry]);
 
   const rows = useMemo(() => mergeRows(chain), [chain]);
   const atmStrike = useMemo(
-    () => (chain?.underlying_price ? closestStrike(rows, chain.underlying_price) : null),
-    [chain, rows]
+    () =>
+      chain?.underlying_price
+        ? closestStrike(rows, chain.underlying_price)
+        : null,
+    [chain, rows],
   );
 
   // Center the table window around spot.
@@ -86,17 +105,23 @@ export function OptionChain() {
       <PageHeader
         eyebrow="Options · chain"
         title={`${symbol} option chain`}
-        description={chain?.underlying_price
-          ? `Spot ${chain.underlying_price.toFixed(2)} · ${rows.length} strikes loaded`
-          : "Bid / ask / Δ / IV per strike. Click a strike to chart-pin it."}
+        description={
+          chain?.underlying_price
+            ? `Spot ${chain.underlying_price.toFixed(2)} · ${rows.length} strikes loaded`
+            : "Bid / ask / Δ / IV per strike. Click a strike to chart-pin it."
+        }
         actions={
           <div className="flex items-end gap-2 flex-wrap">
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wider text-text-muted">Symbol</span>
+              <span className="text-[10px] uppercase tracking-wider text-text-muted">
+                Symbol
+              </span>
               <Input
                 value={pendingSymbol}
                 onChange={(e) => setPendingSymbol(e.target.value.toUpperCase())}
-                onKeyDown={(e) => { if (e.key === "Enter") onSymbolSubmit(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onSymbolSubmit();
+                }}
                 placeholder="RUT"
                 className="h-8 w-24 uppercase tabular"
               />
@@ -120,7 +145,8 @@ export function OptionChain() {
 
       {!loading && (!chain || windowed.length === 0) && (
         <div className="py-16 text-center text-sm text-text-secondary">
-          No strikes loaded for this expiry yet. The chain may still be hydrating from IBKR.
+          No strikes loaded for this expiry yet. The chain may still be
+          hydrating from IBKR.
         </div>
       )}
 
@@ -156,7 +182,9 @@ function ExpiryTabs({
       {expirations.map((e) => {
         const isActive = e === active;
         const dt = parseExp(e);
-        const dte = dt ? Math.ceil((dt.getTime() - today.getTime()) / 86400_000) : null;
+        const dte = dt
+          ? Math.ceil((dt.getTime() - today.getTime()) / 86400_000)
+          : null;
         return (
           <button
             key={e}
@@ -166,11 +194,13 @@ function ExpiryTabs({
               "shrink-0 h-7 px-3 text-[11px] tabular rounded-sm transition-colors flex items-baseline gap-1.5",
               isActive
                 ? "text-text-primary bg-surface-2"
-                : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
+                : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60",
             )}
           >
             <span>{formatExp(e)}</span>
-            {dte != null && <span className="text-[10px] text-text-muted">{dte}d</span>}
+            {dte != null && (
+              <span className="text-[10px] text-text-muted">{dte}d</span>
+            )}
           </button>
         );
       })}
@@ -197,17 +227,39 @@ function ChainTable({
       <table className="w-full text-[11px] tabular">
         <thead>
           <tr className="text-[10px] uppercase tracking-wider text-text-muted">
-            <Th align="right" tone="call">Δ</Th>
-            <Th align="right" tone="call">IV</Th>
-            <Th align="right" tone="call">Bid</Th>
-            <Th align="right" tone="call">Ask</Th>
-            <Th align="right" tone="call">Mid</Th>
-            <th className="px-3 py-2 text-center text-text-secondary font-medium">Strike</th>
-            <Th align="left" tone="put">Mid</Th>
-            <Th align="left" tone="put">Bid</Th>
-            <Th align="left" tone="put">Ask</Th>
-            <Th align="left" tone="put">IV</Th>
-            <Th align="left" tone="put">Δ</Th>
+            <Th align="right" tone="call">
+              Δ
+            </Th>
+            <Th align="right" tone="call">
+              IV
+            </Th>
+            <Th align="right" tone="call">
+              Bid
+            </Th>
+            <Th align="right" tone="call">
+              Ask
+            </Th>
+            <Th align="right" tone="call">
+              Mid
+            </Th>
+            <th className="px-3 py-2 text-center text-text-secondary font-medium">
+              Strike
+            </th>
+            <Th align="left" tone="put">
+              Mid
+            </Th>
+            <Th align="left" tone="put">
+              Bid
+            </Th>
+            <Th align="left" tone="put">
+              Ask
+            </Th>
+            <Th align="left" tone="put">
+              IV
+            </Th>
+            <Th align="left" tone="put">
+              Δ
+            </Th>
           </tr>
         </thead>
         <tbody>
@@ -223,14 +275,44 @@ function ChainTable({
                   isAtm
                     ? "bg-accent/[0.06] hover:bg-accent/[0.10]"
                     : "hover:bg-surface-2/40",
-                  i % 2 === 0 && !isAtm && "bg-surface-2/15"
+                  i % 2 === 0 && !isAtm && "bg-surface-2/15",
                 )}
               >
-                <SideCell row={r.call} field="delta" tone="call" itm={callItm} align="right" />
-                <SideCell row={r.call} field="iv" tone="call" itm={callItm} align="right" />
-                <SideCell row={r.call} field="bid" tone="call" itm={callItm} align="right" />
-                <SideCell row={r.call} field="ask" tone="call" itm={callItm} align="right" />
-                <SideCell row={r.call} field="mid" tone="call" itm={callItm} align="right" />
+                <SideCell
+                  row={r.call}
+                  field="delta"
+                  tone="call"
+                  itm={callItm}
+                  align="right"
+                />
+                <SideCell
+                  row={r.call}
+                  field="iv"
+                  tone="call"
+                  itm={callItm}
+                  align="right"
+                />
+                <SideCell
+                  row={r.call}
+                  field="bid"
+                  tone="call"
+                  itm={callItm}
+                  align="right"
+                />
+                <SideCell
+                  row={r.call}
+                  field="ask"
+                  tone="call"
+                  itm={callItm}
+                  align="right"
+                />
+                <SideCell
+                  row={r.call}
+                  field="mid"
+                  tone="call"
+                  itm={callItm}
+                  align="right"
+                />
                 <td className="px-3 py-1.5 text-center">
                   <StrikeButton
                     strike={r.strike}
@@ -239,11 +321,41 @@ function ChainTable({
                     expiry={expiry}
                   />
                 </td>
-                <SideCell row={r.put} field="mid" tone="put" itm={putItm} align="left" />
-                <SideCell row={r.put} field="bid" tone="put" itm={putItm} align="left" />
-                <SideCell row={r.put} field="ask" tone="put" itm={putItm} align="left" />
-                <SideCell row={r.put} field="iv" tone="put" itm={putItm} align="left" />
-                <SideCell row={r.put} field="delta" tone="put" itm={putItm} align="left" />
+                <SideCell
+                  row={r.put}
+                  field="mid"
+                  tone="put"
+                  itm={putItm}
+                  align="left"
+                />
+                <SideCell
+                  row={r.put}
+                  field="bid"
+                  tone="put"
+                  itm={putItm}
+                  align="left"
+                />
+                <SideCell
+                  row={r.put}
+                  field="ask"
+                  tone="put"
+                  itm={putItm}
+                  align="left"
+                />
+                <SideCell
+                  row={r.put}
+                  field="iv"
+                  tone="put"
+                  itm={putItm}
+                  align="left"
+                />
+                <SideCell
+                  row={r.put}
+                  field="delta"
+                  tone="put"
+                  itm={putItm}
+                  align="left"
+                />
               </tr>
             );
           })}
@@ -254,13 +366,23 @@ function ChainTable({
 }
 
 function Th({
-  children, align, tone,
-}: { children: React.ReactNode; align: "left" | "right" | "center"; tone: "call" | "put" }) {
+  children,
+  align,
+  tone,
+}: {
+  children: React.ReactNode;
+  align: "left" | "right" | "center";
+  tone: "call" | "put";
+}) {
   return (
     <th
       className={cn(
         "px-2 py-2 font-medium",
-        align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center",
+        align === "left"
+          ? "text-left"
+          : align === "right"
+            ? "text-right"
+            : "text-center",
         tone === "call" ? "text-text-muted" : "text-text-muted",
       )}
     >
@@ -270,7 +392,11 @@ function Th({
 }
 
 function SideCell({
-  row, field, tone, itm, align,
+  row,
+  field,
+  tone,
+  itm,
+  align,
 }: {
   row: OptionRow | null;
   field: "delta" | "iv" | "bid" | "ask" | "mid";
@@ -288,7 +414,7 @@ function SideCell({
         itm ? "bg-surface-2/40" : "",
         value == null ? "text-text-muted/40" : "text-text-secondary",
         tone === "call" && itm && "text-text-primary",
-        tone === "put"  && itm && "text-text-primary",
+        tone === "put" && itm && "text-text-primary",
       )}
     >
       {value ?? "—"}
@@ -302,7 +428,9 @@ function useCellValue(
 ): string | null {
   if (!row) return null;
   if (field === "delta") {
-    return row.delta != null ? Math.round(Math.abs(row.delta) * 100).toString() : null;
+    return row.delta != null
+      ? Math.round(Math.abs(row.delta) * 100).toString()
+      : null;
   }
   if (field === "iv") {
     return row.iv != null ? `${Math.round(row.iv * 100)}` : null;
@@ -310,7 +438,8 @@ function useCellValue(
   if (field === "bid") return row.bid != null ? row.bid.toFixed(2) : null;
   if (field === "ask") return row.ask != null ? row.ask.toFixed(2) : null;
   if (field === "mid") {
-    if (row.bid != null && row.ask != null) return ((row.bid + row.ask) / 2).toFixed(2);
+    if (row.bid != null && row.ask != null)
+      return ((row.bid + row.ask) / 2).toFixed(2);
     if (row.last != null) return row.last.toFixed(2);
     return null;
   }
@@ -318,8 +447,16 @@ function useCellValue(
 }
 
 function StrikeButton({
-  strike, isAtm, symbol, expiry,
-}: { strike: number; isAtm: boolean; symbol: string; expiry: string }) {
+  strike,
+  isAtm,
+  symbol,
+  expiry,
+}: {
+  strike: number;
+  isAtm: boolean;
+  symbol: string;
+  expiry: string;
+}) {
   // Default behaviour: clicking the strike pins it on the chart with this
   // strike as the short leg and the next lower strike as the long leg (bull put).
   const pinHref =
@@ -332,7 +469,7 @@ function StrikeButton({
         "inline-flex items-center justify-center min-w-[60px] h-6 px-2 rounded-sm tabular text-[12px] font-medium transition-colors",
         isAtm
           ? "text-accent bg-accent/10 hover:bg-accent/20"
-          : "text-text-primary hover:bg-surface-2"
+          : "text-text-primary hover:bg-surface-2",
       )}
       title={`Pin ${strike}/${strike - 5}P on chart`}
     >
@@ -346,11 +483,13 @@ function mergeRows(chain: OptionsChain | null): ChainRow[] {
   if (!chain) return [];
   const byStrike = new Map<number, ChainRow>();
   for (const c of chain.calls) {
-    if (!byStrike.has(c.strike)) byStrike.set(c.strike, { strike: c.strike, call: null, put: null });
+    if (!byStrike.has(c.strike))
+      byStrike.set(c.strike, { strike: c.strike, call: null, put: null });
     byStrike.get(c.strike)!.call = c;
   }
   for (const p of chain.puts) {
-    if (!byStrike.has(p.strike)) byStrike.set(p.strike, { strike: p.strike, call: null, put: null });
+    if (!byStrike.has(p.strike))
+      byStrike.set(p.strike, { strike: p.strike, call: null, put: null });
     byStrike.get(p.strike)!.put = p;
   }
   return Array.from(byStrike.values()).sort((a, b) => a.strike - b.strike);
@@ -362,14 +501,21 @@ function closestStrike(rows: ChainRow[], spot: number): number | null {
   let bestDist = Math.abs(best - spot);
   for (const r of rows) {
     const d = Math.abs(r.strike - spot);
-    if (d < bestDist) { best = r.strike; bestDist = d; }
+    if (d < bestDist) {
+      best = r.strike;
+      bestDist = d;
+    }
   }
   return best;
 }
 
 function parseExp(yyyymmdd: string): Date | null {
   if (yyyymmdd.length !== 8) return null;
-  return new Date(+yyyymmdd.slice(0, 4), +yyyymmdd.slice(4, 6) - 1, +yyyymmdd.slice(6, 8));
+  return new Date(
+    +yyyymmdd.slice(0, 4),
+    +yyyymmdd.slice(4, 6) - 1,
+    +yyyymmdd.slice(6, 8),
+  );
 }
 
 function formatExp(yyyymmdd: string): string {

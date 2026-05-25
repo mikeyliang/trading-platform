@@ -45,14 +45,20 @@ export class StreamWebSocket {
         this.fire({ type: "open" });
       };
       this.ws.onmessage = (e) => {
-        try { this.fire(JSON.parse(e.data)); } catch { /* skip */ }
+        try {
+          this.fire(JSON.parse(e.data));
+        } catch {
+          /* skip */
+        }
       };
       this.ws.onclose = () => {
         this.fire({ type: "close" });
         if (!this.closing) this.reconnect();
       };
       this.ws.onerror = () => this.ws?.close();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   disconnect() {

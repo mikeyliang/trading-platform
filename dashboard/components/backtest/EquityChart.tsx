@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createChart, ColorType, LineStyle, UTCTimestamp } from "lightweight-charts";
+import {
+  createChart,
+  ColorType,
+  LineStyle,
+  UTCTimestamp,
+} from "lightweight-charts";
 
 interface Props {
   data: { time: number; value: number }[];
@@ -44,13 +49,20 @@ export function EquityChart({ data, height = 180 }: Props) {
       priceLineVisible: false,
     });
 
-    series.setData(data.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })));
+    series.setData(
+      data.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })),
+    );
     chart.timeScale().fitContent();
 
-    const ro = new ResizeObserver(() => chart.applyOptions({ width: ref.current!.clientWidth }));
+    const ro = new ResizeObserver(() =>
+      chart.applyOptions({ width: ref.current!.clientWidth }),
+    );
     ro.observe(ref.current);
 
-    return () => { ro.disconnect(); chart.remove(); };
+    return () => {
+      ro.disconnect();
+      chart.remove();
+    };
   }, [data, height]);
 
   return <div ref={ref} />;

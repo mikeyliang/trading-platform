@@ -18,7 +18,11 @@ export default function PerformancePage() {
 
   const [trades, setTrades] = useState<Trade[]>([]);
   useEffect(() => {
-    const load = () => api.trades().then(setTrades).catch(() => undefined);
+    const load = () =>
+      api
+        .trades()
+        .then(setTrades)
+        .catch(() => undefined);
     load();
     const id = setInterval(load, 30000);
     return () => clearInterval(id);
@@ -26,23 +30,25 @@ export default function PerformancePage() {
 
   const upnl = useMemo(
     () => positions.reduce((s, p) => s + (p.unrealized_pnl ?? 0), 0),
-    [positions]
+    [positions],
   );
   const longExposure = useMemo(
-    () => positions.reduce((s, p) => {
-      const qty = p.quantity ?? 0;
-      const price = p.current_price ?? p.avg_price ?? 0;
-      return s + (qty > 0 ? qty * price : 0);
-    }, 0),
-    [positions]
+    () =>
+      positions.reduce((s, p) => {
+        const qty = p.quantity ?? 0;
+        const price = p.current_price ?? p.avg_price ?? 0;
+        return s + (qty > 0 ? qty * price : 0);
+      }, 0),
+    [positions],
   );
   const shortExposure = useMemo(
-    () => positions.reduce((s, p) => {
-      const qty = p.quantity ?? 0;
-      const price = p.current_price ?? p.avg_price ?? 0;
-      return s + (qty < 0 ? Math.abs(qty) * price : 0);
-    }, 0),
-    [positions]
+    () =>
+      positions.reduce((s, p) => {
+        const qty = p.quantity ?? 0;
+        const price = p.current_price ?? p.avg_price ?? 0;
+        return s + (qty < 0 ? Math.abs(qty) * price : 0);
+      }, 0),
+    [positions],
   );
 
   return (
@@ -83,7 +89,12 @@ export default function PerformancePage() {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function HeroStats({
-  equity, buyingPower, realized, unrealized, longExp, shortExp,
+  equity,
+  buyingPower,
+  realized,
+  unrealized,
+  longExp,
+  shortExp,
 }: {
   equity: number | null;
   buyingPower: number | null;
@@ -94,35 +105,66 @@ function HeroStats({
 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-6 gap-x-4 gap-y-2 py-1">
-      <Big label="Equity"
-           value={equity != null ? fmtCurrency(equity) : "—"} />
-      <Big label="Buying power"
-           value={buyingPower != null ? fmtCurrency(buyingPower) : "—"}
-           muted />
-      <Big label="Unrealized"
-           value={unrealized !== 0 ? fmtCurrency(unrealized) : "$0"}
-           tone={unrealized > 0 ? "up" : unrealized < 0 ? "down" : undefined} />
-      <Big label="Realized"
-           value={realized != null ? fmtCurrency(realized) : "$0"}
-           tone={(realized ?? 0) > 0 ? "up" : (realized ?? 0) < 0 ? "down" : undefined} />
-      <Big label="Long exp"
-           value={longExp ? fmtCurrency(longExp) : "—"}
-           muted />
-      <Big label="Short exp"
-           value={shortExp ? fmtCurrency(shortExp) : "—"}
-           muted />
+      <Big label="Equity" value={equity != null ? fmtCurrency(equity) : "—"} />
+      <Big
+        label="Buying power"
+        value={buyingPower != null ? fmtCurrency(buyingPower) : "—"}
+        muted
+      />
+      <Big
+        label="Unrealized"
+        value={unrealized !== 0 ? fmtCurrency(unrealized) : "$0"}
+        tone={unrealized > 0 ? "up" : unrealized < 0 ? "down" : undefined}
+      />
+      <Big
+        label="Realized"
+        value={realized != null ? fmtCurrency(realized) : "$0"}
+        tone={
+          (realized ?? 0) > 0 ? "up" : (realized ?? 0) < 0 ? "down" : undefined
+        }
+      />
+      <Big
+        label="Long exp"
+        value={longExp ? fmtCurrency(longExp) : "—"}
+        muted
+      />
+      <Big
+        label="Short exp"
+        value={shortExp ? fmtCurrency(shortExp) : "—"}
+        muted
+      />
     </div>
   );
 }
 
-function Big({ label, value, tone, muted }: { label: string; value: string; tone?: "up" | "down"; muted?: boolean }) {
+function Big({
+  label,
+  value,
+  tone,
+  muted,
+}: {
+  label: string;
+  value: string;
+  tone?: "up" | "down";
+  muted?: boolean;
+}) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">{label}</div>
-      <div className={cn(
-        "text-base md:text-lg font-semibold tabular tracking-tight",
-        tone === "up" ? "text-up" : tone === "down" ? "text-down" : muted ? "text-text-secondary" : "text-text-primary"
-      )}>
+      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">
+        {label}
+      </div>
+      <div
+        className={cn(
+          "text-base md:text-lg font-semibold tabular tracking-tight",
+          tone === "up"
+            ? "text-up"
+            : tone === "down"
+              ? "text-down"
+              : muted
+                ? "text-text-secondary"
+                : "text-text-primary",
+        )}
+      >
         {value}
       </div>
     </div>
@@ -130,12 +172,24 @@ function Big({ label, value, tone, muted }: { label: string; value: string; tone
 }
 
 // ─── Section header ───────────────────────────────────────────────────────────
-function Section({ title, trail, children }: { title: string; trail?: string; children: React.ReactNode }) {
+function Section({
+  title,
+  trail,
+  children,
+}: {
+  title: string;
+  trail?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between border-b border-border/40 pb-1.5">
-        <h2 className="text-[11px] uppercase tracking-wider text-text-secondary">{title}</h2>
-        {trail && <span className="text-[10px] text-text-muted tabular">{trail}</span>}
+        <h2 className="text-[11px] uppercase tracking-wider text-text-secondary">
+          {title}
+        </h2>
+        {trail && (
+          <span className="text-[10px] text-text-muted tabular">{trail}</span>
+        )}
       </div>
       {children}
     </section>
@@ -169,7 +223,10 @@ function PositionsTable({ positions }: { positions: Position[] }) {
             const mkt = (p.current_price ?? 0) * (p.quantity ?? 0);
             const delta = (p.current_price ?? 0) - (p.avg_price ?? 0);
             return (
-              <tr key={p.symbol} className="border-t border-border/30 hover:bg-surface-2/30 transition-colors">
+              <tr
+                key={p.symbol}
+                className="border-t border-border/30 hover:bg-surface-2/30 transition-colors"
+              >
                 <td className="px-2 py-1.5">
                   <div className="flex items-center gap-2">
                     <Logo symbol={p.symbol} size={16} />
@@ -181,10 +238,14 @@ function PositionsTable({ positions }: { positions: Position[] }) {
                     </a>
                   </div>
                 </td>
-                <td className={cn(
-                  "px-2 py-1.5 text-right",
-                  (p.quantity ?? 0) >= 0 ? "text-text-secondary" : "text-down"
-                )}>
+                <td
+                  className={cn(
+                    "px-2 py-1.5 text-right",
+                    (p.quantity ?? 0) >= 0
+                      ? "text-text-secondary"
+                      : "text-down",
+                  )}
+                >
                   {(p.quantity ?? 0).toLocaleString()}
                 </td>
                 <td className="px-2 py-1.5 text-right text-text-secondary">
@@ -194,19 +255,34 @@ function PositionsTable({ positions }: { positions: Position[] }) {
                   ${p.current_price?.toFixed(2) ?? "—"}
                 </td>
                 <td className={cn("px-2 py-1.5 text-right", pnlClass(delta))}>
-                  {delta >= 0 ? "+" : ""}{delta.toFixed(2)}
+                  {delta >= 0 ? "+" : ""}
+                  {delta.toFixed(2)}
                 </td>
                 <td className="px-2 py-1.5 text-right text-text-secondary">
                   {fmtCurrency(mkt)}
                 </td>
-                <td className={cn("px-2 py-1.5 text-right font-medium", pnlClass(p.unrealized_pnl ?? 0))}>
+                <td
+                  className={cn(
+                    "px-2 py-1.5 text-right font-medium",
+                    pnlClass(p.unrealized_pnl ?? 0),
+                  )}
+                >
                   {fmtCurrency(p.unrealized_pnl ?? 0)}
                 </td>
-                <td className={cn("px-2 py-1.5 text-right", pnlClass(p.unrealized_pnl_pct ?? 0))}>
+                <td
+                  className={cn(
+                    "px-2 py-1.5 text-right",
+                    pnlClass(p.unrealized_pnl_pct ?? 0),
+                  )}
+                >
                   {fmtPct(p.unrealized_pnl_pct ?? 0)}
                 </td>
                 <td className="px-2 py-1.5 text-right">
-                  <a href={`/chart/${p.symbol}`} className="text-text-muted hover:text-accent inline-flex" title="Open chart">
+                  <a
+                    href={`/chart/${p.symbol}`}
+                    className="text-text-muted hover:text-accent inline-flex"
+                    title="Open chart"
+                  >
                     <LinkIcon size={12} />
                   </a>
                 </td>
@@ -240,22 +316,44 @@ function FillsTable({ trades }: { trades: Trade[] }) {
             const d = new Date(t.timestamp);
             const pnl = t.pnl ?? 0;
             return (
-              <tr key={`${t.timestamp}-${t.symbol}`} className="border-t border-border/30 hover:bg-surface-2/30">
+              <tr
+                key={`${t.timestamp}-${t.symbol}`}
+                className="border-t border-border/30 hover:bg-surface-2/30"
+              >
                 <td className="px-2 py-1.5 text-text-secondary whitespace-nowrap">
-                  {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                  {" "}
+                  {d.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}{" "}
                   <span className="text-text-muted">
-                    {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {d.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </td>
                 <td className="px-2 py-1.5">
-                  <a href={`/chart/${t.symbol}`} className="font-medium text-text-primary hover:underline">{t.symbol}</a>
+                  <a
+                    href={`/chart/${t.symbol}`}
+                    className="font-medium text-text-primary hover:underline"
+                  >
+                    {t.symbol}
+                  </a>
                 </td>
-                <td className={cn("px-2 py-1.5 uppercase text-[10px] tracking-wider",
-                  t.side === "BUY" ? "text-up" : "text-down"
-                )}>{t.side}</td>
-                <td className="px-2 py-1.5 text-right text-text-secondary">{t.quantity.toLocaleString()}</td>
-                <td className="px-2 py-1.5 text-right text-text-secondary">${t.price.toFixed(2)}</td>
+                <td
+                  className={cn(
+                    "px-2 py-1.5 uppercase text-[10px] tracking-wider",
+                    t.side === "BUY" ? "text-up" : "text-down",
+                  )}
+                >
+                  {t.side}
+                </td>
+                <td className="px-2 py-1.5 text-right text-text-secondary">
+                  {t.quantity.toLocaleString()}
+                </td>
+                <td className="px-2 py-1.5 text-right text-text-secondary">
+                  ${t.price.toFixed(2)}
+                </td>
                 <td className={cn("px-2 py-1.5 text-right", pnlClass(pnl))}>
                   {t.pnl != null ? fmtCurrency(pnl) : "—"}
                 </td>

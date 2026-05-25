@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useRef, type RefObject } from "react";
-import { IChartApi, ISeriesApi, LineStyle, UTCTimestamp } from "lightweight-charts";
+import {
+  IChartApi,
+  ISeriesApi,
+  LineStyle,
+  UTCTimestamp,
+} from "lightweight-charts";
 
 export interface PinnedSpread {
   shortStrike: number;
   longStrike: number;
-  expiry: string;       // YYYYMMDD
-  tradeType: string;    // rut / mars / marsmax / space (for label)
+  expiry: string; // YYYYMMDD
+  tradeType: string; // rut / mars / marsmax / space (for label)
   side: "put" | "call";
 }
 
@@ -48,7 +53,9 @@ export function usePinnedSpreadOverlay({ chart, candleSeries, pinned }: Args) {
 
     // Clean up any series from a previous render.
     for (const s of seriesRef.current) {
-      try { c.removeSeries(s); } catch {}
+      try {
+        c.removeSeries(s);
+      } catch {}
     }
     seriesRef.current = [];
 
@@ -75,13 +82,27 @@ export function usePinnedSpreadOverlay({ chart, candleSeries, pinned }: Args) {
       style: LineStyle;
       title: string;
     }> = [
-      { price: pinned.shortStrike, width: 2, style: LineStyle.Solid,
-        title: `${label} short · ${pinned.shortStrike}${right} · ${expLabel}` },
-      { price: pinned.longStrike,  width: 1, style: LineStyle.Dashed,
-        title: `${label} long · ${pinned.longStrike}${right}` },
-      { price: pinned.side === "put" ? pinned.shortStrike * 1.02 : pinned.shortStrike * 0.98,
-        width: 1, style: LineStyle.Dotted,
-        title: `${label} 2% exit` },
+      {
+        price: pinned.shortStrike,
+        width: 2,
+        style: LineStyle.Solid,
+        title: `${label} short · ${pinned.shortStrike}${right} · ${expLabel}`,
+      },
+      {
+        price: pinned.longStrike,
+        width: 1,
+        style: LineStyle.Dashed,
+        title: `${label} long · ${pinned.longStrike}${right}`,
+      },
+      {
+        price:
+          pinned.side === "put"
+            ? pinned.shortStrike * 1.02
+            : pinned.shortStrike * 0.98,
+        width: 1,
+        style: LineStyle.Dotted,
+        title: `${label} 2% exit`,
+      },
     ];
 
     for (const seg of segments) {
@@ -96,7 +117,7 @@ export function usePinnedSpreadOverlay({ chart, candleSeries, pinned }: Args) {
       });
       s.setData([
         { time: tStart, value: seg.price },
-        { time: tEnd,   value: seg.price },
+        { time: tEnd, value: seg.price },
       ]);
       seriesRef.current.push(s);
     }
@@ -105,7 +126,9 @@ export function usePinnedSpreadOverlay({ chart, candleSeries, pinned }: Args) {
       const cc = chart.current;
       if (!cc) return;
       for (const s of seriesRef.current) {
-        try { cc.removeSeries(s); } catch {}
+        try {
+          cc.removeSeries(s);
+        } catch {}
       }
       seriesRef.current = [];
     };

@@ -23,7 +23,7 @@ export function Logo({ symbol, size = 24, className }: LogoProps) {
     <div
       className={cn(
         "shrink-0 rounded-md overflow-hidden flex items-center justify-center select-none",
-        className
+        className,
       )}
       style={{
         width: size,

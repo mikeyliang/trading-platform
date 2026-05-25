@@ -43,7 +43,7 @@ export function useChartHover({
       const idx = Math.round(rel * (count - 1));
       setActiveIndex(Math.max(0, Math.min(count - 1, idx)));
     },
-    [count, svgWidth, padLeft, padRight]
+    [count, svgWidth, padLeft, padRight],
   );
 
   const onMouseLeave = useCallback(() => setActiveIndex(null), []);

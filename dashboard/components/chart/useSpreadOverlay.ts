@@ -28,7 +28,14 @@ const WING_WIDTH: Record<string, number> = {
   NDX: 25,
 };
 
-export const SUPPORTED_OVERLAY_SYMBOLS = new Set(["SPY", "QQQ", "IWM", "RUT", "SPX", "NDX"]);
+export const SUPPORTED_OVERLAY_SYMBOLS = new Set([
+  "SPY",
+  "QQQ",
+  "IWM",
+  "RUT",
+  "SPX",
+  "NDX",
+]);
 
 interface UseSpreadOverlayOpts {
   candleSeries: RefObject<ISeriesApi<"Candlestick"> | null>;
@@ -36,7 +43,11 @@ interface UseSpreadOverlayOpts {
   enabled: boolean;
 }
 
-export function useSpreadOverlay({ candleSeries, symbol, enabled }: UseSpreadOverlayOpts) {
+export function useSpreadOverlay({
+  candleSeries,
+  symbol,
+  enabled,
+}: UseSpreadOverlayOpts) {
   const linesRef = useRef<IPriceLine[]>([]);
   const [openSpreads, setOpenSpreads] = useState<Spread[]>([]);
   const [projected, setProjected] = useState<ProjectedSpread | null>(null);
@@ -97,14 +108,25 @@ export function useSpreadOverlay({ candleSeries, symbol, enabled }: UseSpreadOve
     // the course's final-Thursday exit trigger (price within 2% of the short).
     for (const s of openSpreads) {
       const expLabel = formatExpiry(s.expiry);
-      const legs = (s.legs && s.legs.length > 0)
-        ? s.legs
-        : ([
-            // legacy fallback: synthesize legs from short_strike/long_strike if
-            // backend didn't fill in legs[] for older spread records
-            { strike: s.short_strike, right: "P" as const, action: "SELL" as const, con_id: 0 },
-            { strike: s.long_strike, right: "P" as const, action: "BUY" as const, con_id: 0 },
-          ]);
+      const legs =
+        s.legs && s.legs.length > 0
+          ? s.legs
+          : [
+              // legacy fallback: synthesize legs from short_strike/long_strike if
+              // backend didn't fill in legs[] for older spread records
+              {
+                strike: s.short_strike,
+                right: "P" as const,
+                action: "SELL" as const,
+                con_id: 0,
+              },
+              {
+                strike: s.long_strike,
+                right: "P" as const,
+                action: "BUY" as const,
+                con_id: 0,
+              },
+            ];
       for (const leg of legs) {
         const isSell = leg.action === "SELL";
         linesRef.current.push(
@@ -115,7 +137,7 @@ export function useSpreadOverlay({ candleSeries, symbol, enabled }: UseSpreadOve
             lineStyle: LineStyle.Dashed,
             axisLabelVisible: true,
             title: `${leg.action} ${leg.strike}${leg.right} • ${expLabel}`,
-          })
+          }),
         );
         if (isSell) {
           const exitPrice = twoPercentExit(leg.strike, leg.right);
@@ -127,7 +149,7 @@ export function useSpreadOverlay({ candleSeries, symbol, enabled }: UseSpreadOve
               lineStyle: LineStyle.Dotted,
               axisLabelVisible: true,
               title: `2% exit ${exitPrice.toFixed(2)}${leg.right} • ${expLabel}`,
-            })
+            }),
           );
         }
       }
@@ -143,7 +165,7 @@ export function useSpreadOverlay({ candleSeries, symbol, enabled }: UseSpreadOve
           lineStyle: LineStyle.Dotted,
           axisLabelVisible: true,
           title: `PROJ SHORT ${projected.shortStrike}P • ${projected.expiryLabel} (${projected.dte}d)`,
-        })
+        }),
       );
       linesRef.current.push(
         series.createPriceLine({
@@ -153,7 +175,7 @@ export function useSpreadOverlay({ candleSeries, symbol, enabled }: UseSpreadOve
           lineStyle: LineStyle.Dotted,
           axisLabelVisible: true,
           title: `PROJ LONG ${projected.longStrike}P`,
-        })
+        }),
       );
       const projExit = twoPercentExit(projected.shortStrike, "P");
       linesRef.current.push(
@@ -164,7 +186,7 @@ export function useSpreadOverlay({ candleSeries, symbol, enabled }: UseSpreadOve
           lineStyle: LineStyle.SparseDotted,
           axisLabelVisible: true,
           title: `PROJ 2% exit ${projExit.toFixed(2)}P`,
-        })
+        }),
       );
     }
 
@@ -185,7 +207,9 @@ export function useSpreadOverlay({ candleSeries, symbol, enabled }: UseSpreadOve
   return { openSpreads, projected, loading };
 }
 
-async function computeProjected(symbol: string): Promise<ProjectedSpread | null> {
+async function computeProjected(
+  symbol: string,
+): Promise<ProjectedSpread | null> {
   // 1. discover the next 3rd-Friday expiration in the 30-45 DTE window
   const root = await api.optionsChain(symbol).catch(() => null);
   if (!root?.expirations?.length) return null;
@@ -200,14 +224,21 @@ async function computeProjected(symbol: string): Promise<ProjectedSpread | null>
       const dte = Math.round((d.getTime() - today.getTime()) / 86_400_000);
       return { exp: e, date: d, dte, thirdFriday: isThirdFriday(d) };
     })
-    .filter((x): x is { exp: string; date: Date; dte: number; thirdFriday: boolean } => x !== null)
+    .filter(
+      (
+        x,
+      ): x is { exp: string; date: Date; dte: number; thirdFriday: boolean } =>
+        x !== null,
+    )
     .filter((x) => x.dte >= 21 && x.dte <= 60);
 
   // prefer 3rd-friday monthlies in 30-45 DTE
   const monthly = candidates
     .filter((c) => c.thirdFriday && c.dte >= 30 && c.dte <= 45)
     .sort((a, b) => a.dte - b.dte)[0];
-  const nearest = candidates.sort((a, b) => Math.abs(a.dte - 38) - Math.abs(b.dte - 38))[0];
+  const nearest = candidates.sort(
+    (a, b) => Math.abs(a.dte - 38) - Math.abs(b.dte - 38),
+  )[0];
   const pick = monthly ?? nearest;
   if (!pick) return null;
 
@@ -220,13 +251,18 @@ async function computeProjected(symbol: string): Promise<ProjectedSpread | null>
   if (!withDelta.length) return null;
   const target = 0.25;
   const shortPut = withDelta.reduce((best, p) =>
-    Math.abs(Math.abs(p.delta!) - target) < Math.abs(Math.abs(best.delta!) - target) ? p : best
+    Math.abs(Math.abs(p.delta!) - target) <
+    Math.abs(Math.abs(best.delta!) - target)
+      ? p
+      : best,
   );
 
   // 4. long strike = short - wing_width
   const wing = WING_WIDTH[symbol] ?? 5;
   const longStrike = shortPut.strike - wing;
-  const longPut = chain.puts.find((p) => Math.abs(p.strike - longStrike) < 0.01);
+  const longPut = chain.puts.find(
+    (p) => Math.abs(p.strike - longStrike) < 0.01,
+  );
 
   // 5. estimated credit (mid - 5c slippage, matching the strategy)
   const mid = (o: { bid: number | null; ask: number | null }) =>
@@ -234,7 +270,9 @@ async function computeProjected(symbol: string): Promise<ProjectedSpread | null>
   const shortMid = mid(shortPut);
   const longMid = longPut ? mid(longPut) : null;
   const estCredit =
-    shortMid != null && longMid != null ? Math.max(0, +(shortMid - longMid - 0.05).toFixed(2)) : null;
+    shortMid != null && longMid != null
+      ? Math.max(0, +(shortMid - longMid - 0.05).toFixed(2))
+      : null;
 
   return {
     symbol,

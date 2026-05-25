@@ -18,10 +18,13 @@ export function StatsBar() {
 
   useEffect(() => {
     const load = () => {
-      api.positions().then((p) => {
-        setStorePositions(p);
-        setRestHydrated(true);
-      }).catch(() => undefined);
+      api
+        .positions()
+        .then((p) => {
+          setStorePositions(p);
+          setRestHydrated(true);
+        })
+        .catch(() => undefined);
     };
     load();
     const id = setInterval(load, 30000);
@@ -82,8 +85,8 @@ export function StatsBar() {
               ? winRate >= 50
                 ? "text-up"
                 : winRate >= 30
-                ? "text-warning"
-                : "text-down"
+                  ? "text-warning"
+                  : "text-down"
               : undefined
           }
           loading={loading}
@@ -102,12 +105,18 @@ export function StatsBar() {
   );
 }
 
-function Group({ children, last }: { children: React.ReactNode; last?: boolean }) {
+function Group({
+  children,
+  last,
+}: {
+  children: React.ReactNode;
+  last?: boolean;
+}) {
   return (
     <div
       className={cn(
         "flex items-center gap-3 px-3 first:pl-0",
-        !last && "border-r border-border/40"
+        !last && "border-r border-border/40",
       )}
     >
       {children}
@@ -124,13 +133,20 @@ interface StatProps {
   muted?: boolean;
 }
 
-function Stat({ label, value, valueClassName, loading, primary, muted }: StatProps) {
+function Stat({
+  label,
+  value,
+  valueClassName,
+  loading,
+  primary,
+  muted,
+}: StatProps) {
   return (
     <div className="flex items-baseline gap-1.5 shrink-0">
       <span
         className={cn(
           "text-[10px] uppercase tracking-wider",
-          muted ? "text-text-muted/70" : "text-text-muted"
+          muted ? "text-text-muted/70" : "text-text-muted",
         )}
       >
         {label}
@@ -145,7 +161,7 @@ function Stat({ label, value, valueClassName, loading, primary, muted }: StatPro
             "tabular tabular-nums font-medium",
             primary ? "text-sm text-text-primary" : "text-xs text-text-primary",
             muted && !valueClassName && "text-text-secondary",
-            valueClassName
+            valueClassName,
           )}
         >
           {value}

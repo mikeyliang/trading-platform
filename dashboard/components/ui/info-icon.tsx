@@ -2,7 +2,11 @@
 
 import * as React from "react";
 import { Info } from "lucide-react";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface InfoIconProps {
@@ -24,7 +28,12 @@ interface InfoIconProps {
  * Pair with a label:
  *   <span>POP <InfoIcon hint="Probability of profit at expiry, risk-neutral" /></span>
  */
-export function InfoIcon({ hint, size = 9, side = "top", className }: InfoIconProps) {
+export function InfoIcon({
+  hint,
+  size = 9,
+  side = "top",
+  className,
+}: InfoIconProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -32,14 +41,17 @@ export function InfoIcon({ hint, size = 9, side = "top", className }: InfoIconPr
           type="button"
           className={cn(
             "inline-flex items-center text-text-muted/60 hover:text-text-secondary transition-colors align-baseline",
-            className
+            className,
           )}
           aria-label="More info"
         >
           <Info size={size} />
         </button>
       </TooltipTrigger>
-      <TooltipContent side={side} className="max-w-[260px] text-[10.5px] leading-relaxed">
+      <TooltipContent
+        side={side}
+        className="max-w-[260px] text-[10.5px] leading-relaxed"
+      >
         {hint}
       </TooltipContent>
     </Tooltip>
@@ -65,11 +77,19 @@ export function HintLabel({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={cn("cursor-help underline decoration-dotted decoration-text-muted/30 underline-offset-2", className)}>
+        <span
+          className={cn(
+            "cursor-help underline decoration-dotted decoration-text-muted/30 underline-offset-2",
+            className,
+          )}
+        >
           {children}
         </span>
       </TooltipTrigger>
-      <TooltipContent side={side} className="max-w-[260px] text-[10.5px] leading-relaxed">
+      <TooltipContent
+        side={side}
+        className="max-w-[260px] text-[10.5px] leading-relaxed"
+      >
         {hint}
       </TooltipContent>
     </Tooltip>

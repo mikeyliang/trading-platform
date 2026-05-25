@@ -20,16 +20,35 @@ interface StatProps {
   className?: string;
 }
 
-export function Stat({ label, value, hint, tone = "default", size = "sm", className }: StatProps) {
+export function Stat({
+  label,
+  value,
+  hint,
+  tone = "default",
+  size = "sm",
+  className,
+}: StatProps) {
   const valueSize =
     size === "lg" ? "text-lg" : size === "md" ? "text-sm" : "text-xs";
   return (
     <div className={cn("min-w-0", className)}>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted truncate">{label}</div>
-      <div className={cn("font-semibold tabular leading-tight mt-0.5 truncate", valueSize, toneClass[tone])}>
+      <div className="text-[10px] uppercase tracking-wider text-text-muted truncate">
+        {label}
+      </div>
+      <div
+        className={cn(
+          "font-semibold tabular leading-tight mt-0.5 truncate",
+          valueSize,
+          toneClass[tone],
+        )}
+      >
         {value}
       </div>
-      {hint != null && <div className="text-[10px] text-text-muted tabular mt-0.5 truncate">{hint}</div>}
+      {hint != null && (
+        <div className="text-[10px] text-text-muted tabular mt-0.5 truncate">
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
@@ -50,7 +69,7 @@ export function StatGroup({ children, className, cols }: StatGroupProps) {
       style={colStyle}
       className={cn(
         "grid gap-x-4 gap-y-2 divide-x divide-border/40 [&>*]:px-3 [&>*:first-child]:pl-0",
-        className
+        className,
       )}
     >
       {children}

@@ -5,6 +5,11 @@ Owns one long-running TradingNode that holds the IB data + execution clients.
 Bridges NT events (quote ticks, trade ticks, bars, position updates) into the
 FastAPI WebSocket manager, and exposes async helpers the REST routers call.
 
+Includes a robust reconnection supervisor: connection drops are detected via
+a periodic keepalive ping; failed connects/disconnects trigger an exponential-
+backoff retry loop so transient gateway hiccups recover automatically without
+restarting the API process.
+
 Falls back to a no-op stub when nautilus_trader / IB adapter aren't importable
 or when MOCK_MODE is on, so the rest of the API keeps working.
 """
@@ -12,6 +17,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
@@ -59,6 +66,26 @@ except Exception as e:  # noqa: BLE001
 IB_VENUE = "INTERACTIVE_BROKERS"
 
 
+# ── Connection state machine ────────────────────────────────────────────────
+# Pushed to the WS layer so the dashboard can render an accurate status pill.
+class ConnectionState:
+    DISCONNECTED = "disconnected"
+    CONNECTING = "connecting"
+    CONNECTED = "connected"
+    RECONNECTING = "reconnecting"
+    FAILED = "failed"
+
+
+# Tuning constants for the reconnect / keepalive supervisor.
+_RECONNECT_BASE_DELAY = 2.0     # seconds
+_RECONNECT_MAX_DELAY = 60.0     # cap exponential backoff at 60s
+_RECONNECT_MAX_ATTEMPTS = 0     # 0 == infinite
+_KEEPALIVE_INTERVAL = 15.0      # ping every 15s while connected
+_KEEPALIVE_TIMEOUT = 8.0        # any single keepalive call must complete this fast
+_CONNECT_TIMEOUT = 60.0         # how long to wait for TradingNode.is_running
+_KEEPALIVE_FAIL_THRESHOLD = 2   # consecutive keepalive failures -> declare drop
+
+
 @dataclass
 class _LiveState:
     """In-memory cache of latest IB-sourced data, kept in sync via NT events."""
@@ -76,10 +103,24 @@ class IBNode:
     Public surface:
       await start() / await stop()
       is_connected -> bool
+      connection_state -> str ("disconnected" | "connecting" | "connected" | "reconnecting" | "failed")
       await ensure_subscribed(symbol)
       latest_quote(symbol)
       latest_positions() / latest_account()
       await request_historical_bars(symbol, timeframe, days) -> list[bar]
+
+    Reconnection model
+    ------------------
+    A supervisor task runs for the lifetime of start() / stop():
+
+      * On start(): attempts an initial connect; if it fails we fall into the
+        reconnect loop (exp backoff + jitter, capped at 60s) until success.
+      * On stop(): supervisor exits cleanly.
+      * Once connected: a keepalive task pings the gateway every 15s. Two
+        consecutive failures (or a TradingNode that's stopped running) demote
+        the state to RECONNECTING and re-enter the reconnect loop. Subscribed
+        symbols are remembered and re-subscribed automatically after a
+        successful reconnect.
     """
 
     def __init__(self):
@@ -89,6 +130,14 @@ class IBNode:
         self._ready = asyncio.Event()
         self._lock = asyncio.Lock()
         self._strategy: Optional[Any] = None
+        self._connection_state: str = ConnectionState.DISCONNECTED
+        self._last_error: Optional[str] = None
+        self._reconnect_attempt = 0
+        self._supervisor_task: Optional[asyncio.Task] = None
+        self._keepalive_task: Optional[asyncio.Task] = None
+        self._stop_requested = False
+        self._sticky_subscriptions: Set[str] = set()  # survive reconnects
+        self._last_state_broadcast: float = 0.0
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -98,50 +147,309 @@ class IBNode:
 
     @property
     def is_connected(self) -> bool:
-        return bool(self._node) and self._ready.is_set()
+        return (
+            bool(self._node)
+            and self._ready.is_set()
+            and self._connection_state == ConnectionState.CONNECTED
+        )
+
+    @property
+    def connection_state(self) -> str:
+        return self._connection_state
+
+    @property
+    def last_error(self) -> Optional[str]:
+        return self._last_error
+
+    def _set_state(self, new_state: str, error: Optional[str] = None) -> None:
+        """Update connection state and emit a WS notification."""
+        prev = self._connection_state
+        if prev == new_state and error == self._last_error:
+            return
+        self._connection_state = new_state
+        if error is not None:
+            self._last_error = error
+        elif new_state == ConnectionState.CONNECTED:
+            self._last_error = None
+        logger.info("IBNode state: %s -> %s%s",
+                    prev, new_state,
+                    f" ({error})" if error else "")
+        self._broadcast_state()
+
+    def _broadcast_state(self) -> None:
+        """Push the current connection state to the WS layer. Throttled to
+        ~1Hz so a flapping connection can't spam clients."""
+        now = time.monotonic()
+        if now - self._last_state_broadcast < 0.5:
+            return
+        self._last_state_broadcast = now
+        payload = {
+            "type": "ib_state",
+            "data": {
+                "state": self._connection_state,
+                "connected": self.is_connected,
+                "error": self._last_error,
+                "attempt": self._reconnect_attempt,
+                "subscriptions": sorted(self._sticky_subscriptions),
+            },
+        }
+        _schedule(manager.broadcast(payload))
 
     async def start(self) -> None:
+        """Start the reconnection supervisor. Returns once the first attempt
+        has been initiated — actual connect happens in the background so a
+        slow / unavailable gateway can't block FastAPI startup."""
         if not self.is_available:
             logger.info(
                 "IBNode disabled (mock_mode=%s, nt_ib=%s) - serving mock data",
                 settings.mock_mode,
                 NT_IB_AVAILABLE,
             )
+            self._set_state(ConnectionState.DISCONNECTED)
             return
 
+        self._stop_requested = False
+        if self._supervisor_task is None or self._supervisor_task.done():
+            self._loop = asyncio.get_running_loop()
+            self._supervisor_task = asyncio.create_task(self._supervisor_loop())
+            logger.info("IBNode supervisor started")
+
+    async def _supervisor_loop(self) -> None:
+        """Long-running task: drives connect/keepalive/reconnect cycles."""
+        try:
+            while not self._stop_requested:
+                # Try to bring the node up. The connect call sets state to
+                # CONNECTING/CONNECTED/FAILED internally.
+                ok = await self._try_connect()
+                if not ok:
+                    await self._sleep_with_backoff()
+                    continue
+
+                # Connected — re-subscribe sticky symbols and start keepalive.
+                await self._resubscribe_sticky()
+                self._reconnect_attempt = 0
+                self._keepalive_task = asyncio.create_task(self._keepalive_loop())
+                try:
+                    await self._keepalive_task
+                except asyncio.CancelledError:
+                    pass
+
+                if self._stop_requested:
+                    break
+
+                # Keepalive returned -> connection dropped. Tear down + retry.
+                logger.warning("IBNode: keepalive ended — tearing down and reconnecting")
+                self._set_state(ConnectionState.RECONNECTING, error="connection drop detected")
+                await self._teardown_node()
+                await self._sleep_with_backoff()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # noqa: BLE001
+            logger.exception("IBNode supervisor crashed: %s", e)
+            self._set_state(ConnectionState.FAILED, error=f"supervisor crash: {e}")
+
+    async def _try_connect(self) -> bool:
+        """Single connect attempt. Returns True iff TradingNode reached
+        is_running and we've flipped state to CONNECTED."""
         async with self._lock:
-            if self._node is not None:
-                return
+            if self._stop_requested:
+                return False
+            self._set_state(ConnectionState.CONNECTING)
             try:
                 account_id = await self._discover_account_id()
                 if not account_id:
-                    logger.error(
-                        "IBNode: could not discover an account on ib-gateway %s:%s — "
-                        "gateway may not be fully logged in yet",
-                        settings.ib_gateway_host, settings.ib_gateway_port,
+                    err = (
+                        f"could not discover an account on ib-gateway "
+                        f"{settings.ib_gateway_host}:{settings.ib_gateway_port} — "
+                        "gateway may not be fully logged in yet"
                     )
-                    return
+                    logger.error("IBNode: %s", err)
+                    self._set_state(ConnectionState.RECONNECTING, error=err)
+                    return False
+
                 logger.info("IBNode: using account %s", account_id)
                 self._node = self._build_node(account_id)
                 self._node.build()
-                # run_async() blocks until shutdown — spawn it as a background
-                # task and poll is_running so FastAPI startup can complete.
                 self._loop = asyncio.get_running_loop()
                 self._run_task = asyncio.create_task(self._node.run_async())
-                for _ in range(120):  # up to 60s
+
+                # Wait up to _CONNECT_TIMEOUT for the TradingNode to report
+                # is_running. Poll cadence stays modest so we don't busy-wait.
+                deadline = time.monotonic() + _CONNECT_TIMEOUT
+                while time.monotonic() < deadline:
                     if self._node.is_running:
                         break
+                    if self._stop_requested:
+                        return False
                     await asyncio.sleep(0.5)
+
                 if not self._node.is_running:
-                    logger.error("IBNode: timed out waiting for TradingNode to start")
-                    return
+                    err = f"timed out after {_CONNECT_TIMEOUT}s waiting for TradingNode to start"
+                    logger.error("IBNode: %s", err)
+                    await self._teardown_node_unlocked()
+                    self._set_state(ConnectionState.RECONNECTING, error=err)
+                    return False
+
                 self._ready.set()
-                logger.info("IBNode connected to ib-gateway %s:%s",
-                            settings.ib_gateway_host, settings.ib_gateway_port)
+                self._set_state(ConnectionState.CONNECTED)
+                logger.info(
+                    "IBNode connected to ib-gateway %s:%s",
+                    settings.ib_gateway_host, settings.ib_gateway_port,
+                )
+                return True
+
             except Exception as e:  # noqa: BLE001
-                logger.exception("IBNode start failed: %s", e)
-                self._node = None
-                self._ready.clear()
+                logger.exception("IBNode connect attempt failed: %s", e)
+                await self._teardown_node_unlocked()
+                self._set_state(ConnectionState.RECONNECTING, error=str(e))
+                return False
+
+    async def _keepalive_loop(self) -> None:
+        """Probe the gateway periodically. If the probe fails twice in a row,
+        or the TradingNode reports it's no longer running, return so the
+        supervisor can drive a reconnect."""
+        failures = 0
+        while not self._stop_requested:
+            await asyncio.sleep(_KEEPALIVE_INTERVAL)
+            if self._stop_requested:
+                return
+
+            # First, cheap structural check: is the TradingNode still alive?
+            try:
+                node_alive = bool(self._node) and bool(self._node.is_running)
+            except Exception:  # noqa: BLE001
+                node_alive = False
+            if not node_alive:
+                logger.warning("IBNode keepalive: TradingNode is_running=False")
+                return
+
+            # Now an active probe — ask the gateway for accountSummary via
+            # ib_async (cheap and independent of NT's internal cache). Any
+            # exception or timeout is a strike.
+            try:
+                ok = await asyncio.wait_for(self._keepalive_probe(), timeout=_KEEPALIVE_TIMEOUT)
+            except asyncio.TimeoutError:
+                ok = False
+                logger.warning("IBNode keepalive: probe timed out after %ss", _KEEPALIVE_TIMEOUT)
+            except Exception as e:  # noqa: BLE001
+                ok = False
+                logger.warning("IBNode keepalive: probe error: %s", e)
+
+            if ok:
+                failures = 0
+            else:
+                failures += 1
+                logger.warning("IBNode keepalive failure %d/%d", failures, _KEEPALIVE_FAIL_THRESHOLD)
+                if failures >= _KEEPALIVE_FAIL_THRESHOLD:
+                    return  # supervisor will reconnect
+
+    async def _keepalive_probe(self) -> bool:
+        """Cheap independent gateway-liveness check.
+
+        We connect a separate ib_async client briefly and ask for the managed
+        accounts list. This avoids tangling with NT's internal state — if the
+        gateway socket has dropped silently, this will hang or error out
+        within _KEEPALIVE_TIMEOUT and we treat it as a strike.
+        """
+        try:
+            from ib_async import IB
+        except Exception:  # noqa: BLE001
+            # Without ib_async we fall back to trusting NT's is_running flag.
+            return bool(self._node) and bool(self._node.is_running)
+
+        ib = IB()
+        try:
+            await ib.connectAsync(
+                host=settings.ib_gateway_host,
+                port=settings.ib_gateway_port,
+                # Distinct client id from the data/exec clients AND from the
+                # account-discovery probe.
+                clientId=settings.ib_client_id + 200,
+                timeout=max(2, int(_KEEPALIVE_TIMEOUT) - 2),
+            )
+            accounts = list(ib.managedAccounts() or [])
+            return len(accounts) > 0
+        finally:
+            try:
+                ib.disconnect()
+            except Exception:  # noqa: BLE001
+                pass
+
+    async def _sleep_with_backoff(self) -> None:
+        """Exponential backoff with full jitter, capped at _RECONNECT_MAX_DELAY.
+
+        Sequence: ~2s, 4s, 8s, 16s, 32s, 60s, 60s, ... (each ±25% jitter).
+        Honours stop_requested every 500ms so shutdown is responsive even
+        deep into a long wait.
+        """
+        if self._stop_requested:
+            return
+        self._reconnect_attempt += 1
+        if _RECONNECT_MAX_ATTEMPTS and self._reconnect_attempt > _RECONNECT_MAX_ATTEMPTS:
+            self._set_state(ConnectionState.FAILED,
+                            error=f"exceeded {_RECONNECT_MAX_ATTEMPTS} reconnect attempts")
+            self._stop_requested = True
+            return
+
+        base = min(_RECONNECT_BASE_DELAY * (2 ** (self._reconnect_attempt - 1)),
+                   _RECONNECT_MAX_DELAY)
+        # Full jitter (±25%) so multiple replicas don't all retry in lockstep.
+        delay = base * random.uniform(0.75, 1.25)
+        delay = min(delay, _RECONNECT_MAX_DELAY)
+        logger.info(
+            "IBNode: reconnect attempt %d — sleeping %.1fs before retry",
+            self._reconnect_attempt, delay,
+        )
+        self._set_state(ConnectionState.RECONNECTING)
+        # Sleep in small chunks so stop_requested can interrupt promptly.
+        end = time.monotonic() + delay
+        while not self._stop_requested and time.monotonic() < end:
+            await asyncio.sleep(0.5)
+
+    async def _teardown_node(self) -> None:
+        async with self._lock:
+            await self._teardown_node_unlocked()
+
+    async def _teardown_node_unlocked(self) -> None:
+        """Drop the current TradingNode without changing high-level state.
+        Caller is responsible for transitioning to RECONNECTING / FAILED /
+        DISCONNECTED as appropriate."""
+        if not self._node:
+            self._ready.clear()
+            return
+        node = self._node
+        self._node = None
+        self._ready.clear()
+        try:
+            await asyncio.wait_for(node.stop_async(), timeout=10.0)
+        except asyncio.TimeoutError:
+            logger.warning("IBNode teardown: stop_async timed out")
+        except Exception as e:  # noqa: BLE001
+            logger.warning("IBNode teardown stop error: %s", e)
+        try:
+            node.dispose()
+        except Exception as e:  # noqa: BLE001
+            logger.debug("IBNode teardown dispose error: %s", e)
+        run_task = getattr(self, "_run_task", None)
+        if run_task and not run_task.done():
+            run_task.cancel()
+            try:
+                await run_task
+            except (asyncio.CancelledError, Exception):  # noqa: BLE001
+                pass
+
+    async def _resubscribe_sticky(self) -> None:
+        """After a successful reconnect, re-subscribe to every symbol that was
+        active before the drop. Quotes will resume streaming without the
+        dashboard having to do anything."""
+        # Reset the per-NT subscription tracker — those subscriptions died
+        # with the old node.
+        self.state.subscriptions = set()
+        for sym in list(self._sticky_subscriptions):
+            try:
+                await self.ensure_subscribed(sym, _sticky=False)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("resubscribe %s failed: %s", sym, e)
 
     async def _discover_account_id(self) -> Optional[str]:
         """Connect briefly with ib_async to grab the managed account list, then drop.
@@ -181,17 +489,35 @@ class IBNode:
                 pass
 
     async def stop(self) -> None:
-        async with self._lock:
-            if not self._node:
-                return
+        """Halt the supervisor and the underlying TradingNode."""
+        self._stop_requested = True
+        # Cancel keepalive first — it's the inner loop.
+        if self._keepalive_task and not self._keepalive_task.done():
+            self._keepalive_task.cancel()
             try:
-                await self._node.stop_async()
-                self._node.dispose()
-            except Exception as e:  # noqa: BLE001
-                logger.warning("IBNode stop error: %s", e)
-            finally:
-                self._node = None
-                self._ready.clear()
+                await self._keepalive_task
+            except (asyncio.CancelledError, Exception):  # noqa: BLE001
+                pass
+            self._keepalive_task = None
+        # Then the supervisor.
+        if self._supervisor_task and not self._supervisor_task.done():
+            self._supervisor_task.cancel()
+            try:
+                await self._supervisor_task
+            except (asyncio.CancelledError, Exception):  # noqa: BLE001
+                pass
+            self._supervisor_task = None
+        await self._teardown_node()
+        self._set_state(ConnectionState.DISCONNECTED)
+
+    async def force_reconnect(self) -> None:
+        """Operator hook: rebuild the connection immediately without waiting
+        for keepalive to notice. Used by /admin/reconnect-style endpoints."""
+        logger.info("IBNode: force reconnect requested")
+        if self._keepalive_task and not self._keepalive_task.done():
+            self._keepalive_task.cancel()
+        await self._teardown_node()
+        # Supervisor loop notices the keepalive returned and reconnects.
 
     # -- node config --------------------------------------------------------
 
@@ -239,9 +565,16 @@ class IBNode:
 
     # -- subscription -------------------------------------------------------
 
-    async def ensure_subscribed(self, symbol: str) -> None:
-        """Subscribe the bridge strategy to quote ticks for symbol if not already."""
+    async def ensure_subscribed(self, symbol: str, *, _sticky: bool = True) -> None:
+        """Subscribe the bridge strategy to quote ticks for symbol if not already.
+
+        The symbol is remembered in `_sticky_subscriptions` so it can be
+        restored after a reconnect. Pass _sticky=False during the
+        re-subscribe pass so we don't re-add the same set we're iterating.
+        """
         symbol = symbol.upper()
+        if _sticky:
+            self._sticky_subscriptions.add(symbol)
         if not self.is_connected or symbol in self.state.subscriptions:
             return
         try:
@@ -264,6 +597,18 @@ class IBNode:
     def latest_trades(self) -> List[Dict[str, Any]]:
         # newest first
         return list(reversed(self.state.trades))
+
+    def status_snapshot(self) -> Dict[str, Any]:
+        """Compact view used by /health and the WS snapshot broadcaster."""
+        return {
+            "state": self._connection_state,
+            "connected": self.is_connected,
+            "error": self._last_error,
+            "attempt": self._reconnect_attempt,
+            "subscriptions": sorted(self._sticky_subscriptions),
+            "host": settings.ib_gateway_host,
+            "port": settings.ib_gateway_port,
+        }
 
     # -- historical bars ----------------------------------------------------
 

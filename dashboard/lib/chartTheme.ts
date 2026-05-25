@@ -109,8 +109,16 @@ export const baseChartOptions = () => ({
   },
   crosshair: {
     mode: CrosshairMode.Normal,
-    vertLine: { color: CHART.crosshair, style: LineStyle.Dashed, width: 1 as const },
-    horzLine: { color: CHART.crosshair, style: LineStyle.Dashed, width: 1 as const },
+    vertLine: {
+      color: CHART.crosshair,
+      style: LineStyle.Dashed,
+      width: 1 as const,
+    },
+    horzLine: {
+      color: CHART.crosshair,
+      style: LineStyle.Dashed,
+      width: 1 as const,
+    },
   },
   rightPriceScale: {
     borderColor: CHART.axis,

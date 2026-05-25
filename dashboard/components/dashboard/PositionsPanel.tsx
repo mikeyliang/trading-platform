@@ -32,7 +32,9 @@ interface Props {
   symbolFilter?: string;
 }
 
-export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {}) {
+export function PositionsPanel({
+  symbolFilter: initialSymbol = "",
+}: Props = {}) {
   const [tab, setTab] = useState<Tab>("positions");
   // Positions are WS-pushed via the store snapshot. Slow REST poll is the
   // safety net for cold start + stale-WS recovery.
@@ -52,9 +54,18 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
 
   useEffect(() => {
     const load = () => {
-      api.positions().then(setStorePositions).catch(() => null);
-      api.spreads().then(setSpreads).catch(() => null);
-      api.trades().then(setTrades).catch(() => null);
+      api
+        .positions()
+        .then(setStorePositions)
+        .catch(() => null);
+      api
+        .spreads()
+        .then(setSpreads)
+        .catch(() => null);
+      api
+        .trades()
+        .then(setTrades)
+        .catch(() => null);
     };
     load();
     const id = setInterval(load, 30000);
@@ -77,15 +88,21 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
       positions
         .map((_, i) => kinds[i])
         .filter((_, i) => filteredPositions.includes(positions[i])),
-    [positions, kinds, filteredPositions]
+    [positions, kinds, filteredPositions],
   );
   const filteredSpreads = useMemo(
-    () => spreads.filter((s) => !symbolQ || s.symbol.toUpperCase().includes(symbolQ)),
-    [spreads, symbolQ]
+    () =>
+      spreads.filter(
+        (s) => !symbolQ || s.symbol.toUpperCase().includes(symbolQ),
+      ),
+    [spreads, symbolQ],
   );
   const filteredTrades = useMemo(
-    () => trades.filter((t) => !symbolQ || t.symbol.toUpperCase().includes(symbolQ)),
-    [trades, symbolQ]
+    () =>
+      trades.filter(
+        (t) => !symbolQ || t.symbol.toUpperCase().includes(symbolQ),
+      ),
+    [trades, symbolQ],
   );
 
   const activeFilterCount =
@@ -106,9 +123,24 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
       {/* Tab strip — left. Filter status — right. */}
       <div className="flex items-stretch border-b border-border bg-surface/40">
         <TabsList className="shrink-0 border-0">
-          <TabTriggerWithCount value="positions" label="positions" count={filteredPositions.length} total={positions.length} />
-          <TabTriggerWithCount value="spreads" label="spreads" count={filteredSpreads.length} total={spreads.length} />
-          <TabTriggerWithCount value="trades" label="trades" count={filteredTrades.length} total={trades.length} />
+          <TabTriggerWithCount
+            value="positions"
+            label="positions"
+            count={filteredPositions.length}
+            total={positions.length}
+          />
+          <TabTriggerWithCount
+            value="spreads"
+            label="spreads"
+            count={filteredSpreads.length}
+            total={spreads.length}
+          />
+          <TabTriggerWithCount
+            value="trades"
+            label="trades"
+            count={filteredTrades.length}
+            total={trades.length}
+          />
         </TabsList>
 
         {activeFilterCount > 0 && (
@@ -132,10 +164,12 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
           a real choice in the segmented control so the off-state is clear. */}
       <div className="flex items-center flex-wrap gap-x-4 gap-y-1.5 px-2 py-1.5 border-b border-border/60 bg-surface/30">
         {/* Symbol search — magnifier + input + inline clear */}
-        <div className={cn(
-          "flex items-center gap-1.5 h-6 px-2 rounded-sm border border-border bg-surface-2/40 transition-colors",
-          symbolQ ? "border-accent/50" : "hover:bg-surface-2/70"
-        )}>
+        <div
+          className={cn(
+            "flex items-center gap-1.5 h-6 px-2 rounded-sm border border-border bg-surface-2/40 transition-colors",
+            symbolQ ? "border-accent/50" : "hover:bg-surface-2/70",
+          )}
+        >
           <Search size={11} className="text-text-muted shrink-0" />
           <input
             value={symbolQ}
@@ -186,7 +220,9 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
             description="Positions sync from IBKR Gateway once you have any open."
           />
         ) : filteredPositions.length === 0 ? (
-          <FilterEmpty label={`No positions match "${symbolQ}"${side !== "all" ? ` · ${side}` : ""}${kind !== "all" ? ` · ${kind}` : ""}`} />
+          <FilterEmpty
+            label={`No positions match "${symbolQ}"${side !== "all" ? ` · ${side}` : ""}${kind !== "all" ? ` · ${kind}` : ""}`}
+          />
         ) : (
           <PositionsTable positions={filteredPositions} kinds={filteredKinds} />
         )}
@@ -240,7 +276,10 @@ export function PositionsPanel({ symbolFilter: initialSymbol = "" }: Props = {})
  * always visible and clickable.
  */
 function FilterGroup<T extends string>({
-  label, value, options, onChange,
+  label,
+  value,
+  options,
+  onChange,
 }: {
   label: string;
   value: T;
@@ -249,7 +288,9 @@ function FilterGroup<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-[9px] uppercase tracking-wider text-text-muted">
+        {label}
+      </span>
       <div className="flex h-6 rounded-sm border border-border overflow-hidden">
         {options.map((o, i) => (
           <button
@@ -260,7 +301,7 @@ function FilterGroup<T extends string>({
               i > 0 && "border-l border-border",
               value === o.v
                 ? "bg-accent/15 text-accent font-medium"
-                : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+                : "text-text-secondary hover:bg-surface-2 hover:text-text-primary",
             )}
           >
             {o.label}
@@ -280,7 +321,10 @@ function FilterEmpty({ label }: { label: string }) {
 }
 
 function TabTriggerWithCount({
-  value, label, count, total,
+  value,
+  label,
+  count,
+  total,
 }: {
   value: string;
   label: string;
@@ -318,7 +362,13 @@ function classifyPositions(positions: Position[]): PositionKind[] {
   });
 }
 
-function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: PositionKind[] }) {
+function PositionsTable({
+  positions,
+  kinds,
+}: {
+  positions: Position[];
+  kinds: PositionKind[];
+}) {
   const router = useRouter();
   return (
     <Table>
@@ -341,52 +391,79 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
           positions.map((p, i) => {
             const kind = kinds[i];
             return (
-            <TableRow
-              key={`${p.symbol}-${p.strike ?? ""}-${p.expiry ?? ""}-${p.right ?? ""}-${i}`}
-              onClick={() => router.push(positionHref(p))}
-              className="cursor-pointer group"
-              title={p.is_option ? "Open in option analyzer" : "Analyze position"}
-            >
-              <TableCell className="font-medium">
-                <div className="inline-flex items-center gap-2">
-                  <Logo symbol={p.symbol} size={16} />
-                  <div className="flex flex-col leading-tight">
-                    <span className="inline-flex items-center gap-1.5">
-                      {p.symbol}
+              <TableRow
+                key={`${p.symbol}-${p.strike ?? ""}-${p.expiry ?? ""}-${p.right ?? ""}-${i}`}
+                onClick={() => router.push(positionHref(p))}
+                className="cursor-pointer group"
+                title={
+                  p.is_option ? "Open in option analyzer" : "Analyze position"
+                }
+              >
+                <TableCell className="font-medium">
+                  <div className="inline-flex items-center gap-2">
+                    <Logo symbol={p.symbol} size={16} />
+                    <div className="flex flex-col leading-tight">
+                      <span className="inline-flex items-center gap-1.5">
+                        {p.symbol}
+                        {p.is_option && (
+                          <span
+                            className={cn(
+                              "text-[9px] uppercase tracking-wider px-1 py-px rounded-sm",
+                              p.right === "C"
+                                ? "bg-up/15 text-up"
+                                : "bg-down/15 text-down",
+                            )}
+                          >
+                            {p.right === "C" ? "Call" : "Put"}
+                          </span>
+                        )}
+                        <Target
+                          size={9}
+                          className="opacity-0 group-hover:opacity-100 text-accent transition-opacity"
+                        />
+                      </span>
                       {p.is_option && (
-                        <span className={cn(
-                          "text-[9px] uppercase tracking-wider px-1 py-px rounded-sm",
-                          p.right === "C" ? "bg-up/15 text-up" : "bg-down/15 text-down",
-                        )}>
-                          {p.right === "C" ? "Call" : "Put"}
+                        <span className="text-[10px] text-text-muted tabular">
+                          {formatExpiry(p.expiry)} ·{" "}
+                          {Number(p.strike ?? 0).toFixed(0)}
+                          {p.right}
                         </span>
                       )}
-                      <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent transition-opacity" />
-                    </span>
-                    {p.is_option && (
-                      <span className="text-[10px] text-text-muted tabular">
-                        {formatExpiry(p.expiry)} · {Number(p.strike ?? 0).toFixed(0)}{p.right}
-                      </span>
-                    )}
+                    </div>
                   </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <KindPill kind={kind} />
-              </TableCell>
-              <TableCell className="text-text-muted">{p.sector ?? "—"}</TableCell>
-              <TableCell className="text-right tabular">{p.quantity}</TableCell>
-              <TableCell className="text-right tabular">{p.avg_price.toFixed(2)}</TableCell>
-              <TableCell className="text-right tabular">{p.current_price.toFixed(2)}</TableCell>
-              <TableCell className={cn("text-right tabular font-medium", pnlClass(p.unrealized_pnl))}>
-                {fmtCurrency(p.unrealized_pnl)}
-              </TableCell>
-              <TableCell className="text-right">
-                <Badge variant={p.unrealized_pnl_pct >= 0 ? "up" : "down"} className="tabular">
-                  {fmtPct(p.unrealized_pnl_pct)}
-                </Badge>
-              </TableCell>
-            </TableRow>
+                </TableCell>
+                <TableCell>
+                  <KindPill kind={kind} />
+                </TableCell>
+                <TableCell className="text-text-muted">
+                  {p.sector ?? "—"}
+                </TableCell>
+                <TableCell className="text-right tabular">
+                  {p.quantity}
+                </TableCell>
+                <TableCell className="text-right tabular">
+                  {p.avg_price.toFixed(2)}
+                </TableCell>
+                <TableCell className="text-right tabular">
+                  {p.current_price.toFixed(2)}
+                </TableCell>
+                <TableCell
+                  className={cn(
+                    "text-right tabular font-medium",
+                    pnlClass(p.unrealized_pnl),
+                  )}
+                >
+                  {fmtCurrency(p.unrealized_pnl)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge
+                    variant={p.unrealized_pnl_pct >= 0 ? "up" : "down"}
+                    className="tabular"
+                  >
+                    {fmtPct(p.unrealized_pnl_pct)}
+                  </Badge>
+                </TableCell>
+              </TableRow>
             );
           })
         )}
@@ -401,7 +478,8 @@ function KindPill({ kind }: { kind: PositionKind }) {
     option: "border-accent/40 text-accent",
     leg: "border-amber-500/40 text-amber-500",
   };
-  const label = kind === "stock" ? "Stock" : kind === "option" ? "Option" : "Leg";
+  const label =
+    kind === "stock" ? "Stock" : kind === "option" ? "Option" : "Leg";
   return (
     <span
       className={cn(
@@ -445,21 +523,30 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
                 <span className="inline-flex items-center gap-2">
                   <Logo symbol={s.symbol} size={16} />
                   {s.symbol}
-                  <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent transition-opacity" />
+                  <Target
+                    size={9}
+                    className="opacity-0 group-hover:opacity-100 text-accent transition-opacity"
+                  />
                 </span>
               </TableCell>
               <TableCell>
                 <Badge variant="accent">{s.spread_type}</Badge>
               </TableCell>
-              <TableCell className="tabular text-text-secondary">{formatExpiry(s.expiry)}</TableCell>
+              <TableCell className="tabular text-text-secondary">
+                {formatExpiry(s.expiry)}
+              </TableCell>
               <TableCell className="tabular">
                 <span className="text-down">{s.long_strike}</span>
                 <span className="text-text-muted mx-1">/</span>
                 <span className="text-up">{s.short_strike}</span>
               </TableCell>
               <TableCell className="text-right tabular">{s.quantity}</TableCell>
-              <TableCell className="text-right tabular text-up">{s.credit_received.toFixed(2)}</TableCell>
-              <TableCell className="text-right tabular text-up">{fmtCurrency(s.max_profit)}</TableCell>
+              <TableCell className="text-right tabular text-up">
+                {s.credit_received.toFixed(2)}
+              </TableCell>
+              <TableCell className="text-right tabular text-up">
+                {fmtCurrency(s.max_profit)}
+              </TableCell>
               <TableCell className="text-right tabular text-down">
                 {fmtCurrency(-Math.abs(s.max_loss))}
               </TableCell>
@@ -493,15 +580,25 @@ function TradesTable({ trades }: { trades: Trade[] }) {
             <TableRow key={t.id}>
               <TableCell className="font-medium">{t.symbol}</TableCell>
               <TableCell>
-                <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
+                <Badge variant={t.side === "BUY" ? "up" : "down"}>
+                  {t.side}
+                </Badge>
               </TableCell>
               <TableCell className="text-right tabular">{t.quantity}</TableCell>
-              <TableCell className="text-right tabular">{t.price.toFixed(2)}</TableCell>
-              <TableCell className={cn("text-right tabular", pnlClass(t.pnl ?? 0))}>
+              <TableCell className="text-right tabular">
+                {t.price.toFixed(2)}
+              </TableCell>
+              <TableCell
+                className={cn("text-right tabular", pnlClass(t.pnl ?? 0))}
+              >
                 {t.pnl != null ? fmtCurrency(t.pnl) : "—"}
               </TableCell>
-              <TableCell className="text-text-muted">{t.strategy ?? "—"}</TableCell>
-              <TableCell className="text-text-muted">{new Date(t.timestamp).toLocaleString()}</TableCell>
+              <TableCell className="text-text-muted">
+                {t.strategy ?? "—"}
+              </TableCell>
+              <TableCell className="text-text-muted">
+                {new Date(t.timestamp).toLocaleString()}
+              </TableCell>
             </TableRow>
           ))
         )}
@@ -518,9 +615,11 @@ function formatExpiry(yyyymmdd: string | undefined): string {
 function positionHref(p: Position): string {
   if (p.is_option && p.expiry && p.strike != null && p.right) {
     const qty = Math.abs(p.quantity);
-    return `/monitor/analyzer?symbol=${encodeURIComponent(p.symbol)}` +
+    return (
+      `/monitor/analyzer?symbol=${encodeURIComponent(p.symbol)}` +
       `&expiry=${p.expiry}&strike=${p.strike}&right=${p.right}` +
-      `&qty=${qty}&entry=${p.avg_price}`;
+      `&qty=${qty}&entry=${p.avg_price}`
+    );
   }
   return `/chart/${encodeURIComponent(p.symbol)}`;
 }

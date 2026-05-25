@@ -12,7 +12,10 @@ const TabsList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn("inline-flex items-stretch border-b border-border bg-surface", className)}
+    className={cn(
+      "inline-flex items-stretch border-b border-border bg-surface",
+      className,
+    )}
     {...props}
   />
 ));
@@ -30,7 +33,7 @@ const TabsTrigger = React.forwardRef<
       // accent-rule active state and a subtle hover lift. Bumped padding
       // to py-2.5 for finger-friendly click targets without bloat.
       "inline-flex items-center gap-1.5 px-3 py-2.5 text-[10px] uppercase tracking-wider font-medium border-b-2 border-transparent text-text-muted transition-colors hover:text-text-secondary hover:bg-surface-2/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-accent data-[state=active]:text-text-primary data-[state=active]:bg-surface-2/30",
-      className
+      className,
     )}
     {...props}
   />

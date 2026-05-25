@@ -14,10 +14,10 @@ interface Args {
 }
 
 const STRATEGY_COLORS: Record<RuleOneCandidate["strategy_id"], string> = {
-  rut: "#3b82f6",      // blue — traditional, conservative
-  mars: "#a78bfa",     // violet — more aggressive
-  marsmax: "#f97316",  // orange — most aggressive
-  space: "#22d3ee",    // cyan — SPX
+  rut: "#3b82f6", // blue — traditional, conservative
+  mars: "#a78bfa", // violet — more aggressive
+  marsmax: "#f97316", // orange — most aggressive
+  space: "#22d3ee", // cyan — SPX
 };
 
 const STRATEGY_LABELS: Record<RuleOneCandidate["strategy_id"], string> = {
@@ -27,7 +27,11 @@ const STRATEGY_LABELS: Record<RuleOneCandidate["strategy_id"], string> = {
   space: "SPACE",
 };
 
-export function useShortStrikeOverlay({ candleSeries, candidates, enabled }: Args) {
+export function useShortStrikeOverlay({
+  candleSeries,
+  candidates,
+  enabled,
+}: Args) {
   const linesRef = useRef<IPriceLine[]>([]);
 
   useEffect(() => {
@@ -54,7 +58,7 @@ export function useShortStrikeOverlay({ candleSeries, candidates, enabled }: Arg
           price: c.short_strike,
           color: STRATEGY_COLORS[c.strategy_id],
           lineWidth: 1,
-          lineStyle: 2 as LineStyle,  // dashed
+          lineStyle: 2 as LineStyle, // dashed
           axisLabelVisible: true,
           title: `${STRATEGY_LABELS[c.strategy_id]} ${Math.round(c.short_strike)}${c.side === "put" ? "P" : "C"}`,
         });

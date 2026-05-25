@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -53,7 +59,10 @@ export function ResizableSplit({
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const maxBottom = rect.height - minPx;
-      const next = Math.max(minPx, Math.min(maxBottom, rect.bottom - e.clientY));
+      const next = Math.max(
+        minPx,
+        Math.min(maxBottom, rect.bottom - e.clientY),
+      );
       setHeight(next);
     };
     const onUp = () => setDragging(false);
@@ -87,7 +96,9 @@ export function ResizableSplit({
         className={cn(
           "relative h-1 shrink-0 cursor-row-resize group",
           "before:absolute before:inset-x-0 before:-top-1 before:-bottom-1 before:content-['']",
-          dragging ? "bg-accent/60" : "bg-border hover:bg-accent/40 transition-colors"
+          dragging
+            ? "bg-accent/60"
+            : "bg-border hover:bg-accent/40 transition-colors",
         )}
         role="separator"
         aria-orientation="horizontal"
@@ -97,7 +108,7 @@ export function ResizableSplit({
         <span
           className={cn(
             "absolute left-1/2 -translate-x-1/2 -top-0.5 h-2 w-10 rounded-full",
-            "bg-border group-hover:bg-accent/30 transition-colors"
+            "bg-border group-hover:bg-accent/30 transition-colors",
           )}
         />
       </div>

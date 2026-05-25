@@ -25,7 +25,14 @@ interface Props {
  * The sub-line beneath each value is the *per-position* exposure
  * (per-contract × quantity), e.g. "−16 shares Δ" for 20 of those puts.
  */
-export function GreeksPanel({ delta, gamma, theta, vega, isLong, quantity }: Props) {
+export function GreeksPanel({
+  delta,
+  gamma,
+  theta,
+  vega,
+  isLong,
+  quantity,
+}: Props) {
   const qty = Math.abs(quantity) || 1;
   const sign = isLong ? 1 : -1;
   const MULT = 100; // equity-option contract multiplier
@@ -33,12 +40,12 @@ export function GreeksPanel({ delta, gamma, theta, vega, isLong, quantity }: Pro
   const deltaC = delta != null ? delta * MULT : null;
   const gammaC = gamma != null ? gamma * MULT : null;
   const thetaC = theta != null ? theta * MULT : null;
-  const vegaC  = vega  != null ? vega  * MULT : null;
+  const vegaC = vega != null ? vega * MULT : null;
   // Position-aware exposure (per-contract × signed qty).
   const posDelta = deltaC != null ? deltaC * sign * qty : null;
   const posGamma = gammaC != null ? gammaC * sign * qty : null;
   const posTheta = thetaC != null ? thetaC * sign * qty : null;
-  const posVega  = vegaC  != null ? vegaC  * sign * qty : null;
+  const posVega = vegaC != null ? vegaC * sign * qty : null;
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -51,7 +58,9 @@ export function GreeksPanel({ delta, gamma, theta, vega, isLong, quantity }: Pro
         magnitudeMax={1}
         accent="sky"
         rawFmt={(v) => v.toFixed(2)}
-        posFmt={(v) => (v >= 0 ? `+${v.toFixed(0)}` : v.toFixed(0)) + " shares Δ"}
+        posFmt={(v) =>
+          (v >= 0 ? `+${v.toFixed(0)}` : v.toFixed(0)) + " shares Δ"
+        }
         hint={getDeltaHint(delta, isLong)}
       />
       <GreekCell
@@ -119,22 +128,44 @@ function GreekCell({
   hint,
 }: CellProps) {
   const pct = Math.max(0, Math.min(1, magnitude)) * 100;
-  const accentClasses: Record<typeof accent, { bar: string; text: string; bg: string }> = {
+  const accentClasses: Record<
+    typeof accent,
+    { bar: string; text: string; bg: string }
+  > = {
     sky: { bar: "bg-sky-400", text: "text-sky-400", bg: "bg-sky-400/10" },
-    violet: { bar: "bg-violet-400", text: "text-violet-400", bg: "bg-violet-400/10" },
+    violet: {
+      bar: "bg-violet-400",
+      text: "text-violet-400",
+      bg: "bg-violet-400/10",
+    },
     green: { bar: "bg-up", text: "text-up", bg: "bg-up/10" },
     red: { bar: "bg-down", text: "text-down", bg: "bg-down/10" },
-    amber: { bar: "bg-amber-400", text: "text-amber-400", bg: "bg-amber-400/10" },
+    amber: {
+      bar: "bg-amber-400",
+      text: "text-amber-400",
+      bg: "bg-amber-400/10",
+    },
   };
   const c = accentClasses[accent];
 
   return (
     <div className="rounded-md border border-border bg-surface p-3 flex flex-col gap-2 relative overflow-hidden">
-      <div className={cn("absolute inset-0 opacity-50", c.bg)} style={{ maskImage: "linear-gradient(to bottom, black 0%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 100%)" }} />
+      <div
+        className={cn("absolute inset-0 opacity-50", c.bg)}
+        style={{
+          maskImage: "linear-gradient(to bottom, black 0%, transparent 100%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, black 0%, transparent 100%)",
+        }}
+      />
       <div className="relative">
         <div className="flex items-baseline gap-2">
-          <span className={cn("text-2xl font-semibold leading-none", c.text)}>{symbol}</span>
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">{name}</span>
+          <span className={cn("text-2xl font-semibold leading-none", c.text)}>
+            {symbol}
+          </span>
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            {name}
+          </span>
         </div>
         <div className="mt-2 text-base font-medium tabular-nums text-text-primary">
           {raw != null ? rawFmt(raw) : "—"}
@@ -144,11 +175,16 @@ function GreekCell({
         </div>
         <div className="h-1 rounded-full bg-surface-2 mt-2 overflow-hidden">
           <div
-            className={cn("h-full rounded-full transition-all duration-500", c.bar)}
+            className={cn(
+              "h-full rounded-full transition-all duration-500",
+              c.bar,
+            )}
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-[10px] text-text-muted leading-snug mt-1.5">{hint}</p>
+        <p className="text-[10px] text-text-muted leading-snug mt-1.5">
+          {hint}
+        </p>
       </div>
     </div>
   );
@@ -157,8 +193,10 @@ function GreekCell({
 function getDeltaHint(delta: number | null, isLong: boolean): string {
   if (delta == null) return "—";
   const abs = Math.abs(delta);
-  if (abs >= 0.7) return `Deep ITM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
-  if (abs >= 0.45) return `Near-ATM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
+  if (abs >= 0.7)
+    return `Deep ITM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
+  if (abs >= 0.45)
+    return `Near-ATM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
   if (abs >= 0.25) return `OTM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
   return `Far OTM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
 }
@@ -166,19 +204,32 @@ function getDeltaHint(delta: number | null, isLong: boolean): string {
 function getGammaHint(gamma: number | null, isLong: boolean): string {
   if (gamma == null) return "—";
   const abs = Math.abs(gamma);
-  if (abs > 0.05) return isLong ? "High gamma — Δ moves fast with spot" : "High gamma — short side, watch volatility";
+  if (abs > 0.05)
+    return isLong
+      ? "High gamma — Δ moves fast with spot"
+      : "High gamma — short side, watch volatility";
   if (abs > 0.02) return "Moderate gamma — typical near-ATM behavior";
   return "Low gamma — Δ stable across price moves";
 }
 
 function getThetaHint(theta: number | null, isLong: boolean): string {
   if (theta == null) return "—";
-  if (isLong) return theta < -0.05 ? "Heavy decay — time is against you" : "Mild decay — manageable";
-  return theta > 0.05 ? "Strong decay collection — time is with you" : "Mild decay benefit";
+  if (isLong)
+    return theta < -0.05
+      ? "Heavy decay — time is against you"
+      : "Mild decay — manageable";
+  return theta > 0.05
+    ? "Strong decay collection — time is with you"
+    : "Mild decay benefit";
 }
 
 function getVegaHint(vega: number | null, isLong: boolean): string {
   if (vega == null) return "—";
-  if (isLong) return vega > 0.2 ? "IV-sensitive — rising IV helps you" : "Low IV exposure";
-  return vega > 0.2 ? "Rising IV hurts a short — watch earnings/events" : "Low IV exposure";
+  if (isLong)
+    return vega > 0.2
+      ? "IV-sensitive — rising IV helps you"
+      : "Low IV exposure";
+  return vega > 0.2
+    ? "Rising IV hurts a short — watch earnings/events"
+    : "Low IV exposure";
 }

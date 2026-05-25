@@ -8,7 +8,17 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Send, Sparkles, Loader2, Copy, Check, Eraser, Wand2, ChevronRight } from "lucide-react";
+import {
+  X,
+  Send,
+  Sparkles,
+  Loader2,
+  Copy,
+  Check,
+  Eraser,
+  Wand2,
+  ChevronRight,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "@/components/ui/toaster";
@@ -66,7 +76,8 @@ export function ChatDrawer() {
       setTimeout(() => inputRef.current?.focus(), 150);
     };
     window.addEventListener("copilot:prefill", onPrefill as EventListener);
-    return () => window.removeEventListener("copilot:prefill", onPrefill as EventListener);
+    return () =>
+      window.removeEventListener("copilot:prefill", onPrefill as EventListener);
   }, []);
 
   useEffect(() => {
@@ -90,7 +101,11 @@ export function ChatDrawer() {
   const send = async () => {
     if (!input.trim() || streaming) return;
     const userMsg: ChatMessage = { role: "user", content: input.trim() };
-    setMessages((m) => [...m, userMsg, { role: "assistant", content: "", pending: true }]);
+    setMessages((m) => [
+      ...m,
+      userMsg,
+      { role: "assistant", content: "", pending: true },
+    ]);
     setInput("");
     setStreaming(true);
 
@@ -104,7 +119,10 @@ export function ChatDrawer() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMsg].map(({ role, content }) => ({ role, content })),
+          messages: [...messages, userMsg].map(({ role, content }) => ({
+            role,
+            content,
+          })),
           context,
           effort: "high",
         }),
@@ -188,7 +206,9 @@ export function ChatDrawer() {
       <div
         className={cn(
           "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity",
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          open
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
         )}
         onClick={() => setOpen(false)}
         aria-hidden
@@ -200,17 +220,19 @@ export function ChatDrawer() {
         aria-label="AI chat"
         className={cn(
           "fixed top-0 right-0 z-50 h-full w-full max-w-md bg-surface border-l border-border shadow-2xl flex flex-col transition-transform duration-200 ease-out",
-          open ? "translate-x-0" : "translate-x-full"
+          open ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* header */}
         <div className="flex items-center gap-2 px-4 h-10 border-b border-border/60 shrink-0">
           <Sparkles size={12} className="text-accent" />
-          <span className="text-xs font-medium text-text-primary">Co-pilot</span>
+          <span className="text-xs font-medium text-text-primary">
+            Co-pilot
+          </span>
           <span
             className={cn(
               "w-1.5 h-1.5 rounded-full",
-              status?.available ? "bg-up" : "bg-text-muted"
+              status?.available ? "bg-up" : "bg-text-muted",
             )}
           />
           <span className="text-[10px] tabular text-text-muted">
@@ -218,18 +240,31 @@ export function ChatDrawer() {
           </span>
           <div className="ml-auto flex items-center gap-0.5">
             {messages.length > 0 && (
-              <Button variant="ghost" size="icon-sm" onClick={clear} aria-label="Clear chat">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={clear}
+                aria-label="Clear chat"
+              >
                 <Eraser />
               </Button>
             )}
-            <Button variant="ghost" size="icon-sm" onClick={() => setOpen(false)} aria-label="Close">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+            >
               <X />
             </Button>
           </div>
         </div>
 
         {/* messages */}
-        <div ref={listRef} className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        <div
+          ref={listRef}
+          className="flex-1 overflow-y-auto p-4 flex flex-col gap-4"
+        >
           {messages.length === 0 && (
             <EmptyChat available={!!status?.available} onPick={setInput} />
           )}
@@ -267,15 +302,22 @@ export function ChatDrawer() {
                 "absolute right-2 bottom-2 w-7 h-7 flex items-center justify-center rounded transition-colors",
                 streaming
                   ? "bg-down/15 text-down hover:bg-down/25"
-                  : "bg-accent text-white hover:bg-accent/90 disabled:opacity-40 disabled:hover:bg-accent"
+                  : "bg-accent text-white hover:bg-accent/90 disabled:opacity-40 disabled:hover:bg-accent",
               )}
               aria-label={streaming ? "Stop" : "Send"}
             >
-              {streaming ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+              {streaming ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Send size={12} />
+              )}
             </button>
           </div>
           <div className="flex items-center justify-between mt-1.5 text-[10px] text-text-muted">
-            <span>Context: {summarizeContext(path, positions.length, watchlist.length)}</span>
+            <span>
+              Context:{" "}
+              {summarizeContext(path, positions.length, watchlist.length)}
+            </span>
             <kbd className="font-mono">⌘J</kbd>
           </div>
         </div>
@@ -298,7 +340,12 @@ function Message({ message }: { message: ChatMessage }) {
   const segments = isUser ? null : parseAssistantContent(message.content);
 
   return (
-    <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
+    <div
+      className={cn(
+        "flex flex-col gap-1.5",
+        isUser ? "items-end" : "items-start",
+      )}
+    >
       <div className="text-[10px] uppercase tracking-wider text-text-muted">
         {isUser ? "you" : "co-pilot"}
       </div>
@@ -309,7 +356,7 @@ function Message({ message }: { message: ChatMessage }) {
           "group relative max-w-[92%] rounded-md px-3 py-2 text-xs leading-relaxed",
           isUser
             ? "bg-accent/15 border border-accent/30 text-text-primary"
-            : "bg-surface-2 border border-border text-text-secondary"
+            : "bg-surface-2 border border-border text-text-secondary",
         )}
       >
         {message.pending && !message.content ? (
@@ -326,7 +373,7 @@ function Message({ message }: { message: ChatMessage }) {
                 <ReactMarkdown key={i} remarkPlugins={[remarkGfm]}>
                   {seg.text}
                 </ReactMarkdown>
-              ) : null
+              ) : null,
             )}
           </div>
         )}
@@ -343,7 +390,10 @@ function Message({ message }: { message: ChatMessage }) {
 
       {/* preview cards rendered below the text bubble */}
       {segments
-        ?.filter((s): s is { type: "proposal"; data: ParamProposal } => s.type === "proposal")
+        ?.filter(
+          (s): s is { type: "proposal"; data: ParamProposal } =>
+            s.type === "proposal",
+        )
         .map((seg, i) => (
           <ProposalCard key={`p${i}`} proposal={seg.data} />
         ))}
@@ -357,7 +407,9 @@ interface ParamProposal {
   rationale?: string;
 }
 
-type Segment = { type: "text"; text: string } | { type: "proposal"; data: ParamProposal };
+type Segment =
+  | { type: "text"; text: string }
+  | { type: "proposal"; data: ParamProposal };
 
 function parseAssistantContent(content: string): Segment[] {
   if (!content) return [];
@@ -461,15 +513,28 @@ function ProposalCard({ proposal }: { proposal: ParamProposal }) {
   );
 }
 
-function EmptyChat({ available, onPick }: { available: boolean; onPick: (s: string) => void }) {
+function EmptyChat({
+  available,
+  onPick,
+}: {
+  available: boolean;
+  onPick: (s: string) => void;
+}) {
   if (!available) {
     return (
       <div className="text-center text-[11px] text-text-muted py-12">
         <Sparkles size={20} className="mx-auto mb-2 text-text-muted/60" />
         <p className="mb-1 text-text-secondary font-medium">Chat is disabled</p>
         <p>
-          Add <code className="text-[10px] bg-surface-2 px-1 py-0.5 rounded">ANTHROPIC_API_KEY</code> to{" "}
-          <code className="text-[10px] bg-surface-2 px-1 py-0.5 rounded">.env</code> and restart the api container.
+          Add{" "}
+          <code className="text-[10px] bg-surface-2 px-1 py-0.5 rounded">
+            ANTHROPIC_API_KEY
+          </code>{" "}
+          to{" "}
+          <code className="text-[10px] bg-surface-2 px-1 py-0.5 rounded">
+            .env
+          </code>{" "}
+          and restart the api container.
         </p>
       </div>
     );
@@ -486,7 +551,9 @@ function EmptyChat({ available, onPick }: { available: boolean; onPick: (s: stri
     <div className="flex flex-col gap-3 py-6">
       <div className="text-center mb-2">
         <Sparkles size={20} className="mx-auto mb-2 text-accent" />
-        <p className="text-xs text-text-secondary">Ask about strategies, params, or last backtest.</p>
+        <p className="text-xs text-text-secondary">
+          Ask about strategies, params, or last backtest.
+        </p>
       </div>
       <div className="flex flex-col gap-1.5">
         {suggestions.map((s) => (
@@ -507,7 +574,7 @@ function buildContext(
   path: string | null,
   positions: any[],
   watchlist: any[],
-  lastBacktest: any | null
+  lastBacktest: any | null,
 ): Record<string, unknown> {
   return {
     current_page: path ?? "/",
@@ -536,7 +603,11 @@ function buildContext(
   };
 }
 
-function summarizeContext(path: string | null, posCount: number, watchCount: number): string {
+function summarizeContext(
+  path: string | null,
+  posCount: number,
+  watchCount: number,
+): string {
   const parts: string[] = [];
   if (path) parts.push(`page ${path}`);
   if (posCount) parts.push(`${posCount} pos`);

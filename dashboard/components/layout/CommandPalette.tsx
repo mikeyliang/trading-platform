@@ -27,16 +27,60 @@ import { api } from "@/lib/api";
 import type { WatchlistItem } from "@/types";
 
 const PAGES = [
-  { label: "Dashboard",   href: "/",                    icon: LayoutDashboard, keywords: "home overview" },
-  { label: "Exit",        href: "/monitor/exit",        icon: Activity,        keywords: "monitor open spreads delta trigger" },
-  { label: "Tracker",     href: "/monitor/tracker",     icon: Notebook,        keywords: "okw log positions" },
-  { label: "Performance", href: "/monitor/performance", icon: BarChart3,       keywords: "analytics equity curve sharpe drawdown" },
-  { label: "Journal",     href: "/monitor/journal",     icon: Notebook,        keywords: "notes reflection review" },
-  { label: "Screener",    href: "/screener",            icon: Filter,          keywords: "filter sector market cap pe dividend" },
-  { label: "Settings",    href: "/settings",            icon: Settings,        keywords: "configuration" },
+  {
+    label: "Dashboard",
+    href: "/",
+    icon: LayoutDashboard,
+    keywords: "home overview",
+  },
+  {
+    label: "Exit",
+    href: "/monitor/exit",
+    icon: Activity,
+    keywords: "monitor open spreads delta trigger",
+  },
+  {
+    label: "Tracker",
+    href: "/monitor/tracker",
+    icon: Notebook,
+    keywords: "okw log positions",
+  },
+  {
+    label: "Performance",
+    href: "/monitor/performance",
+    icon: BarChart3,
+    keywords: "analytics equity curve sharpe drawdown",
+  },
+  {
+    label: "Journal",
+    href: "/monitor/journal",
+    icon: Notebook,
+    keywords: "notes reflection review",
+  },
+  {
+    label: "Screener",
+    href: "/screener",
+    icon: Filter,
+    keywords: "filter sector market cap pe dividend",
+  },
+  {
+    label: "Settings",
+    href: "/settings",
+    icon: Settings,
+    keywords: "configuration",
+  },
 ];
 
-const SUGGESTED_SYMBOLS = ["SPY", "QQQ", "IWM", "RUT", "AAPL", "NVDA", "TSLA", "MSFT"];
+const SUGGESTED_SYMBOLS = [
+  "SPY",
+  "QQQ",
+  "IWM",
+  "RUT",
+  "AAPL",
+  "NVDA",
+  "TSLA",
+  "MSFT",
+];
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -56,7 +100,10 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (open && watchlist.length === 0) {
-      api.watchlist().then(setWatchlist).catch(() => null);
+      api
+        .watchlist()
+        .then(setWatchlist)
+        .catch(() => null);
     }
   }, [open, watchlist.length]);
 
@@ -94,7 +141,10 @@ export function CommandPalette() {
                   value={`${w.symbol} ${w.name} chart`}
                   onSelect={() => go(`/chart/${w.symbol}`)}
                 >
-                  <CandlestickChart size={12} className="mr-2 text-text-muted" />
+                  <CandlestickChart
+                    size={12}
+                    className="mr-2 text-text-muted"
+                  />
                   <span className="font-medium mr-2">{w.symbol}</span>
                   <span className="text-text-muted truncate">{w.name}</span>
                   <CommandShortcut>chart</CommandShortcut>

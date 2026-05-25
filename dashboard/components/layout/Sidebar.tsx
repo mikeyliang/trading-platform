@@ -13,7 +13,11 @@ import {
   Layers,
   type LucideIcon,
 } from "lucide-react";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { useHealth } from "@/lib/health";
 
@@ -26,12 +30,12 @@ interface NavEntry {
 // Grouped to mirror IBKR TWS module rails: primary workspace, market lookups,
 // research, then settings pinned to the bottom.
 const primary: NavEntry[] = [
-  { href: "/",        icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/monitor", icon: Activity,        label: "Monitor" },
+  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/monitor", icon: Activity, label: "Monitor" },
 ];
 
 const market: NavEntry[] = [
-  { href: "/screener",       icon: Filter, label: "Screener" },
+  { href: "/screener", icon: Filter, label: "Screener" },
   { href: "/microstructure", icon: Layers, label: "Microstructure" },
 ];
 
@@ -118,7 +122,7 @@ function NavItem({
             "relative w-8 h-8 flex items-center justify-center rounded-sm transition-colors",
             active
               ? "bg-surface-3 text-text-primary"
-              : "text-text-muted hover:text-text-secondary hover:bg-surface-2"
+              : "text-text-muted hover:text-text-secondary hover:bg-surface-2",
           )}
         >
           {active && (

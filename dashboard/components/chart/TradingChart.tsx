@@ -18,12 +18,31 @@ import { api, type RuleOneCycle, type RuleOneHistoryCycle } from "@/lib/api";
 import { ws } from "@/lib/ws";
 import type { Bar, Quote, Timeframe, WSMessage } from "@/types";
 import { cn, fmt, fmtCompact } from "@/lib/utils";
-import { Activity, BarChart2, CalendarDays, Loader2, Ruler, TrendingUp, Waves, Layers, Search } from "lucide-react";
-import { useSpreadOverlay, SUPPORTED_OVERLAY_SYMBOLS } from "./useSpreadOverlay";
+import {
+  Activity,
+  BarChart2,
+  CalendarDays,
+  Loader2,
+  Ruler,
+  TrendingUp,
+  Waves,
+  Layers,
+  Search,
+} from "lucide-react";
+import {
+  useSpreadOverlay,
+  SUPPORTED_OVERLAY_SYMBOLS,
+} from "./useSpreadOverlay";
 import { useSpreadFinderOverlay } from "./useSpreadFinderOverlay";
-import { usePinnedSpreadOverlay, type PinnedSpread } from "./usePinnedSpreadOverlay";
+import {
+  usePinnedSpreadOverlay,
+  type PinnedSpread,
+} from "./usePinnedSpreadOverlay";
 import { useSmiOverlay } from "./useSmiOverlay";
-import { useMonthlyExpiryOverlay, MONTHLY_OPEX_SYMBOLS } from "./useMonthlyExpiryOverlay";
+import {
+  useMonthlyExpiryOverlay,
+  MONTHLY_OPEX_SYMBOLS,
+} from "./useMonthlyExpiryOverlay";
 import { useFibLevelsOverlay, type FibRange } from "./useFibLevelsOverlay";
 import { useCycleOverlay } from "./useCycleOverlay";
 import { useShortStrikeOverlay } from "./useShortStrikeOverlay";
@@ -80,7 +99,13 @@ interface Props {
   pinnedSpread?: PinnedSpread | null;
 }
 
-export function TradingChart({ symbol, initialTimeframe = "15m", height, showIndicators = true, pinnedSpread = null }: Props) {
+export function TradingChart({
+  symbol,
+  initialTimeframe = "15m",
+  height,
+  showIndicators = true,
+  pinnedSpread = null,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -129,23 +154,39 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
     return [];
   }, [symbol]);
   const [strategyId, setStrategyId] = useState<StrategyId | null>(
-    applicableStrategies[0]?.id ?? null
+    applicableStrategies[0]?.id ?? null,
   );
   const currentStrategy = useMemo(
-    () => applicableStrategies.find((s) => s.id === strategyId) ?? applicableStrategies[0] ?? null,
-    [applicableStrategies, strategyId]
+    () =>
+      applicableStrategies.find((s) => s.id === strategyId) ??
+      applicableStrategies[0] ??
+      null,
+    [applicableStrategies, strategyId],
   );
   useEffect(() => {
     setStrategyId(applicableStrategies[0]?.id ?? null);
   }, [applicableStrategies]);
   const [barsState, setBarsState] = useState<Bar[] | null>(null);
-  const [ohlcv, setOhlcv] = useState<{ o: number; h: number; l: number; c: number; v: number; chg: number; chgPct: number } | null>(null);
+  const [ohlcv, setOhlcv] = useState<{
+    o: number;
+    h: number;
+    l: number;
+    c: number;
+    v: number;
+    chg: number;
+    chgPct: number;
+  } | null>(null);
   // Bar under the crosshair. When set, the header shows hovered OHLCV; when
   // null (cursor outside the canvas), the header falls back to the latest bar.
   const [hover, setHover] = useState<{
     time: number;
-    o: number; h: number; l: number; c: number; v: number;
-    chg: number; chgPct: number;
+    o: number;
+    h: number;
+    l: number;
+    c: number;
+    v: number;
+    chg: number;
+    chgPct: number;
   } | null>(null);
 
   const smiContainerRef = useRef<HTMLDivElement>(null);
@@ -162,17 +203,25 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
     enabled: scanOn,
   });
 
-  usePinnedSpreadOverlay({ chart: chartRef, candleSeries: candleRef, pinned: pinnedSpread });
+  usePinnedSpreadOverlay({
+    chart: chartRef,
+    candleSeries: candleRef,
+    pinned: pinnedSpread,
+  });
 
   // Daily bars: 10 years — enough for the 12-year Mars backtest reference and
   // multi-year fib views. Intraday timeframes are wider too now that we run
   // on IBKR + WS push (no rate-limit pressure on history).
   const daysForTimeframe =
-    timeframe === "1d" ? 3650
-    : timeframe === "4h" ? 730
-    : timeframe === "1h" ? 180
-    : timeframe === "30m" || timeframe === "15m" ? 60
-    : 30;
+    timeframe === "1d"
+      ? 3650
+      : timeframe === "4h"
+        ? 730
+        : timeframe === "1h"
+          ? 180
+          : timeframe === "30m" || timeframe === "15m"
+            ? 60
+            : 30;
 
   const { snapshot: smiSnap } = useSmiOverlay({
     mainChart: chartRef,
@@ -279,92 +328,135 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
     setScanOn(false);
   }, [symbol]);
 
-  const loadData = useCallback(async (tf: Timeframe) => {
-    if (!containerRef.current) return;
-    setLoading(true);
-    try {
-      const days = tf === "1d" ? 1825 : tf === "4h" ? 365 : tf === "1h" ? 90 : 30;
-      // Fire both in parallel. Backend coalesces concurrent /bars requests
-      // for the same key, so the second one rides the first's IBKR call.
-      const barsPromise = api.bars(symbol, tf, days);
-      const indPromise = api.indicators(symbol, tf, days).catch(() => null);
-
-      // Render candles as soon as bars arrive — don't make the user wait
-      // for SMI/RSI/MACD compute before they can see prices.
-      const barsResp = await barsPromise;
-      const bars = barsResp.bars;
-      if (!bars.length) return;
-      if (disposedRef.current) return;
-
-      setBarsState(bars);
-
+  const loadData = useCallback(
+    async (tf: Timeframe) => {
+      if (!containerRef.current) return;
+      setLoading(true);
       try {
-        candleRef.current?.setData(bars.map((b: Bar) => ({
-          time: b.time as UTCTimestamp,
-          open: b.open, high: b.high, low: b.low, close: b.close,
-        })));
-        volRef.current?.setData(bars.map((b: Bar) => ({
-          time: b.time as UTCTimestamp,
-          value: b.volume,
-          color: b.close >= b.open ? "rgba(38,166,154,0.3)" : "rgba(239,83,80,0.3)",
-        })));
-        chartRef.current?.timeScale().fitContent();
-      } catch {
-        // Series got disposed mid-setData (rapid symbol switch). Safe to ignore.
-      }
+        const days =
+          tf === "1d" ? 1825 : tf === "4h" ? 365 : tf === "1h" ? 90 : 30;
+        // Fire both in parallel. Backend coalesces concurrent /bars requests
+        // for the same key, so the second one rides the first's IBKR call.
+        const barsPromise = api.bars(symbol, tf, days);
+        const indPromise = api.indicators(symbol, tf, days).catch(() => null);
 
-      const last = bars[bars.length - 1];
-      const first = bars[0];
-      const chg = last.close - first.open;
-      const chgPct = (chg / first.open) * 100;
-      setOhlcv({ o: last.open, h: last.high, l: last.low, c: last.close, v: last.volume, chg, chgPct });
+        // Render candles as soon as bars arrive — don't make the user wait
+        // for SMI/RSI/MACD compute before they can see prices.
+        const barsResp = await barsPromise;
+        const bars = barsResp.bars;
+        if (!bars.length) return;
+        if (disposedRef.current) return;
 
-      // Drop the spinner now — the chart is interactive. Indicator overlays
-      // arrive in a moment without holding up the user.
-      setLoading(false);
+        setBarsState(bars);
 
-      const indResp = await indPromise;
-      if (disposedRef.current) return;
-
-      try {
-        if (indResp && emaOn) {
-          emaFastRef.current?.setData(indResp.ema_fast.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
-          emaSlowRef.current?.setData(indResp.ema_slow.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
-        } else {
-          emaFastRef.current?.setData([]);
-          emaSlowRef.current?.setData([]);
-        }
-
-        if (indResp && vwapOn && indResp.vwap) {
-          vwapRef.current?.setData(
-            indResp.vwap.map((p) => ({ time: p.time as UTCTimestamp, value: p.value }))
+        try {
+          candleRef.current?.setData(
+            bars.map((b: Bar) => ({
+              time: b.time as UTCTimestamp,
+              open: b.open,
+              high: b.high,
+              low: b.low,
+              close: b.close,
+            })),
           );
-        } else {
-          vwapRef.current?.setData([]);
+          volRef.current?.setData(
+            bars.map((b: Bar) => ({
+              time: b.time as UTCTimestamp,
+              value: b.volume,
+              color:
+                b.close >= b.open
+                  ? "rgba(38,166,154,0.3)"
+                  : "rgba(239,83,80,0.3)",
+            })),
+          );
+          chartRef.current?.timeScale().fitContent();
+        } catch {
+          // Series got disposed mid-setData (rapid symbol switch). Safe to ignore.
         }
-      } catch {
-        // ignore late paint
+
+        const last = bars[bars.length - 1];
+        const first = bars[0];
+        const chg = last.close - first.open;
+        const chgPct = (chg / first.open) * 100;
+        setOhlcv({
+          o: last.open,
+          h: last.high,
+          l: last.low,
+          c: last.close,
+          v: last.volume,
+          chg,
+          chgPct,
+        });
+
+        // Drop the spinner now — the chart is interactive. Indicator overlays
+        // arrive in a moment without holding up the user.
+        setLoading(false);
+
+        const indResp = await indPromise;
+        if (disposedRef.current) return;
+
+        try {
+          if (indResp && emaOn) {
+            emaFastRef.current?.setData(
+              indResp.ema_fast.map((p) => ({
+                time: p.time as UTCTimestamp,
+                value: p.value,
+              })),
+            );
+            emaSlowRef.current?.setData(
+              indResp.ema_slow.map((p) => ({
+                time: p.time as UTCTimestamp,
+                value: p.value,
+              })),
+            );
+          } else {
+            emaFastRef.current?.setData([]);
+            emaSlowRef.current?.setData([]);
+          }
+
+          if (indResp && vwapOn && indResp.vwap) {
+            vwapRef.current?.setData(
+              indResp.vwap.map((p) => ({
+                time: p.time as UTCTimestamp,
+                value: p.value,
+              })),
+            );
+          } else {
+            vwapRef.current?.setData([]);
+          }
+        } catch {
+          // ignore late paint
+        }
+      } catch (e) {
+        console.error("chart load error", e);
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      console.error("chart load error", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [symbol, emaOn, vwapOn]);
+    },
+    [symbol, emaOn, vwapOn],
+  );
 
   // init chart
   useEffect(() => {
     if (!containerRef.current) return;
-    const el = containerRef.current.querySelector<HTMLDivElement>(".chart-main")!;
+    const el =
+      containerRef.current.querySelector<HTMLDivElement>(".chart-main")!;
 
     disposedRef.current = false;
-    const chart = createChart(el, { ...CHART_OPTS, width: el.clientWidth, height: el.clientHeight });
+    const chart = createChart(el, {
+      ...CHART_OPTS,
+      width: el.clientWidth,
+      height: el.clientHeight,
+    });
     chartRef.current = chart;
 
     candleRef.current = chart.addCandlestickSeries({
-      upColor: "#26a69a", downColor: "#ef5350",
-      borderUpColor: "#26a69a", borderDownColor: "#ef5350",
-      wickUpColor: "#26a69a", wickDownColor: "#ef5350",
+      upColor: "#26a69a",
+      downColor: "#ef5350",
+      borderUpColor: "#26a69a",
+      borderDownColor: "#ef5350",
+      wickUpColor: "#26a69a",
+      wickDownColor: "#ef5350",
       priceLineColor: "#3f3f46",
       priceLineStyle: LineStyle.Dotted,
     });
@@ -373,17 +465,29 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
       priceFormat: { type: "volume" },
       priceScaleId: "volume",
     });
-    chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+    chart
+      .priceScale("volume")
+      .applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
 
     emaFastRef.current = chart.addLineSeries({
-      color: "#60a5fa", lineWidth: 1, priceLineVisible: false, lastValueVisible: false,
+      color: "#60a5fa",
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
     });
     emaSlowRef.current = chart.addLineSeries({
-      color: "#a78bfa", lineWidth: 1, priceLineVisible: false, lastValueVisible: false,
+      color: "#a78bfa",
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
     });
     vwapRef.current = chart.addLineSeries({
-      color: "#facc15", lineWidth: 1, priceLineVisible: false, lastValueVisible: true,
-      lineStyle: LineStyle.LargeDashed, title: "VWAP",
+      color: "#facc15",
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      lineStyle: LineStyle.LargeDashed,
+      title: "VWAP",
     });
 
     // ResizeObserver with rAF debounce + dimension-equality check to break
@@ -432,7 +536,9 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
     };
   }, []);
 
-  useEffect(() => { loadData(timeframe); }, [symbol, timeframe, emaOn, loadData]);
+  useEffect(() => {
+    loadData(timeframe);
+  }, [symbol, timeframe, emaOn, loadData]);
 
   // Crosshair hover → live OHLCV readout. Re-binds when bars change so the
   // prior-bar lookup (for chg/chgPct) reflects the current dataset. Index by
@@ -447,7 +553,8 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
     setHover(null);
 
     const indexByTime = new Map<number, number>();
-    for (let i = 0; i < barsState.length; i++) indexByTime.set(barsState[i].time, i);
+    for (let i = 0; i < barsState.length; i++)
+      indexByTime.set(barsState[i].time, i);
 
     const handler = (param: MouseEventParams) => {
       if (param.time == null) {
@@ -469,8 +576,13 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
       const chgPct = ref !== 0 ? (chg / ref) * 100 : 0;
       setHover({
         time: t,
-        o: bar.open, h: bar.high, l: bar.low, c: bar.close, v: bar.volume,
-        chg, chgPct,
+        o: bar.open,
+        h: bar.high,
+        l: bar.low,
+        c: bar.close,
+        v: bar.volume,
+        chg,
+        chgPct,
       });
     };
 
@@ -491,14 +603,22 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
       if (disposedRef.current) return;
       if (msg.type === "quote" && msg.symbol === symbol && msg.data) {
         const q = msg.data as Quote;
-        setOhlcv((prev) => prev ? { ...prev, c: q.last } : null);
+        setOhlcv((prev) => (prev ? { ...prev, c: q.last } : null));
       }
-      if (msg.type === "bar" && msg.symbol === symbol && msg.data && candleRef.current) {
+      if (
+        msg.type === "bar" &&
+        msg.symbol === symbol &&
+        msg.data &&
+        candleRef.current
+      ) {
         const b = msg.data as Bar;
         try {
           candleRef.current.update({
             time: b.time as UTCTimestamp,
-            open: b.open, high: b.high, low: b.low, close: b.close,
+            open: b.open,
+            high: b.high,
+            low: b.low,
+            close: b.close,
           });
         } catch {
           // series was just disposed — drop the tick.
@@ -514,11 +634,16 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
   const positive = (display?.chg ?? 0) >= 0;
 
   return (
-    <div className="flex flex-col w-full h-full bg-bg" style={height ? { height } : undefined}>
+    <div
+      className="flex flex-col w-full h-full bg-bg"
+      style={height ? { height } : undefined}
+    >
       {/* header strip */}
       <div className="flex items-center gap-3 md:gap-5 px-3 md:px-4 min-h-10 py-1 border-b border-border/60 bg-surface shrink-0 flex-wrap">
         <div className="flex items-baseline gap-2">
-          <span className="font-medium text-sm text-text-primary tracking-tight">{symbol}</span>
+          <span className="font-medium text-sm text-text-primary tracking-tight">
+            {symbol}
+          </span>
           {display && (
             <span className="text-base tabular font-medium text-text-primary">
               {fmt(display.c)}
@@ -528,11 +653,12 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
             <span
               className={cn(
                 "text-[11px] tabular leading-none px-1.5 py-0.5 rounded",
-                positive ? "text-up bg-up/10" : "text-down bg-down/10"
+                positive ? "text-up bg-up/10" : "text-down bg-down/10",
               )}
             >
               {positive ? "+" : ""}
-              {fmt(display.chg)} · {display.chgPct >= 0 ? "+" : ""}{display.chgPct.toFixed(2)}%
+              {fmt(display.chg)} · {display.chgPct >= 0 ? "+" : ""}
+              {display.chgPct.toFixed(2)}%
             </span>
           )}
           {hover && (
@@ -543,24 +669,53 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
         </div>
         {display && (
           <div className="hidden md:flex items-center gap-3 text-[10px] uppercase tracking-wider text-text-muted">
-            <span>O <Val n={display.o} /></span>
-            <span>H <Val n={display.h} tone="up" /></span>
-            <span>L <Val n={display.l} tone="down" /></span>
-            <span>C <Val n={display.c} /></span>
-            <span>V <Val n={display.v} compact /></span>
+            <span>
+              O <Val n={display.o} />
+            </span>
+            <span>
+              H <Val n={display.h} tone="up" />
+            </span>
+            <span>
+              L <Val n={display.l} tone="down" />
+            </span>
+            <span>
+              C <Val n={display.c} />
+            </span>
+            <span>
+              V <Val n={display.v} compact />
+            </span>
           </div>
         )}
 
         <div className="ml-auto flex items-center gap-2 flex-wrap">
-          <OverlaysMenu groups={buildOverlayGroups({
-            emaOn, setEmaOn, smiOn, setSmiOn, vwapOn, setVwapOn,
-            opexOn, setOpexOn, fibOn, setFibOn,
-            fibRange, setFibRange,
-            applicableStrategies, currentStrategy, setStrategyId,
-            spreadsOn, setSpreadsOn, openSpreads,
-            scanOn, setScanOn, scanLoading, scanResult,
-            projected, symbol,
-          })} />
+          <OverlaysMenu
+            groups={buildOverlayGroups({
+              emaOn,
+              setEmaOn,
+              smiOn,
+              setSmiOn,
+              vwapOn,
+              setVwapOn,
+              opexOn,
+              setOpexOn,
+              fibOn,
+              setFibOn,
+              fibRange,
+              setFibRange,
+              applicableStrategies,
+              currentStrategy,
+              setStrategyId,
+              spreadsOn,
+              setSpreadsOn,
+              openSpreads,
+              scanOn,
+              setScanOn,
+              scanLoading,
+              scanResult,
+              projected,
+              symbol,
+            })}
+          />
 
           <span className="w-px h-4 bg-border/60" />
 
@@ -581,45 +736,71 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
       {/* chart canvas */}
       <div ref={containerRef} className="relative flex-1 min-h-0">
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
-          <span className="text-[88px] font-medium text-text-muted/[0.04] tracking-[0.2em]">{symbol}</span>
+          <span className="text-[88px] font-medium text-text-muted/[0.04] tracking-[0.2em]">
+            {symbol}
+          </span>
         </div>
 
         {/* Top-left overlay stack — cycle card on top, spread cards below. */}
         <div className="absolute top-4 left-4 z-20 flex flex-col gap-3 pointer-events-auto max-w-[300px]">
           <RuleOneCycleCard symbol={symbol} />
-          {spreadsOn && openSpreads.map((s) => {
-            const expLabel = `${s.expiry.slice(4, 6)}/${s.expiry.slice(6, 8)}`;
-            const legs = (s.legs && s.legs.length > 0) ? s.legs : [
-              { strike: s.short_strike, right: "P" as const, action: "SELL" as const, con_id: 0 },
-              { strike: s.long_strike, right: "P" as const, action: "BUY" as const, con_id: 0 },
-            ];
-            return (
-              <OverlayCard key={s.id}>
-                <OverlayHeader
-                  label={s.spread_type || "Spread"}
-                  hint={`${expLabel} · ${s.quantity}x`}
-                  trail={
-                    <span className="text-up tabular">+${s.credit_received.toFixed(2)}</span>
-                  }
-                />
-                <div className="flex flex-col gap-1 mt-1">
-                  {legs.map((leg, i) => (
-                    <div key={i} className="flex items-center justify-between text-[11px] tabular">
-                      <span className={cn(leg.action === "SELL" ? "text-down" : "text-up")}>
-                        {leg.action === "SELL" ? "short" : "long"}
+          {spreadsOn &&
+            openSpreads.map((s) => {
+              const expLabel = `${s.expiry.slice(4, 6)}/${s.expiry.slice(6, 8)}`;
+              const legs =
+                s.legs && s.legs.length > 0
+                  ? s.legs
+                  : [
+                      {
+                        strike: s.short_strike,
+                        right: "P" as const,
+                        action: "SELL" as const,
+                        con_id: 0,
+                      },
+                      {
+                        strike: s.long_strike,
+                        right: "P" as const,
+                        action: "BUY" as const,
+                        con_id: 0,
+                      },
+                    ];
+              return (
+                <OverlayCard key={s.id}>
+                  <OverlayHeader
+                    label={s.spread_type || "Spread"}
+                    hint={`${expLabel} · ${s.quantity}x`}
+                    trail={
+                      <span className="text-up tabular">
+                        +${s.credit_received.toFixed(2)}
                       </span>
-                      <span className="text-text-primary font-mono">
-                        {leg.strike}{leg.right}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 pt-2 border-t border-border/40 text-[10px] text-text-muted tabular">
-                  max {fmt(s.max_profit)} / {fmt(-Math.abs(s.max_loss))}
-                </div>
-              </OverlayCard>
-            );
-          })}
+                    }
+                  />
+                  <div className="flex flex-col gap-1 mt-1">
+                    {legs.map((leg, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between text-[11px] tabular"
+                      >
+                        <span
+                          className={cn(
+                            leg.action === "SELL" ? "text-down" : "text-up",
+                          )}
+                        >
+                          {leg.action === "SELL" ? "short" : "long"}
+                        </span>
+                        <span className="text-text-primary font-mono">
+                          {leg.strike}
+                          {leg.right}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-border/40 text-[10px] text-text-muted tabular">
+                    max {fmt(s.max_profit)} / {fmt(-Math.abs(s.max_loss))}
+                  </div>
+                </OverlayCard>
+              );
+            })}
           {spreadsOn && projected && (
             <OverlayCard borderTone="warning">
               <OverlayHeader
@@ -628,18 +809,31 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
                 hint={`${projected.dte}d · ${projected.expiryLabel}`}
               />
               <div className="flex items-center gap-2 text-[11px] tabular mt-1">
-                <span className="text-warning font-mono">{projected.shortStrike}P</span>
+                <span className="text-warning font-mono">
+                  {projected.shortStrike}P
+                </span>
                 <span className="text-text-muted">/</span>
-                <span className="text-accent font-mono">{projected.longStrike}P</span>
+                <span className="text-accent font-mono">
+                  {projected.longStrike}P
+                </span>
                 <span className="ml-auto text-text-muted">
                   Δ {Math.abs(projected.shortDelta).toFixed(2)}
                 </span>
               </div>
               {projected.estCredit != null && (
                 <div className="mt-1.5 text-[10px] text-text-muted tabular">
-                  est credit <span className="text-up">${projected.estCredit.toFixed(2)}</span>
+                  est credit{" "}
+                  <span className="text-up">
+                    ${projected.estCredit.toFixed(2)}
+                  </span>
                   <span className="ml-2">
-                    max loss ${((projected.shortStrike - projected.longStrike - projected.estCredit) * 100).toFixed(0)}
+                    max loss $
+                    {(
+                      (projected.shortStrike -
+                        projected.longStrike -
+                        projected.estCredit) *
+                      100
+                    ).toFixed(0)}
                   </span>
                 </div>
               )}
@@ -652,7 +846,11 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
             <OverlayHeader
               label={currentStrategy.name}
               tone={currentStrategy.floorRequired ? "neutral" : "warning"}
-              hint={currentStrategy.floorRequired ? "2 floors below money" : "floor optional"}
+              hint={
+                currentStrategy.floorRequired
+                  ? "2 floors below money"
+                  : "floor optional"
+              }
             />
             <OverlayGrid
               rows={[
@@ -670,23 +868,38 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
           <OverlayCard className="top-4 right-4">
             <OverlayHeader
               label="SMI"
-              tone={smiSnap.zone === "overbought" ? "down" : smiSnap.zone === "oversold" ? "up" : "neutral"}
+              tone={
+                smiSnap.zone === "overbought"
+                  ? "down"
+                  : smiSnap.zone === "oversold"
+                    ? "up"
+                    : "neutral"
+              }
               hint={
                 smiSnap.zone === "overbought"
                   ? "overbought"
                   : smiSnap.zone === "oversold"
-                  ? "oversold"
-                  : smiSnap.cross
-                  ? smiSnap.cross
-                  : undefined
+                    ? "oversold"
+                    : smiSnap.cross
+                      ? smiSnap.cross
+                      : undefined
               }
             />
             <OverlayGrid
               rows={[
                 ["smi", smiSnap.smi != null ? smiSnap.smi.toFixed(2) : "—"],
-                ["signal", smiSnap.signal != null ? smiSnap.signal.toFixed(2) : "—"],
+                [
+                  "signal",
+                  smiSnap.signal != null ? smiSnap.signal.toFixed(2) : "—",
+                ],
                 ...(smiSnap.lastSignal
-                  ? [["last", smiSnap.lastSignal.type, smiSnap.lastSignal.type === "BUY" ? "up" : "down"] as const]
+                  ? [
+                      [
+                        "last",
+                        smiSnap.lastSignal.type,
+                        smiSnap.lastSignal.type === "BUY" ? "up" : "down",
+                      ] as const,
+                    ]
                   : []),
               ]}
             />
@@ -703,10 +916,17 @@ export function TradingChart({ symbol, initialTimeframe = "15m", height, showInd
 
       {/* SMI subpane */}
       {smiOn && (
-        <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }}>
+        <div
+          className="border-t border-border bg-bg shrink-0"
+          style={{ height: 140 }}
+        >
           <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">SMI</span>
-            <span className="text-[10px] tabular text-text-muted">13 · 25 · 2</span>
+            <span className="text-[10px] uppercase tracking-wider text-text-muted">
+              SMI
+            </span>
+            <span className="text-[10px] tabular text-text-muted">
+              13 · 25 · 2
+            </span>
             <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-0.5 bg-[#60a5fa]" /> smi
@@ -732,9 +952,16 @@ function Val({
   tone?: "up" | "down";
   compact?: boolean;
 }) {
-  const cls = tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-secondary";
+  const cls =
+    tone === "up"
+      ? "text-up"
+      : tone === "down"
+        ? "text-down"
+        : "text-text-secondary";
   return (
-    <span className={cn("normal-case tracking-normal text-[11px] tabular", cls)}>
+    <span
+      className={cn("normal-case tracking-normal text-[11px] tabular", cls)}
+    >
       {compact ? fmtCompact(n) : fmt(n)}
     </span>
   );
@@ -752,7 +979,11 @@ function formatHoverTime(time: number, timeframe: Timeframe): string {
       hour12: false,
     });
   }
-  return d.toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString([], {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function ToolbarChip({
@@ -775,7 +1006,7 @@ function ToolbarChip({
         "h-6 px-2 text-[11px] tabular tracking-normal rounded-sm transition-colors",
         active
           ? "text-text-primary bg-surface-2"
-          : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
+          : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60",
       )}
     >
       {children}
@@ -799,7 +1030,7 @@ function OverlayCard({
         "absolute z-20 bg-bg/80 backdrop-blur-md rounded-md px-3.5 py-2.5 text-[11px] shadow-sm pointer-events-auto",
         "border",
         borderTone === "warning" ? "border-warning/30" : "border-border/40",
-        className
+        className,
       )}
     >
       {children}
@@ -827,10 +1058,10 @@ function OverlayHeader({
   return (
     <div className="flex items-baseline gap-2">
       <span className={cn("w-1 h-1 rounded-full translate-y-[-1px]", dot)} />
-      <span className="text-[10px] uppercase tracking-wider text-text-secondary">{label}</span>
-      {hint && (
-        <span className="text-[10px] text-text-muted">· {hint}</span>
-      )}
+      <span className="text-[10px] uppercase tracking-wider text-text-secondary">
+        {label}
+      </span>
+      {hint && <span className="text-[10px] text-text-muted">· {hint}</span>}
       {trail && <span className="ml-auto text-[10px]">{trail}</span>}
     </div>
   );
@@ -839,7 +1070,10 @@ function OverlayHeader({
 function OverlayGrid({
   rows,
 }: {
-  rows: ReadonlyArray<readonly [string, string] | readonly [string, string, "up" | "down" | "warning"]>;
+  rows: ReadonlyArray<
+    | readonly [string, string]
+    | readonly [string, string, "up" | "down" | "warning"]
+  >;
 }) {
   return (
     <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 tabular">
@@ -849,7 +1083,13 @@ function OverlayGrid({
           <span
             className={cn(
               "text-right",
-              tone === "up" ? "text-up" : tone === "down" ? "text-down" : tone === "warning" ? "text-warning" : "text-text-primary"
+              tone === "up"
+                ? "text-up"
+                : tone === "down"
+                  ? "text-down"
+                  : tone === "warning"
+                    ? "text-warning"
+                    : "text-text-primary",
             )}
           >
             {v}
@@ -865,35 +1105,88 @@ function OverlayGrid({
  * Pulled out so the toolbar JSX stays readable.
  */
 function buildOverlayGroups(args: {
-  emaOn: boolean; setEmaOn: (fn: (v: boolean) => boolean) => void;
-  smiOn: boolean; setSmiOn: (fn: (v: boolean) => boolean) => void;
-  vwapOn: boolean; setVwapOn: (fn: (v: boolean) => boolean) => void;
-  opexOn: boolean; setOpexOn: (fn: (v: boolean) => boolean) => void;
-  fibOn: boolean; setFibOn: (fn: (v: boolean) => boolean) => void;
-  fibRange: FibRange; setFibRange: (r: FibRange) => void;
-  applicableStrategies: StrategySpec[]; currentStrategy: StrategySpec | null;
+  emaOn: boolean;
+  setEmaOn: (fn: (v: boolean) => boolean) => void;
+  smiOn: boolean;
+  setSmiOn: (fn: (v: boolean) => boolean) => void;
+  vwapOn: boolean;
+  setVwapOn: (fn: (v: boolean) => boolean) => void;
+  opexOn: boolean;
+  setOpexOn: (fn: (v: boolean) => boolean) => void;
+  fibOn: boolean;
+  setFibOn: (fn: (v: boolean) => boolean) => void;
+  fibRange: FibRange;
+  setFibRange: (r: FibRange) => void;
+  applicableStrategies: StrategySpec[];
+  currentStrategy: StrategySpec | null;
   setStrategyId: (id: StrategyId) => void;
-  spreadsOn: boolean; setSpreadsOn: (fn: (v: boolean) => boolean) => void;
+  spreadsOn: boolean;
+  setSpreadsOn: (fn: (v: boolean) => boolean) => void;
   openSpreads: { id: string }[];
-  scanOn: boolean; setScanOn: (fn: (v: boolean) => boolean) => void;
+  scanOn: boolean;
+  setScanOn: (fn: (v: boolean) => boolean) => void;
   scanLoading: boolean;
-  scanResult: { trade_types?: Record<string, { passes: Record<string, boolean> }[]> } | null;
-  projected: unknown; symbol: string;
+  scanResult: {
+    trade_types?: Record<string, { passes: Record<string, boolean> }[]>;
+  } | null;
+  projected: unknown;
+  symbol: string;
 }): OverlayGroup[] {
   const groups: OverlayGroup[] = [];
 
   groups.push({
     title: "Indicators",
     toggles: [
-      { id: "ema",  label: "EMA",  icon: TrendingUp,   hint: "9 / 21",  active: args.emaOn,  onToggle: () => args.setEmaOn((v) => !v),  title: "9/21 EMA pair" },
-      { id: "smi",  label: "SMI",  icon: Waves,        hint: "subpane", active: args.smiOn,  onToggle: () => args.setSmiOn((v) => !v),  title: "Stochastic momentum index sub-pane" },
-      { id: "vwap", label: "VWAP", icon: BarChart2,    hint: "intraday", active: args.vwapOn, onToggle: () => args.setVwapOn((v) => !v), title: "Volume-weighted average price (intraday daily-reset)" },
-      { id: "opex", label: "OPEX", icon: CalendarDays, hint: "3rd Fri", active: args.opexOn, onToggle: () => args.setOpexOn((v) => !v), title: "Monthly OPEX guide lines (3rd Friday)" },
-      { id: "fib",  label: "Fib floors", icon: Ruler,  active: args.fibOn,  onToggle: () => args.setFibOn((v) => !v),  title: "Fibonacci floors over loaded range" },
+      {
+        id: "ema",
+        label: "EMA",
+        icon: TrendingUp,
+        hint: "9 / 21",
+        active: args.emaOn,
+        onToggle: () => args.setEmaOn((v) => !v),
+        title: "9/21 EMA pair",
+      },
+      {
+        id: "smi",
+        label: "SMI",
+        icon: Waves,
+        hint: "subpane",
+        active: args.smiOn,
+        onToggle: () => args.setSmiOn((v) => !v),
+        title: "Stochastic momentum index sub-pane",
+      },
+      {
+        id: "vwap",
+        label: "VWAP",
+        icon: BarChart2,
+        hint: "intraday",
+        active: args.vwapOn,
+        onToggle: () => args.setVwapOn((v) => !v),
+        title: "Volume-weighted average price (intraday daily-reset)",
+      },
+      {
+        id: "opex",
+        label: "OPEX",
+        icon: CalendarDays,
+        hint: "3rd Fri",
+        active: args.opexOn,
+        onToggle: () => args.setOpexOn((v) => !v),
+        title: "Monthly OPEX guide lines (3rd Friday)",
+      },
+      {
+        id: "fib",
+        label: "Fib floors",
+        icon: Ruler,
+        active: args.fibOn,
+        onToggle: () => args.setFibOn((v) => !v),
+        title: "Fibonacci floors over loaded range",
+      },
     ],
     extra: args.fibOn ? (
       <div className="flex flex-wrap gap-0.5 pt-1.5 pl-1.5">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted self-center pr-1">fib lookback</span>
+        <span className="text-[10px] uppercase tracking-wider text-text-muted self-center pr-1">
+          fib lookback
+        </span>
         {(["3m", "6m", "9m", "12m", "all"] as FibRange[]).map((r) => (
           <button
             key={r}
@@ -928,7 +1221,9 @@ function buildOverlayGroups(args: {
     });
   }
 
-  const wantsStrats = args.openSpreads.length > 0 || (args.projected && SUPPORTED_OVERLAY_SYMBOLS.has(args.symbol));
+  const wantsStrats =
+    args.openSpreads.length > 0 ||
+    (args.projected && SUPPORTED_OVERLAY_SYMBOLS.has(args.symbol));
   const wantsScan = SUPPORTED_OVERLAY_SYMBOLS.has(args.symbol);
   if (wantsStrats || wantsScan) {
     const toggles: OverlayToggle[] = [];
@@ -937,7 +1232,10 @@ function buildOverlayGroups(args: {
         id: "strats",
         label: "Open spreads",
         icon: Layers,
-        hint: args.openSpreads.length > 0 ? `${args.openSpreads.length} live` : undefined,
+        hint:
+          args.openSpreads.length > 0
+            ? `${args.openSpreads.length} live`
+            : undefined,
         active: args.spreadsOn,
         onToggle: () => args.setSpreadsOn((v) => !v),
         title: "Show open spreads + 2% exit lines",
@@ -979,7 +1277,9 @@ function strategyChipLabel(id: StrategyId): string {
   }
 }
 
-function countPassing(result: { trade_types?: Record<string, { passes: Record<string, boolean> }[]> }): number {
+function countPassing(result: {
+  trade_types?: Record<string, { passes: Record<string, boolean> }[]>;
+}): number {
   if (!result.trade_types) return 0;
   let n = 0;
   for (const cands of Object.values(result.trade_types)) {

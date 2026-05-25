@@ -30,11 +30,22 @@ export function StatusFooter() {
     >
       <StatusDot ok={ibOk} label={ibOk ? "IB" : "IB OFFLINE"} />
       <Sep />
-      <StatusDot ok={wsConnected} label={wsConnected ? "STREAM" : "STREAM DOWN"} />
+      <StatusDot
+        ok={wsConnected}
+        label={wsConnected ? "STREAM" : "STREAM DOWN"}
+      />
       <Sep />
-      <StatusDot ok={apiReachable !== false} label={apiReachable === false ? "API DOWN" : "API"} />
+      <StatusDot
+        ok={apiReachable !== false}
+        label={apiReachable === false ? "API DOWN" : "API"}
+      />
       <Sep />
-      <span className={cn("uppercase tracking-wider", mode === "LIVE" ? "text-warning" : "text-text-secondary")}>
+      <span
+        className={cn(
+          "uppercase tracking-wider",
+          mode === "LIVE" ? "text-warning" : "text-text-secondary",
+        )}
+      >
         {mode}
       </span>
 
@@ -42,21 +53,30 @@ export function StatusFooter() {
         <>
           <Sep />
           <span className="text-text-secondary">
-            EQ <span className="text-text-primary">{fmtCurrency(account.equity ?? 0)}</span>
+            EQ{" "}
+            <span className="text-text-primary">
+              {fmtCurrency(account.equity ?? 0)}
+            </span>
           </span>
           <Sep />
           <span className="text-text-secondary">
-            BP <span className="text-text-primary">{fmtCurrency(account.buying_power ?? 0)}</span>
+            BP{" "}
+            <span className="text-text-primary">
+              {fmtCurrency(account.buying_power ?? 0)}
+            </span>
           </span>
         </>
       )}
 
       <span className="ml-auto flex items-center gap-3">
         <span>
-          {session.label} <span className="text-text-secondary">{session.state}</span>
+          {session.label}{" "}
+          <span className="text-text-secondary">{session.state}</span>
         </span>
         <Sep />
-        <span suppressHydrationWarning>{now ? formatTime(now) : "--:--:--"} ET</span>
+        <span suppressHydrationWarning>
+          {now ? formatTime(now) : "--:--:--"} ET
+        </span>
         <Sep />
         <span suppressHydrationWarning>
           UPD {lastCheckedAt ? formatRelative(lastCheckedAt) : "--"}
@@ -72,7 +92,7 @@ function StatusDot({ ok, label }: { ok: boolean; label: string }) {
       <span
         className={cn(
           "inline-block w-1.5 h-1.5 rounded-full",
-          ok ? "bg-up" : "bg-down"
+          ok ? "bg-up" : "bg-down",
         )}
       />
       <span className="uppercase tracking-wider">{label}</span>

@@ -9,7 +9,7 @@ import dynamic from "next/dynamic";
 
 const TradingChart = dynamic(
   () => import("@/components/chart/TradingChart").then((m) => m.TradingChart),
-  { ssr: false }
+  { ssr: false },
 );
 
 export default function DashboardPage() {

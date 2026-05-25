@@ -59,12 +59,23 @@ interface Props {
  *  18 at IV 150%?" without scrolling back to ask.
  */
 export function PnlProfileChart({
-  spot, breakeven, strike,
-  sigma1Low, sigma1High, sigma2Low: _s2Lo, sigma2High: _s2Hi,
-  maxProfit, maxLoss,
-  iv, dteYears,
-  right, entryPrice, quantity, isLong,
-  pop, probItm,
+  spot,
+  breakeven,
+  strike,
+  sigma1Low,
+  sigma1High,
+  sigma2Low: _s2Lo,
+  sigma2High: _s2Hi,
+  maxProfit,
+  maxLoss,
+  iv,
+  dteYears,
+  right,
+  entryPrice,
+  quantity,
+  isLong,
+  pop,
+  probItm,
   height = 360,
 }: Props) {
   // Chart-only height now. Sliders sit OUTSIDE the SVG (as real DOM
@@ -94,18 +105,29 @@ export function PnlProfileChart({
 
   // Pinned target price (click on chart).
   const [target, setTarget] = useState<number | null>(null);
-  useEffect(() => { setTarget(null); }, [strike, spot]);
+  useEffect(() => {
+    setTarget(null);
+  }, [strike, spot]);
 
   // ── curve computation ────────────────────────────────────────────────
-  const inputs: PnlInputs = useMemo(() => ({
-    spot, strike, dteYears, iv,
-    isCall: right === "C",
-    isLong,
-    entryPrice,
-    quantity,
-  }), [spot, strike, dteYears, iv, right, isLong, entryPrice, quantity]);
+  const inputs: PnlInputs = useMemo(
+    () => ({
+      spot,
+      strike,
+      dteYears,
+      iv,
+      isCall: right === "C",
+      isLong,
+      entryPrice,
+      quantity,
+    }),
+    [spot, strike, dteYears, iv, right, isLong, entryPrice, quantity],
+  );
 
-  const prices = useMemo(() => samplePriceAxis(spot, range, 161), [spot, range]);
+  const prices = useMemo(
+    () => samplePriceAxis(spot, range, 161),
+    [spot, range],
+  );
   const liveCurve = useMemo(
     () => pnlCurve(prices, daysFromNow, ivMult, inputs),
     [prices, daysFromNow, ivMult, inputs],
@@ -127,7 +149,8 @@ export function PnlProfileChart({
     const xMx = Math.max(...prices);
 
     const xOf = (p: number) => PAD_L + ((p - xMn) / (xMx - xMn)) * innerW;
-    const yOf = (v: number) => PAD_T + innerH - ((v - yMn) / (yMx - yMn)) * innerH;
+    const yOf = (v: number) =>
+      PAD_T + innerH - ((v - yMn) / (yMx - yMn)) * innerH;
     const yZero = yOf(0);
 
     const rng = yMx - yMn;
@@ -149,7 +172,9 @@ export function PnlProfileChart({
 
   // Smooth cubic-Bezier curve generator (Catmull-Rom interpolation).
   const smoothPath = (vals: number[]) => {
-    const pts = prices.map((p, i) => [xOf(p), yOf(vals[i])] as [number, number]);
+    const pts = prices.map(
+      (p, i) => [xOf(p), yOf(vals[i])] as [number, number],
+    );
     if (pts.length < 2) return "";
     let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
     for (let i = 0; i < pts.length - 1; i++) {
@@ -166,8 +191,14 @@ export function PnlProfileChart({
     return d;
   };
 
-  const livePath = useMemo(() => smoothPath(liveCurve), [prices, liveCurve, xOf, yOf]);
-  const expiryPath = useMemo(() => smoothPath(expiryCurve), [prices, expiryCurve, xOf, yOf]);
+  const livePath = useMemo(
+    () => smoothPath(liveCurve),
+    [prices, liveCurve, xOf, yOf],
+  );
+  const expiryPath = useMemo(
+    () => smoothPath(expiryCurve),
+    [prices, expiryCurve, xOf, yOf],
+  );
 
   // Profit/loss fills under the LIVE curve (the slider-driven one).
   const { profitArea, lossArea } = useMemo(() => {
@@ -180,7 +211,9 @@ export function PnlProfileChart({
         const y = yOf(v);
         if (test(v) && !inSeg) {
           inSeg = true;
-          segs.push(`M${x.toFixed(1)},${yZero.toFixed(1)} L${x.toFixed(1)},${y.toFixed(1)}`);
+          segs.push(
+            `M${x.toFixed(1)},${yZero.toFixed(1)} L${x.toFixed(1)},${y.toFixed(1)}`,
+          );
         } else if (test(v) && inSeg) {
           segs.push(`L${x.toFixed(1)},${y.toFixed(1)}`);
         } else if (!test(v) && inSeg) {
@@ -198,21 +231,29 @@ export function PnlProfileChart({
   }, [prices, liveCurve, xOf, yOf, yZero]);
 
   const densityStops = useMemo(() => {
-    if (sd <= 0 || spot <= 0) return [] as { offset: number; opacity: number }[];
+    if (sd <= 0 || spot <= 0)
+      return [] as { offset: number; opacity: number }[];
     const n = 50;
     const samples: { offset: number; pdf: number }[] = [];
     let maxPdf = 0;
     for (let i = 0; i <= n; i++) {
       const offset = i / n;
       const p = xMin + offset * (xMax - xMin);
-      if (p <= 0) { samples.push({ offset, pdf: 0 }); continue; }
+      if (p <= 0) {
+        samples.push({ offset, pdf: 0 });
+        continue;
+      }
       const z = (Math.log(p) - mu) / sd;
-      const pdf = (1 / (p * sd * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * z * z);
+      const pdf =
+        (1 / (p * sd * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * z * z);
       samples.push({ offset, pdf });
       if (pdf > maxPdf) maxPdf = pdf;
     }
     if (maxPdf <= 0) return [];
-    return samples.map((s) => ({ offset: s.offset, opacity: (s.pdf / maxPdf) * 0.1 }));
+    return samples.map((s) => ({
+      offset: s.offset,
+      opacity: (s.pdf / maxPdf) * 0.1,
+    }));
   }, [sd, mu, spot, xMin, xMax]);
 
   const cdf = (price: number): number | null => {
@@ -229,23 +270,31 @@ export function PnlProfileChart({
   }, [xMin, xMax]);
 
   const { activeIndex, onMouseMove, onMouseLeave } = useChartHover({
-    count: prices.length, svgWidth: W, padLeft: PAD_L, padRight: PAD_R,
+    count: prices.length,
+    svgWidth: W,
+    padLeft: PAD_L,
+    padRight: PAD_R,
   });
-  const hover = activeIndex != null
-    ? {
-        price: prices[activeIndex],
-        live: liveCurve[activeIndex],
-        expiry: expiryCurve[activeIndex],
-        cumProb: cdf(prices[activeIndex]),
-      }
-    : null;
+  const hover =
+    activeIndex != null
+      ? {
+          price: prices[activeIndex],
+          live: liveCurve[activeIndex],
+          expiry: expiryCurve[activeIndex],
+          cumProb: cdf(prices[activeIndex]),
+        }
+      : null;
 
   const targetData = useMemo(() => {
     if (target == null) return null;
-    let best = 0; let bestDiff = Infinity;
+    let best = 0;
+    let bestDiff = Infinity;
     for (let i = 0; i < prices.length; i++) {
       const d = Math.abs(prices[i] - target);
-      if (d < bestDiff) { bestDiff = d; best = i; }
+      if (d < bestDiff) {
+        bestDiff = d;
+        best = i;
+      }
     }
     return {
       price: target,
@@ -260,11 +309,12 @@ export function PnlProfileChart({
 
   // Derived display labels for slider state.
   const tRemainingDays = Math.max(0, dteDays - daysFromNow);
-  const dateLabel = daysFromNow === 0
-    ? "today"
-    : daysFromNow >= dteDays
-      ? "expiry"
-      : `+${daysFromNow}d`;
+  const dateLabel =
+    daysFromNow === 0
+      ? "today"
+      : daysFromNow >= dteDays
+        ? "expiry"
+        : `+${daysFromNow}d`;
 
   // What's the position worth RIGHT NOW at current sliders? This is the
   // single most useful number on the chart — surfaces as a big tabular
@@ -276,7 +326,10 @@ export function PnlProfileChart({
     let bd = Infinity;
     for (let i = 0; i < prices.length; i++) {
       const d = Math.abs(prices[i] - spot);
-      if (d < bd) { bd = d; bi = i; }
+      if (d < bd) {
+        bd = d;
+        bi = i;
+      }
     }
     return { live: liveCurve[bi], expiry: expiryCurve[bi] };
   }, [prices, spot, liveCurve, expiryCurve]);
@@ -294,19 +347,25 @@ export function PnlProfileChart({
           <span className="text-[10px] uppercase tracking-wider text-text-muted">
             at spot @ {dateLabel}
           </span>
-          <span className={cn(
-            "text-[18px] tabular font-bold leading-none",
-            spotPnlNow.live >= 0 ? "text-up" : "text-down",
-          )}>
+          <span
+            className={cn(
+              "text-[18px] tabular font-bold leading-none",
+              spotPnlNow.live >= 0 ? "text-up" : "text-down",
+            )}
+          >
             {fmtPnl(spotPnlNow.live)}
           </span>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">if expiry</span>
-          <span className={cn(
-            "text-[14px] tabular font-semibold",
-            spotPnlNow.expiry >= 0 ? "text-up" : "text-down",
-          )}>
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            if expiry
+          </span>
+          <span
+            className={cn(
+              "text-[14px] tabular font-semibold",
+              spotPnlNow.expiry >= 0 ? "text-up" : "text-down",
+            )}
+          >
             {fmtPnl(spotPnlNow.expiry)}
           </span>
         </div>
@@ -316,15 +375,24 @@ export function PnlProfileChart({
       </div>
 
       <svg
-        width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+        width="100%"
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
         className="block cursor-crosshair"
-        onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}
-        onClick={() => { if (hover) setTarget(hover.price === target ? null : hover.price); }}
+        onMouseMove={onMouseMove}
+        onMouseLeave={onMouseLeave}
+        onClick={() => {
+          if (hover) setTarget(hover.price === target ? null : hover.price);
+        }}
       >
         <defs>
           <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={CHART.pnl.profit} stopOpacity="0.42" />
-            <stop offset="100%" stopColor={CHART.pnl.profit} stopOpacity="0.04" />
+            <stop
+              offset="100%"
+              stopColor={CHART.pnl.profit}
+              stopOpacity="0.04"
+            />
           </linearGradient>
           <linearGradient id="lossGrad" x1="0" y1="1" x2="0" y2="0">
             <stop offset="0%" stopColor={CHART.pnl.loss} stopOpacity="0.38" />
@@ -333,8 +401,12 @@ export function PnlProfileChart({
           {densityStops.length > 0 && (
             <linearGradient id="densityGrad" x1="0" y1="0" x2="1" y2="0">
               {densityStops.map((s, i) => (
-                <stop key={i} offset={`${(s.offset * 100).toFixed(1)}%`}
-                      stopColor={CHART.axisText} stopOpacity={s.opacity} />
+                <stop
+                  key={i}
+                  offset={`${(s.offset * 100).toFixed(1)}%`}
+                  stopColor={CHART.axisText}
+                  stopOpacity={s.opacity}
+                />
               ))}
             </linearGradient>
           )}
@@ -342,19 +414,35 @@ export function PnlProfileChart({
 
         {/* Probability density backdrop */}
         {densityStops.length > 0 && (
-          <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} fill="url(#densityGrad)" />
+          <rect
+            x={PAD_L}
+            y={PAD_T}
+            width={innerW}
+            height={innerH}
+            fill="url(#densityGrad)"
+          />
         )}
 
         {/* Y gridlines */}
         {yTicks.map((t, i) => (
           <g key={`gy-${i}`}>
-            <line x1={PAD_L} x2={W - PAD_R} y1={yOf(t)} y2={yOf(t)}
-                  stroke={CHART.axisText}
-                  strokeOpacity={t === 0 ? 0.45 : 0.05}
-                  strokeWidth={t === 0 ? 1 : 1} />
-            <text x={PAD_L - 8} y={yOf(t) + 4} fontSize="11"
-                  fill={t === 0 ? CHART.axisText : CHART.textMuted}
-                  textAnchor="end" className="tabular-nums">
+            <line
+              x1={PAD_L}
+              x2={W - PAD_R}
+              y1={yOf(t)}
+              y2={yOf(t)}
+              stroke={CHART.axisText}
+              strokeOpacity={t === 0 ? 0.45 : 0.05}
+              strokeWidth={t === 0 ? 1 : 1}
+            />
+            <text
+              x={PAD_L - 8}
+              y={yOf(t) + 4}
+              fontSize="11"
+              fill={t === 0 ? CHART.axisText : CHART.textMuted}
+              textAnchor="end"
+              className="tabular-nums"
+            >
               {fmtPnl(t)}
             </text>
           </g>
@@ -363,12 +451,24 @@ export function PnlProfileChart({
         {/* X ticks */}
         {xTicks.map((p, i) => (
           <g key={`xt-${i}`}>
-            <text x={xOf(p)} y={H - 8} fontSize="11" fill={CHART.axisText}
-                  textAnchor="middle" className="tabular-nums">
+            <text
+              x={xOf(p)}
+              y={H - 8}
+              fontSize="11"
+              fill={CHART.axisText}
+              textAnchor="middle"
+              className="tabular-nums"
+            >
               {p < 100 ? p.toFixed(2) : p.toFixed(0)}
             </text>
-            <text x={xOf(p)} y={H + 4} fontSize="9" fill={CHART.textMuted}
-                  textAnchor="middle" className="tabular-nums">
+            <text
+              x={xOf(p)}
+              y={H + 4}
+              fontSize="9"
+              fill={CHART.textMuted}
+              textAnchor="middle"
+              className="tabular-nums"
+            >
               {pctFromSpot(p, spot)}
             </text>
           </g>
@@ -376,35 +476,79 @@ export function PnlProfileChart({
 
         {/* Profit/loss fills under the LIVE curve */}
         <path d={profitArea} fill="url(#profitGrad)" />
-        <path d={lossArea}   fill="url(#lossGrad)" />
+        <path d={lossArea} fill="url(#lossGrad)" />
 
         {/* Max profit / loss horizontal references */}
         {maxProfit != null && isFinite(maxProfit) && maxProfit > 0 && (
-          <line x1={PAD_L} x2={W - PAD_R} y1={yOf(maxProfit)} y2={yOf(maxProfit)}
-                stroke={CHART.pnl.profit} strokeOpacity={0.30} strokeDasharray="3 5" />
+          <line
+            x1={PAD_L}
+            x2={W - PAD_R}
+            y1={yOf(maxProfit)}
+            y2={yOf(maxProfit)}
+            stroke={CHART.pnl.profit}
+            strokeOpacity={0.3}
+            strokeDasharray="3 5"
+          />
         )}
         {maxLoss != null && isFinite(maxLoss) && maxLoss < 0 && (
-          <line x1={PAD_L} x2={W - PAD_R} y1={yOf(maxLoss)} y2={yOf(maxLoss)}
-                stroke={CHART.pnl.loss} strokeOpacity={0.30} strokeDasharray="3 5" />
+          <line
+            x1={PAD_L}
+            x2={W - PAD_R}
+            y1={yOf(maxLoss)}
+            y2={yOf(maxLoss)}
+            stroke={CHART.pnl.loss}
+            strokeOpacity={0.3}
+            strokeDasharray="3 5"
+          />
         )}
 
         {/* Expiry intrinsic reference — faded, behind the live curve. */}
-        <path d={expiryPath} stroke={CHART.pnl.expiry}
-              strokeOpacity={0.32} strokeWidth="1.5"
-              strokeDasharray="6 4" fill="none" />
+        <path
+          d={expiryPath}
+          stroke={CHART.pnl.expiry}
+          strokeOpacity={0.32}
+          strokeWidth="1.5"
+          strokeDasharray="6 4"
+          fill="none"
+        />
 
         {/* Live curve — slider-driven, bold, foreground. */}
-        <path d={livePath} stroke={CHART.pnl.expiry} strokeWidth="2.5"
-              fill="none" />
+        <path
+          d={livePath}
+          stroke={CHART.pnl.expiry}
+          strokeWidth="2.5"
+          fill="none"
+        />
 
         {/* Spot vertical line + chip */}
         {spot >= xMin && spot <= xMax && (
           <g>
-            <line x1={xOf(spot)} x2={xOf(spot)} y1={PAD_T} y2={H - 16}
-                  stroke={CHART.text} strokeOpacity={0.45} strokeWidth={1} />
+            <line
+              x1={xOf(spot)}
+              x2={xOf(spot)}
+              y1={PAD_T}
+              y2={H - 16}
+              stroke={CHART.text}
+              strokeOpacity={0.45}
+              strokeWidth={1}
+            />
             <g transform={`translate(${xOf(spot)}, ${PAD_T - 4})`}>
-              <rect x={-32} y={-18} width="64" height="16" rx="3" fill={CHART.text} />
-              <text x={0} y={-7} fontSize="10" fill={CHART.bg} textAnchor="middle" fontWeight="600">
+              <rect
+                x={-32}
+                y={-18}
+                width="64"
+                height="16"
+                rx="3"
+                fill={CHART.text}
+              />
+              <text
+                x={0}
+                y={-7}
+                fontSize="10"
+                fill={CHART.bg}
+                textAnchor="middle"
+                fontWeight="600"
+              >
                 SPOT {spot.toFixed(2)}
               </text>
             </g>
@@ -414,51 +558,125 @@ export function PnlProfileChart({
         {/* Strike marker */}
         {strike >= xMin && strike <= xMax && (
           <g>
-            <line x1={xOf(strike)} x2={xOf(strike)} y1={PAD_T} y2={H - 16}
-                  stroke={CHART.ref.strike} strokeOpacity={0.55} strokeDasharray="4 3" />
-            <text x={xOf(strike)} y={H - 24} fontSize="10" fill={CHART.ref.strike}
-                  textAnchor="middle" fontWeight="600">K {strike}</text>
+            <line
+              x1={xOf(strike)}
+              x2={xOf(strike)}
+              y1={PAD_T}
+              y2={H - 16}
+              stroke={CHART.ref.strike}
+              strokeOpacity={0.55}
+              strokeDasharray="4 3"
+            />
+            <text
+              x={xOf(strike)}
+              y={H - 24}
+              fontSize="10"
+              fill={CHART.ref.strike}
+              textAnchor="middle"
+              fontWeight="600"
+            >
+              K {strike}
+            </text>
           </g>
         )}
 
         {/* Breakeven dot on zero line */}
         {breakeven >= xMin && breakeven <= xMax && (
           <g>
-            <line x1={xOf(breakeven)} x2={xOf(breakeven)} y1={yZero - 7} y2={yZero + 7}
-                  stroke={CHART.text} strokeWidth={1.5} />
+            <line
+              x1={xOf(breakeven)}
+              x2={xOf(breakeven)}
+              y1={yZero - 7}
+              y2={yZero + 7}
+              stroke={CHART.text}
+              strokeWidth={1.5}
+            />
             <circle cx={xOf(breakeven)} cy={yZero} r={3.5} fill={CHART.text} />
-            <text x={xOf(breakeven)} y={yZero - 11} fontSize="10" fill={CHART.text}
-                  textAnchor="middle" fontWeight="500">BE {breakeven.toFixed(2)}</text>
+            <text
+              x={xOf(breakeven)}
+              y={yZero - 11}
+              fontSize="10"
+              fill={CHART.text}
+              textAnchor="middle"
+              fontWeight="500"
+            >
+              BE {breakeven.toFixed(2)}
+            </text>
           </g>
         )}
 
         {/* ±1σ ticks at the top */}
         {sigma1Low != null && sigma1Low >= xMin && sigma1Low <= xMax && (
           <g>
-            <line x1={xOf(sigma1Low)} x2={xOf(sigma1Low)} y1={PAD_T} y2={PAD_T + 5}
-                  stroke={CHART.axisText} strokeOpacity={0.7} />
-            <text x={xOf(sigma1Low)} y={PAD_T - 18} fontSize="9" fill={CHART.axisText}
-                  textAnchor="middle">−1σ</text>
+            <line
+              x1={xOf(sigma1Low)}
+              x2={xOf(sigma1Low)}
+              y1={PAD_T}
+              y2={PAD_T + 5}
+              stroke={CHART.axisText}
+              strokeOpacity={0.7}
+            />
+            <text
+              x={xOf(sigma1Low)}
+              y={PAD_T - 18}
+              fontSize="9"
+              fill={CHART.axisText}
+              textAnchor="middle"
+            >
+              −1σ
+            </text>
           </g>
         )}
         {sigma1High != null && sigma1High >= xMin && sigma1High <= xMax && (
           <g>
-            <line x1={xOf(sigma1High)} x2={xOf(sigma1High)} y1={PAD_T} y2={PAD_T + 5}
-                  stroke={CHART.axisText} strokeOpacity={0.7} />
-            <text x={xOf(sigma1High)} y={PAD_T - 18} fontSize="9" fill={CHART.axisText}
-                  textAnchor="middle">+1σ</text>
+            <line
+              x1={xOf(sigma1High)}
+              x2={xOf(sigma1High)}
+              y1={PAD_T}
+              y2={PAD_T + 5}
+              stroke={CHART.axisText}
+              strokeOpacity={0.7}
+            />
+            <text
+              x={xOf(sigma1High)}
+              y={PAD_T - 18}
+              fontSize="9"
+              fill={CHART.axisText}
+              textAnchor="middle"
+            >
+              +1σ
+            </text>
           </g>
         )}
 
         {/* Pinned target */}
         {targetData && targetData.price >= xMin && targetData.price <= xMax && (
           <g>
-            <line x1={xOf(targetData.price)} x2={xOf(targetData.price)}
-                  y1={PAD_T} y2={H - 16}
-                  stroke={CHART.pnl.target} strokeWidth={1.5} />
+            <line
+              x1={xOf(targetData.price)}
+              x2={xOf(targetData.price)}
+              y1={PAD_T}
+              y2={H - 16}
+              stroke={CHART.pnl.target}
+              strokeWidth={1.5}
+            />
             <g transform={`translate(${xOf(targetData.price)}, ${H - 12})`}>
-              <rect x={-32} y={0} width="64" height="14" rx="3" fill={CHART.pnl.target} />
-              <text x={0} y={10} fontSize="10" fill="white" textAnchor="middle" fontWeight="600">
+              <rect
+                x={-32}
+                y={0}
+                width="64"
+                height="14"
+                rx="3"
+                fill={CHART.pnl.target}
+              />
+              <text
+                x={0}
+                y={10}
+                fontSize="10"
+                fill="white"
+                textAnchor="middle"
+                fontWeight="600"
+              >
                 TGT {targetData.price.toFixed(2)}
               </text>
             </g>
@@ -468,13 +686,33 @@ export function PnlProfileChart({
         {/* Hover crosshair */}
         {hover && (
           <g pointerEvents="none">
-            <line x1={xOf(hover.price)} x2={xOf(hover.price)} y1={PAD_T} y2={H - 16}
-                  stroke={CHART.text} strokeOpacity={0.3} strokeDasharray="3 3" />
-            <circle cx={xOf(hover.price)} cy={yOf(hover.live)} r={4}
-                    fill={CHART.pnl.expiry} stroke={CHART.bg} strokeWidth={1.5} />
-            <circle cx={xOf(hover.price)} cy={yOf(hover.expiry)} r={3}
-                    fill="none" stroke={CHART.pnl.expiry} strokeWidth={1}
-                    strokeOpacity={0.65} strokeDasharray="2 2" />
+            <line
+              x1={xOf(hover.price)}
+              x2={xOf(hover.price)}
+              y1={PAD_T}
+              y2={H - 16}
+              stroke={CHART.text}
+              strokeOpacity={0.3}
+              strokeDasharray="3 3"
+            />
+            <circle
+              cx={xOf(hover.price)}
+              cy={yOf(hover.live)}
+              r={4}
+              fill={CHART.pnl.expiry}
+              stroke={CHART.bg}
+              strokeWidth={1.5}
+            />
+            <circle
+              cx={xOf(hover.price)}
+              cy={yOf(hover.expiry)}
+              r={3}
+              fill="none"
+              stroke={CHART.pnl.expiry}
+              strokeWidth={1}
+              strokeOpacity={0.65}
+              strokeDasharray="2 2"
+            />
           </g>
         )}
       </svg>
@@ -489,7 +727,9 @@ export function PnlProfileChart({
           accent={CHART.pnl.expiry}
           valueText={dateLabel}
           subText={`${tRemainingDays}d to expiry`}
-          min={0} max={dteDays} step={1}
+          min={0}
+          max={dteDays}
+          step={1}
           value={daysFromNow}
           onChange={setDaysFromNow}
           minLabel="today"
@@ -509,7 +749,9 @@ export function PnlProfileChart({
           accent={CHART.forecast.cone}
           valueText={`${(ivMult * iv * 100).toFixed(1)}%`}
           subText={`${(ivMult * 100).toFixed(0)}% of current`}
-          min={0.3} max={3} step={0.05}
+          min={0.3}
+          max={3}
+          step={0.05}
           value={ivMult}
           onChange={setIvMult}
           minLabel="30%"
@@ -529,7 +771,9 @@ export function PnlProfileChart({
           accent={CHART.ref.strike}
           valueText={`±${(range * 100).toFixed(0)}%`}
           subText="window around spot"
-          min={0.05} max={0.6} step={0.05}
+          min={0.05}
+          max={0.6}
+          step={0.05}
           value={range}
           onChange={setRange}
           minLabel="±5%"
@@ -537,9 +781,9 @@ export function PnlProfileChart({
           onReset={() => setRange(0.25)}
           isDefault={range === 0.25}
           presets={[
-            { label: "±10%", value: 0.10 },
+            { label: "±10%", value: 0.1 },
             { label: "±25%", value: 0.25 },
-            { label: "±50%", value: 0.50 },
+            { label: "±50%", value: 0.5 },
           ]}
         />
       </div>
@@ -551,10 +795,16 @@ export function PnlProfileChart({
             {pop != null && (
               <span>
                 <span className="text-text-muted">POP </span>
-                <span className={cn(
-                  "font-semibold",
-                  pop >= 0.6 ? "text-up" : pop >= 0.4 ? "text-warning" : "text-down"
-                )}>
+                <span
+                  className={cn(
+                    "font-semibold",
+                    pop >= 0.6
+                      ? "text-up"
+                      : pop >= 0.4
+                        ? "text-warning"
+                        : "text-down",
+                  )}
+                >
                   {(pop * 100).toFixed(0)}%
                 </span>
               </span>
@@ -562,7 +812,9 @@ export function PnlProfileChart({
             {probItm != null && (
               <span>
                 <span className="text-text-muted">P(ITM) </span>
-                <span className="text-text-primary font-semibold">{(probItm * 100).toFixed(0)}%</span>
+                <span className="text-text-primary font-semibold">
+                  {(probItm * 100).toFixed(0)}%
+                </span>
               </span>
             )}
           </div>
@@ -577,25 +829,40 @@ export function PnlProfileChart({
           </span>
           <span>
             <span className="text-text-muted">price </span>
-            <span className="text-text-primary font-semibold">{readout.price.toFixed(2)}</span>
+            <span className="text-text-primary font-semibold">
+              {readout.price.toFixed(2)}
+            </span>
           </span>
           {readout.cumProb != null && (
             <span>
               <span className="text-text-muted">P(≤) </span>
-              <span className="text-text-primary font-semibold">{(readout.cumProb * 100).toFixed(0)}%</span>
+              <span className="text-text-primary font-semibold">
+                {(readout.cumProb * 100).toFixed(0)}%
+              </span>
             </span>
           )}
           <span style={{ color: CHART.pnl.expiry }}>
             {dateLabel}{" "}
-            <span className={pnlClass(readout.live)}>{fmtPnl(readout.live)}</span>
+            <span className={pnlClass(readout.live)}>
+              {fmtPnl(readout.live)}
+            </span>
           </span>
           <span className="text-text-muted">
             expiry{" "}
-            <span className={pnlClass(readout.expiry)}>{fmtPnl(readout.expiry)}</span>
+            <span className={pnlClass(readout.expiry)}>
+              {fmtPnl(readout.expiry)}
+            </span>
           </span>
           {targetData && !hover && (
-            <button onClick={(e) => { e.stopPropagation(); setTarget(null); }}
-                    className="text-text-muted hover:text-text-primary ml-1">✕</button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setTarget(null);
+              }}
+              className="text-text-muted hover:text-text-primary ml-1"
+            >
+              ✕
+            </button>
           )}
         </div>
       )}
@@ -724,14 +991,15 @@ function pnlClass(v: number) {
 function fmtPnl(v: number): string {
   if (!isFinite(v)) return v > 0 ? "∞" : "−∞";
   const a = Math.abs(v);
-  if (a >= 1_000_000) return `${v < 0 ? "-" : ""}$${(a / 1_000_000).toFixed(2)}M`;
+  if (a >= 1_000_000)
+    return `${v < 0 ? "-" : ""}$${(a / 1_000_000).toFixed(2)}M`;
   if (a >= 1_000) return `${v < 0 ? "-" : ""}$${(a / 1_000).toFixed(1)}k`;
   return `${v < 0 ? "-" : ""}$${a.toFixed(0)}`;
 }
 
 function pctFromSpot(p: number, spot: number): string {
   if (!spot) return "";
-  const d = (p - spot) / spot * 100;
+  const d = ((p - spot) / spot) * 100;
   if (Math.abs(d) < 0.5) return "spot";
   return `${d >= 0 ? "+" : ""}${d.toFixed(0)}%`;
 }
@@ -740,8 +1008,12 @@ function erf(x: number): number {
   const sign = x < 0 ? -1 : 1;
   const ax = Math.abs(x);
   const t = 1 / (1 + 0.3275911 * ax);
-  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
-  const a4 = -1.453152027, a5 = 1.061405429;
-  const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
+  const a1 = 0.254829592,
+    a2 = -0.284496736,
+    a3 = 1.421413741;
+  const a4 = -1.453152027,
+    a5 = 1.061405429;
+  const y =
+    1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
   return sign * y;
 }

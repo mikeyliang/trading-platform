@@ -2,8 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Sparkles, Loader2, CheckCircle2, XCircle, History, Newspaper, TrendingUp,
-  CircleDollarSign, Brain, Hourglass, ArrowRight, ChevronRight,
+  Sparkles,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  History,
+  Newspaper,
+  TrendingUp,
+  CircleDollarSign,
+  Brain,
+  Hourglass,
+  ArrowRight,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type OptionAnalyzeResult } from "@/lib/api";
@@ -22,7 +32,12 @@ interface AgentState {
   output?: string;
   error?: string;
   model?: string;
-  headlines?: Array<{ title: string; source: string; published: string; link: string }>;
+  headlines?: Array<{
+    title: string;
+    source: string;
+    published: string;
+    link: string;
+  }>;
   // Wall-clock when the agent started running. Used to compute live
   // elapsed time during "thinking" status.
   startedAt?: number;
@@ -34,7 +49,10 @@ interface RunHistoryRow {
   id: number;
   ran_at: string;
   duration_ms: number | null;
-  agents: Record<string, { output?: string; model?: string; headlines?: any[]; error?: string }>;
+  agents: Record<
+    string,
+    { output?: string; model?: string; headlines?: any[]; error?: string }
+  >;
 }
 
 // Parallel batch first (news/underlying/option/decay all run concurrently),
@@ -42,13 +60,16 @@ interface RunHistoryRow {
 const PARALLEL_AGENTS: AgentName[] = ["news", "underlying", "option", "decay"];
 const AGENT_ORDER: AgentName[] = [...PARALLEL_AGENTS, "synthesis"];
 
-const AGENT_META: Record<AgentName, {
-  label: string;
-  shortLabel: string;
-  desc: string;
-  icon: typeof Newspaper;
-  accent: string;
-}> = {
+const AGENT_META: Record<
+  AgentName,
+  {
+    label: string;
+    shortLabel: string;
+    desc: string;
+    icon: typeof Newspaper;
+    accent: string;
+  }
+> = {
   news: {
     label: "News Analyst",
     shortLabel: "News",
@@ -95,15 +116,15 @@ const EMPTY_STATE: Record<AgentName, AgentState> = {
 };
 
 // ── Context summaries — what data each agent sees ─────────────────────
-function buildContextChips(name: AgentName, result: OptionAnalyzeResult): string[] {
+function buildContextChips(
+  name: AgentName,
+  result: OptionAnalyzeResult,
+): string[] {
   const u = result.underlying;
   const g = result.greeks;
   switch (name) {
     case "news":
-      return [
-        `${result.symbol} ticker`,
-        "RSS feed (Yahoo + Google News)",
-      ];
+      return [`${result.symbol} ticker`, "RSS feed (Yahoo + Google News)"];
     case "underlying":
       return [
         `RSI ${u?.rsi?.toFixed(0) ?? "—"}`,
@@ -150,7 +171,8 @@ function buildContextChips(name: AgentName, result: OptionAnalyzeResult): string
  *   - History list: past runs on this contract; click to reload
  */
 export function AIRead({ result }: Props) {
-  const [agents, setAgents] = useState<Record<AgentName, AgentState>>(EMPTY_STATE);
+  const [agents, setAgents] =
+    useState<Record<AgentName, AgentState>>(EMPTY_STATE);
   const [running, setRunning] = useState(false);
   const [runId, setRunId] = useState<number | null>(null);
   const [durationMs, setDurationMs] = useState<number | null>(null);
@@ -186,7 +208,9 @@ export function AIRead({ result }: Props) {
     }
   }, [result.symbol, result.strike, result.expiry, result.right]);
 
-  useEffect(() => { reloadHistory(); }, [reloadHistory]);
+  useEffect(() => {
+    reloadHistory();
+  }, [reloadHistory]);
 
   // ── load a previous run into the agent boxes ────────────────────────
   const loadRun = (row: RunHistoryRow) => {
@@ -237,7 +261,9 @@ export function AIRead({ result }: Props) {
         body: JSON.stringify(buildRequestBody(result)),
       });
       if (!resp.ok || !resp.body) {
-        throw new Error(`HTTP ${resp.status}: ${await resp.text().catch(() => "")}`);
+        throw new Error(
+          `HTTP ${resp.status}: ${await resp.text().catch(() => "")}`,
+        );
       }
 
       const reader = resp.body.getReader();
@@ -254,7 +280,11 @@ export function AIRead({ result }: Props) {
           const line = frame.trim();
           if (!line.startsWith("data:")) continue;
           let evt: any;
-          try { evt = JSON.parse(line.slice(5).trim()); } catch { continue; }
+          try {
+            evt = JSON.parse(line.slice(5).trim());
+          } catch {
+            continue;
+          }
           handleEvent(evt);
         }
       }
@@ -269,7 +299,11 @@ export function AIRead({ result }: Props) {
       if (evt.event === "agent.start") {
         setAgents((prev) => ({
           ...prev,
-          [evt.agent]: { ...prev[evt.agent as AgentName], status: "running", startedAt: Date.now() },
+          [evt.agent]: {
+            ...prev[evt.agent as AgentName],
+            status: "running",
+            startedAt: Date.now(),
+          },
         }));
       } else if (evt.event === "agent.complete") {
         setAgents((prev) => ({
@@ -317,9 +351,16 @@ export function AIRead({ result }: Props) {
       {/* Run controls */}
       <div className="flex items-center gap-3 flex-wrap">
         <Button size="sm" onClick={run} disabled={running} className="gap-1.5">
-          {running
-            ? <><Loader2 size={14} className="animate-spin" /> Running pipeline…</>
-            : <><Sparkles size={14} /> {hasAnyOutput ? "Re-run pipeline" : "Run AI agents"}</>}
+          {running ? (
+            <>
+              <Loader2 size={14} className="animate-spin" /> Running pipeline…
+            </>
+          ) : (
+            <>
+              <Sparkles size={14} />{" "}
+              {hasAnyOutput ? "Re-run pipeline" : "Run AI agents"}
+            </>
+          )}
         </Button>
         {durationMs != null && (
           <span className="text-[10px] uppercase tracking-wider text-text-muted tabular">
@@ -373,7 +414,9 @@ export function AIRead({ result }: Props) {
                     )}
                   >
                     <span className="text-text-muted">#{row.id}</span>
-                    <span className="text-text-secondary">{formatTime(row.ran_at)}</span>
+                    <span className="text-text-secondary">
+                      {formatTime(row.ran_at)}
+                    </span>
                     {row.duration_ms != null && (
                       <span className="ml-auto text-text-muted">
                         {(row.duration_ms / 1000).toFixed(1)}s
@@ -407,7 +450,11 @@ function PipelineHeader({ agents }: { agents: Record<AgentName, AgentState> }) {
           ))}
         </div>
         {/* Synthesis at the end */}
-        <PipelineNode name="synthesis" state={agents.synthesis} connect={null} />
+        <PipelineNode
+          name="synthesis"
+          state={agents.synthesis}
+          connect={null}
+        />
       </div>
       <div className="mt-2 text-[9px] uppercase tracking-wider text-text-muted/80 leading-tight">
         4 parallel reads → coordinator synthesizes a verdict
@@ -417,7 +464,9 @@ function PipelineHeader({ agents }: { agents: Record<AgentName, AgentState> }) {
 }
 
 function PipelineNode({
-  name, state, connect,
+  name,
+  state,
+  connect,
 }: {
   name: AgentName;
   state: AgentState;
@@ -451,10 +500,18 @@ function PipelineNode({
             <Icon size={12} className="text-text-muted" />
           )}
         </div>
-        <span className={cn(
-          "text-[9px] uppercase tracking-wider leading-none",
-          active ? "text-accent" : done ? "text-up" : failed ? "text-down" : "text-text-muted",
-        )}>
+        <span
+          className={cn(
+            "text-[9px] uppercase tracking-wider leading-none",
+            active
+              ? "text-accent"
+              : done
+                ? "text-up"
+                : failed
+                  ? "text-down"
+                  : "text-text-muted",
+          )}
+        >
           {meta.shortLabel}
         </span>
       </div>
@@ -470,7 +527,9 @@ function PipelineNode({
 
 // ── Agent card ────────────────────────────────────────────────────────
 function AgentCard({
-  name, state, contextChips,
+  name,
+  state,
+  contextChips,
 }: {
   name: AgentName;
   state: AgentState;
@@ -588,7 +647,9 @@ function AgentCard({
 
       {state.status === "error" && state.error && (
         <div className="px-3 pb-3 pt-1 border-t border-border/40">
-          <code className="text-[10px] tabular text-down/90 break-all">{state.error}</code>
+          <code className="text-[10px] tabular text-down/90 break-all">
+            {state.error}
+          </code>
         </div>
       )}
     </div>
@@ -639,7 +700,11 @@ function SynthesisBody({ text }: { text: string }) {
           <SynthesisList items={working} tone="up" label="Working for it" />
         )}
         {against.length > 0 && (
-          <SynthesisList items={against} tone="down" label="Working against it" />
+          <SynthesisList
+            items={against}
+            tone="down"
+            label="Working against it"
+          />
         )}
       </div>
 
@@ -658,7 +723,9 @@ function SynthesisBody({ text }: { text: string }) {
 }
 
 function SynthesisList({
-  items, tone, label,
+  items,
+  tone,
+  label,
 }: {
   items: string[];
   tone: "up" | "down";
@@ -744,7 +811,12 @@ function parseSynthesisSections(raw: string): ParsedSynthesis | null {
   const against = splitBullets(slices["working against it"] ?? "");
   const trigger = (slices["trigger"] ?? "").trim();
 
-  if (!verdictWord && working.length === 0 && against.length === 0 && !trigger) {
+  if (
+    !verdictWord &&
+    working.length === 0 &&
+    against.length === 0 &&
+    !trigger
+  ) {
     return null;
   }
   return { verdictWord, verdictRest, working, against, trigger };
@@ -764,13 +836,18 @@ function verdictToneOf(word: string): "up" | "down" | "warning" | "muted" {
   const w = word.toLowerCase();
   if (w === "add" || w === "hold" || w === "keep") return "up";
   if (w === "close" || w === "cut" || w === "exit") return "down";
-  if (w === "trim" || w === "hedge" || w === "adjust" || w === "reduce") return "warning";
+  if (w === "trim" || w === "hedge" || w === "adjust" || w === "reduce")
+    return "warning";
   return "muted";
 }
 
 function StatusBadge({ status }: { status: AgentStatus }) {
   if (status === "pending") {
-    return <span className="text-[9px] uppercase tracking-wider text-text-muted">queued</span>;
+    return (
+      <span className="text-[9px] uppercase tracking-wider text-text-muted">
+        queued
+      </span>
+    );
   }
   if (status === "running") {
     return (
@@ -800,10 +877,14 @@ function formatTime(iso: string): string {
   try {
     const d = new Date(iso);
     return d.toLocaleString(undefined, {
-      month: "short", day: "numeric",
-      hour: "2-digit", minute: "2-digit",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
-  } catch { return iso; }
+  } catch {
+    return iso;
+  }
 }
 
 // ── Body builder — flattens the full OptionAnalyzeResult into the
@@ -833,8 +914,7 @@ function buildRequestBody(result: OptionAnalyzeResult) {
     v: b.volume,
   }));
 
-  const side =
-    `${result.is_long ? "long" : "short"}_${result.right === "C" ? "call" : "put"}`;
+  const side = `${result.is_long ? "long" : "short"}_${result.right === "C" ? "call" : "put"}`;
 
   return {
     // identity

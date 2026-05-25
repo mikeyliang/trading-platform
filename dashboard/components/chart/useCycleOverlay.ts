@@ -9,14 +9,20 @@ import type { IChartApi, UTCTimestamp } from "lightweight-charts";
 interface Args {
   chart: React.RefObject<IChartApi | null>;
   container: React.RefObject<HTMLDivElement | null>;
-  entryDate: string | null;   // YYYY-MM-DD
-  expiryDate: string | null;  // YYYY-MM-DD
+  entryDate: string | null; // YYYY-MM-DD
+  expiryDate: string | null; // YYYY-MM-DD
   enabled: boolean;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-export function useCycleOverlay({ chart, container, entryDate, expiryDate, enabled }: Args) {
+export function useCycleOverlay({
+  chart,
+  container,
+  entryDate,
+  expiryDate,
+  enabled,
+}: Args) {
   useEffect(() => {
     if (!enabled) return;
     const c = chart.current;
@@ -27,7 +33,7 @@ export function useCycleOverlay({ chart, container, entryDate, expiryDate, enabl
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute(
       "style",
-      "position:absolute;inset:0;pointer-events:none;z-index:7;overflow:visible;"
+      "position:absolute;inset:0;pointer-events:none;z-index:7;overflow:visible;",
     );
     svg.classList.add("cycle-overlay");
     el.appendChild(svg);
@@ -75,7 +81,7 @@ export function useCycleOverlay({ chart, container, entryDate, expiryDate, enabl
         label.setAttribute("font-size", "9");
         label.setAttribute(
           "font-family",
-          "ui-monospace, SFMono-Regular, monospace"
+          "ui-monospace, SFMono-Regular, monospace",
         );
         label.setAttribute("font-weight", "600");
         label.textContent = m.label;
@@ -84,13 +90,13 @@ export function useCycleOverlay({ chart, container, entryDate, expiryDate, enabl
     };
 
     render();
-    const unsubTime = c.timeScale().subscribeVisibleTimeRangeChange(render);
+    c.timeScale().subscribeVisibleTimeRangeChange(render);
     const ro = new ResizeObserver(render);
     ro.observe(el);
 
     return () => {
       try {
-        unsubTime?.();
+        c.timeScale().unsubscribeVisibleTimeRangeChange(render);
       } catch {}
       ro.disconnect();
       if (svg.parentNode) svg.parentNode.removeChild(svg);

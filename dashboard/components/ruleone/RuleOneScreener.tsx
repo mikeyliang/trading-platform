@@ -33,14 +33,26 @@ interface Props {
 
 const DEFAULT_BANKROLL = 100_000;
 
-export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props) {
+export function RuleOneScreener({
+  underlying,
+  prefill,
+  defaultBankroll,
+}: Props) {
   const [spot, setSpot] = useState<number>(prefill?.spot ?? 0);
   const [dte, setDte] = useState<number>(prefill?.dte ?? 25);
-  const [shortStrike, setShortStrike] = useState<number>(prefill?.shortStrike ?? 0);
-  const [longStrike, setLongStrike] = useState<number>(prefill?.longStrike ?? 0);
+  const [shortStrike, setShortStrike] = useState<number>(
+    prefill?.shortStrike ?? 0,
+  );
+  const [longStrike, setLongStrike] = useState<number>(
+    prefill?.longStrike ?? 0,
+  );
   const [credit, setCredit] = useState<number>(prefill?.credit ?? 0);
-  const [shortDelta, setShortDelta] = useState<number>(prefill?.shortDelta ?? 0.1);
-  const [bankroll, setBankroll] = useState<number>(defaultBankroll ?? DEFAULT_BANKROLL);
+  const [shortDelta, setShortDelta] = useState<number>(
+    prefill?.shortDelta ?? 0.1,
+  );
+  const [bankroll, setBankroll] = useState<number>(
+    defaultBankroll ?? DEFAULT_BANKROLL,
+  );
 
   // When prefill changes (e.g. user clicks a strike in the chain), update.
   useEffect(() => {
@@ -63,7 +75,10 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
     bankroll,
   };
 
-  const m = useMemo(() => calcMetrics(input), [spot, dte, shortStrike, longStrike, credit, shortDelta, bankroll]);
+  const m = useMemo(
+    () => calcMetrics(input),
+    [spot, dte, shortStrike, longStrike, credit, shortDelta, bankroll],
+  );
   const results = useMemo(
     () => STRATEGIES.map((s) => checkStrategy(input, m, s)),
     [input, m],
@@ -72,15 +87,24 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
   const applicable = results.filter((r) => r.applicable);
   const passing = applicable.filter((r) => r.passes);
 
-  const valid = spot > 0 && shortStrike > 0 && longStrike > 0 && credit > 0 && shortStrike > longStrike;
+  const valid =
+    spot > 0 &&
+    shortStrike > 0 &&
+    longStrike > 0 &&
+    credit > 0 &&
+    shortStrike > longStrike;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Rocket size={14} className="text-accent" />
-          <span className="text-xs font-medium text-text-primary">Rule One Screener</span>
-          <Badge variant="accent" className="normal-case tracking-normal">{underlying}</Badge>
+          <span className="text-xs font-medium text-text-primary">
+            Rule One Screener
+          </span>
+          <Badge variant="accent" className="normal-case tracking-normal">
+            {underlying}
+          </Badge>
         </div>
         <Badge variant={passing.length > 0 ? "up" : "muted"}>
           {passing.length}/{applicable.length} pass
@@ -90,12 +114,45 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
       <Card>
         <CardContent className="grid grid-cols-2 gap-2 p-3">
           <NumField label="Spot" value={spot} onChange={setSpot} step={0.5} />
-          <NumField label="DTE" value={dte} onChange={setDte} step={1} integer />
-          <NumField label="Short strike" value={shortStrike} onChange={setShortStrike} step={5} />
-          <NumField label="Long strike" value={longStrike} onChange={setLongStrike} step={5} />
-          <NumField label="Credit ($)" value={credit} onChange={setCredit} step={0.05} />
-          <NumField label="Short Δ" value={shortDelta} onChange={setShortDelta} step={0.01} hint="absolute, e.g. 0.10" />
-          <NumField label="Bankroll" value={bankroll} onChange={setBankroll} step={1000} className="col-span-2" />
+          <NumField
+            label="DTE"
+            value={dte}
+            onChange={setDte}
+            step={1}
+            integer
+          />
+          <NumField
+            label="Short strike"
+            value={shortStrike}
+            onChange={setShortStrike}
+            step={5}
+          />
+          <NumField
+            label="Long strike"
+            value={longStrike}
+            onChange={setLongStrike}
+            step={5}
+          />
+          <NumField
+            label="Credit ($)"
+            value={credit}
+            onChange={setCredit}
+            step={0.05}
+          />
+          <NumField
+            label="Short Δ"
+            value={shortDelta}
+            onChange={setShortDelta}
+            step={0.01}
+            hint="absolute, e.g. 0.10"
+          />
+          <NumField
+            label="Bankroll"
+            value={bankroll}
+            onChange={setBankroll}
+            step={1000}
+            className="col-span-2"
+          />
         </CardContent>
       </Card>
 
@@ -110,8 +167,16 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
               <Metric label="AROC" value={fmt(m.arocPct, 1) + "%"} />
               <Metric label="Prob OTM" value={fmt(m.probOTM * 100, 1) + "%"} />
               <Metric label="Kelly" value={fmt(m.kellyPct, 1) + "%"} />
-              <Metric label="Max profit" value={fmtCurrency(m.maxProfitPerContract)} tone="up" />
-              <Metric label="Max loss" value={fmtCurrency(-m.maxLossPerContract)} tone="down" />
+              <Metric
+                label="Max profit"
+                value={fmtCurrency(m.maxProfitPerContract)}
+                tone="up"
+              />
+              <Metric
+                label="Max loss"
+                value={fmtCurrency(-m.maxLossPerContract)}
+                tone="down"
+              />
             </CardContent>
           </Card>
 
@@ -141,9 +206,13 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
                 />
               </div>
               <p className="text-[10px] text-text-muted leading-relaxed">
-                Sizing is the lesser of Kelly% × bankroll and Rule One's 33% bankroll cap, divided
-                by max loss per contract. Break-even at expiration:{" "}
-                <span className="text-text-secondary tabular">{fmt(m.breakeven, 2)}</span>.
+                Sizing is the lesser of Kelly% × bankroll and Rule One's 33%
+                bankroll cap, divided by max loss per contract. Break-even at
+                expiration:{" "}
+                <span className="text-text-secondary tabular">
+                  {fmt(m.breakeven, 2)}
+                </span>
+                .
               </p>
             </CardContent>
           </Card>
@@ -168,7 +237,8 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
         <Card>
           <CardContent className="p-3 text-[11px] text-text-muted flex items-center gap-2">
             <Info size={12} />
-            Enter spot, both strikes (short &gt; long), credit, and short delta to evaluate.
+            Enter spot, both strikes (short &gt; long), credit, and short delta
+            to evaluate.
           </CardContent>
         </Card>
       )}
@@ -197,15 +267,43 @@ function StrategyResultCard({
       <CardContent className="p-3 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium">{spec.name}</span>
-          <Badge variant={!result.applicable ? "muted" : result.passes ? "up" : "down"}>
+          <Badge
+            variant={
+              !result.applicable ? "muted" : result.passes ? "up" : "down"
+            }
+          >
             {!result.applicable ? "n/a" : result.passes ? "pass" : "fail"}
           </Badge>
         </div>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
-          <CheckRow label={result.checks.delta.label} ok={result.checks.delta.pass} value={result.checks.delta.value} suffix="" applicable={result.applicable} />
-          <CheckRow label={result.checks.adjOTM.label} ok={result.checks.adjOTM.pass} value={result.checks.adjOTM.value} suffix="%" applicable={result.applicable} />
-          <CheckRow label={result.checks.aroc.label} ok={result.checks.aroc.pass} value={result.checks.aroc.value} suffix="%" applicable={result.applicable} />
-          <CheckRow label={result.checks.kelly.label} ok={result.checks.kelly.pass} value={result.checks.kelly.value} suffix="" applicable={result.applicable} />
+          <CheckRow
+            label={result.checks.delta.label}
+            ok={result.checks.delta.pass}
+            value={result.checks.delta.value}
+            suffix=""
+            applicable={result.applicable}
+          />
+          <CheckRow
+            label={result.checks.adjOTM.label}
+            ok={result.checks.adjOTM.pass}
+            value={result.checks.adjOTM.value}
+            suffix="%"
+            applicable={result.applicable}
+          />
+          <CheckRow
+            label={result.checks.aroc.label}
+            ok={result.checks.aroc.pass}
+            value={result.checks.aroc.value}
+            suffix="%"
+            applicable={result.applicable}
+          />
+          <CheckRow
+            label={result.checks.kelly.label}
+            ok={result.checks.kelly.pass}
+            value={result.checks.kelly.value}
+            suffix=""
+            applicable={result.applicable}
+          />
         </div>
         <p className="text-[10px] text-text-muted leading-snug border-t border-border/60 pt-1.5">
           Exit at Δ {spec.exitDelta}. {spec.notes}
@@ -232,10 +330,21 @@ function CheckRow({
     <div className="flex items-center justify-between">
       <span className="text-text-muted">{label}</span>
       <span className="flex items-center gap-1">
-        <span className={cn("tabular", applicable ? (ok ? "text-up" : "text-down") : "text-text-muted")}>
-          {fmt(value, value > 99 ? 0 : 1)}{suffix}
+        <span
+          className={cn(
+            "tabular",
+            applicable ? (ok ? "text-up" : "text-down") : "text-text-muted",
+          )}
+        >
+          {fmt(value, value > 99 ? 0 : 1)}
+          {suffix}
         </span>
-        {applicable && (ok ? <Check size={10} className="text-up" /> : <X size={10} className="text-down" />)}
+        {applicable &&
+          (ok ? (
+            <Check size={10} className="text-up" />
+          ) : (
+            <X size={10} className="text-down" />
+          ))}
       </span>
     </div>
   );
@@ -262,14 +371,20 @@ function NumField({
     <div className={cn("flex flex-col gap-1", className)}>
       <label className="text-[10px] text-text-muted uppercase tracking-wider flex items-center gap-1">
         {label}
-        {hint && <span className="lowercase tracking-normal text-text-muted/70 normal-case">· {hint}</span>}
+        {hint && (
+          <span className="lowercase tracking-normal text-text-muted/70 normal-case">
+            · {hint}
+          </span>
+        )}
       </label>
       <Input
         type="number"
         step={step ?? "any"}
         value={Number.isFinite(value) ? value : 0}
         onChange={(e) => {
-          const n = integer ? parseInt(e.target.value, 10) : parseFloat(e.target.value);
+          const n = integer
+            ? parseInt(e.target.value, 10)
+            : parseFloat(e.target.value);
           onChange(Number.isFinite(n) ? n : 0);
         }}
         className="h-7 tabular"
@@ -289,11 +404,17 @@ function Metric({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-text-muted uppercase tracking-wider">{label}</span>
+      <span className="text-[10px] text-text-muted uppercase tracking-wider">
+        {label}
+      </span>
       <span
         className={cn(
           "tabular text-sm font-semibold",
-          tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-primary",
+          tone === "up"
+            ? "text-up"
+            : tone === "down"
+              ? "text-down"
+              : "text-text-primary",
         )}
       >
         {value}

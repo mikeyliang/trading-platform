@@ -3,7 +3,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { HintLabel } from "@/components/ui/info-icon";
-import type { OptionAnalyzeResult, OptionAnalyzerTimeframe, MultiTfSnapshot } from "@/lib/api";
+import type {
+  OptionAnalyzeResult,
+  OptionAnalyzerTimeframe,
+  MultiTfSnapshot,
+} from "@/lib/api";
 
 interface Props {
   result: OptionAnalyzeResult;
@@ -39,15 +43,25 @@ export function MultiTfMomentumPanel({ result }: Props) {
   // so the colors mean the same thing across the page.
   const toneFor = (
     name: "rsi" | "macd" | "smi" | "vwap" | "ema" | "trend",
-    s: MultiTfSnapshot
+    s: MultiTfSnapshot,
   ): "fires-for" | "fires-against" | "warn" | "neutral" => {
     if (!s.available) return "neutral";
     if (name === "rsi") {
       const v = s.rsi ?? 50;
       if (v >= 70) return bearishPos ? "fires-for" : "warn";
       if (v <= 30) return bullishPos ? "fires-for" : "warn";
-      if (v >= 55) return bullishPos ? "fires-for" : bearishPos ? "fires-against" : "neutral";
-      if (v <= 45) return bearishPos ? "fires-for" : bullishPos ? "fires-against" : "neutral";
+      if (v >= 55)
+        return bullishPos
+          ? "fires-for"
+          : bearishPos
+            ? "fires-against"
+            : "neutral";
+      if (v <= 45)
+        return bearishPos
+          ? "fires-for"
+          : bullishPos
+            ? "fires-against"
+            : "neutral";
       return "neutral";
     }
     if (name === "macd") {
@@ -60,8 +74,18 @@ export function MultiTfMomentumPanel({ result }: Props) {
       const v = s.smi ?? 0;
       if (v >= 40) return bearishPos ? "fires-for" : "warn";
       if (v <= -40) return bullishPos ? "fires-for" : "warn";
-      if (v > 0) return bullishPos ? "fires-for" : bearishPos ? "fires-against" : "neutral";
-      if (v < 0) return bearishPos ? "fires-for" : bullishPos ? "fires-against" : "neutral";
+      if (v > 0)
+        return bullishPos
+          ? "fires-for"
+          : bearishPos
+            ? "fires-against"
+            : "neutral";
+      if (v < 0)
+        return bearishPos
+          ? "fires-for"
+          : bullishPos
+            ? "fires-against"
+            : "neutral";
       return "neutral";
     }
     if (name === "vwap") {
@@ -85,18 +109,20 @@ export function MultiTfMomentumPanel({ result }: Props) {
     return "neutral";
   };
 
-  const toneClass = (tone: "fires-for" | "fires-against" | "warn" | "neutral") =>
+  const toneClass = (
+    tone: "fires-for" | "fires-against" | "warn" | "neutral",
+  ) =>
     tone === "fires-for"
       ? "text-up bg-up/8"
       : tone === "fires-against"
-      ? "text-down bg-down/8"
-      : tone === "warn"
-      ? "text-warning bg-warning/6"
-      : "text-text-secondary";
+        ? "text-down bg-down/8"
+        : tone === "warn"
+          ? "text-warning bg-warning/6"
+          : "text-text-secondary";
 
   const cellVal = (
     name: "rsi" | "macd" | "smi" | "vwap" | "ema",
-    s: MultiTfSnapshot
+    s: MultiTfSnapshot,
   ): string => {
     if (!s.available) return "—";
     if (name === "rsi") return s.rsi != null ? s.rsi.toFixed(0) : "—";
@@ -118,17 +144,43 @@ export function MultiTfMomentumPanel({ result }: Props) {
     return "—";
   };
 
-  const rows: { key: "rsi" | "macd" | "smi" | "vwap" | "ema"; label: string; hint: string }[] = [
-    { key: "rsi", label: "RSI", hint: "Wilder's RSI(14). >70 overbought, <30 oversold." },
-    { key: "macd", label: "MACD-h", hint: "MACD histogram: positive = bullish momentum, negative = bearish." },
-    { key: "smi", label: "SMI", hint: "Stochastic Momentum Index. >40 overbought, <-40 oversold." },
-    { key: "vwap", label: "VWAP%", hint: "% of spot from VWAP. Intraday only (daily-reset)." },
-    { key: "ema", label: "EMA", hint: "EMA9 vs EMA21 cross. 9>21 = short-term uptrend." },
+  const rows: {
+    key: "rsi" | "macd" | "smi" | "vwap" | "ema";
+    label: string;
+    hint: string;
+  }[] = [
+    {
+      key: "rsi",
+      label: "RSI",
+      hint: "Wilder's RSI(14). >70 overbought, <30 oversold.",
+    },
+    {
+      key: "macd",
+      label: "MACD-h",
+      hint: "MACD histogram: positive = bullish momentum, negative = bearish.",
+    },
+    {
+      key: "smi",
+      label: "SMI",
+      hint: "Stochastic Momentum Index. >40 overbought, <-40 oversold.",
+    },
+    {
+      key: "vwap",
+      label: "VWAP%",
+      hint: "% of spot from VWAP. Intraday only (daily-reset).",
+    },
+    {
+      key: "ema",
+      label: "EMA",
+      hint: "EMA9 vs EMA21 cross. 9>21 = short-term uptrend.",
+    },
   ];
 
   // Bottom-row consensus reading: count bull/bear/neutral across TFs.
   const consensus = (() => {
-    let bull = 0, bear = 0, total = 0;
+    let bull = 0,
+      bear = 0,
+      total = 0;
     for (const tf of sortedTfs) {
       const t = mt[tf]?.trend;
       if (!t) continue;
@@ -137,9 +189,14 @@ export function MultiTfMomentumPanel({ result }: Props) {
       else if (t === "bear") bear++;
     }
     if (total === 0) return { label: "—", tone: "neutral" as const };
-    if (bull >= total * 0.6) return { label: `${bull}/${total} bull`, tone: "fires-for" as const };
-    if (bear >= total * 0.6) return { label: `${bear}/${total} bear`, tone: "fires-against" as const };
-    return { label: `${bull}↑ ${bear}↓ ${total - bull - bear}→`, tone: "warn" as const };
+    if (bull >= total * 0.6)
+      return { label: `${bull}/${total} bull`, tone: "fires-for" as const };
+    if (bear >= total * 0.6)
+      return { label: `${bear}/${total} bear`, tone: "fires-against" as const };
+    return {
+      label: `${bull}↑ ${bear}↓ ${total - bull - bear}→`,
+      tone: "warn" as const,
+    };
   })();
 
   return (
@@ -151,9 +208,11 @@ export function MultiTfMomentumPanel({ result }: Props) {
             <div className="flex flex-col gap-1">
               <div className="font-medium">Cross-timeframe momentum</div>
               <div>
-                Each column is a chart timeframe. Cells color-coded against
-                this position&apos;s direction: <span className="text-up">green</span> = aligned,{" "}
-                <span className="text-down">red</span> = against, <span className="text-warning">yellow</span> = caution.
+                Each column is a chart timeframe. Cells color-coded against this
+                position&apos;s direction:{" "}
+                <span className="text-up">green</span> = aligned,{" "}
+                <span className="text-down">red</span> = against,{" "}
+                <span className="text-warning">yellow</span> = caution.
               </div>
               <div>
                 Recommended primary TF is highlighted in the header — picked
@@ -180,9 +239,13 @@ export function MultiTfMomentumPanel({ result }: Props) {
                   key={tf}
                   className={cn(
                     "text-right px-3 py-1.5 font-medium",
-                    tf === recommended && "text-accent"
+                    tf === recommended && "text-accent",
                   )}
-                  title={tf === recommended ? "Recommended primary timeframe for this DTE" : undefined}
+                  title={
+                    tf === recommended
+                      ? "Recommended primary timeframe for this DTE"
+                      : undefined
+                  }
                 >
                   {tf}
                   {tf === recommended && (
@@ -198,7 +261,7 @@ export function MultiTfMomentumPanel({ result }: Props) {
                 key={row.key}
                 className={cn(
                   "border-t border-border/40",
-                  idx % 2 === 1 && "bg-surface-2/20"
+                  idx % 2 === 1 && "bg-surface-2/20",
                 )}
               >
                 <td className="px-3 py-1.5 text-text-secondary">
@@ -210,7 +273,10 @@ export function MultiTfMomentumPanel({ result }: Props) {
                   const s = mt[tf];
                   const tone = toneFor(row.key, s);
                   return (
-                    <td key={`${row.key}-${tf}`} className={cn("text-right px-3 py-1.5", toneClass(tone))}>
+                    <td
+                      key={`${row.key}-${tf}`}
+                      className={cn("text-right px-3 py-1.5", toneClass(tone))}
+                    >
                       {cellVal(row.key, s)}
                     </td>
                   );
@@ -228,7 +294,13 @@ export function MultiTfMomentumPanel({ result }: Props) {
                 const tone = toneFor("trend", s);
                 const tr = s?.trend ?? "—";
                 return (
-                  <td key={`trend-${tf}`} className={cn("text-right px-3 py-1.5 font-medium uppercase text-[10px] tracking-wider", toneClass(tone))}>
+                  <td
+                    key={`trend-${tf}`}
+                    className={cn(
+                      "text-right px-3 py-1.5 font-medium uppercase text-[10px] tracking-wider",
+                      toneClass(tone),
+                    )}
+                  >
                     {tr}
                   </td>
                 );
@@ -242,7 +314,7 @@ export function MultiTfMomentumPanel({ result }: Props) {
                 colSpan={sortedTfs.length}
                 className={cn(
                   "px-3 py-1.5 text-right font-medium text-[10px]",
-                  toneClass(consensus.tone)
+                  toneClass(consensus.tone),
                 )}
               >
                 {consensus.label}

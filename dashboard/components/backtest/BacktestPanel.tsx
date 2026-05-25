@@ -30,10 +30,24 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toaster";
 
-const BacktestChart = dynamic(() => import("./BacktestChart").then((m) => m.BacktestChart), { ssr: false });
+const BacktestChart = dynamic(
+  () => import("./BacktestChart").then((m) => m.BacktestChart),
+  { ssr: false },
+);
 
 const STRATEGIES = ["smi-short", "smi-mid", "ema-cross"];
-const SYMBOLS = ["AAPL", "MSFT", "NVDA", "TSLA", "GOOGL", "META", "AMD", "JPM", "XOM", "AMZN"];
+const SYMBOLS = [
+  "AAPL",
+  "MSFT",
+  "NVDA",
+  "TSLA",
+  "GOOGL",
+  "META",
+  "AMD",
+  "JPM",
+  "XOM",
+  "AMZN",
+];
 const TIMEFRAMES = ["5m", "15m", "30m", "1h", "4h", "1d"];
 
 export function BacktestPanel() {
@@ -56,7 +70,10 @@ export function BacktestPanel() {
   const consumePending = useStore((s) => s.consumePendingSuggestion);
 
   useEffect(() => {
-    api.strategySchema(form.strategy).then(setSchema).catch(() => setSchema(null));
+    api
+      .strategySchema(form.strategy)
+      .then(setSchema)
+      .catch(() => setSchema(null));
   }, [form.strategy]);
 
   // When the agent proposes params, accept them into this form
@@ -79,7 +96,9 @@ export function BacktestPanel() {
   const run = async () => {
     setRunning(true);
     setError(null);
-    const toastId = toast.loading(`Running backtest: ${form.strategy} on ${form.symbol}…`);
+    const toastId = toast.loading(
+      `Running backtest: ${form.strategy} on ${form.symbol}…`,
+    );
     try {
       const r = await api.runBacktest(form);
       setResult(r);
@@ -106,7 +125,10 @@ export function BacktestPanel() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 overflow-y-auto">
           <Field label="Strategy">
-            <Select value={form.strategy} onValueChange={(v) => setForm({ ...form, strategy: v })}>
+            <Select
+              value={form.strategy}
+              onValueChange={(v) => setForm({ ...form, strategy: v })}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -121,7 +143,10 @@ export function BacktestPanel() {
           </Field>
 
           <Field label="Symbol">
-            <Select value={form.symbol} onValueChange={(v) => setForm({ ...form, symbol: v })}>
+            <Select
+              value={form.symbol}
+              onValueChange={(v) => setForm({ ...form, symbol: v })}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -136,7 +161,10 @@ export function BacktestPanel() {
           </Field>
 
           <Field label="Timeframe">
-            <Select value={form.timeframe} onValueChange={(v) => setForm({ ...form, timeframe: v })}>
+            <Select
+              value={form.timeframe}
+              onValueChange={(v) => setForm({ ...form, timeframe: v })}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -170,7 +198,9 @@ export function BacktestPanel() {
             <Input
               type="number"
               value={form.initial_capital}
-              onChange={(e) => setForm({ ...form, initial_capital: +e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, initial_capital: +e.target.value })
+              }
             />
           </Field>
 
@@ -181,11 +211,16 @@ export function BacktestPanel() {
           >
             <ChevronDown
               size={11}
-              className={cn("transition-transform", showAdvanced && "rotate-180")}
+              className={cn(
+                "transition-transform",
+                showAdvanced && "rotate-180",
+              )}
             />
             Parameters
             {paramCount > 0 && (
-              <span className="ml-auto text-[10px] text-accent">{paramCount} overridden</span>
+              <span className="ml-auto text-[10px] text-accent">
+                {paramCount} overridden
+              </span>
             )}
           </button>
 
@@ -200,10 +235,18 @@ export function BacktestPanel() {
           )}
 
           {error && (
-            <p className="text-xs text-down bg-down/10 border border-down/20 rounded px-2 py-1.5">{error}</p>
+            <p className="text-xs text-down bg-down/10 border border-down/20 rounded px-2 py-1.5">
+              {error}
+            </p>
           )}
 
-          <Button onClick={run} disabled={running} variant="default" size="lg" className="mt-2">
+          <Button
+            onClick={run}
+            disabled={running}
+            variant="default"
+            size="lg"
+            className="mt-2"
+          >
             {running ? <Loader2 className="animate-spin" /> : <Play />}
             {running ? "running…" : "run backtest"}
           </Button>
@@ -214,7 +257,9 @@ export function BacktestPanel() {
       <div className="flex-1 overflow-y-auto flex flex-col gap-4">
         {!result && !running && (
           <Card className="flex-1 flex items-center justify-center">
-            <p className="text-text-muted text-sm">configure and run a backtest to see results</p>
+            <p className="text-text-muted text-sm">
+              configure and run a backtest to see results
+            </p>
           </Card>
         )}
 
@@ -254,7 +299,11 @@ export function BacktestPanel() {
                   <Stat
                     label="Sharpe"
                     tone={
-                      result.sharpe_ratio > 1 ? "up" : result.sharpe_ratio < 0 ? "down" : "default"
+                      result.sharpe_ratio > 1
+                        ? "up"
+                        : result.sharpe_ratio < 0
+                          ? "down"
+                          : "default"
                     }
                     value={result.sharpe_ratio.toFixed(2)}
                   />
@@ -314,19 +363,33 @@ export function BacktestPanel() {
                           {new Date(t.entry_time).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-text-muted">
-                          {t.exit_time ? new Date(t.exit_time).toLocaleDateString() : "—"}
+                          {t.exit_time
+                            ? new Date(t.exit_time).toLocaleDateString()
+                            : "—"}
                         </TableCell>
-                        <TableCell className="text-right tabular">{t.entry_price.toFixed(2)}</TableCell>
+                        <TableCell className="text-right tabular">
+                          {t.entry_price.toFixed(2)}
+                        </TableCell>
                         <TableCell className="text-right tabular">
                           {t.exit_price?.toFixed(2) ?? "—"}
                         </TableCell>
-                        <TableCell className="text-right tabular">{t.quantity.toFixed(1)}</TableCell>
-                        <TableCell className={cn("text-right tabular", pnlClass(t.pnl ?? 0))}>
+                        <TableCell className="text-right tabular">
+                          {t.quantity.toFixed(1)}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right tabular",
+                            pnlClass(t.pnl ?? 0),
+                          )}
+                        >
                           {t.pnl != null ? fmtCurrency(t.pnl) : "—"}
                         </TableCell>
                         <TableCell className="text-right">
                           {t.pnl_pct != null ? (
-                            <Badge variant={t.pnl_pct >= 0 ? "up" : "down"} className="tabular">
+                            <Badge
+                              variant={t.pnl_pct >= 0 ? "up" : "down"}
+                              className="tabular"
+                            >
                               {fmtPct(t.pnl_pct)}
                             </Badge>
                           ) : (
@@ -346,12 +409,19 @@ export function BacktestPanel() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] text-text-muted uppercase tracking-wider">{label}</label>
+      <label className="text-[10px] text-text-muted uppercase tracking-wider">
+        {label}
+      </label>
       {children}
     </div>
   );
 }
-

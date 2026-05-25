@@ -17,7 +17,9 @@ async function fetchSpark(symbol: string): Promise<number[]> {
   const p = api
     .bars(symbol, "1d", 60)
     .then((r) => {
-      const vals = (r.bars ?? []).map((b: any) => b.close).filter((v: number) => Number.isFinite(v));
+      const vals = (r.bars ?? [])
+        .map((b: any) => b.close)
+        .filter((v: number) => Number.isFinite(v));
       cache.set(symbol, vals);
       return vals;
     })
@@ -36,8 +38,14 @@ interface Props {
   height?: number;
 }
 
-export function WatchlistSparkline({ symbol, width = 100, height = 24 }: Props) {
-  const [values, setValues] = useState<number[] | null>(cache.get(symbol) ?? null);
+export function WatchlistSparkline({
+  symbol,
+  width = 100,
+  height = 24,
+}: Props) {
+  const [values, setValues] = useState<number[] | null>(
+    cache.get(symbol) ?? null,
+  );
 
   useEffect(() => {
     if (values) return;

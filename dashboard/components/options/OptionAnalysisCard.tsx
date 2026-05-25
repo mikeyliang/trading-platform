@@ -70,7 +70,9 @@ export function OptionAnalysisCard({ result }: Props) {
   }, [underlyingBars, offset, N]);
 
   // Hover state lifted up for the top OHLCV-style strip.
-  const [hover, setHover] = useState<{ idx: number; time: number } | null>(null);
+  const [hover, setHover] = useState<{ idx: number; time: number } | null>(
+    null,
+  );
   const display = useMemo(() => {
     const idx = hover?.idx ?? N - 1;
     const px = oc.synthetic_prices[idx];
@@ -109,10 +111,10 @@ export function OptionAnalysisCard({ result }: Props) {
             <div className="flex flex-col gap-1">
               <div className="font-medium">Option price & indicators</div>
               <div>
-                Prices are a <em>Black-Scholes replay</em> using the option&apos;s
-                current IV — not historical option mids. Shows what the
-                contract <em>would</em> have been worth as the underlying moved,
-                if IV stayed at today&apos;s level.
+                Prices are a <em>Black-Scholes replay</em> using the
+                option&apos;s current IV — not historical option mids. Shows
+                what the contract <em>would</em> have been worth as the
+                underlying moved, if IV stayed at today&apos;s level.
               </div>
               <div>
                 IV history isn&apos;t available without paid data; RV30 (rolling
@@ -165,8 +167,7 @@ export function OptionAnalysisCard({ result }: Props) {
             EMA21 <OhlcVal n={display.ema21} />
           </span>
           <span style={{ color: CHART.forecast.meanrev }}>
-            RV30{" "}
-            <OhlcVal n={display.rv30 * 100} />
+            RV30 <OhlcVal n={display.rv30 * 100} />
             <span className="text-text-muted">%</span>
           </span>
           <span
@@ -394,29 +395,45 @@ function Panes({
       lastValueVisible: true,
     });
     rsiSeriesRef.current.createPriceLine({
-      price: 70, color: CHART.down, lineWidth: 1,
-      lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "70",
+      price: 70,
+      color: CHART.down,
+      lineWidth: 1,
+      lineStyle: LineStyle.Dotted,
+      axisLabelVisible: true,
+      title: "70",
     });
     rsiSeriesRef.current.createPriceLine({
-      price: 30, color: CHART.up, lineWidth: 1,
-      lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "30",
+      price: 30,
+      color: CHART.up,
+      lineWidth: 1,
+      lineStyle: LineStyle.Dotted,
+      axisLabelVisible: true,
+      title: "30",
     });
     rsiSeriesRef.current.createPriceLine({
-      price: 50, color: CHART.axis, lineWidth: 1,
-      lineStyle: LineStyle.Solid, axisLabelVisible: false,
+      price: 50,
+      color: CHART.axis,
+      lineWidth: 1,
+      lineStyle: LineStyle.Solid,
+      axisLabelVisible: false,
     });
 
     macdLineRef.current = macdChart.addLineSeries({
-      color: CHART.macd.line, lineWidth: 1,
-      priceLineVisible: false, lastValueVisible: true,
+      color: CHART.macd.line,
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: true,
     });
     macdSignalRef.current = macdChart.addLineSeries({
-      color: CHART.macd.signal, lineWidth: 1,
-      priceLineVisible: false, lastValueVisible: false,
+      color: CHART.macd.signal,
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
     });
     macdHistRef.current = macdChart.addHistogramSeries({
       priceFormat: { type: "price", precision: 4, minMove: 0.0001 },
-      priceLineVisible: false, lastValueVisible: false,
+      priceLineVisible: false,
+      lastValueVisible: false,
     });
 
     // sync time-scale
@@ -432,10 +449,18 @@ function Panes({
         syncing = false;
       }
     };
-    priceChart.timeScale().subscribeVisibleLogicalRangeChange(syncRange(priceChart));
-    volChart.timeScale().subscribeVisibleLogicalRangeChange(syncRange(volChart));
-    rsiChart.timeScale().subscribeVisibleLogicalRangeChange(syncRange(rsiChart));
-    macdChart.timeScale().subscribeVisibleLogicalRangeChange(syncRange(macdChart));
+    priceChart
+      .timeScale()
+      .subscribeVisibleLogicalRangeChange(syncRange(priceChart));
+    volChart
+      .timeScale()
+      .subscribeVisibleLogicalRangeChange(syncRange(volChart));
+    rsiChart
+      .timeScale()
+      .subscribeVisibleLogicalRangeChange(syncRange(rsiChart));
+    macdChart
+      .timeScale()
+      .subscribeVisibleLogicalRangeChange(syncRange(macdChart));
 
     const moveOthers = (
       others: { chart: IChartApi; series: ISeriesApi<any> }[],
@@ -446,7 +471,9 @@ function Panes({
         try {
           if (time == null) c.clearCrosshairPosition();
           else c.setCrosshairPosition(NaN, time, series);
-        } catch { /* */ }
+        } catch {
+          /* */
+        }
       }
     };
     priceChart.subscribeCrosshairMove((p: MouseEventParams) => {
@@ -459,7 +486,10 @@ function Panes({
         ],
         t,
       );
-      if (t == null) { onHoverChange(null); return; }
+      if (t == null) {
+        onHoverChange(null);
+        return;
+      }
       const idx = timeIndex.get(t);
       if (idx != null) onHoverChange({ idx, time: t });
     });
@@ -507,7 +537,9 @@ function Panes({
         ] as const) {
           try {
             c.applyOptions({ width: el.clientWidth, height: el.clientHeight });
-          } catch { /* */ }
+          } catch {
+            /* */
+          }
         }
       });
     });
@@ -533,10 +565,26 @@ function Panes({
       volChartRef.current = null;
       rsiChartRef.current = null;
       macdChartRef.current = null;
-      try { priceChart.remove(); } catch { /* */ }
-      try { volChart.remove(); } catch { /* */ }
-      try { rsiChart.remove(); } catch { /* */ }
-      try { macdChart.remove(); } catch { /* */ }
+      try {
+        priceChart.remove();
+      } catch {
+        /* */
+      }
+      try {
+        volChart.remove();
+      } catch {
+        /* */
+      }
+      try {
+        rsiChart.remove();
+      } catch {
+        /* */
+      }
+      try {
+        macdChart.remove();
+      } catch {
+        /* */
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -660,7 +708,10 @@ function Panes({
           { color: CHART.macd.line, label: "macd" },
           { color: CHART.macd.signal, label: "signal" },
         ]}
-        rightTone={tonedDelta(macd[macd.length - 1], macdSignal[macdSignal.length - 1])}
+        rightTone={tonedDelta(
+          macd[macd.length - 1],
+          macdSignal[macdSignal.length - 1],
+        )}
         containerRef={macdContainerRef}
       />
     </>
@@ -684,19 +735,30 @@ function Subpane({
   title?: string;
 }) {
   return (
-    <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }} title={title}>
+    <div
+      className="border-t border-border bg-bg shrink-0"
+      style={{ height: 140 }}
+      title={title}
+    >
       <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+        <span className="text-[10px] uppercase tracking-wider text-text-muted">
+          {label}
+        </span>
         <span className="text-[10px] tabular text-text-muted">{params}</span>
         <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
           {legend.map((l) => (
             <span key={l.label} className="flex items-center gap-1">
-              <span className="w-2 h-0.5 inline-block" style={{ backgroundColor: l.color }} />
+              <span
+                className="w-2 h-0.5 inline-block"
+                style={{ backgroundColor: l.color }}
+              />
               {l.label}
             </span>
           ))}
           {rightTone && (
-            <span className={cn("font-medium tabular", rightTone.cls)}>{rightTone.value}</span>
+            <span className={cn("font-medium tabular", rightTone.cls)}>
+              {rightTone.value}
+            </span>
           )}
         </div>
       </div>
@@ -714,7 +776,12 @@ function tonedRv30VsIv(rv30: number | undefined, currentIv: number) {
   const ivPct = currentIv * 100;
   const ratio = ivPct > 0 && rvPct > 0 ? ivPct / rvPct : 1;
   const label = ratio >= 1.3 ? "rich" : ratio <= 0.8 ? "cheap" : "fair";
-  const cls = ratio >= 1.3 ? "text-down" : ratio <= 0.8 ? "text-up" : "text-text-secondary";
+  const cls =
+    ratio >= 1.3
+      ? "text-down"
+      : ratio <= 0.8
+        ? "text-up"
+        : "text-text-secondary";
   return {
     value: `RV ${rvPct.toFixed(0)}% / IV ${ivPct.toFixed(0)}% · ${label}`,
     cls,
@@ -724,7 +791,8 @@ function tonedRv30VsIv(rv30: number | undefined, currentIv: number) {
 function tonedLast(series: number[], hi: number, lo: number) {
   const v = series[series.length - 1];
   if (!Number.isFinite(v)) return null;
-  const cls = v >= hi ? "text-down" : v <= lo ? "text-up" : "text-text-secondary";
+  const cls =
+    v >= hi ? "text-down" : v <= lo ? "text-up" : "text-text-secondary";
   return { value: v.toFixed(0), cls };
 }
 function tonedDelta(a: number, b: number) {
@@ -735,14 +803,9 @@ function tonedDelta(a: number, b: number) {
   };
 }
 
-function OhlcVal({
-  n,
-  compact,
-}: {
-  n: number;
-  compact?: boolean;
-}) {
-  if (!Number.isFinite(n)) return <span className="tabular text-text-muted">—</span>;
+function OhlcVal({ n, compact }: { n: number; compact?: boolean }) {
+  if (!Number.isFinite(n))
+    return <span className="tabular text-text-muted">—</span>;
   return (
     <span className="normal-case tracking-normal text-[11px] tabular text-text-secondary">
       {compact ? fmtCompact(n) : fmt(n)}

@@ -9,7 +9,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toaster";
 import { SchemaForm } from "@/components/ui/schema-form";
 import {
@@ -22,16 +26,27 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
-export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; onUpdate: () => void }) {
+export function StrategyCard({
+  strategy,
+  onUpdate,
+}: {
+  strategy: StrategyInfo;
+  onUpdate: () => void;
+}) {
   const [loading, setLoading] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
   const [showParams, setShowParams] = useState(false);
   const [schema, setSchema] = useState<StrategySchema | null>(null);
-  const [params, setParams] = useState<Record<string, unknown>>(strategy.params ?? {});
+  const [params, setParams] = useState<Record<string, unknown>>(
+    strategy.params ?? {},
+  );
 
   useEffect(() => {
     if (showParams && !schema) {
-      api.strategySchema(strategy.id).then(setSchema).catch(() => null);
+      api
+        .strategySchema(strategy.id)
+        .then(setSchema)
+        .catch(() => null);
     }
   }, [showParams, schema, strategy.id]);
 
@@ -40,7 +55,12 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
   const doStart = async () => {
     setLoading(true);
     try {
-      await api.strategyStart(strategy.id, strategy.symbols, strategy.timeframe, strategy.params);
+      await api.strategyStart(
+        strategy.id,
+        strategy.symbols,
+        strategy.timeframe,
+        strategy.params,
+      );
       toast.success(`Strategy ${strategy.name} started`);
       onUpdate();
     } catch (e) {
@@ -79,8 +99,15 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
       // restart with the new params
       try {
         await api.strategyStop(strategy.id);
-        await api.strategyStart(strategy.id, strategy.symbols, strategy.timeframe, params);
-        toast.success("Params updated", { description: "Strategy restarted with new config." });
+        await api.strategyStart(
+          strategy.id,
+          strategy.symbols,
+          strategy.timeframe,
+          params,
+        );
+        toast.success("Params updated", {
+          description: "Strategy restarted with new config.",
+        });
         onUpdate();
       } catch (e) {
         toast.error("Failed to apply params", {
@@ -90,7 +117,9 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
     } else {
       // not running yet — just remember; will apply on next start
       strategy.params = params as any;
-      toast("Params saved", { description: "Will apply when you start the strategy." });
+      toast("Params saved", {
+        description: "Will apply when you start the strategy.",
+      });
     }
   };
 
@@ -98,7 +127,7 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
     <Card
       className={cn(
         "transition-colors",
-        running ? "border-accent/40 bg-surface-2" : "border-border bg-surface"
+        running ? "border-accent/40 bg-surface-2" : "border-border bg-surface",
       )}
     >
       <CardContent className="flex flex-col gap-3 p-4">
@@ -106,9 +135,13 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium text-sm">{strategy.name}</span>
-              <Badge variant={running ? "up" : "muted"}>{strategy.status}</Badge>
+              <Badge variant={running ? "up" : "muted"}>
+                {strategy.status}
+              </Badge>
             </div>
-            <p className="text-xs text-text-muted mt-1">{strategy.description}</p>
+            <p className="text-xs text-text-muted mt-1">
+              {strategy.description}
+            </p>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -154,12 +187,22 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
         <Separator />
 
         <div className="grid grid-cols-3 gap-3">
-          <Metric label="P&L" value={fmtCurrency(strategy.pnl)} tone={strategy.pnl >= 0 ? "up" : "down"} />
+          <Metric
+            label="P&L"
+            value={fmtCurrency(strategy.pnl)}
+            tone={strategy.pnl >= 0 ? "up" : "down"}
+          />
           <Metric label="Trades" value={strategy.trades.toString()} />
           <Metric
             label="Win Rate"
             value={strategy.win_rate.toFixed(1) + "%"}
-            tone={strategy.win_rate >= 50 ? "up" : strategy.win_rate >= 30 ? undefined : "down"}
+            tone={
+              strategy.win_rate >= 50
+                ? "up"
+                : strategy.win_rate >= 30
+                  ? undefined
+                  : "down"
+            }
           />
         </div>
 
@@ -167,7 +210,8 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-text-muted pt-1 border-t border-border/60">
             {Object.entries(strategy.params).map(([k, v]) => (
               <span key={k}>
-                {k}: <span className="text-text-secondary tabular">{String(v)}</span>
+                {k}:{" "}
+                <span className="text-text-secondary tabular">{String(v)}</span>
               </span>
             ))}
           </div>
@@ -179,7 +223,8 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
           <DialogHeader>
             <DialogTitle>Stop {strategy.name}?</DialogTitle>
             <DialogDescription>
-              This will halt the scan loop. Any open positions/spreads remain — they will not be auto-closed.
+              This will halt the scan loop. Any open positions/spreads remain —
+              they will not be auto-closed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -235,11 +280,17 @@ function Metric({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-text-muted uppercase tracking-wider">{label}</span>
+      <span className="text-[10px] text-text-muted uppercase tracking-wider">
+        {label}
+      </span>
       <span
         className={cn(
           "tabular text-sm font-semibold",
-          tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-primary"
+          tone === "up"
+            ? "text-up"
+            : tone === "down"
+              ? "text-down"
+              : "text-text-primary",
         )}
       >
         {value}

@@ -29,20 +29,15 @@ export function Sparkline({
   showLast = false,
 }: SparklineProps) {
   const values = useMemo(
-    () => (Array.isArray(data) && data.length > 0 && typeof data[0] === "number"
-      ? (data as number[])
-      : (data as { value: number }[]).map((d) => d.value)),
-    [data]
+    () =>
+      Array.isArray(data) && data.length > 0 && typeof data[0] === "number"
+        ? (data as number[])
+        : (data as { value: number }[]).map((d) => d.value),
+    [data],
   );
 
   if (values.length < 2) {
-    return (
-      <div
-        className={className}
-        style={{ width, height }}
-        aria-hidden
-      />
-    );
+    return <div className={className} style={{ width, height }} aria-hidden />;
   }
 
   const min = Math.min(...values);
@@ -57,10 +52,19 @@ export function Sparkline({
   });
 
   const positive = values[values.length - 1] >= values[0];
-  const lineColor = stroke ?? (auto ? (positive ? "#22c55e" : "#ef4444") : "#71717a");
-  const fillColor = fill ?? (auto ? (positive ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)") : "rgba(113,113,122,0.1)");
+  const lineColor =
+    stroke ?? (auto ? (positive ? "#22c55e" : "#ef4444") : "#71717a");
+  const fillColor =
+    fill ??
+    (auto
+      ? positive
+        ? "rgba(34,197,94,0.12)"
+        : "rgba(239,68,68,0.12)"
+      : "rgba(113,113,122,0.1)");
 
-  const path = points.map(([x, y], i) => (i === 0 ? `M${x},${y}` : `L${x},${y}`)).join(" ");
+  const path = points
+    .map(([x, y], i) => (i === 0 ? `M${x},${y}` : `L${x},${y}`))
+    .join(" ");
   const area = `${path} L${width},${height} L0,${height} Z`;
 
   const [lastX, lastY] = points[points.length - 1];
@@ -76,9 +80,7 @@ export function Sparkline({
     >
       <path d={area} fill={fillColor} />
       <path d={path} stroke={lineColor} strokeWidth={1.25} fill="none" />
-      {showLast && (
-        <circle cx={lastX} cy={lastY} r={1.75} fill={lineColor} />
-      )}
+      {showLast && <circle cx={lastX} cy={lastY} r={1.75} fill={lineColor} />}
     </svg>
   );
 }

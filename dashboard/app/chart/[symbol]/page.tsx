@@ -12,7 +12,7 @@ import type { PinnedSpread } from "@/components/chart/usePinnedSpreadOverlay";
 
 const TradingChart = dynamic(
   () => import("@/components/chart/TradingChart").then((m) => m.TradingChart),
-  { ssr: false }
+  { ssr: false },
 );
 
 /**
@@ -23,7 +23,11 @@ const TradingChart = dynamic(
  * Positions panel is pre-filtered to the searched symbol; the user can
  * clear the chip to see everything again.
  */
-export default function StockDetailPage({ params }: { params: { symbol: string } }) {
+export default function StockDetailPage({
+  params,
+}: {
+  params: { symbol: string };
+}) {
   const symbol = params.symbol.toUpperCase();
   const sp = useSearchParams();
   const pinnedSpread = parsePinned(sp);
@@ -43,7 +47,13 @@ export default function StockDetailPage({ params }: { params: { symbol: string }
             storageKey="dash:bottom-h"
             defaultBottomHeight={220}
             minPx={100}
-            top={<TradingChart symbol={symbol} pinnedSpread={pinnedSpread} height={undefined} />}
+            top={
+              <TradingChart
+                symbol={symbol}
+                pinnedSpread={pinnedSpread}
+                height={undefined}
+              />
+            }
             bottom={<PositionsPanel symbolFilter={symbol} />}
           />
         </div>
@@ -62,6 +72,7 @@ function parsePinned(sp: URLSearchParams | null): PinnedSpread | null {
   const expiry = sp.get("pinExpiry") || "";
   if (!shortStrike || !longStrike || expiry.length !== 8) return null;
   const tradeType = (sp.get("pinType") || "rut").toLowerCase();
-  const side = (sp.get("pinSide") || "put").toLowerCase() === "call" ? "call" : "put";
+  const side =
+    (sp.get("pinSide") || "put").toLowerCase() === "call" ? "call" : "put";
   return { shortStrike, longStrike, expiry, tradeType, side };
 }

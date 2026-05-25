@@ -17,24 +17,31 @@ export const metadata: Metadata = {
   description: "NautilusTrader-powered trading platform",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className="flex h-screen overflow-hidden bg-bg text-text-primary">
         <TooltipProvider delayDuration={200}>
           <HealthProvider>
             <WSProvider>
-              <Sidebar />
-              <div className="flex flex-col flex-1 min-w-0">
-                <Header />
-                <NotConnectedBanner />
-                <main className="flex-1 overflow-auto min-h-0">{children}</main>
-                <StatusFooter />
-              </div>
-              <CommandPalette />
-              <ChatDrawer />
-              <Toaster />
-              <ErrorBoundary />
+              <ErrorBoundary>
+                <Sidebar />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <Header />
+                  <NotConnectedBanner />
+                  <main className="flex-1 overflow-auto min-h-0">
+                    {children}
+                  </main>
+                  <StatusFooter />
+                </div>
+                <CommandPalette />
+                <ChatDrawer />
+                <Toaster />
+              </ErrorBoundary>
             </WSProvider>
           </HealthProvider>
         </TooltipProvider>

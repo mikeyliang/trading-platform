@@ -31,7 +31,7 @@ export interface OverlayGroup {
 export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
   const activeCount = groups.reduce(
     (n, g) => n + g.toggles.filter((t) => t.active).length,
-    0
+    0,
   );
   return (
     <DropdownMenu.Root>
@@ -42,7 +42,7 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
             "h-6 px-2 text-[11px] tabular tracking-normal rounded-sm transition-colors inline-flex items-center gap-1.5",
             activeCount > 0
               ? "text-text-primary bg-surface-2"
-              : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
+              : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60",
           )}
         >
           <span>Overlays</span>
@@ -63,10 +63,7 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
           {groups.map((g, i) => (
             <div
               key={i}
-              className={cn(
-                "py-2",
-                i > 0 && "border-t border-border/40"
-              )}
+              className={cn("py-2", i > 0 && "border-t border-border/40")}
             >
               {g.title && (
                 <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-text-muted">
@@ -78,11 +75,7 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
                   <OverlayRow key={t.id} toggle={t} />
                 ))}
               </div>
-              {g.extra && (
-                <div className="px-3 pt-2 pb-1">
-                  {g.extra}
-                </div>
-              )}
+              {g.extra && <div className="px-3 pt-2 pb-1">{g.extra}</div>}
             </div>
           ))}
         </DropdownMenu.Content>
@@ -104,7 +97,7 @@ function OverlayRow({ toggle }: { toggle: OverlayToggle }) {
         "relative flex items-center gap-2.5 px-3 h-8 cursor-pointer outline-none transition-colors group",
         toggle.active
           ? "text-text-primary bg-surface-2/60"
-          : "text-text-secondary hover:bg-surface-2/40"
+          : "text-text-secondary hover:bg-surface-2/40",
       )}
     >
       {toggle.active && (
@@ -115,24 +108,26 @@ function OverlayRow({ toggle }: { toggle: OverlayToggle }) {
           size={13}
           className={cn(
             "shrink-0",
-            toggle.active ? "text-accent" : "text-text-muted"
+            toggle.active ? "text-accent" : "text-text-muted",
           )}
         />
       ) : (
         <span
           className={cn(
             "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
-            toggle.active ? "bg-accent" : "bg-text-muted/40 group-hover:bg-text-muted"
+            toggle.active
+              ? "bg-accent"
+              : "bg-text-muted/40 group-hover:bg-text-muted",
           )}
         />
       )}
       <span className="text-[12px] tabular flex-1">{toggle.label}</span>
       {toggle.hint && (
-        <span className="text-[10px] tabular text-text-muted">{toggle.hint}</span>
+        <span className="text-[10px] tabular text-text-muted">
+          {toggle.hint}
+        </span>
       )}
-      {toggle.active && (
-        <Check size={11} className="text-accent shrink-0" />
-      )}
+      {toggle.active && <Check size={11} className="text-accent shrink-0" />}
     </DropdownMenu.Item>
   );
 }

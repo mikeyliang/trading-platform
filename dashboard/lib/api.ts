@@ -1,6 +1,14 @@
 import type {
-  WatchlistItem, Position, Trade, Order, AccountInfo,
-  StrategyInfo, BacktestRequest, BacktestResult, Bar, Quote,
+  WatchlistItem,
+  Position,
+  Trade,
+  Order,
+  AccountInfo,
+  StrategyInfo,
+  BacktestRequest,
+  BacktestResult,
+  Bar,
+  Quote,
 } from "@/types";
 
 // Default to same-origin so the Next.js rewrite proxies everything through
@@ -25,25 +33,40 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function del<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { method: "DELETE", cache: "no-store" });
+  const res = await fetch(`${BASE}${path}`, {
+    method: "DELETE",
+    cache: "no-store",
+  });
   if (!res.ok) throw new Error(`DELETE ${path} failed: ${res.status}`);
   return res.json();
 }
 
 export const api = {
-  health: () => get<{ status: string; ib_connected: boolean; mode: string; mock_mode: boolean }>("/health"),
+  health: () =>
+    get<{
+      status: string;
+      ib_connected: boolean;
+      mode: string;
+      mock_mode: boolean;
+    }>("/health"),
   account: () => get<AccountInfo>("/api/account"),
 
   // market
   bars: (symbol: string, timeframe = "15m", days = 30) =>
     get<{ symbol: string; timeframe: string; bars: Bar[]; source: string }>(
-      `/api/market/bars/${symbol}?timeframe=${timeframe}&days=${days}`
+      `/api/market/bars/${symbol}?timeframe=${timeframe}&days=${days}`,
     ),
   quote: (symbol: string) => get<Quote>(`/api/market/quote/${symbol}`),
   quotes: (symbols: string[]) =>
     get<Quote[]>(`/api/market/quotes?symbols=${symbols.join(",")}`),
-  symbols: () => get<{ symbol: string; name: string; sector: string }[]>("/api/market/symbols"),
-  sectors: () => get<Record<string, { symbol: string; name: string }[]>>("/api/market/sectors"),
+  symbols: () =>
+    get<{ symbol: string; name: string; sector: string }[]>(
+      "/api/market/symbols",
+    ),
+  sectors: () =>
+    get<Record<string, { symbol: string; name: string }[]>>(
+      "/api/market/sectors",
+    ),
   indicators: (symbol: string, timeframe = "15m", days = 30) =>
     get<{
       symbol: string;
@@ -63,27 +86,41 @@ export const api = {
   watchlist: () => get<WatchlistItem[]>("/api/watchlist"),
   watchlistAdd: (symbol: string, sector?: string) =>
     post<WatchlistItem>("/api/watchlist", { symbol, sector }),
-  watchlistRemove: (symbol: string) => del<{ removed: string }>(`/api/watchlist/${symbol}`),
+  watchlistRemove: (symbol: string) =>
+    del<{ removed: string }>(`/api/watchlist/${symbol}`),
 
   // positions / orders / trades / spreads
   positions: () => get<Position[]>("/api/positions"),
   orders: () => get<Order[]>("/api/orders"),
   trades: () => get<Trade[]>("/api/trades"),
   spreads: () => get<Spread[]>("/api/spreads"),
-  strategySnapshot: (id: string) => get<StrategySnapshot>(`/api/strategies/${id}/snapshot`),
+  strategySnapshot: (id: string) =>
+    get<StrategySnapshot>(`/api/strategies/${id}/snapshot`),
 
   // strategies
   strategies: () => get<StrategyInfo[]>("/api/strategies"),
-  strategyStart: (id: string, symbols: string[], timeframe: string, params = {}) =>
-    post<StrategyInfo>(`/api/strategies/${id}/start`, { symbols, timeframe, params }),
+  strategyStart: (
+    id: string,
+    symbols: string[],
+    timeframe: string,
+    params = {},
+  ) =>
+    post<StrategyInfo>(`/api/strategies/${id}/start`, {
+      symbols,
+      timeframe,
+      params,
+    }),
   strategyStop: (id: string) =>
     post<StrategyInfo>(`/api/strategies/${id}/stop`, {}),
-  strategySchema: (id: string) => get<StrategySchema>(`/api/strategies/${id}/schema`),
+  strategySchema: (id: string) =>
+    get<StrategySchema>(`/api/strategies/${id}/schema`),
 
   // backtest
-  runBacktest: (req: BacktestRequest) => post<BacktestResult>("/api/backtest/run", req),
+  runBacktest: (req: BacktestRequest) =>
+    post<BacktestResult>("/api/backtest/run", req),
   backtestResults: () => get<BacktestResult[]>("/api/backtest/results"),
-  backtestResult: (id: string) => get<BacktestResult>(`/api/backtest/results/${id}`),
+  backtestResult: (id: string) =>
+    get<BacktestResult>(`/api/backtest/results/${id}`),
 
   // market microstructure: depth (Level 2), tape (T&S), volume profile
   depthSnapshot: (symbol: string, rows = 10) =>
@@ -92,7 +129,7 @@ export const api = {
     get<TapeSnapshot>(`/api/ticks/${symbol}?n=${n}`),
   volumeProfile: (symbol: string, timeframe = "15m", days = 20, bins = 40) =>
     get<VolumeProfile>(
-      `/api/market/volume-profile/${symbol}?timeframe=${timeframe}&days=${days}&bins=${bins}`
+      `/api/market/volume-profile/${symbol}?timeframe=${timeframe}&days=${days}&bins=${bins}`,
     ),
 
   // options — IBKR is the sole chain source
@@ -102,21 +139,35 @@ export const api = {
     const q = params.toString() ? `?${params.toString()}` : "";
     return get<OptionsChain>(`/api/options/chain/${symbol}${q}`);
   },
-  spreadScan: (symbol = "RUT", side: "put" | "call" | "both" = "put", tradeTypes?: string[], maxPerType = 5) => {
-    const params = new URLSearchParams({ symbol, side, max_per_type: String(maxPerType) });
-    (tradeTypes || []).forEach(t => params.append("trade_types", t));
-    return get<SpreadScanResult>(`/api/options/spreads/scan?${params.toString()}`);
+  spreadScan: (
+    symbol = "RUT",
+    side: "put" | "call" | "both" = "put",
+    tradeTypes?: string[],
+    maxPerType = 5,
+  ) => {
+    const params = new URLSearchParams({
+      symbol,
+      side,
+      max_per_type: String(maxPerType),
+    });
+    (tradeTypes || []).forEach((t) => params.append("trade_types", t));
+    return get<SpreadScanResult>(
+      `/api/options/spreads/scan?${params.toString()}`,
+    );
   },
-  spreadSpecs: () => get<Record<string, SpreadSpec>>("/api/options/spreads/specs"),
+  spreadSpecs: () =>
+    get<Record<string, SpreadSpec>>("/api/options/spreads/specs"),
 
   // Rule One monthly cycle: dates + best candidate per applicable strategy.
   ruleoneCycle: (symbol: string) =>
-    get<RuleOneCycle>(`/api/ruleone/cycle?symbol=${encodeURIComponent(symbol)}`),
+    get<RuleOneCycle>(
+      `/api/ruleone/cycle?symbol=${encodeURIComponent(symbol)}`,
+    ),
 
   // Historical short-strike picks (one per past 3rd-Friday × strategy).
   ruleoneHistory: (symbol: string, limit = 12) =>
     get<RuleOneHistory>(
-      `/api/ruleone/history?symbol=${encodeURIComponent(symbol)}&limit=${limit}`
+      `/api/ruleone/history?symbol=${encodeURIComponent(symbol)}&limit=${limit}`,
     ),
 
   // single-option position analyzer
@@ -135,9 +186,12 @@ export const api = {
       right: params.right,
       quantity: String(params.quantity ?? 1),
     });
-    if (params.entry_price != null) q.set("entry_price", String(params.entry_price));
+    if (params.entry_price != null)
+      q.set("entry_price", String(params.entry_price));
     if (params.timeframe) q.set("timeframe", params.timeframe);
-    return get<OptionAnalyzeResult>(`/api/options/analyze/${params.symbol}?${q.toString()}`);
+    return get<OptionAnalyzeResult>(
+      `/api/options/analyze/${params.symbol}?${q.toString()}`,
+    );
   },
 
   // Lightweight LLM read of the analyze payload — single OpenRouter call,
@@ -149,15 +203,20 @@ export const api = {
 
   // analyzer
   analyze: (symbol: string, timeframe = "1d", days = 60) =>
-    get<AnalyzeResult>(`/api/analyze/${symbol}?timeframe=${timeframe}&days=${days}`),
+    get<AnalyzeResult>(
+      `/api/analyze/${symbol}?timeframe=${timeframe}&days=${days}`,
+    ),
 
   // fundamentals — IBKR-only build returns empty stubs; UI should handle null fields
-  fundamentals: (symbol: string) => get<Fundamentals>(`/api/fundamentals/${symbol}`),
+  fundamentals: (symbol: string) =>
+    get<Fundamentals>(`/api/fundamentals/${symbol}`),
   fundamentalsBulk: (symbols: string[]) =>
     get<Fundamentals[]>(`/api/fundamentals?symbols=${symbols.join(",")}`),
 
   // OKW trade tracker
-  okwTrades: (params: { status?: string; trade_type?: string; limit?: number } = {}) => {
+  okwTrades: (
+    params: { status?: string; trade_type?: string; limit?: number } = {},
+  ) => {
     const q = new URLSearchParams();
     if (params.status) q.set("status", params.status);
     if (params.trade_type) q.set("trade_type", params.trade_type);
@@ -165,9 +224,12 @@ export const api = {
     const s = q.toString();
     return get<{ trades: OkwTrade[] }>(`/api/okw/trades${s ? "?" + s : ""}`);
   },
-  okwCreate: (trade: OkwTradeCreate) => post<OkwTrade>("/api/okw/trades", trade),
-  okwClose: (id: number, payload: { exit_reason: string; realized_pnl?: number | null }) =>
-    post<OkwTrade>(`/api/okw/trades/${id}/close`, payload),
+  okwCreate: (trade: OkwTradeCreate) =>
+    post<OkwTrade>("/api/okw/trades", trade),
+  okwClose: (
+    id: number,
+    payload: { exit_reason: string; realized_pnl?: number | null },
+  ) => post<OkwTrade>(`/api/okw/trades/${id}/close`, payload),
   okwDelete: (id: number) => del<{ ok: boolean }>(`/api/okw/trades/${id}`),
   okwSummary: () => get<OkwSummary>("/api/okw/summary"),
 
@@ -176,13 +238,17 @@ export const api = {
     const q = symbol ? `?symbol=${encodeURIComponent(symbol)}` : "";
     return get<ScanRecord>(`/api/scans/latest${q}`);
   },
-  scansHistory: (params: { limit?: number; symbol?: string; trade_type?: string } = {}) => {
+  scansHistory: (
+    params: { limit?: number; symbol?: string; trade_type?: string } = {},
+  ) => {
     const q = new URLSearchParams();
     if (params.limit) q.set("limit", String(params.limit));
     if (params.symbol) q.set("symbol", params.symbol);
     if (params.trade_type) q.set("trade_type", params.trade_type);
     const s = q.toString();
-    return get<{ scans: ScanRecord[]; count: number }>(`/api/scans/history${s ? "?" + s : ""}`);
+    return get<{ scans: ScanRecord[]; count: number }>(
+      `/api/scans/history${s ? "?" + s : ""}`,
+    );
   },
 
   // exit monitor + monthly pre-flight
@@ -193,12 +259,21 @@ export const api = {
   scheduledJobs: () => get<{ jobs: ScheduledJob[] }>("/api/monitor/jobs"),
 
   // multi-agent debate (TradingAgents)
-  agentsStatus: () => get<{ installed: boolean; has_openai_key: boolean; has_anthropic_key: boolean; has_google_key: boolean }>("/api/agents/status"),
+  agentsStatus: () =>
+    get<{
+      installed: boolean;
+      has_openai_key: boolean;
+      has_anthropic_key: boolean;
+      has_google_key: boolean;
+    }>("/api/agents/status"),
   agentsAnalyze: (symbol: string, trade_date?: string) =>
-    post<{ cached: boolean; symbol: string; trade_date: string; decision: string; final_state: Record<string, string> }>(
-      "/api/agents/analyze", { symbol, trade_date }
-    ),
-
+    post<{
+      cached: boolean;
+      symbol: string;
+      trade_date: string;
+      decision: string;
+      final_state: Record<string, string>;
+    }>("/api/agents/analyze", { symbol, trade_date }),
 };
 
 export interface OkwTrade {
@@ -380,24 +455,24 @@ export interface RuleOneCandidate {
 export interface RuleOneCycle {
   symbol: string;
   underlying: "RUT" | "SPX" | null;
-  cycle_label: string | null;        // e.g. "JUN '26"
-  today: string;                     // YYYY-MM-DD
-  entry_date: string | null;         // YYYY-MM-DD
-  expiry_date: string | null;        // YYYY-MM-DD
+  cycle_label: string | null; // e.g. "JUN '26"
+  today: string; // YYYY-MM-DD
+  entry_date: string | null; // YYYY-MM-DD
+  expiry_date: string | null; // YYYY-MM-DD
   days_to_entry: number | null;
   days_to_expiry: number | null;
-  refreshed_at: string;              // ISO
+  refreshed_at: string; // ISO
   candidates: RuleOneCandidate[];
   scanner_error: string | null;
   reason?: string;
 }
 
 export interface RuleOneHistoryCycle {
-  expiry: string;          // YYYYMMDD
+  expiry: string; // YYYYMMDD
   strategy_id: "rut" | "mars" | "marsmax" | "space";
   short_strike: number;
   side: "put" | "call";
-  ran_at: string;          // ISO timestamp of the scan that picked it
+  ran_at: string; // ISO timestamp of the scan that picked it
   dte_at_scan: number | null;
 }
 
@@ -587,7 +662,7 @@ export interface DepthSnapshot {
   asks: DepthLevel[];
   bid_size_total: number;
   ask_size_total: number;
-  imbalance: number | null;  // (bid - ask) / (bid + ask), in [-1, 1]
+  imbalance: number | null; // (bid - ask) / (bid + ask), in [-1, 1]
   available: boolean;
 }
 
@@ -756,7 +831,12 @@ export interface OptionAnalyzeResult {
   tradingagents_enabled: boolean;
 
   // ---- analytics block ----
-  decay_profile: { days_remaining: number; pnl_flat: number; pnl_up_1s: number; pnl_dn_1s: number }[];
+  decay_profile: {
+    days_remaining: number;
+    pnl_flat: number;
+    pnl_up_1s: number;
+    pnl_dn_1s: number;
+  }[];
   sigma_ranges: {
     sigma1_low: number | null;
     sigma1_high: number | null;
@@ -766,8 +846,8 @@ export interface OptionAnalyzeResult {
     expected_move_pct: number | null;
   };
   probability: {
-    pop: number | null;        // probability of profit at expiry
-    prob_itm: number | null;   // probability of expiring ITM
+    pop: number | null; // probability of profit at expiry
+    prob_itm: number | null; // probability of expiring ITM
     prob_touch: number | null; // probability of touching breakeven before expiry
   };
   liquidity: {
@@ -846,7 +926,10 @@ export interface OptionAnalyzeResult {
         coverage_observed_per_h: Record<string, number>;
       };
     };
-    members: Record<string, { horizons: Record<string, ForecastHorizon>; model?: string }>;
+    members: Record<
+      string,
+      { horizons: Record<string, ForecastHorizon>; model?: string }
+    >;
     agreement: Record<string, number>;
   } | null;
 

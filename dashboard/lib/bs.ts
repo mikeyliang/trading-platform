@@ -22,10 +22,7 @@ function erf(x: number): number {
   const a4 = -1.453152027;
   const a5 = 1.061405429;
   const y =
-    1 -
-    (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) *
-      t *
-      Math.exp(-ax * ax);
+    1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
   return sign * y;
 }
 
@@ -60,12 +57,17 @@ export function bsPrice(
     return Math.max(0, isCall ? s - k : k - s);
   }
   const sqrtT = Math.sqrt(t);
-  const d1 = (Math.log(s / k) + (r - q + (sigma * sigma) / 2) * t) / (sigma * sqrtT);
+  const d1 =
+    (Math.log(s / k) + (r - q + (sigma * sigma) / 2) * t) / (sigma * sqrtT);
   const d2 = d1 - sigma * sqrtT;
   if (isCall) {
-    return s * Math.exp(-q * t) * normCdf(d1) - k * Math.exp(-r * t) * normCdf(d2);
+    return (
+      s * Math.exp(-q * t) * normCdf(d1) - k * Math.exp(-r * t) * normCdf(d2)
+    );
   }
-  return k * Math.exp(-r * t) * normCdf(-d2) - s * Math.exp(-q * t) * normCdf(-d1);
+  return (
+    k * Math.exp(-r * t) * normCdf(-d2) - s * Math.exp(-q * t) * normCdf(-d1)
+  );
 }
 
 export interface PnlInputs {
@@ -105,7 +107,15 @@ export function bsPnl(
 ): number {
   const r = inputs.r ?? 0.05;
   const q = inputs.q ?? 0.0;
-  const price = bsPrice(s, inputs.strike, tRemaining, sigma, r, q, inputs.isCall);
+  const price = bsPrice(
+    s,
+    inputs.strike,
+    tRemaining,
+    sigma,
+    r,
+    q,
+    inputs.isCall,
+  );
   const sign = inputs.isLong ? 1 : -1;
   return sign * (price - inputs.entryPrice) * Math.abs(inputs.quantity) * 100;
 }
@@ -144,7 +154,11 @@ export function expiryIntrinsicCurve(
  * Sample a price axis centered on spot with `range` half-width as a
  * fraction of spot. e.g. range=0.25 → ±25% around spot, 161 samples.
  */
-export function samplePriceAxis(spot: number, range: number, n = 161): number[] {
+export function samplePriceAxis(
+  spot: number,
+  range: number,
+  n = 161,
+): number[] {
   const half = Math.max(0.01, range) * spot;
   const lo = Math.max(0.01, spot - half);
   const hi = spot + half;

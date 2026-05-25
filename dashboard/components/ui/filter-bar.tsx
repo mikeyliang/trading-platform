@@ -34,7 +34,7 @@ export function FilterBar({
     <div
       className={cn(
         "rounded-md border border-border bg-surface flex flex-col",
-        className
+        className,
       )}
     >
       <div className="flex items-center gap-2 px-2 py-1.5 flex-wrap">
@@ -73,7 +73,7 @@ export function FilterBar({
               onClick={() => setOpen((v) => !v)}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-sm border border-border bg-surface-2 hover:bg-surface-3 text-[11px] text-text-secondary px-2 py-1 transition-colors",
-                open && "text-text-primary"
+                open && "text-text-primary",
               )}
               aria-expanded={open}
             >
@@ -85,7 +85,9 @@ export function FilterBar({
         </div>
       </div>
       {advanced && open && (
-        <div className="px-3 py-2 border-t border-border animate-fade-in">{advanced}</div>
+        <div className="px-3 py-2 border-t border-border animate-fade-in">
+          {advanced}
+        </div>
       )}
     </div>
   );

@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api, type OptionAnalyzeResult, type OptionsChain, type OptionAnalyzerTimeframe } from "@/lib/api";
+import {
+  api,
+  type OptionAnalyzeResult,
+  type OptionsChain,
+  type OptionAnalyzerTimeframe,
+} from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,27 +49,41 @@ import {
 } from "@/components/options/AnalyticsPanels";
 import { useChatAvailable } from "@/lib/chat-availability";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { PnlInsights, UnderlyingInsights, OptionInsights } from "@/components/options/ChartInsights";
+import {
+  PnlInsights,
+  UnderlyingInsights,
+  OptionInsights,
+} from "@/components/options/ChartInsights";
 import { AIRead } from "@/components/options/AIRead";
 
 export default function OptionsAnalyzerPage() {
+  return (
+    <Suspense fallback={null}>
+      <OptionsAnalyzerPageInner />
+    </Suspense>
+  );
+}
+
+function OptionsAnalyzerPageInner() {
   const router = useRouter();
   const params = useSearchParams();
 
-  const [symbol, setSymbol] = useState((params?.get("symbol") || "SPY").toUpperCase());
+  const [symbol, setSymbol] = useState(
+    (params?.get("symbol") || "SPY").toUpperCase(),
+  );
   const [pendingSym, setPendingSym] = useState(symbol);
   const [chain, setChain] = useState<OptionsChain | null>(null);
   const [expiry, setExpiry] = useState<string>(params?.get("expiry") || "");
   const [strike, setStrike] = useState<number | null>(
-    params?.get("strike") ? Number(params.get("strike")) : null
+    params?.get("strike") ? Number(params.get("strike")) : null,
   );
   const [right, setRight] = useState<"C" | "P">(
-    (params?.get("right") || "C").toUpperCase() === "P" ? "P" : "C"
+    (params?.get("right") || "C").toUpperCase() === "P" ? "P" : "C",
   );
   const [qty, setQty] = useState<number>(Number(params?.get("qty") || 1));
   const [entry, setEntry] = useState<string>(params?.get("entry") || "");
   const [timeframe, setTimeframe] = useState<OptionAnalyzerTimeframe>(
-    (params?.get("tf") as OptionAnalyzerTimeframe) || "1d"
+    (params?.get("tf") as OptionAnalyzerTimeframe) || "1d",
   );
   // True until the user manually picks a TF. While auto, we honor the
   // backend's DTE-recommended TF every time it changes (e.g., switching from
@@ -106,7 +125,8 @@ export default function OptionsAnalyzerPage() {
             .slice()
             .sort(
               (a, b) =>
-                Math.abs(a - c.underlying_price!) - Math.abs(b - c.underlying_price!)
+                Math.abs(a - c.underlying_price!) -
+                Math.abs(b - c.underlying_price!),
             );
           if (all[0] != null) setStrike(all[0]);
         }
@@ -131,7 +151,8 @@ export default function OptionsAnalyzerPage() {
         expiry,
         right,
         quantity: qty,
-        entry_price: entryNum != null && !isNaN(entryNum) ? entryNum : undefined,
+        entry_price:
+          entryNum != null && !isNaN(entryNum) ? entryNum : undefined,
         timeframe,
       })
       .then((res) => {
@@ -139,13 +160,27 @@ export default function OptionsAnalyzerPage() {
         // Auto-sync chart TF to DTE-recommended value while in auto mode.
         // The backend picks 5m for 0DTE, 1d for 240DTE, etc. User can still
         // override by picking from the TF pills (which calls setTimeframeManual).
-        if (tfIsAuto && res.recommended_chart_tf && res.recommended_chart_tf !== timeframe) {
+        if (
+          tfIsAuto &&
+          res.recommended_chart_tf &&
+          res.recommended_chart_tf !== timeframe
+        ) {
           setTimeframe(res.recommended_chart_tf);
         }
       })
       .catch(() => setResult(null))
       .finally(() => setLoading(false));
-  }, [symbol, strike, expiry, right, qty, entry, timeframe, canAnalyze, tfIsAuto]);
+  }, [
+    symbol,
+    strike,
+    expiry,
+    right,
+    qty,
+    entry,
+    timeframe,
+    canAnalyze,
+    tfIsAuto,
+  ]);
 
   const askAI = () => {
     if (!result) return;
@@ -159,7 +194,7 @@ export default function OptionsAnalyzerPage() {
     window.dispatchEvent(
       new CustomEvent("copilot:prefill", {
         detail: { prompt: buildAIPrompt(result) },
-      })
+      }),
     );
   };
 
@@ -175,13 +210,21 @@ export default function OptionsAnalyzerPage() {
     // agent needs is reachable from the analyze endpoint by symbol/strike/expiry.
     const snapshot = {
       position: {
-        symbol: result.symbol, strike: result.strike, expiry: result.expiry,
-        right: result.right, quantity: result.quantity, is_long: result.is_long,
+        symbol: result.symbol,
+        strike: result.strike,
+        expiry: result.expiry,
+        right: result.right,
+        quantity: result.quantity,
+        is_long: result.is_long,
         entry_price: result.option.entry_price,
       },
       market: {
-        spot: result.spot, distance_pct: result.distance_pct, dte: result.dte,
-        mid: result.option.mid, bid: result.option.bid, ask: result.option.ask,
+        spot: result.spot,
+        distance_pct: result.distance_pct,
+        dte: result.dte,
+        mid: result.option.mid,
+        bid: result.option.bid,
+        ask: result.option.ask,
         iv: result.option.iv,
       },
       greeks: result.greeks,
@@ -192,8 +235,10 @@ export default function OptionsAnalyzerPage() {
       underlying_trend: {
         rsi: result.underlying.rsi,
         trend_score: result.underlying.trend_score,
-        ema9: result.underlying.ema9, ema21: result.underlying.ema21,
-        ema50: result.underlying.ema50, ema200: result.underlying.ema200,
+        ema9: result.underlying.ema9,
+        ema21: result.underlying.ema21,
+        ema50: result.underlying.ema50,
+        ema200: result.underlying.ema200,
       },
       chart_timeframe: result.chart.timeframe,
       forecast_5d: result.forecast
@@ -210,7 +255,9 @@ export default function OptionsAnalyzerPage() {
     };
     const text =
       `${result.narrative}\n\n` +
-      "```json\n" + JSON.stringify(snapshot, null, 2) + "\n```";
+      "```json\n" +
+      JSON.stringify(snapshot, null, 2) +
+      "\n```";
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -218,8 +265,11 @@ export default function OptionsAnalyzerPage() {
     } catch {
       // some browsers block clipboard in non-https; fall back to a textarea trick
       const ta = document.createElement("textarea");
-      ta.value = text; document.body.appendChild(ta);
-      ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     }
@@ -252,13 +302,20 @@ export default function OptionsAnalyzerPage() {
             </form>
             {spot != null && (
               <span className="text-[10px] text-text-muted">
-                spot <span className="text-text-primary tabular font-medium">${spot.toFixed(2)}</span>
+                spot{" "}
+                <span className="text-text-primary tabular font-medium">
+                  ${spot.toFixed(2)}
+                </span>
               </span>
             )}
           </div>
 
           <Field label="Expiry">
-            <Select value={expiry} onValueChange={setExpiry} disabled={!chain || chain.expirations.length === 0}>
+            <Select
+              value={expiry}
+              onValueChange={setExpiry}
+              disabled={!chain || chain.expirations.length === 0}
+            >
               <SelectTrigger className="h-8 w-32 tabular text-xs">
                 <SelectValue placeholder="—" />
               </SelectTrigger>
@@ -280,7 +337,11 @@ export default function OptionsAnalyzerPage() {
                   const idx = strikes.findIndex((s) => s === strike);
                   if (idx > 0) setStrike(strikes[idx - 1]);
                 }}
-                disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) <= 0}
+                disabled={
+                  strikes.length === 0 ||
+                  strike == null ||
+                  strikes.indexOf(strike) <= 0
+                }
                 className="px-2 border border-border rounded-l-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs tabular"
                 title="Lower strike"
               >
@@ -296,10 +357,18 @@ export default function OptionsAnalyzerPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {strikes.map((s) => {
-                    const atm = spot != null && Math.abs(s - spot) === Math.min(...strikes.map((k) => Math.abs(k - spot!)));
+                    const atm =
+                      spot != null &&
+                      Math.abs(s - spot) ===
+                        Math.min(...strikes.map((k) => Math.abs(k - spot!)));
                     return (
-                      <SelectItem key={s} value={String(s)} className="tabular text-xs">
-                        {s}{atm ? " · ATM" : ""}
+                      <SelectItem
+                        key={s}
+                        value={String(s)}
+                        className="tabular text-xs"
+                      >
+                        {s}
+                        {atm ? " · ATM" : ""}
                       </SelectItem>
                     );
                   })}
@@ -309,9 +378,14 @@ export default function OptionsAnalyzerPage() {
                 onClick={() => {
                   if (strike == null || strikes.length === 0) return;
                   const idx = strikes.findIndex((s) => s === strike);
-                  if (idx >= 0 && idx < strikes.length - 1) setStrike(strikes[idx + 1]);
+                  if (idx >= 0 && idx < strikes.length - 1)
+                    setStrike(strikes[idx + 1]);
                 }}
-                disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) >= strikes.length - 1}
+                disabled={
+                  strikes.length === 0 ||
+                  strike == null ||
+                  strikes.indexOf(strike) >= strikes.length - 1
+                }
                 className="px-2 border border-border rounded-r-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs tabular"
                 title="Higher strike"
               >
@@ -326,7 +400,9 @@ export default function OptionsAnalyzerPage() {
                 onClick={() => setRight("C")}
                 className={cn(
                   "px-3 text-xs font-medium transition-colors",
-                  right === "C" ? "bg-up/15 text-up" : "text-text-muted hover:bg-surface-2"
+                  right === "C"
+                    ? "bg-up/15 text-up"
+                    : "text-text-muted hover:bg-surface-2",
                 )}
               >
                 CALL
@@ -335,7 +411,9 @@ export default function OptionsAnalyzerPage() {
                 onClick={() => setRight("P")}
                 className={cn(
                   "px-3 text-xs font-medium border-l border-border transition-colors",
-                  right === "P" ? "bg-down/15 text-down" : "text-text-muted hover:bg-surface-2"
+                  right === "P"
+                    ? "bg-down/15 text-down"
+                    : "text-text-muted hover:bg-surface-2",
                 )}
               >
                 PUT
@@ -364,9 +442,16 @@ export default function OptionsAnalyzerPage() {
           </Field>
 
           <div className="ml-auto flex items-center gap-2">
-            {loading && <Loader2 size={14} className="animate-spin text-text-muted" />}
+            {loading && (
+              <Loader2 size={14} className="animate-spin text-text-muted" />
+            )}
             {result && (
-              <Button variant="outline" size="sm" onClick={copyAISnapshot} title="Copy LLM-ready position snapshot">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyAISnapshot}
+                title="Copy LLM-ready position snapshot"
+              >
                 {copied ? <ClipboardCheck /> : <Clipboard />}
                 {copied ? "Copied" : "AI Snapshot"}
               </Button>
@@ -421,7 +506,13 @@ function AnalysisBody({
 }) {
   const advice = result.advice;
   const tone =
-    advice.score >= 40 ? "up" : advice.score <= -40 ? "down" : Math.abs(advice.score) >= 15 ? "warning" : "muted";
+    advice.score >= 40
+      ? "up"
+      : advice.score <= -40
+        ? "down"
+        : Math.abs(advice.score) >= 15
+          ? "warning"
+          : "muted";
   const TrendIcon = advice.score >= 0 ? TrendingUp : TrendingDown;
   const ivPctOfRv = result.vol_context.iv_to_rv_ratio;
 
@@ -429,7 +520,14 @@ function AnalysisBody({
   // visible without scrolling — used to live in the right-hand side rail.
   const pop = result.probability.pop;
   const popPct = pop != null ? `${(pop * 100).toFixed(0)}%` : "—";
-  const popTone = pop == null ? undefined : pop >= 0.6 ? "up" : pop >= 0.4 ? "warning" : "down";
+  const popTone =
+    pop == null
+      ? undefined
+      : pop >= 0.6
+        ? "up"
+        : pop >= 0.4
+          ? "warning"
+          : "down";
   const emPct = result.sigma_ranges.expected_move_pct;
   const emAbs = result.sigma_ranges.expected_move_abs;
 
@@ -446,13 +544,15 @@ function AnalysisBody({
           above P/L profile has small height". */}
       <div className="relative rounded-md border border-border bg-surface px-5 py-4 overflow-hidden shrink-0">
         {/* Side rule — tone color, full-height. */}
-        <div className={cn(
-          "absolute left-0 top-0 bottom-0 w-1",
-          tone === "up" && "bg-up",
-          tone === "down" && "bg-down",
-          tone === "warning" && "bg-warning",
-          tone === "muted" && "bg-border",
-        )} />
+        <div
+          className={cn(
+            "absolute left-0 top-0 bottom-0 w-1",
+            tone === "up" && "bg-up",
+            tone === "down" && "bg-down",
+            tone === "warning" && "bg-warning",
+            tone === "muted" && "bg-border",
+          )}
+        />
 
         <div className="flex items-center gap-4">
           {/* Prominent score block — big tabular number with explicit
@@ -473,26 +573,31 @@ function AnalysisBody({
               score
             </span>
             <div className="flex items-baseline gap-0.5">
-              <span className={cn(
-                "text-[26px] leading-none font-bold tabular tracking-tight",
-                tone === "up" && "text-up",
-                tone === "down" && "text-down",
-                tone === "warning" && "text-warning",
-                tone === "muted" && "text-text-secondary",
-              )}>
-                {advice.score > 0 ? "+" : ""}{advice.score}
+              <span
+                className={cn(
+                  "text-[26px] leading-none font-bold tabular tracking-tight",
+                  tone === "up" && "text-up",
+                  tone === "down" && "text-down",
+                  tone === "warning" && "text-warning",
+                  tone === "muted" && "text-text-secondary",
+                )}
+              >
+                {advice.score > 0 ? "+" : ""}
+                {advice.score}
               </span>
               <span className="text-[10px] tabular text-text-muted leading-none">
                 /100
               </span>
             </div>
-            <span className={cn(
-              "px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider font-semibold inline-flex items-center gap-1",
-              tone === "up" && "bg-up/15 text-up",
-              tone === "down" && "bg-down/15 text-down",
-              tone === "warning" && "bg-warning/15 text-warning",
-              tone === "muted" && "bg-surface-2 text-text-secondary",
-            )}>
+            <span
+              className={cn(
+                "px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider font-semibold inline-flex items-center gap-1",
+                tone === "up" && "bg-up/15 text-up",
+                tone === "down" && "bg-down/15 text-down",
+                tone === "warning" && "bg-warning/15 text-warning",
+                tone === "muted" && "bg-surface-2 text-text-secondary",
+              )}
+            >
               <TrendIcon size={10} />
               {advice.label}
             </span>
@@ -531,37 +636,87 @@ function AnalysisBody({
             Avoids the flex-wrap chaos where 8 inline label-value pairs
             wrapped differently each width. */}
         <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-4 md:grid-cols-8 gap-x-4 gap-y-2">
-          <HeroMetric label="Spot" value={`$${result.spot.toFixed(2)}`}
-            hint="Live underlying price." />
-          <HeroMetric label="Mid"
-            value={result.option.mid != null ? `$${result.option.mid.toFixed(2)}` : "—"}
-            hint={result.option.bid != null && result.option.ask != null
-              ? `bid ${result.option.bid.toFixed(2)} / ask ${result.option.ask.toFixed(2)}`
-              : "Midpoint of bid/ask"} />
-          <HeroMetric label="IV"
+          <HeroMetric
+            label="Spot"
+            value={`$${result.spot.toFixed(2)}`}
+            hint="Live underlying price."
+          />
+          <HeroMetric
+            label="Mid"
+            value={
+              result.option.mid != null
+                ? `$${result.option.mid.toFixed(2)}`
+                : "—"
+            }
+            hint={
+              result.option.bid != null && result.option.ask != null
+                ? `bid ${result.option.bid.toFixed(2)} / ask ${result.option.ask.toFixed(2)}`
+                : "Midpoint of bid/ask"
+            }
+          />
+          <HeroMetric
+            label="IV"
             value={`${(result.option.iv * 100).toFixed(1)}%`}
-            tone={ivPctOfRv != null && ivPctOfRv >= 1.3 ? "down" : ivPctOfRv != null && ivPctOfRv <= 0.8 ? "up" : undefined}
-            hint={ivPctOfRv != null ? `${ivPctOfRv.toFixed(2)}× RV30 — ${ivPctOfRv >= 1.3 ? "rich" : ivPctOfRv <= 0.8 ? "cheap" : "fair"}` : "Implied volatility"} />
-          <HeroMetric label="DTE" value={`${result.dte}d`}
-            tone={result.dte <= 7 ? "down" : result.dte <= 21 ? "warning" : undefined}
-            hint="Days to expiration. ≤7d = gamma+theta zone." />
-          <HeroMetric label="Δ-K"
+            tone={
+              ivPctOfRv != null && ivPctOfRv >= 1.3
+                ? "down"
+                : ivPctOfRv != null && ivPctOfRv <= 0.8
+                  ? "up"
+                  : undefined
+            }
+            hint={
+              ivPctOfRv != null
+                ? `${ivPctOfRv.toFixed(2)}× RV30 — ${ivPctOfRv >= 1.3 ? "rich" : ivPctOfRv <= 0.8 ? "cheap" : "fair"}`
+                : "Implied volatility"
+            }
+          />
+          <HeroMetric
+            label="DTE"
+            value={`${result.dte}d`}
+            tone={
+              result.dte <= 7
+                ? "down"
+                : result.dte <= 21
+                  ? "warning"
+                  : undefined
+            }
+            hint="Days to expiration. ≤7d = gamma+theta zone."
+          />
+          <HeroMetric
+            label="Δ-K"
             value={`${result.distance_pct > 0 ? "+" : ""}${result.distance_pct.toFixed(2)}%`}
             tone={Math.abs(result.distance_pct) < 2 ? "warning" : undefined}
-            hint={`${result.distance_pct >= 0 ? "above" : "below"} strike`} />
-          <HeroMetric label="BE" value={`$${result.breakeven.toFixed(2)}`}
-            hint={`${result.spot ? (((result.breakeven - result.spot) / result.spot) * 100).toFixed(1) : "—"}% from spot`} />
-          <HeroMetric label="POP" value={popPct} tone={popTone}
-            hint={`P(ITM) ${result.probability.prob_itm != null ? (result.probability.prob_itm * 100).toFixed(0) + "%" : "—"}`} />
-          <HeroMetric label="±1σ"
+            hint={`${result.distance_pct >= 0 ? "above" : "below"} strike`}
+          />
+          <HeroMetric
+            label="BE"
+            value={`$${result.breakeven.toFixed(2)}`}
+            hint={`${result.spot ? (((result.breakeven - result.spot) / result.spot) * 100).toFixed(1) : "—"}% from spot`}
+          />
+          <HeroMetric
+            label="POP"
+            value={popPct}
+            tone={popTone}
+            hint={`P(ITM) ${result.probability.prob_itm != null ? (result.probability.prob_itm * 100).toFixed(0) + "%" : "—"}`}
+          />
+          <HeroMetric
+            label="±1σ"
             value={emPct != null ? `±${emPct.toFixed(1)}%` : "—"}
-            hint={emAbs != null ? `±$${emAbs.toFixed(2)} by expiry` : "Expected 1σ move"} />
+            hint={
+              emAbs != null
+                ? `±$${emAbs.toFixed(2)} by expiry`
+                : "Expected 1σ move"
+            }
+          />
         </div>
       </div>
 
       {/* ── P/L PROFILE (the visual) + WHY (audit column) ──────────────
           Section announced by typography header, not by an outer Card. */}
-      <SectionHeader title="P/L Profile" hint={`${result.is_long ? "long" : "short"} ${Math.abs(result.quantity)}×`} />
+      <SectionHeader
+        title="P/L Profile"
+        hint={`${result.is_long ? "long" : "short"} ${Math.abs(result.quantity)}×`}
+      />
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3 shrink-0">
         <div className="rounded-md border border-border bg-surface overflow-hidden">
           <div className="p-3">
@@ -586,14 +741,28 @@ function AnalysisBody({
               height={440}
             />
             <div className="grid grid-cols-3 mt-3 pt-2 border-t border-border/40 text-[10px] tabular">
-              <RiskCell label="Max profit"
-                value={result.max_profit != null && isFinite(result.max_profit) ? fmtCurrency(result.max_profit) : "∞"}
-                tone="up" />
-              <RiskCell label="Max loss"
-                value={result.max_loss != null && isFinite(result.max_loss) ? fmtCurrency(result.max_loss) : "−∞"}
-                tone="down" />
-              <RiskCell label="R / R"
-                value={rrRatio(result.max_profit, result.max_loss)} />
+              <RiskCell
+                label="Max profit"
+                value={
+                  result.max_profit != null && isFinite(result.max_profit)
+                    ? fmtCurrency(result.max_profit)
+                    : "∞"
+                }
+                tone="up"
+              />
+              <RiskCell
+                label="Max loss"
+                value={
+                  result.max_loss != null && isFinite(result.max_loss)
+                    ? fmtCurrency(result.max_loss)
+                    : "−∞"
+                }
+                tone="down"
+              />
+              <RiskCell
+                label="R / R"
+                value={rrRatio(result.max_profit, result.max_loss)}
+              />
             </div>
           </div>
         </div>
@@ -609,27 +778,38 @@ function AnalysisBody({
           <SignalInputsPanel result={result} />
           <div className="rounded-md border border-border bg-surface flex-1">
             <div className="flex items-baseline gap-2 px-3 h-7 border-b border-border/60">
-              <span className="text-[10px] uppercase tracking-wider text-text-muted">Rationale</span>
+              <span className="text-[10px] uppercase tracking-wider text-text-muted">
+                Rationale
+              </span>
               <span className="ml-auto text-[10px] tabular text-text-muted">
-                {advice.notes.length} {advice.notes.length === 1 ? "note" : "notes"}
+                {advice.notes.length}{" "}
+                {advice.notes.length === 1 ? "note" : "notes"}
               </span>
             </div>
             <div className="p-3">
               <ul className="space-y-1.5">
                 {advice.notes.map((n, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[11px] text-text-secondary leading-snug">
-                    <ArrowRight size={11} className={cn(
-                      "shrink-0 mt-0.5",
-                      tone === "up" && "text-up",
-                      tone === "down" && "text-down",
-                      tone === "warning" && "text-warning",
-                      tone === "muted" && "text-text-muted",
-                    )} />
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-[11px] text-text-secondary leading-snug"
+                  >
+                    <ArrowRight
+                      size={11}
+                      className={cn(
+                        "shrink-0 mt-0.5",
+                        tone === "up" && "text-up",
+                        tone === "down" && "text-down",
+                        tone === "warning" && "text-warning",
+                        tone === "muted" && "text-text-muted",
+                      )}
+                    />
                     <span>{n}</span>
                   </li>
                 ))}
                 {advice.notes.length === 0 && (
-                  <li className="text-[11px] text-text-muted">No specific concerns flagged.</li>
+                  <li className="text-[11px] text-text-muted">
+                    No specific concerns flagged.
+                  </li>
                 )}
               </ul>
             </div>
@@ -641,7 +821,10 @@ function AnalysisBody({
           Chart on the left, insights rail on the right. Side-by-side
           means the trader reads the chart's interpretation while still
           looking at the candles — no scroll-back-to-context tax. */}
-      <SectionHeader title="Underlying" hint={`${result.symbol} · ${timeframe}`} />
+      <SectionHeader
+        title="Underlying"
+        hint={`${result.symbol} · ${timeframe}`}
+      />
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3 shrink-0">
         <UnderlyingAnalysisCard
           result={result}
@@ -655,7 +838,10 @@ function AnalysisBody({
       </div>
 
       {/* ── OPTION CONTRACT ─────────────────────────────────────────── */}
-      <SectionHeader title="Option contract" hint={`${result.strike}${result.right} · BS-replay`} />
+      <SectionHeader
+        title="Option contract"
+        hint={`${result.strike}${result.right} · BS-replay`}
+      />
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3 shrink-0">
         <OptionAnalysisCard result={result} />
         <div className="rounded-md border border-border bg-surface overflow-hidden">
@@ -694,7 +880,10 @@ function AnalysisBody({
 //     color applies to the value only; label stays muted. The hint lives
 //     in the title attribute so the cell stays a single number on screen.
 function HeroMetric({
-  label, value, tone, hint,
+  label,
+  value,
+  tone,
+  hint,
 }: {
   label: string;
   value: React.ReactNode;
@@ -706,13 +895,15 @@ function HeroMetric({
       <span className="text-[10px] uppercase tracking-wider text-text-muted leading-none">
         {label}
       </span>
-      <span className={cn(
-        "text-[14px] font-semibold tabular leading-tight truncate",
-        tone === "up" && "text-up",
-        tone === "down" && "text-down",
-        tone === "warning" && "text-warning",
-        !tone && "text-text-primary",
-      )}>
+      <span
+        className={cn(
+          "text-[14px] font-semibold tabular leading-tight truncate",
+          tone === "up" && "text-up",
+          tone === "down" && "text-down",
+          tone === "warning" && "text-warning",
+          !tone && "text-text-primary",
+        )}
+      >
         {value}
       </span>
     </div>
@@ -724,7 +915,13 @@ function HeroMetric({
 //     accent rule, optional metadata on the right. Mid-density: bigger
 //     than the previous 10px hairline (which got lost in the page flow)
 //     but still typography-only — no card chrome.
-function SectionHeader({ title, hint }: { title: string; hint?: React.ReactNode }) {
+function SectionHeader({
+  title,
+  hint,
+}: {
+  title: string;
+  hint?: React.ReactNode;
+}) {
   return (
     <div className="flex items-center gap-3 pl-2.5 border-l-2 border-accent">
       <span className="text-[12px] uppercase tracking-wider text-text-primary font-semibold leading-none">
@@ -801,28 +998,45 @@ function AnalyticsTabs({ result }: { result: OptionAnalyzeResult }) {
   );
 }
 
-function RiskCell({ label, value, tone }: {
-  label: string; value: React.ReactNode;
+function RiskCell({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: React.ReactNode;
   tone?: "up" | "down";
 }) {
   return (
     <div className="flex items-baseline justify-center gap-2 min-w-0">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
-      <span className={cn(
-        "text-[12px] font-semibold tabular",
-        tone === "up" && "text-up",
-        tone === "down" && "text-down",
-        !tone && "text-text-primary"
-      )}>{value}</span>
+      <span className="text-[10px] uppercase tracking-wider text-text-muted">
+        {label}
+      </span>
+      <span
+        className={cn(
+          "text-[12px] font-semibold tabular",
+          tone === "up" && "text-up",
+          tone === "down" && "text-down",
+          !tone && "text-text-primary",
+        )}
+      >
+        {value}
+      </span>
     </div>
   );
 }
 
 function rrRatio(maxP: number | null, maxL: number | null): string {
-  if (maxP == null || maxL == null || !isFinite(maxP) || !isFinite(maxL) || maxL === 0) return "—";
+  if (
+    maxP == null ||
+    maxL == null ||
+    !isFinite(maxP) ||
+    !isFinite(maxL) ||
+    maxL === 0
+  )
+    return "—";
   return `${(Math.abs(maxP) / Math.abs(maxL)).toFixed(2)} : 1`;
 }
-
 
 function AnalysisSkeleton() {
   // Shape-matches AnalysisBody so layout doesn't shift when the real data arrives.
@@ -858,7 +1072,9 @@ function AnalysisSkeleton() {
           <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60">
             <div className="skeleton h-2 w-20" />
           </div>
-          <div className="p-3"><div className="skeleton h-[440px] w-full" /></div>
+          <div className="p-3">
+            <div className="skeleton h-[440px] w-full" />
+          </div>
         </div>
         <div className="flex flex-col gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -886,7 +1102,10 @@ function AnalysisSkeleton() {
         </div>
         <div className="p-3 grid grid-cols-4 gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded border border-border p-3 flex flex-col gap-2">
+            <div
+              key={i}
+              className="rounded border border-border p-3 flex flex-col gap-2"
+            >
               <div className="skeleton h-5 w-8" />
               <div className="skeleton h-3 w-16" />
               <div className="skeleton h-2 w-20" />
@@ -917,10 +1136,18 @@ function AnalysisSkeleton() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-[9px] uppercase tracking-wider text-text-muted">
+        {label}
+      </span>
       {children}
     </div>
   );

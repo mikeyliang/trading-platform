@@ -26,7 +26,12 @@ interface Props {
 }
 
 // Forecast members. Order is the legend order on screen.
-const MEMBER_KEYS = ["chronos", "momentum", "mean_reversion", "martingale"] as const;
+const MEMBER_KEYS = [
+  "chronos",
+  "momentum",
+  "mean_reversion",
+  "martingale",
+] as const;
 type MemberKey = (typeof MEMBER_KEYS)[number];
 const MEMBER_LABELS: Record<MemberKey, string> = {
   chronos: "Chronos",
@@ -96,8 +101,13 @@ export function UnderlyingAnalysisCard({
   );
   const [coneHorizon, setConeHorizon] = useState<number>(5);
   useEffect(() => {
-    if (availableHorizons.length > 0 && !availableHorizons.includes(coneHorizon)) {
-      setConeHorizon(availableHorizons[Math.min(1, availableHorizons.length - 1)]);
+    if (
+      availableHorizons.length > 0 &&
+      !availableHorizons.includes(coneHorizon)
+    ) {
+      setConeHorizon(
+        availableHorizons[Math.min(1, availableHorizons.length - 1)],
+      );
     }
   }, [availableHorizons, coneHorizon]);
 
@@ -207,11 +217,21 @@ export function UnderlyingAnalysisCard({
             </div>
             {headerDisplay && (
               <div className="hidden md:flex items-center gap-3 text-[10px] uppercase tracking-wider text-text-muted">
-                <span>O <OhlcVal n={headerDisplay.o} /></span>
-                <span>H <OhlcVal n={headerDisplay.h} tone="up" /></span>
-                <span>L <OhlcVal n={headerDisplay.l} tone="down" /></span>
-                <span>C <OhlcVal n={headerDisplay.c} /></span>
-                <span>V <OhlcVal n={headerDisplay.v} compact /></span>
+                <span>
+                  O <OhlcVal n={headerDisplay.o} />
+                </span>
+                <span>
+                  H <OhlcVal n={headerDisplay.h} tone="up" />
+                </span>
+                <span>
+                  L <OhlcVal n={headerDisplay.l} tone="down" />
+                </span>
+                <span>
+                  C <OhlcVal n={headerDisplay.c} />
+                </span>
+                <span>
+                  V <OhlcVal n={headerDisplay.v} compact />
+                </span>
               </div>
             )}
           </div>
@@ -328,7 +348,8 @@ function PaneStack({
   }, [chart.bars]);
 
   const futureTimes = useMemo(() => {
-    if (!forecast || forecast.median.length === 0 || chart.bars.length === 0) return [];
+    if (!forecast || forecast.median.length === 0 || chart.bars.length === 0)
+      return [];
     const last = chart.bars[chart.bars.length - 1].time;
     const out: number[] = [];
     let cursor = last;
@@ -366,295 +387,360 @@ function PaneStack({
     setInitError(null);
 
     try {
+      const baseOpts = baseChartOptions();
+      const subpaneOpts = {
+        ...baseOpts,
+        rightPriceScale: {
+          ...baseOpts.rightPriceScale,
+          scaleMargins: { top: 0.18, bottom: 0.12 },
+        },
+      };
 
-    const baseOpts = baseChartOptions();
-    const subpaneOpts = {
-      ...baseOpts,
-      rightPriceScale: {
-        ...baseOpts.rightPriceScale,
-        scaleMargins: { top: 0.18, bottom: 0.12 },
-      },
-    };
+      const priceChart = createChart(priceEl, {
+        ...baseOpts,
+        width: priceEl.clientWidth,
+        height: priceEl.clientHeight,
+        rightPriceScale: {
+          ...baseOpts.rightPriceScale,
+          // Leave bottom 18% for the volume histogram on its own scale.
+          scaleMargins: { top: 0.08, bottom: 0.22 },
+        },
+      });
+      priceChartRef.current = priceChart;
 
-    const priceChart = createChart(priceEl, {
-      ...baseOpts,
-      width: priceEl.clientWidth,
-      height: priceEl.clientHeight,
-      rightPriceScale: {
-        ...baseOpts.rightPriceScale,
-        // Leave bottom 18% for the volume histogram on its own scale.
-        scaleMargins: { top: 0.08, bottom: 0.22 },
-      },
-    });
-    priceChartRef.current = priceChart;
+      const rsiChart = createChart(rsiEl, {
+        ...subpaneOpts,
+        width: rsiEl.clientWidth,
+        height: rsiEl.clientHeight,
+        timeScale: { ...subpaneOpts.timeScale, visible: false },
+      });
+      rsiChartRef.current = rsiChart;
 
-    const rsiChart = createChart(rsiEl, {
-      ...subpaneOpts,
-      width: rsiEl.clientWidth,
-      height: rsiEl.clientHeight,
-      timeScale: { ...subpaneOpts.timeScale, visible: false },
-    });
-    rsiChartRef.current = rsiChart;
+      const macdChart = createChart(macdEl, {
+        ...subpaneOpts,
+        width: macdEl.clientWidth,
+        height: macdEl.clientHeight,
+        timeScale: { ...subpaneOpts.timeScale, visible: false },
+      });
+      macdChartRef.current = macdChart;
 
-    const macdChart = createChart(macdEl, {
-      ...subpaneOpts,
-      width: macdEl.clientWidth,
-      height: macdEl.clientHeight,
-      timeScale: { ...subpaneOpts.timeScale, visible: false },
-    });
-    macdChartRef.current = macdChart;
+      const smiChart = createChart(smiEl, {
+        ...subpaneOpts,
+        width: smiEl.clientWidth,
+        height: smiEl.clientHeight,
+      });
+      smiChartRef.current = smiChart;
 
-    const smiChart = createChart(smiEl, {
-      ...subpaneOpts,
-      width: smiEl.clientWidth,
-      height: smiEl.clientHeight,
-    });
-    smiChartRef.current = smiChart;
+      // ── price-pane series ────────────────────────────────────────────────
+      candleSeriesRef.current = priceChart.addCandlestickSeries({
+        upColor: CHART.candle.up,
+        downColor: CHART.candle.down,
+        borderUpColor: CHART.candle.up,
+        borderDownColor: CHART.candle.down,
+        wickUpColor: CHART.candle.up,
+        wickDownColor: CHART.candle.down,
+        priceLineColor: CHART.axis,
+        priceLineStyle: LineStyle.Dotted,
+      });
 
-    // ── price-pane series ────────────────────────────────────────────────
-    candleSeriesRef.current = priceChart.addCandlestickSeries({
-      upColor: CHART.candle.up,
-      downColor: CHART.candle.down,
-      borderUpColor: CHART.candle.up,
-      borderDownColor: CHART.candle.down,
-      wickUpColor: CHART.candle.up,
-      wickDownColor: CHART.candle.down,
-      priceLineColor: CHART.axis,
-      priceLineStyle: LineStyle.Dotted,
-    });
-
-    // Volume histogram on its own scale, parked at the bottom of the pane.
-    volSeriesRef.current = priceChart.addHistogramSeries({
-      priceFormat: { type: "volume" },
-      priceScaleId: "volume",
-      priceLineVisible: false,
-      lastValueVisible: false,
-    });
-    priceChart
-      .priceScale("volume")
-      .applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
-
-    ema9SeriesRef.current = priceChart.addLineSeries({
-      color: CHART.ema.fast,
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-    });
-    ema21SeriesRef.current = priceChart.addLineSeries({
-      color: CHART.ema.slow,
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-    });
-    vwapSeriesRef.current = priceChart.addLineSeries({
-      color: CHART.vwap,
-      lineWidth: 1,
-      lineStyle: LineStyle.LargeDashed,
-      priceLineVisible: false,
-      lastValueVisible: false,
-    });
-
-    // ── forecast series ──────────────────────────────────────────────────
-    for (const k of MEMBER_KEYS) {
-      memberSeriesRef.current[k] = priceChart.addLineSeries({
-        color: MEMBER_COLORS[k],
-        lineWidth: k === "martingale" ? 1 : 2,
-        lineStyle: k === "martingale" ? LineStyle.Dashed : LineStyle.Solid,
+      // Volume histogram on its own scale, parked at the bottom of the pane.
+      volSeriesRef.current = priceChart.addHistogramSeries({
+        priceFormat: { type: "volume" },
+        priceScaleId: "volume",
         priceLineVisible: false,
         lastValueVisible: false,
-        crosshairMarkerVisible: true,
       });
-    }
-    // p10/p90 lines intentionally NOT drawn as separate series — the
-    // gradient band on the SVG overlay defines the cone edges by itself.
-    // Drawing them as dashed cyan lines on top made the projection look
-    // noisy and competed with the per-member colored lines.
+      priceChart
+        .priceScale("volume")
+        .applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
-    // ── subpane series ───────────────────────────────────────────────────
-    rsiSeriesRef.current = rsiChart.addLineSeries({
-      color: CHART.rsi,
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: true,
-    });
-    rsiSeriesRef.current.createPriceLine({
-      price: 70, color: CHART.down, lineWidth: 1,
-      lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "70",
-    });
-    rsiSeriesRef.current.createPriceLine({
-      price: 30, color: CHART.up, lineWidth: 1,
-      lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "30",
-    });
-    rsiSeriesRef.current.createPriceLine({
-      price: 50, color: CHART.axis, lineWidth: 1,
-      lineStyle: LineStyle.Solid, axisLabelVisible: false,
-    });
+      ema9SeriesRef.current = priceChart.addLineSeries({
+        color: CHART.ema.fast,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      ema21SeriesRef.current = priceChart.addLineSeries({
+        color: CHART.ema.slow,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      vwapSeriesRef.current = priceChart.addLineSeries({
+        color: CHART.vwap,
+        lineWidth: 1,
+        lineStyle: LineStyle.LargeDashed,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
 
-    macdLineRef.current = macdChart.addLineSeries({
-      color: CHART.macd.line, lineWidth: 1,
-      priceLineVisible: false, lastValueVisible: true,
-    });
-    macdSignalRef.current = macdChart.addLineSeries({
-      color: CHART.macd.signal, lineWidth: 1,
-      priceLineVisible: false, lastValueVisible: false,
-    });
-    macdHistRef.current = macdChart.addHistogramSeries({
-      priceFormat: { type: "price", precision: 3, minMove: 0.001 },
-      priceLineVisible: false, lastValueVisible: false,
-    });
-
-    smiLineRef.current = smiChart.addLineSeries({
-      color: CHART.smi.line, lineWidth: 1,
-      priceLineVisible: false, lastValueVisible: true,
-    });
-    smiSignalRef.current = smiChart.addLineSeries({
-      color: CHART.smi.signal, lineWidth: 1,
-      priceLineVisible: false, lastValueVisible: false,
-    });
-    smiLineRef.current.createPriceLine({
-      price: 40, color: CHART.down, lineWidth: 1,
-      lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "+40",
-    });
-    smiLineRef.current.createPriceLine({
-      price: -40, color: CHART.up, lineWidth: 1,
-      lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "-40",
-    });
-    smiLineRef.current.createPriceLine({
-      price: 0, color: CHART.axis, lineWidth: 1,
-      lineStyle: LineStyle.Solid, axisLabelVisible: false,
-    });
-
-    // ── sync time-scale across panes ─────────────────────────────────────
-    let syncing = false;
-    const syncRange = (driver: IChartApi) => (range: LogicalRange | null) => {
-      if (syncing || !range || disposedRef.current) return;
-      syncing = true;
-      try {
-        for (const c of [priceChart, rsiChart, macdChart, smiChart]) {
-          if (c !== driver) c.timeScale().setVisibleLogicalRange(range);
-        }
-      } finally {
-        syncing = false;
+      // ── forecast series ──────────────────────────────────────────────────
+      for (const k of MEMBER_KEYS) {
+        memberSeriesRef.current[k] = priceChart.addLineSeries({
+          color: MEMBER_COLORS[k],
+          lineWidth: k === "martingale" ? 1 : 2,
+          lineStyle: k === "martingale" ? LineStyle.Dashed : LineStyle.Solid,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: true,
+        });
       }
-    };
-    priceChart.timeScale().subscribeVisibleLogicalRangeChange(syncRange(priceChart));
-    rsiChart.timeScale().subscribeVisibleLogicalRangeChange(syncRange(rsiChart));
-    macdChart.timeScale().subscribeVisibleLogicalRangeChange(syncRange(macdChart));
-    smiChart.timeScale().subscribeVisibleLogicalRangeChange(syncRange(smiChart));
+      // p10/p90 lines intentionally NOT drawn as separate series — the
+      // gradient band on the SVG overlay defines the cone edges by itself.
+      // Drawing them as dashed cyan lines on top made the projection look
+      // noisy and competed with the per-member colored lines.
 
-    // ── sync crosshair across panes ──────────────────────────────────────
-    const moveOthers = (
-      others: { chart: IChartApi; series: ISeriesApi<any> }[],
-      time: any,
-    ) => {
-      if (disposedRef.current) return;
-      for (const { chart: c, series } of others) {
+      // ── subpane series ───────────────────────────────────────────────────
+      rsiSeriesRef.current = rsiChart.addLineSeries({
+        color: CHART.rsi,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: true,
+      });
+      rsiSeriesRef.current.createPriceLine({
+        price: 70,
+        color: CHART.down,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        axisLabelVisible: true,
+        title: "70",
+      });
+      rsiSeriesRef.current.createPriceLine({
+        price: 30,
+        color: CHART.up,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        axisLabelVisible: true,
+        title: "30",
+      });
+      rsiSeriesRef.current.createPriceLine({
+        price: 50,
+        color: CHART.axis,
+        lineWidth: 1,
+        lineStyle: LineStyle.Solid,
+        axisLabelVisible: false,
+      });
+
+      macdLineRef.current = macdChart.addLineSeries({
+        color: CHART.macd.line,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: true,
+      });
+      macdSignalRef.current = macdChart.addLineSeries({
+        color: CHART.macd.signal,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      macdHistRef.current = macdChart.addHistogramSeries({
+        priceFormat: { type: "price", precision: 3, minMove: 0.001 },
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+
+      smiLineRef.current = smiChart.addLineSeries({
+        color: CHART.smi.line,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: true,
+      });
+      smiSignalRef.current = smiChart.addLineSeries({
+        color: CHART.smi.signal,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      smiLineRef.current.createPriceLine({
+        price: 40,
+        color: CHART.down,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        axisLabelVisible: true,
+        title: "+40",
+      });
+      smiLineRef.current.createPriceLine({
+        price: -40,
+        color: CHART.up,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        axisLabelVisible: true,
+        title: "-40",
+      });
+      smiLineRef.current.createPriceLine({
+        price: 0,
+        color: CHART.axis,
+        lineWidth: 1,
+        lineStyle: LineStyle.Solid,
+        axisLabelVisible: false,
+      });
+
+      // ── sync time-scale across panes ─────────────────────────────────────
+      let syncing = false;
+      const syncRange = (driver: IChartApi) => (range: LogicalRange | null) => {
+        if (syncing || !range || disposedRef.current) return;
+        syncing = true;
         try {
-          if (time == null) c.clearCrosshairPosition();
-          else c.setCrosshairPosition(NaN, time, series);
-        } catch { /* */ }
-      }
-    };
+          for (const c of [priceChart, rsiChart, macdChart, smiChart]) {
+            if (c !== driver) c.timeScale().setVisibleLogicalRange(range);
+          }
+        } finally {
+          syncing = false;
+        }
+      };
+      priceChart
+        .timeScale()
+        .subscribeVisibleLogicalRangeChange(syncRange(priceChart));
+      rsiChart
+        .timeScale()
+        .subscribeVisibleLogicalRangeChange(syncRange(rsiChart));
+      macdChart
+        .timeScale()
+        .subscribeVisibleLogicalRangeChange(syncRange(macdChart));
+      smiChart
+        .timeScale()
+        .subscribeVisibleLogicalRangeChange(syncRange(smiChart));
 
-    priceChart.subscribeCrosshairMove((p: MouseEventParams) => {
-      const t = p.time as number | undefined;
-      moveOthers(
-        [
-          { chart: rsiChart, series: rsiSeriesRef.current! },
-          { chart: macdChart, series: macdLineRef.current! },
-          { chart: smiChart, series: smiLineRef.current! },
-        ],
-        t,
-      );
-      if (t == null) { onHoverChange(null); return; }
-      const histIdx = barIndexByTime.get(t);
-      if (histIdx != null) onHoverChange({ time: t, barIdx: histIdx, fcStep: null });
-      else {
-        const fcStep = futureTimes.indexOf(t);
-        if (fcStep >= 0) onHoverChange({ time: t, barIdx: null, fcStep });
-        else onHoverChange(null);
-      }
-    });
-    rsiChart.subscribeCrosshairMove((p) =>
-      moveOthers(
-        [
-          { chart: priceChart, series: candleSeriesRef.current! },
-          { chart: macdChart, series: macdLineRef.current! },
-          { chart: smiChart, series: smiLineRef.current! },
-        ],
-        p.time,
-      ),
-    );
-    macdChart.subscribeCrosshairMove((p) =>
-      moveOthers(
-        [
-          { chart: priceChart, series: candleSeriesRef.current! },
-          { chart: rsiChart, series: rsiSeriesRef.current! },
-          { chart: smiChart, series: smiLineRef.current! },
-        ],
-        p.time,
-      ),
-    );
-    smiChart.subscribeCrosshairMove((p) =>
-      moveOthers(
-        [
-          { chart: priceChart, series: candleSeriesRef.current! },
-          { chart: rsiChart, series: rsiSeriesRef.current! },
-          { chart: macdChart, series: macdLineRef.current! },
-        ],
-        p.time,
-      ),
-    );
-
-    // ── resize ───────────────────────────────────────────────────────────
-    let rafId = 0;
-    const ro = new ResizeObserver(() => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
+      // ── sync crosshair across panes ──────────────────────────────────────
+      const moveOthers = (
+        others: { chart: IChartApi; series: ISeriesApi<any> }[],
+        time: any,
+      ) => {
         if (disposedRef.current) return;
-        for (const [c, el] of [
-          [priceChart, priceEl],
-          [rsiChart, rsiEl],
-          [macdChart, macdEl],
-          [smiChart, smiEl],
-        ] as const) {
+        for (const { chart: c, series } of others) {
           try {
-            c.applyOptions({ width: el.clientWidth, height: el.clientHeight });
-          } catch { /* */ }
+            if (time == null) c.clearCrosshairPosition();
+            else c.setCrosshairPosition(NaN, time, series);
+          } catch {
+            /* */
+          }
+        }
+      };
+
+      priceChart.subscribeCrosshairMove((p: MouseEventParams) => {
+        const t = p.time as number | undefined;
+        moveOthers(
+          [
+            { chart: rsiChart, series: rsiSeriesRef.current! },
+            { chart: macdChart, series: macdLineRef.current! },
+            { chart: smiChart, series: smiLineRef.current! },
+          ],
+          t,
+        );
+        if (t == null) {
+          onHoverChange(null);
+          return;
+        }
+        const histIdx = barIndexByTime.get(t);
+        if (histIdx != null)
+          onHoverChange({ time: t, barIdx: histIdx, fcStep: null });
+        else {
+          const fcStep = futureTimes.indexOf(t);
+          if (fcStep >= 0) onHoverChange({ time: t, barIdx: null, fcStep });
+          else onHoverChange(null);
         }
       });
-    });
-    ro.observe(priceEl);
-    ro.observe(rsiEl);
-    ro.observe(macdEl);
-    ro.observe(smiEl);
+      rsiChart.subscribeCrosshairMove((p) =>
+        moveOthers(
+          [
+            { chart: priceChart, series: candleSeriesRef.current! },
+            { chart: macdChart, series: macdLineRef.current! },
+            { chart: smiChart, series: smiLineRef.current! },
+          ],
+          p.time,
+        ),
+      );
+      macdChart.subscribeCrosshairMove((p) =>
+        moveOthers(
+          [
+            { chart: priceChart, series: candleSeriesRef.current! },
+            { chart: rsiChart, series: rsiSeriesRef.current! },
+            { chart: smiChart, series: smiLineRef.current! },
+          ],
+          p.time,
+        ),
+      );
+      smiChart.subscribeCrosshairMove((p) =>
+        moveOthers(
+          [
+            { chart: priceChart, series: candleSeriesRef.current! },
+            { chart: rsiChart, series: rsiSeriesRef.current! },
+            { chart: macdChart, series: macdLineRef.current! },
+          ],
+          p.time,
+        ),
+      );
 
-    return () => {
-      disposedRef.current = true;
-      cancelAnimationFrame(rafId);
-      ro.disconnect();
-      candleSeriesRef.current = null;
-      volSeriesRef.current = null;
-      ema9SeriesRef.current = null;
-      ema21SeriesRef.current = null;
-      vwapSeriesRef.current = null;
-      for (const k of MEMBER_KEYS) memberSeriesRef.current[k] = null;
-      rsiSeriesRef.current = null;
-      macdLineRef.current = null;
-      macdSignalRef.current = null;
-      macdHistRef.current = null;
-      smiLineRef.current = null;
-      smiSignalRef.current = null;
-      refLinesRef.current = [];
-      priceChartRef.current = null;
-      rsiChartRef.current = null;
-      macdChartRef.current = null;
-      smiChartRef.current = null;
-      try { priceChart.remove(); } catch { /* */ }
-      try { rsiChart.remove(); } catch { /* */ }
-      try { macdChart.remove(); } catch { /* */ }
-      try { smiChart.remove(); } catch { /* */ }
-    };
+      // ── resize ───────────────────────────────────────────────────────────
+      let rafId = 0;
+      const ro = new ResizeObserver(() => {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          if (disposedRef.current) return;
+          for (const [c, el] of [
+            [priceChart, priceEl],
+            [rsiChart, rsiEl],
+            [macdChart, macdEl],
+            [smiChart, smiEl],
+          ] as const) {
+            try {
+              c.applyOptions({
+                width: el.clientWidth,
+                height: el.clientHeight,
+              });
+            } catch {
+              /* */
+            }
+          }
+        });
+      });
+      ro.observe(priceEl);
+      ro.observe(rsiEl);
+      ro.observe(macdEl);
+      ro.observe(smiEl);
+
+      return () => {
+        disposedRef.current = true;
+        cancelAnimationFrame(rafId);
+        ro.disconnect();
+        candleSeriesRef.current = null;
+        volSeriesRef.current = null;
+        ema9SeriesRef.current = null;
+        ema21SeriesRef.current = null;
+        vwapSeriesRef.current = null;
+        for (const k of MEMBER_KEYS) memberSeriesRef.current[k] = null;
+        rsiSeriesRef.current = null;
+        macdLineRef.current = null;
+        macdSignalRef.current = null;
+        macdHistRef.current = null;
+        smiLineRef.current = null;
+        smiSignalRef.current = null;
+        refLinesRef.current = [];
+        priceChartRef.current = null;
+        rsiChartRef.current = null;
+        macdChartRef.current = null;
+        smiChartRef.current = null;
+        try {
+          priceChart.remove();
+        } catch {
+          /* */
+        }
+        try {
+          rsiChart.remove();
+        } catch {
+          /* */
+        }
+        try {
+          macdChart.remove();
+        } catch {
+          /* */
+        }
+        try {
+          smiChart.remove();
+        } catch {
+          /* */
+        }
+      };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("[UnderlyingAnalysisCard] chart init failed:", err);
@@ -670,7 +756,10 @@ function PaneStack({
     const bars = chart.bars;
     const candleData: CandlestickData[] = bars.map((b) => ({
       time: b.time as UTCTimestamp,
-      open: b.open, high: b.high, low: b.low, close: b.close,
+      open: b.open,
+      high: b.high,
+      low: b.low,
+      close: b.close,
     }));
     candleSeriesRef.current.setData(candleData);
 
@@ -693,7 +782,10 @@ function PaneStack({
     );
     ema21SeriesRef.current?.setData(
       bars
-        .map((b, i) => ({ time: b.time as UTCTimestamp, value: chart.ema21[i] }))
+        .map((b, i) => ({
+          time: b.time as UTCTimestamp,
+          value: chart.ema21[i],
+        }))
         .filter((d) => Number.isFinite(d.value)) as LineData[],
     );
     vwapSeriesRef.current?.setData(
@@ -727,7 +819,10 @@ function PaneStack({
     );
     macdSignalRef.current?.setData(
       bars
-        .map((b, i) => ({ time: b.time as UTCTimestamp, value: chart.macd_signal[i] }))
+        .map((b, i) => ({
+          time: b.time as UTCTimestamp,
+          value: chart.macd_signal[i],
+        }))
         .filter((d) => Number.isFinite(d.value)) as LineData[],
     );
     macdHistRef.current?.setData(
@@ -735,7 +830,8 @@ function PaneStack({
         .map((b, i) => ({
           time: b.time as UTCTimestamp,
           value: chart.macd_hist[i],
-          color: chart.macd_hist[i] >= 0 ? CHART.macd.histUp : CHART.macd.histDown,
+          color:
+            chart.macd_hist[i] >= 0 ? CHART.macd.histUp : CHART.macd.histDown,
         }))
         .filter((d) => Number.isFinite(d.value)) as HistogramData[],
     );
@@ -746,7 +842,10 @@ function PaneStack({
     );
     smiSignalRef.current?.setData(
       bars
-        .map((b, i) => ({ time: b.time as UTCTimestamp, value: chart.smi_signal[i] }))
+        .map((b, i) => ({
+          time: b.time as UTCTimestamp,
+          value: chart.smi_signal[i],
+        }))
         .filter((d) => Number.isFinite(d.value)) as LineData[],
     );
   }, [chart]);
@@ -755,36 +854,55 @@ function PaneStack({
   useEffect(() => {
     if (disposedRef.current || !candleSeriesRef.current) return;
     for (const pl of refLinesRef.current) {
-      try { candleSeriesRef.current.removePriceLine(pl); } catch { /* */ }
+      try {
+        candleSeriesRef.current.removePriceLine(pl);
+      } catch {
+        /* */
+      }
     }
     refLinesRef.current = [];
 
     refLinesRef.current.push(
       candleSeriesRef.current.createPriceLine({
-        price: strike, color: CHART.ref.strike, lineWidth: 1,
-        lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: `K ${strike}`,
+        price: strike,
+        color: CHART.ref.strike,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: `K ${strike}`,
       }),
     );
     refLinesRef.current.push(
       candleSeriesRef.current.createPriceLine({
-        price: breakeven, color: CHART.ref.be, lineWidth: 1,
-        lineStyle: LineStyle.Dotted, axisLabelVisible: true,
+        price: breakeven,
+        color: CHART.ref.be,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        axisLabelVisible: true,
         title: `BE ${breakeven.toFixed(2)}`,
       }),
     );
     if (sigma1High != null) {
       refLinesRef.current.push(
         candleSeriesRef.current.createPriceLine({
-          price: sigma1High, color: CHART.ref.sigma, lineWidth: 1,
-          lineStyle: LineStyle.SparseDotted, axisLabelVisible: false, title: "+1σ",
+          price: sigma1High,
+          color: CHART.ref.sigma,
+          lineWidth: 1,
+          lineStyle: LineStyle.SparseDotted,
+          axisLabelVisible: false,
+          title: "+1σ",
         }),
       );
     }
     if (sigma1Low != null) {
       refLinesRef.current.push(
         candleSeriesRef.current.createPriceLine({
-          price: sigma1Low, color: CHART.ref.sigma, lineWidth: 1,
-          lineStyle: LineStyle.SparseDotted, axisLabelVisible: false, title: "−1σ",
+          price: sigma1Low,
+          color: CHART.ref.sigma,
+          lineWidth: 1,
+          lineStyle: LineStyle.SparseDotted,
+          axisLabelVisible: false,
+          title: "−1σ",
         }),
       );
     }
@@ -812,7 +930,8 @@ function PaneStack({
         series.setData([
           { time: lastTime, value: lastClose } as LineData,
           ...horizons.median.map((v, i) => ({
-            time: futureTimes[i] as UTCTimestamp, value: v,
+            time: futureTimes[i] as UTCTimestamp,
+            value: v,
           })),
         ]);
       }
@@ -841,7 +960,11 @@ function PaneStack({
       if (!lastBar) return;
       const ts = chartApi.timeScale();
 
-      const points: { x: number | null; yHi: number | null; yLo: number | null }[] = [];
+      const points: {
+        x: number | null;
+        yHi: number | null;
+        yLo: number | null;
+      }[] = [];
       points.push({
         x: ts.timeToCoordinate(lastBar.time as UTCTimestamp),
         yHi: series.priceToCoordinate(lastBar.close),
@@ -854,16 +977,26 @@ function PaneStack({
           yLo: series.priceToCoordinate(forecast.p10[i]),
         });
       }
-      const valid = points.every((p) => p.x != null && p.yHi != null && p.yLo != null);
-      if (!valid) { overlayEl.innerHTML = ""; return; }
+      const valid = points.every(
+        (p) => p.x != null && p.yHi != null && p.yLo != null,
+      );
+      if (!valid) {
+        overlayEl.innerHTML = "";
+        return;
+      }
 
       // Band path — p90 along the top, p10 back to the anchor.
-      const topPath = points.map((p, i) =>
-        `${i === 0 ? "M" : "L"}${p.x!.toFixed(2)},${p.yHi!.toFixed(2)}`,
-      ).join(" ");
-      const bottomPath = points.slice().reverse().map((p) =>
-        `L${p.x!.toFixed(2)},${p.yLo!.toFixed(2)}`,
-      ).join(" ");
+      const topPath = points
+        .map(
+          (p, i) =>
+            `${i === 0 ? "M" : "L"}${p.x!.toFixed(2)},${p.yHi!.toFixed(2)}`,
+        )
+        .join(" ");
+      const bottomPath = points
+        .slice()
+        .reverse()
+        .map((p) => `L${p.x!.toFixed(2)},${p.yLo!.toFixed(2)}`)
+        .join(" ");
 
       const xAnchor = points[0].x!;
       const yAnchor = points[0].yHi!;
@@ -880,26 +1013,28 @@ function PaneStack({
         y: number;
         opacity: number;
       }
-      const memberTerminals: TermLabel[] = ensemble && futureTimes.length > 0
-        ? (["chronos", "momentum", "mean_reversion", "martingale"] as const)
-            .map((k): TermLabel | null => {
-              const horizons = ensemble.members[k]?.horizons[String(coneHorizon)];
-              if (!horizons || horizons.median.length === 0) return null;
-              const lastV = horizons.median[horizons.median.length - 1];
-              const yC = series.priceToCoordinate(lastV);
-              if (yC == null) return null;
-              return {
-                key: k,
-                label: MEMBER_LABELS[k],
-                color: MEMBER_COLORS[k],
-                pct: horizons.expected_return_pct,
-                y: Number(yC),
-                opacity: k === "martingale" ? 0.55 : 0.95,
-              };
-            })
-            .filter((m): m is TermLabel => m != null)
-            .sort((a, b) => a.y - b.y)
-        : [];
+      const memberTerminals: TermLabel[] =
+        ensemble && futureTimes.length > 0
+          ? (["chronos", "momentum", "mean_reversion", "martingale"] as const)
+              .map((k): TermLabel | null => {
+                const horizons =
+                  ensemble.members[k]?.horizons[String(coneHorizon)];
+                if (!horizons || horizons.median.length === 0) return null;
+                const lastV = horizons.median[horizons.median.length - 1];
+                const yC = series.priceToCoordinate(lastV);
+                if (yC == null) return null;
+                return {
+                  key: k,
+                  label: MEMBER_LABELS[k],
+                  color: MEMBER_COLORS[k],
+                  pct: horizons.expected_return_pct,
+                  y: Number(yC),
+                  opacity: k === "martingale" ? 0.55 : 0.95,
+                };
+              })
+              .filter((m): m is TermLabel => m != null)
+              .sort((a, b) => a.y - b.y)
+          : [];
       // Greedy push-down to break overlaps.
       const minSpacing = 11;
       for (let i = 1; i < memberTerminals.length; i++) {
@@ -908,22 +1043,29 @@ function PaneStack({
         }
       }
 
-      const labelsSvg = memberTerminals.map((m) => `
+      const labelsSvg = memberTerminals
+        .map(
+          (m) => `
         <text x="${(xRight - 2).toFixed(2)}" y="${(m.y + 3).toFixed(2)}"
               font-size="8.5" fill="${m.color}" text-anchor="end"
               font-weight="500" opacity="${m.opacity}"
               style="font-variant-numeric: tabular-nums;">
           ${m.label} ${m.pct >= 0 ? "+" : ""}${m.pct.toFixed(1)}%
-        </text>`).join("");
+        </text>`,
+        )
+        .join("");
 
       // Horizon hint at top-right of cone area.
-      const horizonLabel = futureTimes.length > 0 ? `
+      const horizonLabel =
+        futureTimes.length > 0
+          ? `
         <text x="${(xRight - 2).toFixed(2)}" y="14"
               font-size="9" fill="${CHART.forecast.cone}" text-anchor="end"
               font-weight="600"
               style="font-variant-numeric: tabular-nums;">
           +${futureTimes.length}d horizon
-        </text>` : "";
+        </text>`
+          : "";
 
       // No-change reference — horizontal dotted line at last close,
       // extending across the projection band only. Makes each member's
@@ -962,7 +1104,11 @@ function PaneStack({
     const unsub = ts.subscribeVisibleTimeRangeChange(draw);
     return () => {
       ro.disconnect();
-      try { ts.unsubscribeVisibleTimeRangeChange(draw); } catch { /* */ }
+      try {
+        ts.unsubscribeVisibleTimeRangeChange(draw);
+      } catch {
+        /* */
+      }
       void unsub;
     };
   }, [forecast, futureTimes, chart.bars, ensemble, coneHorizon]);
@@ -974,14 +1120,20 @@ function PaneStack({
             Height reduced from 560 → 400 so the analyzer page doesn't
             scroll forever — the three subpanes already add 300+ px of
             indicator context below. */}
-      <div className="relative bg-bg border-t border-border shrink-0" style={{ height: 400 }}>
+      <div
+        className="relative bg-bg border-t border-border shrink-0"
+        style={{ height: 400 }}
+      >
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-0">
           <span className="text-[88px] font-medium text-text-muted/[0.04] tracking-[0.2em]">
             {symbolWatermark}
           </span>
         </div>
         <div ref={priceContainerRef} className="absolute inset-0 z-10" />
-        <div ref={coneOverlayRef} className="pointer-events-none absolute inset-0 z-20" />
+        <div
+          ref={coneOverlayRef}
+          className="pointer-events-none absolute inset-0 z-20"
+        />
         {initError && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-bg/70 backdrop-blur-sm p-4">
             <div className="max-w-md text-center">
@@ -1062,7 +1214,10 @@ function Subpane({
   containerRef: React.RefObject<HTMLDivElement>;
 }) {
   return (
-    <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }}>
+    <div
+      className="border-t border-border bg-bg shrink-0"
+      style={{ height: 140 }}
+    >
       <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
         <span className="text-[10px] uppercase tracking-wider text-text-muted">
           {label}
@@ -1093,7 +1248,8 @@ function Subpane({
 function tonedLast(series: number[], hi: number, lo: number) {
   const v = series[series.length - 1];
   if (!Number.isFinite(v)) return null;
-  const cls = v >= hi ? "text-down" : v <= lo ? "text-up" : "text-text-secondary";
+  const cls =
+    v >= hi ? "text-down" : v <= lo ? "text-up" : "text-text-secondary";
   return { value: v.toFixed(0), cls };
 }
 function tonedDelta(a: number, b: number) {
@@ -1118,9 +1274,15 @@ function OhlcVal({
   compact?: boolean;
 }) {
   const cls =
-    tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-secondary";
+    tone === "up"
+      ? "text-up"
+      : tone === "down"
+        ? "text-down"
+        : "text-text-secondary";
   return (
-    <span className={cn("normal-case tracking-normal text-[11px] tabular", cls)}>
+    <span
+      className={cn("normal-case tracking-normal text-[11px] tabular", cls)}
+    >
       {compact ? fmtCompact(n) : fmt(n)}
     </span>
   );
@@ -1153,7 +1315,11 @@ function ForecastReadout({
   const dayOffset = fcStep + 1;
   const pctFromSpot = ((med - spot) / spot) * 100;
   const pctTone =
-    pctFromSpot >= 0.1 ? "text-up" : pctFromSpot <= -0.1 ? "text-down" : "text-text-muted";
+    pctFromSpot >= 0.1
+      ? "text-up"
+      : pctFromSpot <= -0.1
+        ? "text-down"
+        : "text-text-muted";
   return (
     <div className="flex items-center gap-3 px-3 py-1.5 border-t border-border/60 bg-surface text-[10px] tabular text-text-secondary flex-wrap">
       <span
@@ -1163,22 +1329,26 @@ function ForecastReadout({
         forecast +{dayOffset}d · {formatBarTime(projTime, "1d")}
       </span>
       <span>
-        ensemble <span className="text-text-primary font-medium">${med.toFixed(2)}</span>
+        ensemble{" "}
+        <span className="text-text-primary font-medium">${med.toFixed(2)}</span>
       </span>
       <span>
         band <span className="text-text-primary">${p10.toFixed(2)}</span>
         {" – "}
         <span className="text-text-primary">${p90.toFixed(2)}</span>
       </span>
-      {ensemble && MEMBER_KEYS.map((k) => {
-        const v = ensemble.members[k]?.horizons[String(coneHorizon)]?.median[fcStep];
-        if (v == null) return null;
-        return (
-          <span key={k} style={{ color: MEMBER_COLORS[k] }}>
-            {MEMBER_LABELS[k]} <span className="text-text-primary">${v.toFixed(2)}</span>
-          </span>
-        );
-      })}
+      {ensemble &&
+        MEMBER_KEYS.map((k) => {
+          const v =
+            ensemble.members[k]?.horizons[String(coneHorizon)]?.median[fcStep];
+          if (v == null) return null;
+          return (
+            <span key={k} style={{ color: MEMBER_COLORS[k] }}>
+              {MEMBER_LABELS[k]}{" "}
+              <span className="text-text-primary">${v.toFixed(2)}</span>
+            </span>
+          );
+        })}
       <span className={cn(pctTone, "ml-auto font-medium")}>
         vs spot {pctFromSpot >= 0 ? "+" : ""}
         {pctFromSpot.toFixed(2)}%
@@ -1209,18 +1379,32 @@ function inferBarStepSeconds(
   tf: OptionAnalyzerTimeframe,
 ): number {
   const TF_MAP: Record<string, number> = {
-    "5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400,
-    "1d": 86400, "1w": 604800,
+    "5m": 300,
+    "15m": 900,
+    "30m": 1800,
+    "1h": 3600,
+    "4h": 14400,
+    "1d": 86400,
+    "1w": 604800,
   };
   if (TF_MAP[tf]) return TF_MAP[tf];
-  if (bars.length >= 2) return bars[bars.length - 1].time - bars[bars.length - 2].time;
+  if (bars.length >= 2)
+    return bars[bars.length - 1].time - bars[bars.length - 2].time;
   return 86400;
 }
 
-function ControlGroup({ label, children }: { label: string; children: React.ReactNode }) {
+function ControlGroup({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-[9px] uppercase tracking-wider text-text-muted">
+        {label}
+      </span>
       {children}
     </div>
   );
@@ -1293,13 +1477,22 @@ function ForecastHorizonPicker({
             )}
             title={`${h}d: median ${er >= 0 ? "+" : ""}${er.toFixed(2)}%, ±${band.toFixed(1)}% band, ${(agree * 100).toFixed(0)}% agreement`}
           >
-            <span className={cn("font-medium", isSel ? "text-accent" : "text-text-muted")}>
+            <span
+              className={cn(
+                "font-medium",
+                isSel ? "text-accent" : "text-text-muted",
+              )}
+            >
               {h}d
             </span>
             <span
               className={cn(
                 "tabular",
-                dir === "up" ? "text-up" : dir === "down" ? "text-down" : "text-text-muted",
+                dir === "up"
+                  ? "text-up"
+                  : dir === "down"
+                    ? "text-down"
+                    : "text-text-muted",
               )}
             >
               {er >= 0 ? "+" : ""}

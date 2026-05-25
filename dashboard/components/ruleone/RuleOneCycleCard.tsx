@@ -97,7 +97,9 @@ export function RuleOneCycleCard({ symbol }: Props) {
           Rule One Cycle
         </span>
         {cycle?.cycle_label && (
-          <span className="text-[10px] text-text-muted">· {cycle.cycle_label}</span>
+          <span className="text-[10px] text-text-muted">
+            · {cycle.cycle_label}
+          </span>
         )}
         {loading && (
           <Loader2 size={10} className="ml-auto animate-spin text-text-muted" />
@@ -199,7 +201,12 @@ function CandidateRow({ c }: { c: RuleOneCandidate }) {
         {STRATEGY_LABELS[c.strategy_id]}
       </span>
       <span className="text-text-primary font-mono">{strikeLabel}</span>
-      <span className={cn("font-mono", c.credit != null ? "text-up" : "text-text-muted")}>
+      <span
+        className={cn(
+          "font-mono",
+          c.credit != null ? "text-up" : "text-text-muted",
+        )}
+      >
         {creditLabel}
       </span>
       <PassMark passes={c.passes} reasons={c.fail_reasons} />
@@ -214,7 +221,7 @@ function PassMark({ passes, reasons }: { passes: boolean; reasons: string[] }) {
       title={title}
       className={cn(
         "inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] leading-none rounded-sm font-medium",
-        passes ? "text-up bg-up/15" : "text-down bg-down/15"
+        passes ? "text-up bg-up/15" : "text-down bg-down/15",
       )}
     >
       {passes ? "✓" : "✗"}

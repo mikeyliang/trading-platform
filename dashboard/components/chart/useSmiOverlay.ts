@@ -172,8 +172,10 @@ export function useSmiOverlay({
       };
       main.timeScale().subscribeVisibleLogicalRangeChange(onMainRange);
       chart.timeScale().subscribeVisibleLogicalRangeChange(onSubRange);
-      unsubA = () => main.timeScale().unsubscribeVisibleLogicalRangeChange(onMainRange);
-      unsubB = () => chart.timeScale().unsubscribeVisibleLogicalRangeChange(onSubRange);
+      unsubA = () =>
+        main.timeScale().unsubscribeVisibleLogicalRangeChange(onMainRange);
+      unsubB = () =>
+        chart.timeScale().unsubscribeVisibleLogicalRangeChange(onSubRange);
     }
 
     const ro = new ResizeObserver(() => {
@@ -211,10 +213,13 @@ export function useSmiOverlay({
       if (!smiSeries || !sigSeries || !candles) return;
 
       smiSeries.setData(
-        data.smi.map((p) => ({ time: p.time as UTCTimestamp, value: p.value }))
+        data.smi.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })),
       );
       sigSeries.setData(
-        data.smi_signal.map((p) => ({ time: p.time as UTCTimestamp, value: p.value }))
+        data.smi_signal.map((p) => ({
+          time: p.time as UTCTimestamp,
+          value: p.value,
+        })),
       );
 
       // compute signal markers client-side using the same logic as smi.py
@@ -235,7 +240,12 @@ export function useSmiOverlay({
         const es = emaS[i].value;
 
         // BUY: bullish cross from below midpoint + uptrend filter
-        if (smiPrev < sigPrev && smiNow >= sigNow && smiPrev < SMI_OB * 0.5 && ef > es) {
+        if (
+          smiPrev < sigPrev &&
+          smiNow >= sigNow &&
+          smiPrev < SMI_OB * 0.5 &&
+          ef > es
+        ) {
           markers.push({
             time: smi[i].time as UTCTimestamp,
             position: "belowBar",
@@ -247,7 +257,11 @@ export function useSmiOverlay({
           signals.push({ time: smi[i].time, type: "BUY", smi: smiNow });
         }
         // SELL: bearish cross from above midpoint
-        else if (smiPrev > sigPrev && smiNow <= sigNow && smiPrev > SMI_OS * 0.5) {
+        else if (
+          smiPrev > sigPrev &&
+          smiNow <= sigNow &&
+          smiPrev > SMI_OS * 0.5
+        ) {
           markers.push({
             time: smi[i].time as UTCTimestamp,
             position: "aboveBar",

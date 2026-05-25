@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { OptionChain } from "@/components/trade/OptionChain";
 
 export const metadata = {
@@ -5,5 +6,9 @@ export const metadata = {
 };
 
 export default function ChainPage() {
-  return <OptionChain />;
+  return (
+    <Suspense fallback={null}>
+      <OptionChain />
+    </Suspense>
+  );
 }

@@ -97,14 +97,17 @@ export function AgentDebate() {
   const [symbol, setSymbol] = useState("RUT");
   const [pending, setPending] = useState("RUT");
   const [tradeDate, setTradeDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.agentsStatus().then(setStatus).catch(() => setStatus(null));
+    api
+      .agentsStatus()
+      .then(setStatus)
+      .catch(() => setStatus(null));
   }, []);
 
   async function run(sym = symbol, date = tradeDate) {
@@ -122,7 +125,9 @@ export function AgentDebate() {
   }
 
   const hasAnyLLMKey =
-    status?.has_openai_key || status?.has_anthropic_key || status?.has_google_key;
+    status?.has_openai_key ||
+    status?.has_anthropic_key ||
+    status?.has_google_key;
 
   const runDebate = () => {
     setSymbol(pending);
@@ -182,7 +187,9 @@ export function AgentDebate() {
           <AlertCircle size={12} className="text-down shrink-0 mt-0.5" />
           <div>
             <div className="font-medium text-down">Run failed</div>
-            <div className="text-text-secondary mt-0.5 font-mono text-[11px]">{error}</div>
+            <div className="text-text-secondary mt-0.5 font-mono text-[11px]">
+              {error}
+            </div>
           </div>
         </div>
       )}
@@ -202,7 +209,9 @@ export function AgentDebate() {
           {SECTION_ORDER.map((key) => {
             const content = result.final_state[key];
             if (!content) return null;
-            return <ReportSection key={key} sectionKey={key} content={content} />;
+            return (
+              <ReportSection key={key} sectionKey={key} content={content} />
+            );
           })}
         </div>
       )}
@@ -210,10 +219,18 @@ export function AgentDebate() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] text-text-muted uppercase tracking-wider">{label}</span>
+      <span className="text-[10px] text-text-muted uppercase tracking-wider">
+        {label}
+      </span>
       {children}
     </label>
   );
@@ -238,7 +255,9 @@ function StatusBanner({
       <div className="p-3 rounded border border-down/30 bg-down/5 text-sm flex items-start gap-2">
         <XCircle size={16} className="text-down shrink-0 mt-0.5" />
         <div>
-          <div className="font-medium text-down">TradingAgents not installed</div>
+          <div className="font-medium text-down">
+            TradingAgents not installed
+          </div>
           <div className="text-text-secondary mt-0.5">
             Run <code className="text-xs">pip install -e ../tradingagents</code>{" "}
             in the api service to enable.
@@ -252,12 +271,15 @@ function StatusBanner({
       <div className="p-3 rounded border border-warning/30 bg-warning/5 text-sm flex items-start gap-2">
         <AlertCircle size={16} className="text-warning shrink-0 mt-0.5" />
         <div>
-          <div className="font-medium text-warning">No LLM API key configured</div>
+          <div className="font-medium text-warning">
+            No LLM API key configured
+          </div>
           <div className="text-text-secondary mt-0.5">
             Set <code className="text-xs">OPENAI_API_KEY</code>,{" "}
             <code className="text-xs">ANTHROPIC_API_KEY</code>, or{" "}
             <code className="text-xs">GOOGLE_API_KEY</code> in{" "}
-            <code className="text-xs">services/api/.env</code> and restart the API.
+            <code className="text-xs">services/api/.env</code> and restart the
+            API.
           </div>
         </div>
       </div>
@@ -279,7 +301,7 @@ function KeyChip({ label, present }: { label: string; present: boolean }) {
         "flex items-center gap-1 px-2 py-1 rounded border text-xs",
         present
           ? "border-up/30 bg-up/5 text-up"
-          : "border-border bg-surface-2 text-text-muted"
+          : "border-border bg-surface-2 text-text-muted",
       )}
     >
       {present ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
@@ -294,8 +316,8 @@ function DecisionBanner({ result }: { result: AnalyzeResult }) {
   const tone = decisionLower.includes("buy")
     ? "up"
     : decisionLower.includes("sell")
-    ? "down"
-    : "neutral";
+      ? "down"
+      : "neutral";
 
   return (
     <div
@@ -304,8 +326,8 @@ function DecisionBanner({ result }: { result: AnalyzeResult }) {
         tone === "up"
           ? "border-up/40 bg-up/5"
           : tone === "down"
-          ? "border-down/40 bg-down/5"
-          : "border-border bg-surface"
+            ? "border-down/40 bg-down/5"
+            : "border-border bg-surface",
       )}
     >
       <div className="text-xs uppercase tracking-wider text-text-muted mb-1">
@@ -317,8 +339,8 @@ function DecisionBanner({ result }: { result: AnalyzeResult }) {
           tone === "up"
             ? "text-up"
             : tone === "down"
-            ? "text-down"
-            : "text-text-primary"
+              ? "text-down"
+              : "text-text-primary",
         )}
       >
         {decision || "(no decision returned)"}
@@ -336,7 +358,8 @@ function ReportSection({
 }) {
   const meta = SECTION_META[sectionKey];
   const [expanded, setExpanded] = useState(
-    sectionKey === "final_trade_decision" || sectionKey === "trader_investment_plan"
+    sectionKey === "final_trade_decision" ||
+      sectionKey === "trader_investment_plan",
   );
 
   const Icon = meta?.icon ?? Brain;
@@ -345,9 +368,7 @@ function ReportSection({
 
   // Debate states arrive as objects; render their string fields plainly.
   const text =
-    typeof content === "string"
-      ? content
-      : JSON.stringify(content, null, 2);
+    typeof content === "string" ? content : JSON.stringify(content, null, 2);
 
   return (
     <section className="rounded-lg border border-border bg-surface overflow-hidden">

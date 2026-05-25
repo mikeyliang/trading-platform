@@ -16,7 +16,11 @@ interface Props {
   largePrintThreshold?: number;
 }
 
-export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000 }: Props) {
+export function TimeAndSales({
+  symbol,
+  maxRows = 120,
+  largePrintThreshold = 1000,
+}: Props) {
   const [prints, setPrints] = useState<TapePrint[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
@@ -26,12 +30,17 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
     let cancelled = false;
     setPrints([]);
     setUnavailable(false);
-    api.recentPrints(symbol, maxRows).then((s) => {
-      if (cancelled) return;
-      if (!s.available) setUnavailable(true);
-      else setPrints(s.prints.slice().reverse());
-    }).catch(() => null);
-    return () => { cancelled = true; };
+    api
+      .recentPrints(symbol, maxRows)
+      .then((s) => {
+        if (cancelled) return;
+        if (!s.available) setUnavailable(true);
+        else setPrints(s.prints.slice().reverse());
+      })
+      .catch(() => null);
+    return () => {
+      cancelled = true;
+    };
   }, [symbol, maxRows]);
 
   useEffect(() => {
@@ -51,11 +60,15 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
       }
     });
     ws.connect();
-    return () => { off(); ws.disconnect(); };
+    return () => {
+      off();
+      ws.disconnect();
+    };
   }, [symbol, maxRows]);
 
   const stats = useMemo(() => {
-    let buy = 0, sell = 0;
+    let buy = 0,
+      sell = 0;
     for (const p of prints) {
       if (p.side === "buy") buy += p.size;
       else if (p.side === "sell") sell += p.size;
@@ -84,16 +97,24 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
           <span
             className={cn(
               "ml-1 inline-block w-1 h-1 rounded-full",
-              streaming ? "bg-up" : "bg-text-muted"
+              streaming ? "bg-up" : "bg-text-muted",
             )}
           />
         </span>
         {stats.ratio != null && (
-          <span className={cn(
-            "tabular",
-            stats.ratio > 0.1 ? "text-up" : stats.ratio < -0.1 ? "text-down" : "text-text-secondary"
-          )}>
-            buy {fmtCompact(stats.buy)} / sell {fmtCompact(stats.sell)} · {stats.ratio >= 0 ? "+" : ""}{(stats.ratio * 100).toFixed(0)}%
+          <span
+            className={cn(
+              "tabular",
+              stats.ratio > 0.1
+                ? "text-up"
+                : stats.ratio < -0.1
+                  ? "text-down"
+                  : "text-text-secondary",
+            )}
+          >
+            buy {fmtCompact(stats.buy)} / sell {fmtCompact(stats.sell)} ·{" "}
+            {stats.ratio >= 0 ? "+" : ""}
+            {(stats.ratio * 100).toFixed(0)}%
           </span>
         )}
       </div>
@@ -114,20 +135,31 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
           prints.map((p, i) => {
             const isLarge = p.size >= largePrintThreshold;
             const sideCol =
-              p.side === "buy" ? "text-up" :
-              p.side === "sell" ? "text-down" :
-              "text-text-secondary";
+              p.side === "buy"
+                ? "text-up"
+                : p.side === "sell"
+                  ? "text-down"
+                  : "text-text-secondary";
             return (
               <div
                 key={`${p.ts}-${i}`}
                 className={cn(
                   "grid grid-cols-[64px_1fr_72px] px-2 h-[18px] items-center text-[10px] tabular border-b border-border/15",
-                  isLarge && "bg-warning/10"
+                  isLarge && "bg-warning/10",
                 )}
               >
                 <span className="text-text-muted">{fmtTime(p.ts)}</span>
-                <span className={cn("font-medium", sideCol)}>{p.price.toFixed(2)}</span>
-                <span className={cn("text-right", isLarge ? "text-warning font-semibold" : "text-text-secondary")}>
+                <span className={cn("font-medium", sideCol)}>
+                  {p.price.toFixed(2)}
+                </span>
+                <span
+                  className={cn(
+                    "text-right",
+                    isLarge
+                      ? "text-warning font-semibold"
+                      : "text-text-secondary",
+                  )}
+                >
                   {fmtCompact(p.size)}
                 </span>
               </div>

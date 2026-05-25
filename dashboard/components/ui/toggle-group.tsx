@@ -25,14 +25,15 @@ export function ToggleGroup<T extends string = string>({
   size = "sm",
   ariaLabel,
 }: ToggleGroupProps<T>) {
-  const pad = size === "xs" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]";
+  const pad =
+    size === "xs" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]";
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
         "inline-flex items-center gap-0.5 rounded-md border border-border bg-surface p-0.5",
-        className
+        className,
       )}
     >
       {options.map((opt) => {
@@ -49,7 +50,7 @@ export function ToggleGroup<T extends string = string>({
               pad,
               active
                 ? "bg-surface-3 text-text-primary"
-                : "text-text-muted hover:text-text-secondary hover:bg-surface-2"
+                : "text-text-muted hover:text-text-secondary hover:bg-surface-2",
             )}
           >
             {opt.label}

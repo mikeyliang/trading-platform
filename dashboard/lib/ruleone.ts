@@ -17,14 +17,14 @@ export interface StrategySpec {
   name: string;
   underlying: Underlying;
   // Entry rules
-  maxDelta: number;       // short-leg delta cap (×100, so "10" = 0.10)
-  minAdjOTM: number;      // minimum adjusted %OTM
-  arocTarget: number;     // minimum annualized return on capital, %
-  minKelly: number;       // minimum Kelly % to size the trade
+  maxDelta: number; // short-leg delta cap (×100, so "10" = 0.10)
+  minAdjOTM: number; // minimum adjusted %OTM
+  arocTarget: number; // minimum annualized return on capital, %
+  minKelly: number; // minimum Kelly % to size the trade
   // Exit rules — both always in effect
-  exitDelta: number;      // rule 1: exit when short delta closes above this
-  lastDayBufferPct: number;  // rule 2: on Thursday before expiry, close if
-                             // underlying is within this % of short strike
+  exitDelta: number; // rule 1: exit when short delta closes above this
+  lastDayBufferPct: number; // rule 2: on Thursday before expiry, close if
+  // underlying is within this % of short strike
   floorRequired: boolean; // must be two fib-floors below price
   // Historical 2008–2019 backtest (per webinar1)
   histCagrPct: number;
@@ -32,8 +32,8 @@ export interface StrategySpec {
   histMaxLossPct: number;
   histWins: number;
   histTotal: number;
-  hist10kGrewTo: number;  // $10,000 → this much over 12 years
-  scaleNote: string;      // capacity / volume guidance
+  hist10kGrewTo: number; // $10,000 → this much over 12 years
+  scaleNote: string; // capacity / volume guidance
   notes: string;
 }
 
@@ -96,7 +96,8 @@ export const STRATEGIES: StrategySpec[] = [
     histTotal: 119,
     hist10kGrewTo: 5_900_000,
     scaleNote: "Size DOWN — single losses have hit ~70% of capital",
-    notes: "Most aggressive. Close to the money — must exit on trigger, no waiting.",
+    notes:
+      "Most aggressive. Close to the money — must exit on trigger, no waiting.",
   },
   {
     id: "space",
@@ -118,7 +119,8 @@ export const STRATEGIES: StrategySpec[] = [
     histTotal: 133,
     hist10kGrewTo: 1_100_000,
     scaleNote: "SPX volume ~3M contracts/day — use for 50+ ct positions",
-    notes: "SPX-based. 44-Kelly floor is the gatekeeper — rare to find qualifying setups.",
+    notes:
+      "SPX-based. 44-Kelly floor is the gatekeeper — rare to find qualifying setups.",
   },
 ];
 
@@ -136,8 +138,8 @@ export interface TradeInput {
   dte: number;
   shortStrike: number;
   longStrike: number;
-  credit: number;       // mid credit per share
-  shortDelta: number;   // absolute, e.g. 0.10
+  credit: number; // mid credit per share
+  shortDelta: number; // absolute, e.g. 0.10
   bankroll: number;
 }
 
@@ -145,46 +147,46 @@ export interface TradeMetrics {
   width: number;
   maxProfitPerContract: number;
   maxLossPerContract: number;
-  distancePct: number;       // raw % below spot
-  adjOTMPct: number;         // time-normalized %OTM (sqrt-time approx)
+  distancePct: number; // raw % below spot
+  adjOTMPct: number; // time-normalized %OTM (sqrt-time approx)
   arocPct: number;
-  probOTM: number;           // 0..1, derived from |delta|
-  kellyPct: number;          // 0..100
-  oneThirdCap: number;       // 33% bankroll cap
+  probOTM: number; // 0..1, derived from |delta|
+  kellyPct: number; // 0..100
+  oneThirdCap: number; // 33% bankroll cap
   maxContractsKelly: number;
   maxContractsThird: number;
   recommendedContracts: number;
-  breakeven: number;         // spot at expiration where P&L = 0
+  breakeven: number; // spot at expiration where P&L = 0
 }
 
 export interface RiskOutlook {
-  expectedAvgLossPerContract: number;     // maxLoss × histAvgLoss%
+  expectedAvgLossPerContract: number; // maxLoss × histAvgLoss%
   worstHistoricalLossPerContract: number; // maxLoss × histMaxLoss%
-  expectedAvgLossDollars: number;         // × recommendedContracts
-  worstHistoricalLossDollars: number;     // × recommendedContracts
+  expectedAvgLossDollars: number; // × recommendedContracts
+  worstHistoricalLossDollars: number; // × recommendedContracts
   winRatePct: number;
 }
 
-export function riskOutlook(
-  m: TradeMetrics,
-  spec: StrategySpec,
-): RiskOutlook {
-  const expectedAvgLossPerContract = m.maxLossPerContract * (spec.histAvgLossPct / 100);
-  const worstHistoricalLossPerContract = m.maxLossPerContract * (spec.histMaxLossPct / 100);
+export function riskOutlook(m: TradeMetrics, spec: StrategySpec): RiskOutlook {
+  const expectedAvgLossPerContract =
+    m.maxLossPerContract * (spec.histAvgLossPct / 100);
+  const worstHistoricalLossPerContract =
+    m.maxLossPerContract * (spec.histMaxLossPct / 100);
   return {
     expectedAvgLossPerContract,
     worstHistoricalLossPerContract,
     expectedAvgLossDollars: expectedAvgLossPerContract * m.recommendedContracts,
-    worstHistoricalLossDollars: worstHistoricalLossPerContract * m.recommendedContracts,
+    worstHistoricalLossDollars:
+      worstHistoricalLossPerContract * m.recommendedContracts,
     winRatePct: winRatePct(spec),
   };
 }
 
 export interface ExitPlan {
-  rule1ExitDelta: number;         // close when short |Δ| reaches this
-  rule2BufferPct: number;         // 2 or 3 — within this % on Thursday → close
-  alertPrice: number;             // suggested underlying-price alert level
-  lastDayBufferPrice: number;     // underlying level at which rule 2 fires
+  rule1ExitDelta: number; // close when short |Δ| reaches this
+  rule2BufferPct: number; // 2 or 3 — within this % on Thursday → close
+  alertPrice: number; // suggested underlying-price alert level
+  lastDayBufferPrice: number; // underlying level at which rule 2 fires
 }
 
 export function exitPlan(t: TradeInput, spec: StrategySpec): ExitPlan {
@@ -216,7 +218,8 @@ export function calcMetrics(t: TradeInput): TradeMetrics {
   // different normalization.
   const adjOTMPct = distancePct * Math.sqrt(t.dte / 30);
 
-  const arocPct = (t.credit / maxLossPerShare) * (365 / Math.max(t.dte, 1)) * 100;
+  const arocPct =
+    (t.credit / maxLossPerShare) * (365 / Math.max(t.dte, 1)) * 100;
 
   const probOTM = Math.max(0, Math.min(1, 1 - Math.abs(t.shortDelta)));
   const b = t.credit / maxLossPerShare;
@@ -224,13 +227,16 @@ export function calcMetrics(t: TradeInput): TradeMetrics {
   const kellyPct = Math.max(0, kellyRaw * 100);
 
   const oneThirdCap = t.bankroll / 3;
-  const maxContractsKelly = maxLossPerContract > 0
-    ? Math.floor((t.bankroll * (kellyPct / 100)) / maxLossPerContract)
-    : 0;
-  const maxContractsThird = maxLossPerContract > 0
-    ? Math.floor(oneThirdCap / maxLossPerContract)
-    : 0;
-  const recommendedContracts = Math.max(0, Math.min(maxContractsKelly, maxContractsThird));
+  const maxContractsKelly =
+    maxLossPerContract > 0
+      ? Math.floor((t.bankroll * (kellyPct / 100)) / maxLossPerContract)
+      : 0;
+  const maxContractsThird =
+    maxLossPerContract > 0 ? Math.floor(oneThirdCap / maxLossPerContract) : 0;
+  const recommendedContracts = Math.max(
+    0,
+    Math.min(maxContractsKelly, maxContractsThird),
+  );
 
   const breakeven = t.shortStrike - t.credit;
 

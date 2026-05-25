@@ -11,7 +11,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
 import { toast } from "@/components/ui/toaster";
@@ -28,7 +32,9 @@ export function WatchlistPanel() {
     setWatchlist(data);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   // Subscribe every watchlist symbol over WS so push-ticks update the store.
   useEffect(() => {
@@ -55,7 +61,10 @@ export function WatchlistPanel() {
     };
     fetchOnce();
     const id = setInterval(fetchOnce, 15000);
-    return () => { alive = false; clearInterval(id); };
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
   }, [items, updateQuote]);
 
   const add = async () => {
@@ -75,7 +84,9 @@ export function WatchlistPanel() {
   const remove = async (sym: string) => {
     try {
       await api.watchlistRemove(sym);
-      toast(`${sym} removed`, { description: "Symbol dropped from watchlist." });
+      toast(`${sym} removed`, {
+        description: "Symbol dropped from watchlist.",
+      });
     } catch {
       toast.error(`Failed to remove ${sym}`);
     }
@@ -135,7 +146,9 @@ export function WatchlistPanel() {
           <div key={sector}>
             <div className="px-3 py-1 text-[9px] font-medium text-text-muted uppercase tracking-wider bg-surface/80 backdrop-blur sticky top-0 z-10 border-b border-border/40 flex items-center gap-2">
               <span>{sector}</span>
-              <span className="text-text-muted/70 tabular">{stocks.length}</span>
+              <span className="text-text-muted/70 tabular">
+                {stocks.length}
+              </span>
             </div>
             {stocks.map((item) => {
               const q = quotes[item.symbol];
@@ -166,7 +179,7 @@ export function WatchlistPanel() {
                     <span
                       className={cn(
                         "tabular text-[10px] font-medium leading-none shrink-0",
-                        positive ? "text-up" : "text-down"
+                        positive ? "text-up" : "text-down",
                       )}
                     >
                       {fmtPct(changePct)}

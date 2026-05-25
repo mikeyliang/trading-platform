@@ -29,7 +29,13 @@ export function ForecastBreakdownPanel({ result }: Props) {
     .map((h) => Number(h))
     .sort((a, b) => a - b);
 
-  const memberOrder = ["chronos", "momentum", "mean_reversion", "martingale", "ensemble"];
+  const memberOrder = [
+    "chronos",
+    "momentum",
+    "mean_reversion",
+    "martingale",
+    "ensemble",
+  ];
   const memberNames: Record<string, string> = {
     chronos: "Chronos-2",
     momentum: "Momentum",
@@ -39,11 +45,16 @@ export function ForecastBreakdownPanel({ result }: Props) {
   };
   // Hints become tooltips on the model name so each row stays one-line tall.
   const memberHints: Record<string, string> = {
-    chronos: "Chronos-2 foundation model. 120M params, trained on heterogeneous time series. Operates in log-return space.",
-    momentum: "Extrapolates the mean log return over the last 20 days. Captures 'trend persists'. Strongest in clean directional regimes.",
-    mean_reversion: "Pulls price back toward the 50-day EMA with ~10-day half-life. Captures 'overextended price reverts'.",
-    martingale: "No-information baseline: median = last close, bands widen with sqrt(time). The floor everyone else has to beat.",
-    ensemble: "Equal-weight combination of all member models. Bands widened to widest member for honesty.",
+    chronos:
+      "Chronos-2 foundation model. 120M params, trained on heterogeneous time series. Operates in log-return space.",
+    momentum:
+      "Extrapolates the mean log return over the last 20 days. Captures 'trend persists'. Strongest in clean directional regimes.",
+    mean_reversion:
+      "Pulls price back toward the 50-day EMA with ~10-day half-life. Captures 'overextended price reverts'.",
+    martingale:
+      "No-information baseline: median = last close, bands widen with sqrt(time). The floor everyone else has to beat.",
+    ensemble:
+      "Equal-weight combination of all member models. Bands widened to widest member for honesty.",
   };
 
   const cal = fe.ensemble.calibration;
@@ -73,7 +84,11 @@ export function ForecastBreakdownPanel({ result }: Props) {
             <tr className="text-text-muted text-[9px] uppercase tracking-wider border-b border-border/40">
               <th className="text-left px-3 py-1.5 font-medium">Model</th>
               {horizons.map((h) => (
-                <th key={h} className="text-right px-3 py-1.5 font-medium" colSpan={2}>
+                <th
+                  key={h}
+                  className="text-right px-3 py-1.5 font-medium"
+                  colSpan={2}
+                >
                   {h}d
                 </th>
               ))}
@@ -81,8 +96,18 @@ export function ForecastBreakdownPanel({ result }: Props) {
             <tr className="text-text-muted text-[9px] border-b border-border/40">
               <th></th>
               {horizons.flatMap((h) => [
-                <th key={`${h}-er`} className="text-right px-3 py-0.5 font-normal">ret</th>,
-                <th key={`${h}-band`} className="text-right px-3 py-0.5 font-normal text-text-muted/70">±band</th>,
+                <th
+                  key={`${h}-er`}
+                  className="text-right px-3 py-0.5 font-normal"
+                >
+                  ret
+                </th>,
+                <th
+                  key={`${h}-band`}
+                  className="text-right px-3 py-0.5 font-normal text-text-muted/70"
+                >
+                  ±band
+                </th>,
               ])}
             </tr>
           </thead>
@@ -96,7 +121,7 @@ export function ForecastBreakdownPanel({ result }: Props) {
                   key={m}
                   className={cn(
                     "border-t border-border/40",
-                    isEnsemble && "bg-accent/5 font-medium"
+                    isEnsemble && "bg-accent/5 font-medium",
                   )}
                 >
                   <td className="px-3 py-1.5">
@@ -104,7 +129,7 @@ export function ForecastBreakdownPanel({ result }: Props) {
                       hint={memberHints[m] ?? ""}
                       className={cn(
                         "decoration-text-muted/30",
-                        isEnsemble ? "text-accent" : "text-text-primary"
+                        isEnsemble ? "text-accent" : "text-text-primary",
                       )}
                     >
                       {memberNames[m] ?? m}
@@ -114,18 +139,43 @@ export function ForecastBreakdownPanel({ result }: Props) {
                     const hf = src.horizons[String(h)];
                     if (!hf) {
                       return [
-                        <td key={`${m}-${h}-er`} className="text-right px-3 py-1.5 text-text-muted">—</td>,
-                        <td key={`${m}-${h}-band`} className="text-right px-3 py-1.5 text-text-muted">—</td>,
+                        <td
+                          key={`${m}-${h}-er`}
+                          className="text-right px-3 py-1.5 text-text-muted"
+                        >
+                          —
+                        </td>,
+                        <td
+                          key={`${m}-${h}-band`}
+                          className="text-right px-3 py-1.5 text-text-muted"
+                        >
+                          —
+                        </td>,
                       ];
                     }
                     const er = hf.expected_return_pct;
                     const band = hf.band_pct;
-                    const erTone = er > 0.5 ? "text-up" : er < -0.5 ? "text-down" : "text-text-muted";
+                    const erTone =
+                      er > 0.5
+                        ? "text-up"
+                        : er < -0.5
+                          ? "text-down"
+                          : "text-text-muted";
                     return [
-                      <td key={`${m}-${h}-er`} className={cn("text-right px-3 py-1.5 font-medium", erTone)}>
-                        {er >= 0 ? "+" : ""}{er.toFixed(2)}%
+                      <td
+                        key={`${m}-${h}-er`}
+                        className={cn(
+                          "text-right px-3 py-1.5 font-medium",
+                          erTone,
+                        )}
+                      >
+                        {er >= 0 ? "+" : ""}
+                        {er.toFixed(2)}%
                       </td>,
-                      <td key={`${m}-${h}-band`} className="text-right px-3 py-1.5 text-text-muted text-[10px]">
+                      <td
+                        key={`${m}-${h}-band`}
+                        className="text-right px-3 py-1.5 text-text-muted text-[10px]"
+                      >
                         ±{band.toFixed(1)}%
                       </td>,
                     ];
@@ -146,10 +196,19 @@ export function ForecastBreakdownPanel({ result }: Props) {
               </td>
               {horizons.map((h) => {
                 const agree = fe.agreement[String(h)] ?? 1;
-                const agreeTone = agree >= 0.7 ? "text-up" : agree >= 0.4 ? "text-warning" : "text-down";
+                const agreeTone =
+                  agree >= 0.7
+                    ? "text-up"
+                    : agree >= 0.4
+                      ? "text-warning"
+                      : "text-down";
                 const cov = cal?.coverage_observed_per_h?.[String(h)];
                 return (
-                  <td key={`agree-${h}`} colSpan={2} className="px-3 py-1.5 text-right">
+                  <td
+                    key={`agree-${h}`}
+                    colSpan={2}
+                    className="px-3 py-1.5 text-right"
+                  >
                     <span className={cn("font-medium tabular", agreeTone)}>
                       {(agree * 100).toFixed(0)}%
                     </span>

@@ -28,7 +28,7 @@ export function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
               "relative px-3 h-7 flex items-center text-[11px] tabular tracking-normal rounded-sm transition-colors shrink-0",
               active
                 ? "text-text-primary"
-                : "text-text-muted hover:text-text-secondary"
+                : "text-text-muted hover:text-text-secondary",
             )}
           >
             {t.label}

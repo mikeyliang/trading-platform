@@ -6,9 +6,9 @@ import { CHART } from "@/lib/chartTheme";
 
 interface Point {
   days_remaining: number;
-  pnl_flat: number;     // PnL if spot is unchanged at this future date
-  pnl_up_1s: number;    // PnL if spot is +1σ by this date
-  pnl_dn_1s: number;    // PnL if spot is -1σ by this date
+  pnl_flat: number; // PnL if spot is unchanged at this future date
+  pnl_up_1s: number; // PnL if spot is +1σ by this date
+  pnl_dn_1s: number; // PnL if spot is -1σ by this date
 }
 
 interface Props {
@@ -40,7 +40,7 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
     const all = data.flatMap((p) => [p.pnl_flat, p.pnl_up_1s, p.pnl_dn_1s]);
     const minV = Math.min(...all, 0);
     const maxV = Math.max(...all, 0);
-    const padY = Math.max(1, (maxV - minV) * 0.10);
+    const padY = Math.max(1, (maxV - minV) * 0.1);
     const yMn = minV - padY;
     const yMx = maxV + padY;
 
@@ -52,7 +52,8 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
 
     const xOf = (elapsedDays: number) =>
       PAD_L + (xMx > 0 ? (elapsedDays / xMx) * innerW : 0);
-    const yOf = (v: number) => PAD_T + innerH - ((v - yMn) / (yMx - yMn)) * innerH;
+    const yOf = (v: number) =>
+      PAD_T + innerH - ((v - yMn) / (yMx - yMn)) * innerH;
     const yZero = yOf(0);
 
     // Nice y ticks
@@ -130,8 +131,16 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
             forecast cone does on the other chart. */}
         <defs>
           <linearGradient id="pnl-decay-grad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor={CHART.forecast.cone} stopOpacity="0.05" />
-            <stop offset="100%" stopColor={CHART.forecast.cone} stopOpacity="0.24" />
+            <stop
+              offset="0%"
+              stopColor={CHART.forecast.cone}
+              stopOpacity="0.05"
+            />
+            <stop
+              offset="100%"
+              stopColor={CHART.forecast.cone}
+              stopOpacity="0.24"
+            />
           </linearGradient>
         </defs>
 
@@ -139,14 +148,21 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
         {ticks.map((t, i) => (
           <g key={`g-${i}`}>
             <line
-              x1={PAD_L} x2={W - PAD_R} y1={yOf(t)} y2={yOf(t)}
+              x1={PAD_L}
+              x2={W - PAD_R}
+              y1={yOf(t)}
+              y2={yOf(t)}
               stroke={CHART.axisText}
               strokeOpacity={t === 0 ? 0.4 : 0.07}
               strokeDasharray={t === 0 ? "none" : "2 4"}
             />
             <text
-              x={PAD_L - 6} y={yOf(t) + 3}
-              fontSize="10" fill={CHART.axisText} textAnchor="end" className="tabular-nums"
+              x={PAD_L - 6}
+              y={yOf(t) + 3}
+              fontSize="10"
+              fill={CHART.axisText}
+              textAnchor="end"
+              className="tabular-nums"
             >
               {fmtPnl(t)}
             </text>
@@ -157,8 +173,12 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
         {xLabels.map((d, i) => (
           <text
             key={`xl-${i}`}
-            x={xOf(d)} y={H - PAD_B + 14}
-            fontSize="10" fill={CHART.axisText} textAnchor="middle" className="tabular-nums"
+            x={xOf(d)}
+            y={H - PAD_B + 14}
+            fontSize="10"
+            fill={CHART.axisText}
+            textAnchor="middle"
+            className="tabular-nums"
           >
             {d === 0 ? "now" : `+${d}d`}
           </text>
@@ -168,53 +188,98 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
         <path d={envelope} fill="url(#pnl-decay-grad)" />
 
         {/* curves */}
-        <path d={dnPath} stroke={CHART.down} strokeWidth="1.2" fill="none" opacity={0.85} strokeDasharray="3 3" />
-        <path d={upPath} stroke={CHART.up} strokeWidth="1.2" fill="none" opacity={0.85} strokeDasharray="3 3" />
+        <path
+          d={dnPath}
+          stroke={CHART.down}
+          strokeWidth="1.2"
+          fill="none"
+          opacity={0.85}
+          strokeDasharray="3 3"
+        />
+        <path
+          d={upPath}
+          stroke={CHART.up}
+          strokeWidth="1.2"
+          fill="none"
+          opacity={0.85}
+          strokeDasharray="3 3"
+        />
         <path d={flatPath} stroke={CHART.text} strokeWidth="1.8" fill="none" />
 
         {/* Today anchor — halo + dot, mirrors the cone's last-close anchor */}
-        {data.length > 0 && (() => {
-          const x0 = xOf(0);
-          const y0 = yOf(data[0].pnl_flat);
-          return (
-            <g pointerEvents="none">
-              <circle cx={x0} cy={y0} r={4.5} fill={CHART.text} fillOpacity={0.18} />
-              <circle cx={x0} cy={y0} r={2.5} fill={CHART.text} />
-            </g>
-          );
-        })()}
+        {data.length > 0 &&
+          (() => {
+            const x0 = xOf(0);
+            const y0 = yOf(data[0].pnl_flat);
+            return (
+              <g pointerEvents="none">
+                <circle
+                  cx={x0}
+                  cy={y0}
+                  r={4.5}
+                  fill={CHART.text}
+                  fillOpacity={0.18}
+                />
+                <circle cx={x0} cy={y0} r={2.5} fill={CHART.text} />
+              </g>
+            );
+          })()}
 
         {/* Terminal labels at expiry — match the forecast cone's right-edge
             labels. Vertically de-overlap if labels cluster. */}
-        {data.length > 0 && (() => {
-          const last = data[data.length - 1];
-          const xR = xOf(xMax) - 2;
-          const labels = [
-            { y: yOf(last.pnl_up_1s), color: CHART.up,   text: `+1σ ${fmtPnl(last.pnl_up_1s)}` },
-            { y: yOf(last.pnl_flat),  color: CHART.text, text: `flat ${fmtPnl(last.pnl_flat)}` },
-            { y: yOf(last.pnl_dn_1s), color: CHART.down, text: `−1σ ${fmtPnl(last.pnl_dn_1s)}` },
-          ].sort((a, b) => a.y - b.y);
-          const minSpacing = 12;
-          for (let i = 1; i < labels.length; i++) {
-            if (labels[i].y - labels[i - 1].y < minSpacing) {
-              labels[i].y = labels[i - 1].y + minSpacing;
+        {data.length > 0 &&
+          (() => {
+            const last = data[data.length - 1];
+            const xR = xOf(xMax) - 2;
+            const labels = [
+              {
+                y: yOf(last.pnl_up_1s),
+                color: CHART.up,
+                text: `+1σ ${fmtPnl(last.pnl_up_1s)}`,
+              },
+              {
+                y: yOf(last.pnl_flat),
+                color: CHART.text,
+                text: `flat ${fmtPnl(last.pnl_flat)}`,
+              },
+              {
+                y: yOf(last.pnl_dn_1s),
+                color: CHART.down,
+                text: `−1σ ${fmtPnl(last.pnl_dn_1s)}`,
+              },
+            ].sort((a, b) => a.y - b.y);
+            const minSpacing = 12;
+            for (let i = 1; i < labels.length; i++) {
+              if (labels[i].y - labels[i - 1].y < minSpacing) {
+                labels[i].y = labels[i - 1].y + minSpacing;
+              }
             }
-          }
-          return labels.map((l, i) => (
-            <text key={`tl-${i}`} x={xR} y={l.y + 3}
-                  fontSize="9" fill={l.color} textAnchor="end"
-                  fontWeight={500}
-                  className="tabular-nums">
-              {l.text}
-            </text>
-          ));
-        })()}
+            return labels.map((l, i) => (
+              <text
+                key={`tl-${i}`}
+                x={xR}
+                y={l.y + 3}
+                fontSize="9"
+                fill={l.color}
+                textAnchor="end"
+                fontWeight={500}
+                className="tabular-nums"
+              >
+                {l.text}
+              </text>
+            ));
+          })()}
 
         {/* Horizon hint top-right */}
-        <text x={W - PAD_R - 2} y={PAD_T + 10}
-              fontSize="9" fill={CHART.forecast.cone} textAnchor="end"
-              fontWeight={600}
-              className="tabular-nums">
+        <text
+          x={W - PAD_R - 2}
+          y={PAD_T + 10}
+          fontSize="9"
+          fill={CHART.forecast.cone}
+          textAnchor="end"
+          fontWeight={600}
+          className="tabular-nums"
+        >
           +{xMax}d horizon
         </text>
 
@@ -222,13 +287,32 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
         {hover && (
           <g pointerEvents="none">
             <line
-              x1={xOf(xMax - hover.days_remaining)} x2={xOf(xMax - hover.days_remaining)}
-              y1={PAD_T} y2={H - PAD_B}
-              stroke={CHART.text} strokeOpacity={0.35} strokeDasharray="3 3"
+              x1={xOf(xMax - hover.days_remaining)}
+              x2={xOf(xMax - hover.days_remaining)}
+              y1={PAD_T}
+              y2={H - PAD_B}
+              stroke={CHART.text}
+              strokeOpacity={0.35}
+              strokeDasharray="3 3"
             />
-            <circle cx={xOf(xMax - hover.days_remaining)} cy={yOf(hover.pnl_flat)} r={3} fill={CHART.text} />
-            <circle cx={xOf(xMax - hover.days_remaining)} cy={yOf(hover.pnl_up_1s)} r={2.5} fill={CHART.up} />
-            <circle cx={xOf(xMax - hover.days_remaining)} cy={yOf(hover.pnl_dn_1s)} r={2.5} fill={CHART.down} />
+            <circle
+              cx={xOf(xMax - hover.days_remaining)}
+              cy={yOf(hover.pnl_flat)}
+              r={3}
+              fill={CHART.text}
+            />
+            <circle
+              cx={xOf(xMax - hover.days_remaining)}
+              cy={yOf(hover.pnl_up_1s)}
+              r={2.5}
+              fill={CHART.up}
+            />
+            <circle
+              cx={xOf(xMax - hover.days_remaining)}
+              cy={yOf(hover.pnl_dn_1s)}
+              r={2.5}
+              fill={CHART.down}
+            />
           </g>
         )}
       </svg>
@@ -237,17 +321,41 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
         {hover ? (
           <>
             <span className="text-text-muted">
-              {hover.days_remaining === 0 ? "expiry" : `${xMax - hover.days_remaining}d from now`}
+              {hover.days_remaining === 0
+                ? "expiry"
+                : `${xMax - hover.days_remaining}d from now`}
             </span>
-            <span><span className="text-text-muted">flat</span> <span className={pnlClass(hover.pnl_flat)}>{fmtPnl(hover.pnl_flat)}</span></span>
-            <span><span className="text-up">+1σ</span> <span className={pnlClass(hover.pnl_up_1s)}>{fmtPnl(hover.pnl_up_1s)}</span></span>
-            <span><span className="text-down">−1σ</span> <span className={pnlClass(hover.pnl_dn_1s)}>{fmtPnl(hover.pnl_dn_1s)}</span></span>
+            <span>
+              <span className="text-text-muted">flat</span>{" "}
+              <span className={pnlClass(hover.pnl_flat)}>
+                {fmtPnl(hover.pnl_flat)}
+              </span>
+            </span>
+            <span>
+              <span className="text-up">+1σ</span>{" "}
+              <span className={pnlClass(hover.pnl_up_1s)}>
+                {fmtPnl(hover.pnl_up_1s)}
+              </span>
+            </span>
+            <span>
+              <span className="text-down">−1σ</span>{" "}
+              <span className={pnlClass(hover.pnl_dn_1s)}>
+                {fmtPnl(hover.pnl_dn_1s)}
+              </span>
+            </span>
           </>
         ) : (
           <>
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-white" /> spot unchanged</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-up" /> +1σ path</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-down" /> −1σ path</span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-0.5 bg-white" /> spot
+              unchanged
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-0.5 bg-up" /> +1σ path
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-0.5 bg-down" /> −1σ path
+            </span>
           </>
         )}
       </div>
@@ -261,7 +369,8 @@ function pnlClass(v: number) {
 
 function fmtPnl(v: number): string {
   const a = Math.abs(v);
-  if (a >= 1_000_000) return `${v < 0 ? "-" : ""}$${(a / 1_000_000).toFixed(2)}M`;
+  if (a >= 1_000_000)
+    return `${v < 0 ? "-" : ""}$${(a / 1_000_000).toFixed(2)}M`;
   if (a >= 1_000) return `${v < 0 ? "-" : ""}$${(a / 1_000).toFixed(1)}k`;
   return `${v < 0 ? "-" : ""}$${a.toFixed(0)}`;
 }

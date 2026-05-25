@@ -20,7 +20,9 @@ export function Collapsible({
 }: CollapsibleProps) {
   const [open, setOpen] = React.useState(defaultOpen);
   return (
-    <div className={cn("rounded-md border border-border bg-surface", className)}>
+    <div
+      className={cn("rounded-md border border-border bg-surface", className)}
+    >
       <div className="flex items-center justify-between border-b border-border">
         <button
           type="button"
@@ -31,7 +33,7 @@ export function Collapsible({
             size={12}
             className={cn(
               "text-text-muted shrink-0 transition-transform",
-              open ? "rotate-0" : "-rotate-90"
+              open ? "rotate-0" : "-rotate-90",
             )}
           />
           <div className="text-xs font-medium text-text-secondary uppercase tracking-wider truncate">
@@ -39,7 +41,9 @@ export function Collapsible({
           </div>
         </button>
         {actions && (
-          <div className="flex items-center gap-1.5 pr-3 shrink-0">{actions}</div>
+          <div className="flex items-center gap-1.5 pr-3 shrink-0">
+            {actions}
+          </div>
         )}
       </div>
       {open && <div className="p-3 animate-fade-in">{children}</div>}
@@ -65,17 +69,23 @@ export function Section({
   children,
 }: SectionProps) {
   return (
-    <section className={cn("rounded-md border border-border bg-surface", className)}>
+    <section
+      className={cn("rounded-md border border-border bg-surface", className)}
+    >
       <header className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border">
         <div className="min-w-0">
           <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider truncate">
             {title}
           </h3>
           {description && (
-            <p className="text-[11px] text-text-muted mt-0.5 truncate">{description}</p>
+            <p className="text-[11px] text-text-muted mt-0.5 truncate">
+              {description}
+            </p>
           )}
         </div>
-        {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}
+        {actions && (
+          <div className="flex items-center gap-1.5 shrink-0">{actions}</div>
+        )}
       </header>
       <div className={cn("p-3", bodyClassName)}>{children}</div>
     </section>

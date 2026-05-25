@@ -28,12 +28,17 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
     let cancelled = false;
     setSnap(null);
     setUnavailable(false);
-    api.depthSnapshot(symbol, rows).then((s) => {
-      if (cancelled) return;
-      setSnap(s);
-      if (!s.available) setUnavailable(true);
-    }).catch(() => null);
-    return () => { cancelled = true; };
+    api
+      .depthSnapshot(symbol, rows)
+      .then((s) => {
+        if (cancelled) return;
+        setSnap(s);
+        if (!s.available) setUnavailable(true);
+      })
+      .catch(() => null);
+    return () => {
+      cancelled = true;
+    };
   }, [symbol, rows]);
 
   useEffect(() => {
@@ -46,7 +51,10 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
       if (msg.type === "unavailable") setUnavailable(true);
     });
     ws.connect();
-    return () => { off(); ws.disconnect(); };
+    return () => {
+      off();
+      ws.disconnect();
+    };
   }, [symbol, rows]);
 
   const maxSize = useMemo(() => {
@@ -58,7 +66,13 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
     );
   }, [snap]);
 
-  if (unavailable || (snap && !snap.available && snap.bids.length === 0 && snap.asks.length === 0)) {
+  if (
+    unavailable ||
+    (snap &&
+      !snap.available &&
+      snap.bids.length === 0 &&
+      snap.asks.length === 0)
+  ) {
     return (
       <EmptyState
         icon={Layers}
@@ -69,7 +83,14 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
   }
 
   const imb = snap?.imbalance ?? null;
-  const imbColor = imb == null ? "text-text-muted" : imb > 0.15 ? "text-up" : imb < -0.15 ? "text-down" : "text-text-secondary";
+  const imbColor =
+    imb == null
+      ? "text-text-muted"
+      : imb > 0.15
+        ? "text-up"
+        : imb < -0.15
+          ? "text-down"
+          : "text-text-secondary";
 
   return (
     <div className="flex flex-col">
@@ -80,26 +101,47 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
           <span
             className={cn(
               "ml-1 inline-block w-1 h-1 rounded-full",
-              streaming ? "bg-up" : "bg-text-muted"
+              streaming ? "bg-up" : "bg-text-muted",
             )}
           />
         </span>
         {imb != null && (
           <span className={cn("tabular", imbColor)}>
-            imb {imb >= 0 ? "+" : ""}{(imb * 100).toFixed(1)}%
+            imb {imb >= 0 ? "+" : ""}
+            {(imb * 100).toFixed(1)}%
           </span>
         )}
       </div>
 
       <div className="grid grid-cols-2 text-[10px] tabular">
-        <BookSide side="bid" levels={snap?.bids ?? []} maxSize={maxSize} rows={rows} />
-        <BookSide side="ask" levels={snap?.asks ?? []} maxSize={maxSize} rows={rows} />
+        <BookSide
+          side="bid"
+          levels={snap?.bids ?? []}
+          maxSize={maxSize}
+          rows={rows}
+        />
+        <BookSide
+          side="ask"
+          levels={snap?.asks ?? []}
+          maxSize={maxSize}
+          rows={rows}
+        />
       </div>
 
       {snap && (
         <div className="grid grid-cols-2 px-2 h-6 items-center text-[9px] tabular border-t border-border/60 text-text-muted">
-          <span>bid Σ <span className="text-up font-medium">{fmtCompact(snap.bid_size_total)}</span></span>
-          <span className="text-right">ask Σ <span className="text-down font-medium">{fmtCompact(snap.ask_size_total)}</span></span>
+          <span>
+            bid Σ{" "}
+            <span className="text-up font-medium">
+              {fmtCompact(snap.bid_size_total)}
+            </span>
+          </span>
+          <span className="text-right">
+            ask Σ{" "}
+            <span className="text-down font-medium">
+              {fmtCompact(snap.ask_size_total)}
+            </span>
+          </span>
         </div>
       )}
     </div>
@@ -107,34 +149,52 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
 }
 
 function BookSide({
-  side, levels, maxSize, rows,
-}: { side: "bid" | "ask"; levels: DepthLevel[]; maxSize: number; rows: number }) {
+  side,
+  levels,
+  maxSize,
+  rows,
+}: {
+  side: "bid" | "ask";
+  levels: DepthLevel[];
+  maxSize: number;
+  rows: number;
+}) {
   // Pad to ``rows`` so the two columns stay visually balanced even when only
   // one side is populated.
   const padded: (DepthLevel | null)[] = [...levels];
   while (padded.length < rows) padded.push(null);
 
   return (
-    <div className={cn("flex flex-col", side === "ask" && "border-l border-border/60")}>
+    <div
+      className={cn(
+        "flex flex-col",
+        side === "ask" && "border-l border-border/60",
+      )}
+    >
       {padded.slice(0, rows).map((lv, i) => (
-        <div
-          key={i}
-          className="relative h-[18px] flex items-center px-2"
-        >
+        <div key={i} className="relative h-[18px] flex items-center px-2">
           {lv && (
             <span
               className={cn(
                 "absolute inset-y-0",
-                side === "bid" ? "right-0 bg-up/12" : "left-0 bg-down/12"
+                side === "bid" ? "right-0 bg-up/12" : "left-0 bg-down/12",
               )}
               style={{ width: `${Math.max(2, (lv.size / maxSize) * 100)}%` }}
             />
           )}
-          <span className={cn(
-            "relative z-10 flex w-full",
-            side === "bid" ? "justify-between" : "flex-row-reverse justify-between"
-          )}>
-            <span className={side === "bid" ? "text-up font-medium" : "text-down font-medium"}>
+          <span
+            className={cn(
+              "relative z-10 flex w-full",
+              side === "bid"
+                ? "justify-between"
+                : "flex-row-reverse justify-between",
+            )}
+          >
+            <span
+              className={
+                side === "bid" ? "text-up font-medium" : "text-down font-medium"
+              }
+            >
               {lv ? lv.price.toFixed(2) : "—"}
             </span>
             <span className="text-text-secondary">

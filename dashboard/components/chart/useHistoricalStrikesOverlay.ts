@@ -22,10 +22,10 @@ interface Args {
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const STRATEGY_COLORS: Record<RuleOneHistoryCycle["strategy_id"], string> = {
-  rut: "#3b82f6",      // blue
-  mars: "#a78bfa",     // violet
-  marsmax: "#f97316",  // orange
-  space: "#22d3ee",    // cyan
+  rut: "#3b82f6", // blue
+  mars: "#a78bfa", // violet
+  marsmax: "#f97316", // orange
+  space: "#22d3ee", // cyan
 };
 
 const STRATEGY_LABELS: Record<RuleOneHistoryCycle["strategy_id"], string> = {
@@ -55,7 +55,7 @@ export function useHistoricalStrikesOverlay({
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute(
       "style",
-      "position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible;"
+      "position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible;",
     );
     svg.classList.add("hist-strikes-overlay");
     el.appendChild(svg);
@@ -111,7 +111,7 @@ export function useHistoricalStrikesOverlay({
         label.setAttribute("font-size", "9");
         label.setAttribute(
           "font-family",
-          "ui-monospace, SFMono-Regular, monospace"
+          "ui-monospace, SFMono-Regular, monospace",
         );
         label.textContent = `${STRATEGY_LABELS[cy.strategy_id]} ${Math.round(cy.short_strike)}`;
         svg.appendChild(label);
@@ -119,13 +119,13 @@ export function useHistoricalStrikesOverlay({
     };
 
     render();
-    const unsubTime = c.timeScale().subscribeVisibleTimeRangeChange(render);
+    c.timeScale().subscribeVisibleTimeRangeChange(render);
     const ro = new ResizeObserver(render);
     ro.observe(el);
 
     return () => {
       try {
-        unsubTime?.();
+        c.timeScale().unsubscribeVisibleTimeRangeChange(render);
       } catch {}
       ro.disconnect();
       if (svg.parentNode) svg.parentNode.removeChild(svg);

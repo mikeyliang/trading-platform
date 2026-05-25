@@ -3,7 +3,11 @@
 import { useStore } from "@/lib/store";
 import { cn, fmt, fmtPct, pnlClass } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Search, Sparkles } from "lucide-react";
 import { useChatAvailable } from "@/lib/chat-availability";
@@ -28,8 +32,12 @@ export function Header() {
         aria-label="Open command palette"
       >
         <Search size={11} className="shrink-0 opacity-60" />
-        <span className="text-[11px] flex-1 text-left">Search symbol, strategy, page…</span>
-        <kbd className="text-[10px] tabular font-mono text-text-muted/60">⌘K</kbd>
+        <span className="text-[11px] flex-1 text-left">
+          Search symbol, strategy, page…
+        </span>
+        <kbd className="text-[10px] tabular font-mono text-text-muted/60">
+          ⌘K
+        </kbd>
       </button>
 
       <Separator orientation="vertical" className="h-4" />
@@ -64,11 +72,19 @@ function ActiveQuote({
   quote,
 }: {
   symbol: string;
-  quote?: { last: number; change: number; change_pct: number; bid: number; ask: number };
+  quote?: {
+    last: number;
+    change: number;
+    change_pct: number;
+    bid: number;
+    ask: number;
+  };
 }) {
   return (
     <div className="flex items-center gap-2 tabular font-mono text-[11px]">
-      <span className="text-text-primary font-medium tracking-tight">{symbol}</span>
+      <span className="text-text-primary font-medium tracking-tight">
+        {symbol}
+      </span>
       {quote ? (
         <>
           <span className="text-text-primary">{fmt(quote.last, 2)}</span>
@@ -88,10 +104,20 @@ function ActiveQuote({
 }
 
 function openPalette() {
-  const event = new KeyboardEvent("keydown", { key: "k", metaKey: true, ctrlKey: true, bubbles: true });
+  const event = new KeyboardEvent("keydown", {
+    key: "k",
+    metaKey: true,
+    ctrlKey: true,
+    bubbles: true,
+  });
   document.dispatchEvent(event);
 }
 function openCopilot() {
-  const event = new KeyboardEvent("keydown", { key: "j", metaKey: true, ctrlKey: true, bubbles: true });
+  const event = new KeyboardEvent("keydown", {
+    key: "j",
+    metaKey: true,
+    ctrlKey: true,
+    bubbles: true,
+  });
   document.dispatchEvent(event);
 }

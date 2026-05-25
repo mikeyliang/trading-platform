@@ -18,10 +18,34 @@ export interface PendingSuggestion {
   consumed?: boolean;
 }
 
+/** IBKR connection state machine — matches `ConnectionState` constants on
+ *  the API side. Drives the colour-coded status pill in the UI. */
+export type IbConnState =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "failed";
+
 interface LiveHealth {
   ib_connected: boolean;
+  /** Fine-grained connection state pushed by the API supervisor. May be
+   *  undefined for older payloads — fall back to ib_connected. */
+  ib_state?: IbConnState;
+  ib_error?: string | null;
   mode: string;
   mock_mode: boolean;
+}
+
+/** Snapshot of the IBKR connection supervisor (state, attempts, sticky subs). */
+export interface IbStateSnapshot {
+  state: IbConnState;
+  connected: boolean;
+  error: string | null;
+  attempt: number;
+  subscriptions: string[];
+  host?: string;
+  port?: number;
 }
 
 interface TradingStore {
@@ -32,6 +56,7 @@ interface TradingStore {
   strategies: StrategyInfo[];
   account: AccountInfo | null;
   liveHealth: LiveHealth | null;
+  ibSnapshot: IbStateSnapshot | null;
   activeSymbol: string;
   activeTimeframe: string;
 
@@ -47,6 +72,7 @@ interface TradingStore {
   setStrategies: (s: StrategyInfo[]) => void;
   setAccount: (a: AccountInfo) => void;
   setLiveHealth: (h: LiveHealth) => void;
+  setIbSnapshot: (s: IbStateSnapshot) => void;
   setActiveSymbol: (s: string) => void;
   setActiveTimeframe: (tf: string) => void;
   setLastBacktest: (r: BacktestResult | null) => void;
@@ -62,25 +88,28 @@ export const useStore = create<TradingStore>((set) => ({
   strategies: [],
   account: null,
   liveHealth: null,
+  ibSnapshot: null,
   activeSymbol: "AAPL",
   activeTimeframe: "15m",
   lastBacktest: null,
   pendingSuggestion: null,
 
   setWsConnected: (v) => set({ wsConnected: v }),
-  updateQuote: (q) =>
-    set((s) => ({ quotes: { ...s.quotes, [q.symbol]: q } })),
+  updateQuote: (q) => set((s) => ({ quotes: { ...s.quotes, [q.symbol]: q } })),
   setPositions: (positions) => set({ positions }),
   setWatchlist: (watchlist) => set({ watchlist }),
   setStrategies: (strategies) => set({ strategies }),
   setAccount: (account) => set({ account }),
   setLiveHealth: (liveHealth) => set({ liveHealth }),
+  setIbSnapshot: (ibSnapshot) => set({ ibSnapshot }),
   setActiveSymbol: (activeSymbol) => set({ activeSymbol }),
   setActiveTimeframe: (activeTimeframe) => set({ activeTimeframe }),
   setLastBacktest: (lastBacktest) => set({ lastBacktest }),
   setPendingSuggestion: (pendingSuggestion) => set({ pendingSuggestion }),
   consumePendingSuggestion: () =>
     set((s) =>
-      s.pendingSuggestion ? { pendingSuggestion: { ...s.pendingSuggestion, consumed: true } } : {}
+      s.pendingSuggestion
+        ? { pendingSuggestion: { ...s.pendingSuggestion, consumed: true } }
+        : {},
     ),
 }));

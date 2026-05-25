@@ -41,14 +41,20 @@ class TradingWebSocket {
         this.fire({ type: "connected" });
       };
       this.ws.onmessage = (e) => {
-        try { this.fire(JSON.parse(e.data)); } catch (_) { /* skip */ }
+        try {
+          this.fire(JSON.parse(e.data));
+        } catch (_) {
+          /* skip */
+        }
       };
       this.ws.onclose = () => {
         this.fire({ type: "disconnected" });
         if (!this.closing) this.reconnect();
       };
       this.ws.onerror = () => this.ws?.close();
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
   }
 
   disconnect() {

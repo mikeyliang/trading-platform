@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ColorType, LineStyle, UTCTimestamp, createChart } from "lightweight-charts";
+import {
+  ColorType,
+  LineStyle,
+  UTCTimestamp,
+  createChart,
+} from "lightweight-charts";
 
 interface Props {
   data: { time: number; value: number }[];
@@ -46,10 +51,14 @@ export function EquityLine({ data, height = 200 }: Props) {
       lineWidth: 2,
       priceLineVisible: false,
     });
-    area.setData(data.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })));
+    area.setData(
+      data.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })),
+    );
     chart.timeScale().fitContent();
 
-    const ro = new ResizeObserver(() => chart.applyOptions({ width: el.clientWidth }));
+    const ro = new ResizeObserver(() =>
+      chart.applyOptions({ width: el.clientWidth }),
+    );
     ro.observe(el);
     return () => {
       ro.disconnect();
@@ -59,7 +68,10 @@ export function EquityLine({ data, height = 200 }: Props) {
 
   if (data.length < 2) {
     return (
-      <div className="flex items-center justify-center text-text-muted text-[11px]" style={{ height }}>
+      <div
+        className="flex items-center justify-center text-text-muted text-[11px]"
+        style={{ height }}
+      >
         not enough data
       </div>
     );

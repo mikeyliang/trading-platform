@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { api } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import type { AccountInfo } from "@/types";
@@ -90,7 +98,14 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <HealthContext.Provider
-      value={{ health, account, lastCheckedAt, apiReachable, initialLoad, refetch }}
+      value={{
+        health,
+        account,
+        lastCheckedAt,
+        apiReachable,
+        initialLoad,
+        refetch,
+      }}
     >
       {children}
     </HealthContext.Provider>

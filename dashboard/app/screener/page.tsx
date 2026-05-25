@@ -23,16 +23,89 @@ import { ArrowUpDown, Target } from "lucide-react";
 
 // Curated universe — same anchor list as the logo map, expanded slightly
 const UNIVERSE = [
-  "AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "AVGO", "ORCL",
-  "CRM", "ADBE", "NFLX", "CSCO", "AMD", "INTC", "QCOM", "IBM", "TXN", "MU",
-  "PYPL", "SHOP", "PLTR", "SNOW", "UBER", "ABNB", "RBLX", "COIN", "SOFI",
-  "JPM", "BAC", "WFC", "GS", "MS", "C", "BLK", "V", "MA", "AXP", "SCHW",
-  "WMT", "COST", "HD", "LOW", "TGT", "NKE", "SBUX", "MCD", "KO", "PEP",
-  "PG", "DIS", "LULU",
-  "JNJ", "UNH", "PFE", "MRK", "ABBV", "LLY", "TMO", "ABT",
-  "XOM", "CVX", "COP", "SLB",
-  "BA", "CAT", "GE", "HON", "UPS", "FDX", "RTX", "LMT",
-  "SPY", "QQQ", "IWM", "DIA", "VOO", "GLD", "TLT", "HYG", "XLE", "XLF", "XLK",
+  "AAPL",
+  "MSFT",
+  "GOOGL",
+  "AMZN",
+  "META",
+  "NVDA",
+  "TSLA",
+  "AVGO",
+  "ORCL",
+  "CRM",
+  "ADBE",
+  "NFLX",
+  "CSCO",
+  "AMD",
+  "INTC",
+  "QCOM",
+  "IBM",
+  "TXN",
+  "MU",
+  "PYPL",
+  "SHOP",
+  "PLTR",
+  "SNOW",
+  "UBER",
+  "ABNB",
+  "RBLX",
+  "COIN",
+  "SOFI",
+  "JPM",
+  "BAC",
+  "WFC",
+  "GS",
+  "MS",
+  "C",
+  "BLK",
+  "V",
+  "MA",
+  "AXP",
+  "SCHW",
+  "WMT",
+  "COST",
+  "HD",
+  "LOW",
+  "TGT",
+  "NKE",
+  "SBUX",
+  "MCD",
+  "KO",
+  "PEP",
+  "PG",
+  "DIS",
+  "LULU",
+  "JNJ",
+  "UNH",
+  "PFE",
+  "MRK",
+  "ABBV",
+  "LLY",
+  "TMO",
+  "ABT",
+  "XOM",
+  "CVX",
+  "COP",
+  "SLB",
+  "BA",
+  "CAT",
+  "GE",
+  "HON",
+  "UPS",
+  "FDX",
+  "RTX",
+  "LMT",
+  "SPY",
+  "QQQ",
+  "IWM",
+  "DIA",
+  "VOO",
+  "GLD",
+  "TLT",
+  "HYG",
+  "XLE",
+  "XLF",
+  "XLK",
 ];
 
 const SECTORS = [
@@ -89,7 +162,10 @@ export default function ScreenerPage() {
   const filtered = useMemo(() => {
     let rows = data.filter((r) => r.market_cap || r.price); // drop fully-empty
     const q = query.trim().toUpperCase();
-    if (q) rows = rows.filter((r) => r.symbol.includes(q) || (r.name ?? "").toUpperCase().includes(q));
+    if (q)
+      rows = rows.filter(
+        (r) => r.symbol.includes(q) || (r.name ?? "").toUpperCase().includes(q),
+      );
     if (sector !== "All") rows = rows.filter((r) => r.sector === sector);
     if (tier !== "any") rows = rows.filter((r) => r.market_cap_tier === tier);
     const pe = Number(maxPE);
@@ -116,7 +192,8 @@ export default function ScreenerPage() {
 
   const sectorCounts = useMemo(() => {
     const m = new Map<string, number>();
-    for (const r of data) if (r.sector) m.set(r.sector, (m.get(r.sector) ?? 0) + 1);
+    for (const r of data)
+      if (r.sector) m.set(r.sector, (m.get(r.sector) ?? 0) + 1);
     return m;
   }, [data]);
 
@@ -143,10 +220,20 @@ export default function ScreenerPage() {
 
       {/* filters — search always visible, advanced behind disclosure, active filters as chips */}
       <FilterBar
-        search={{ value: query, onChange: setQuery, placeholder: "Symbol or name…" }}
+        search={{
+          value: query,
+          onChange: setQuery,
+          placeholder: "Symbol or name…",
+        }}
         chips={[
           ...(sector !== "All"
-            ? [{ key: "sector", label: `Sector: ${sector}`, onRemove: () => setSector("All") }]
+            ? [
+                {
+                  key: "sector",
+                  label: `Sector: ${sector}`,
+                  onRemove: () => setSector("All"),
+                },
+              ]
             : []),
           ...(tier !== "any"
             ? [
@@ -158,10 +245,22 @@ export default function ScreenerPage() {
               ]
             : []),
           ...(maxPE
-            ? [{ key: "pe", label: `P/E ≤ ${maxPE}`, onRemove: () => setMaxPE("") }]
+            ? [
+                {
+                  key: "pe",
+                  label: `P/E ≤ ${maxPE}`,
+                  onRemove: () => setMaxPE(""),
+                },
+              ]
             : []),
           ...(minDiv
-            ? [{ key: "div", label: `Div ≥ ${minDiv}%`, onRemove: () => setMinDiv("") }]
+            ? [
+                {
+                  key: "div",
+                  label: `Div ≥ ${minDiv}%`,
+                  onRemove: () => setMinDiv(""),
+                },
+              ]
             : []),
         ]}
         advanced={
@@ -175,7 +274,9 @@ export default function ScreenerPage() {
                   {SECTORS.map((s) => (
                     <SelectItem key={s} value={s}>
                       {s}
-                      {s !== "All" && sectorCounts.get(s) ? ` · ${sectorCounts.get(s)}` : ""}
+                      {s !== "All" && sectorCounts.get(s)
+                        ? ` · ${sectorCounts.get(s)}`
+                        : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -223,20 +324,44 @@ export default function ScreenerPage() {
           <table className="w-full text-xs">
             <thead>
               <tr className="text-text-muted border-b border-border/40 text-[10px] uppercase tracking-wider">
-                <Th onClick={() => onSort("symbol")} active={sortKey === "symbol"} dir={sortDir}>
+                <Th
+                  onClick={() => onSort("symbol")}
+                  active={sortKey === "symbol"}
+                  dir={sortDir}
+                >
                   Symbol
                 </Th>
                 <Th>Sector</Th>
-                <Th onClick={() => onSort("market_cap")} active={sortKey === "market_cap"} dir={sortDir} align="right">
+                <Th
+                  onClick={() => onSort("market_cap")}
+                  active={sortKey === "market_cap"}
+                  dir={sortDir}
+                  align="right"
+                >
                   Mkt cap
                 </Th>
-                <Th onClick={() => onSort("pe_trailing")} active={sortKey === "pe_trailing"} dir={sortDir} align="right">
+                <Th
+                  onClick={() => onSort("pe_trailing")}
+                  active={sortKey === "pe_trailing"}
+                  dir={sortDir}
+                  align="right"
+                >
                   P/E
                 </Th>
-                <Th onClick={() => onSort("dividend_yield")} active={sortKey === "dividend_yield"} dir={sortDir} align="right">
+                <Th
+                  onClick={() => onSort("dividend_yield")}
+                  active={sortKey === "dividend_yield"}
+                  dir={sortDir}
+                  align="right"
+                >
                   Div %
                 </Th>
-                <Th onClick={() => onSort("beta")} active={sortKey === "beta"} dir={sortDir} align="right">
+                <Th
+                  onClick={() => onSort("beta")}
+                  active={sortKey === "beta"}
+                  dir={sortDir}
+                  align="right"
+                >
                   Beta
                 </Th>
                 <Th
@@ -264,7 +389,10 @@ export default function ScreenerPage() {
                 : filtered.map((r) => <Row key={r.symbol} r={r} />)}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-text-muted text-[11px]">
+                  <td
+                    colSpan={8}
+                    className="text-center py-10 text-text-muted text-[11px]"
+                  >
                     No matches. Try removing filters.
                   </td>
                 </tr>
@@ -277,10 +405,18 @@ export default function ScreenerPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] text-text-muted uppercase tracking-wider">{label}</label>
+      <label className="text-[10px] text-text-muted uppercase tracking-wider">
+        {label}
+      </label>
       {children}
     </div>
   );
@@ -304,7 +440,7 @@ function Th({
       className={cn(
         "px-2 py-1 font-normal",
         align === "right" ? "text-right" : "text-left",
-        onClick && "cursor-pointer hover:text-text-secondary select-none"
+        onClick && "cursor-pointer hover:text-text-secondary select-none",
       )}
       onClick={onClick}
     >
@@ -315,7 +451,7 @@ function Th({
             size={9}
             className={cn(
               "transition-colors",
-              active ? "text-accent" : "text-text-muted/50"
+              active ? "text-accent" : "text-text-muted/50",
             )}
           />
         )}
@@ -328,12 +464,17 @@ function Row({ r }: { r: Fundamentals }) {
   return (
     <tr className="group border-b border-border/30 hover:bg-surface-2 transition-colors">
       <td className="px-2 py-1">
-        <Link href={`/chart/${r.symbol}`} className="flex items-center gap-2 min-w-0">
+        <Link
+          href={`/chart/${r.symbol}`}
+          className="flex items-center gap-2 min-w-0"
+        >
           <Logo symbol={r.symbol} size={18} />
           <div className="flex flex-col min-w-0">
             <span className="font-medium text-text-primary">{r.symbol}</span>
             {r.name && (
-              <span className="text-[10px] text-text-muted truncate max-w-[180px]">{r.name}</span>
+              <span className="text-[10px] text-text-muted truncate max-w-[180px]">
+                {r.name}
+              </span>
             )}
           </div>
         </Link>
@@ -364,7 +505,11 @@ function Row({ r }: { r: Fundamentals }) {
           className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex"
           title="Analyze"
         >
-          <Button variant="ghost" size="icon-sm" aria-label={`Analyze ${r.symbol}`}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Analyze ${r.symbol}`}
+          >
             <Target />
           </Button>
         </Link>
@@ -384,12 +529,18 @@ function Bar({ value }: { value: number }) {
         <div
           className={cn(
             "absolute top-0 left-0 h-full",
-            tone === "up" ? "bg-up/70" : tone === "down" ? "bg-down/70" : "bg-text-secondary/70"
+            tone === "up"
+              ? "bg-up/70"
+              : tone === "down"
+                ? "bg-down/70"
+                : "bg-text-secondary/70",
           )}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="tabular text-[10px] text-text-muted w-8 text-right">{pct}%</span>
+      <span className="tabular text-[10px] text-text-muted w-8 text-right">
+        {pct}%
+      </span>
     </div>
   );
 }

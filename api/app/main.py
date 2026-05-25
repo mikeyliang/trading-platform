@@ -74,6 +74,8 @@ async def _status_broadcaster():
             payload = {
                 "health": {
                     "ib_connected": ib_node.is_connected,
+                    "ib_state": ib_node.connection_state,
+                    "ib_error": ib_node.last_error,
                     "mode": settings.trading_mode,
                     "mock_mode": settings.mock_mode,
                 },
@@ -289,10 +291,25 @@ def health_check():
     return {
         "status": "healthy",
         "ib_connected": ib_node.is_connected,
+        "ib_state": ib_node.connection_state,
+        "ib_error": ib_node.last_error,
+        "ib_status": ib_node.status_snapshot(),
         "mode": settings.trading_mode,
         "mock_mode": settings.mock_mode,
         "ws_connections": manager.connection_count,
     }
+
+
+@app.post(
+    "/api/admin/ib/reconnect",
+    summary="Force IBKR reconnect",
+    response_description="Triggers an immediate teardown + reconnect of the gateway client",
+)
+async def ib_reconnect():
+    """Operator-triggered reconnect. Returns immediately — the supervisor
+    loop drives the actual teardown and retry."""
+    await ib_node.force_reconnect()
+    return {"ok": True, "state": ib_node.connection_state}
 
 
 @app.get(
@@ -328,6 +345,14 @@ async def websocket_endpoint(websocket: WebSocket):
             "type": "connected",
             "client_id": client_id,
             "ib_connected": ib_node.is_connected,
+            "ib_state": ib_node.connection_state,
+            "ib_error": ib_node.last_error,
+        })
+        # Push the current IB connection state immediately so the dashboard
+        # can render the status pill without waiting for the next 5s snapshot.
+        await manager.send(client_id, {
+            "type": "ib_state",
+            "data": ib_node.status_snapshot(),
         })
         while True:
             data = await websocket.receive_json()

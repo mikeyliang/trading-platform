@@ -21,7 +21,10 @@ const FIB_LEVELS: { ratio: number; label: string }[] = [
 export type FibRange = "3m" | "6m" | "9m" | "12m" | "all";
 
 const RANGE_DAYS: Record<Exclude<FibRange, "all">, number> = {
-  "3m": 90, "6m": 180, "9m": 270, "12m": 365,
+  "3m": 90,
+  "6m": 180,
+  "9m": 270,
+  "12m": 365,
 };
 
 interface Args {
@@ -84,7 +87,9 @@ export function useFibLevelsOverlay({
       // If the slice is too thin (intraday timeframe with not enough history)
       // fall back to last 2/3 of loaded bars so we still draw something useful.
       if (slice.length < 20 && bars.length >= 30) {
-        slice = bars.slice(Math.max(0, bars.length - Math.floor(bars.length * 0.67)));
+        slice = bars.slice(
+          Math.max(0, bars.length - Math.floor(bars.length * 0.67)),
+        );
       }
     }
 
@@ -99,7 +104,10 @@ export function useFibLevelsOverlay({
     const priceRange = hi - lo;
     // Identify the "money" band: the floor immediately at-or-below spot.
     // Short strike rule: ≤ 2 floors below money.
-    const levels = FIB_LEVELS.map((f) => ({ ...f, price: lo + f.ratio * priceRange }));
+    const levels = FIB_LEVELS.map((f) => ({
+      ...f,
+      price: lo + f.ratio * priceRange,
+    }));
 
     let moneyIdx = -1;
     if (spot != null) {
@@ -126,8 +134,8 @@ export function useFibLevelsOverlay({
           ? `${targetSuffix} · ${strategyLabel}`
           : targetSuffix
         : isMoney
-        ? "money"
-        : null;
+          ? "money"
+          : null;
       const line = series.createPriceLine({
         price: lvl.price,
         color: isTarget ? targetColor : isMoney ? "#3b82f6" : "#52525b",
