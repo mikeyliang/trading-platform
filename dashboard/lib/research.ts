@@ -147,16 +147,27 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+export interface RunDetail extends Omit<RunRow, "duration_ms"> {
+  duration_ms: number | null;
+  agents: Record<string, { output?: string | Decision; model?: string; duration_ms?: number; error?: string }>;
+}
+
 export const researchApi = {
   catalog: () => get<ResearchCatalog>("/api/research/catalog"),
   pricing: () => get<PricingInfo>("/api/research/pricing"),
   credits: () => get<CreditAccount>("/api/research/credits"),
   checkout: (packId: string) =>
-    post<{ granted: boolean; dev_mode: boolean; pack: CreditPack; balance: number }>(
+    post<{ granted: boolean; dev_mode: boolean; pack: CreditPack; balance?: number; checkout_url?: string }>(
       "/api/research/credits/checkout",
       { pack_id: packId }
     ),
+  subscribe: (planId: string) =>
+    post<{ plan: string; balance: number; dev_mode: boolean }>(
+      "/api/research/plan/subscribe",
+      { plan_id: planId }
+    ),
   runs: (limit = 20) => get<RunRow[]>(`/api/research/runs?limit=${limit}`),
+  run: (id: number) => get<RunDetail>(`/api/research/runs/${id}`),
 };
 
 export function estimateCost(analysts: string[], depth: DepthInfo, cost: CostModel): number {

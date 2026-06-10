@@ -67,10 +67,15 @@ class Settings(BaseSettings):
     equity_deep_model: str = "claude-opus-4-8"
     equity_quick_model: str = "claude-opus-4-8"
 
-    # Credits: signup grant for new accounts; Stripe key reserved for
-    # real checkout (empty = dev mode, packs grant instantly).
+    # Credits: signup grant for new accounts. With no Stripe key the
+    # product runs in dev mode (packs grant instantly); with a key,
+    # checkout goes through hosted Stripe Checkout and credits land via
+    # the signed webhook. public_base_url builds the success/cancel
+    # redirect URLs.
     free_signup_credits: int = 25
     stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    public_base_url: str = "http://localhost:3000"
 
     # Shared secret that callers of /api/agent/* must send as X-Agent-Key.
     # Empty disables auth (dev only) — production deployments must set this.

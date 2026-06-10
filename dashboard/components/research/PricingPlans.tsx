@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, Coins, CreditCard, Loader2, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,9 +16,10 @@ import {
 export function PricingPlans() {
   const [pricing, setPricing] = useState<PricingInfo | null>(null);
   const [account, setAccount] = useState<CreditAccount | null>(null);
-  const [buying, setBuying] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const search = useSearchParams();
 
   const reload = useCallback(() => {
     researchApi.pricing().then(setPricing).catch(() => {});
@@ -26,45 +28,83 @@ export function PricingPlans() {
 
   useEffect(reload, [reload]);
 
+  // Returning from hosted Stripe Checkout.
+  useEffect(() => {
+    const state = search?.get("checkout");
+    if (state === "success") {
+      setNotice("Payment received — credits land as soon as Stripe confirms (usually seconds). Refresh if needed.");
+    } else if (state === "cancelled") {
+      setError("Checkout cancelled — no charge was made.");
+    }
+  }, [search]);
+
   const buy = async (packId: string) => {
-    setBuying(packId);
+    setBusy(packId);
     setError(null);
     setNotice(null);
     try {
       const res = await researchApi.checkout(packId);
-      setAccount((prev) => (prev ? { ...prev, balance: res.balance } : prev));
+      if (res.checkout_url) {
+        window.location.href = res.checkout_url;
+        return;
+      }
+      if (res.balance != null) {
+        setAccount((prev) => (prev ? { ...prev, balance: res.balance! } : prev));
+      }
       setNotice(
         res.dev_mode
-          ? `${res.pack.credits} credits added (dev mode — Stripe checkout not configured).`
+          ? `${res.pack.credits} credits added (dev mode — configure STRIPE_SECRET_KEY for real checkout).`
           : `${res.pack.credits} credits added.`
       );
+      reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setBuying(null);
+      setBusy(null);
+    }
+  };
+
+  const subscribe = async (planId: string) => {
+    setBusy(`plan:${planId}`);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await researchApi.subscribe(planId);
+      setAccount((prev) => (prev ? { ...prev, plan: res.plan, balance: res.balance } : prev));
+      setNotice(`Switched to the ${res.plan} plan — monthly credits applied.`);
+      reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
     }
   };
 
   return (
     <div className="p-4 space-y-4 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-accent" />
-            <h1 className="text-base font-semibold text-text-primary">Research pricing</h1>
+      <div className="rounded-lg border border-accent/25 bg-gradient-to-br from-accent/15 via-surface to-surface p-4 md:p-5">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-md bg-accent/20 border border-accent/30 flex items-center justify-center">
+                <Sparkles size={14} className="text-accent" />
+              </span>
+              <h1 className="text-lg font-semibold text-text-primary tracking-tight">Research pricing</h1>
+            </div>
+            <p className="text-xs text-text-secondary max-w-xl leading-relaxed">
+              Every run is priced in credits, set by the agents you pick and how deep they go.
+              Plans cover monthly volume; packs top you up on demand.
+            </p>
           </div>
-          <p className="text-xs text-text-secondary mt-0.5">
-            Runs are priced in credits — pick a plan for monthly volume or top up with packs.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="accent" className="text-xs normal-case tracking-normal px-2 py-1">
-            <CreditCard size={11} />
-            {account ? `${account.balance} credits` : "…"}
-          </Badge>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/research"><ArrowLeft size={12} /> Back to research</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Badge variant="accent" className="text-xs normal-case tracking-normal px-2.5 py-1.5">
+              <CreditCard size={12} />
+              {account ? `${account.balance} credits` : "…"}
+            </Badge>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/research"><ArrowLeft size={12} /> Back to research</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -83,7 +123,7 @@ export function PricingPlans() {
           const current = account?.plan === plan.id;
           const featured = plan.id === "pro";
           return (
-            <Card key={plan.id} className={cn(featured && "border-accent/50")}>
+            <Card key={plan.id} className={cn(featured && "border-accent/50 shadow-[0_0_24px_-12px] shadow-accent/40")}>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-sm">
                   {plan.name}
@@ -104,8 +144,15 @@ export function PricingPlans() {
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full mt-3" variant={featured ? "default" : "outline"} size="sm" disabled>
-                  {plan.price_usd_month === 0 ? "Included" : "Coming soon"}
+                <Button
+                  className="w-full mt-3"
+                  variant={featured ? "default" : "outline"}
+                  size="sm"
+                  disabled={current || busy != null}
+                  onClick={() => subscribe(plan.id)}
+                >
+                  {busy === `plan:${plan.id}` ? <Loader2 size={12} className="animate-spin" /> : null}
+                  {current ? "Current plan" : plan.price_usd_month === 0 ? "Switch to Free" : `Choose ${plan.name}`}
                 </Button>
               </CardContent>
             </Card>
@@ -131,8 +178,8 @@ export function PricingPlans() {
                 <div className="text-[11px] text-text-muted">
                   ${pack.price_usd} · ${(pack.price_usd / pack.credits).toFixed(3)}/credit
                 </div>
-                <Button size="sm" className="mt-1" onClick={() => buy(pack.id)} disabled={buying != null}>
-                  {buying === pack.id ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />}
+                <Button size="sm" className="mt-1" onClick={() => buy(pack.id)} disabled={busy != null}>
+                  {busy === pack.id ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />}
                   Buy
                 </Button>
               </div>

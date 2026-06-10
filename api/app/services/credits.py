@@ -212,6 +212,32 @@ async def ledger(user_id: str, limit: int = 50) -> List[Dict]:
     ]
 
 
+async def has_ledger_reason(reason: str) -> bool:
+    """True if any ledger entry carries this reason — used to make
+    webhook grants idempotent (reason embeds the Stripe session id)."""
+    pool = db.pool()
+    if pool is None:
+        return any(e["reason"] == reason for e in _mem_ledger)
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT 1 FROM credit_ledger WHERE reason = $1 LIMIT 1", reason
+        )
+    return row is not None
+
+
+async def set_plan(user_id: str, plan_id: str) -> None:
+    await get_account(user_id)
+    pool = db.pool()
+    if pool is None:
+        _mem_account(user_id)["plan"] = plan_id
+        return
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE credit_accounts SET plan = $2, updated_at = NOW() WHERE user_id = $1",
+            user_id, plan_id,
+        )
+
+
 def pack_by_id(pack_id: str) -> Optional[CreditPack]:
     return next((p for p in CREDIT_PACKS if p["id"] == pack_id), None)
 

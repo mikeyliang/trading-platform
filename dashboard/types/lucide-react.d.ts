@@ -28,6 +28,7 @@ declare module "lucide-react" {
   export const Coins: LucideIcon;
   export const CreditCard: LucideIcon;
   export const DollarSign: LucideIcon;
+  export const Download: LucideIcon;
   export const Landmark: LucideIcon;
   export const Moon: LucideIcon;
   export const Scale: LucideIcon;

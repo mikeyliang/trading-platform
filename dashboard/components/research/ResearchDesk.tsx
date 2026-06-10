@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import {
-  Bitcoin, Brain, CandlestickChart, CheckCircle2, Coins, CreditCard, Landmark,
-  LineChart, Loader2, Newspaper, Scale, ShieldAlert, Sparkles, Swords,
-  TrendingUp, Users, XCircle,
+  Bitcoin, Brain, CandlestickChart, CheckCircle2, Coins, CreditCard, Download,
+  History, Landmark, LineChart, Loader2, Newspaper, Scale, ShieldAlert,
+  Sparkles, Swords, TrendingUp, Users, X, XCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,13 @@ function agentMeta(key: string, catalog: ResearchCatalog | null): { label: strin
   return { label: key, icon: LineChart };
 }
 
+const PIPELINE_STEPS = [
+  { icon: CandlestickChart, title: "Analyst team", desc: "Your selected specialists read price structure, fundamentals, news flow and sentiment — concurrently, live-streamed." },
+  { icon: Swords, title: "Bull vs bear debate", desc: "Two researchers argue the strongest honest case each way, rebutting each other across rounds." },
+  { icon: ShieldAlert, title: "Trader & risk desk", desc: "A trader turns the debate into a concrete plan; on deep runs a risk manager stress-tests it." },
+  { icon: Brain, title: "Portfolio manager", desc: "A final structured call: BUY / SELL / HOLD with conviction, sizing, entry, stop and target." },
+];
+
 export function ResearchDesk() {
   const [catalog, setCatalog] = useState<ResearchCatalog | null>(null);
   const [account, setAccount] = useState<CreditAccount | null>(null);
@@ -75,6 +82,8 @@ export function ResearchDesk() {
   const [agentOrder, setAgentOrder] = useState<string[]>([]);
   const [agents, setAgents] = useState<Record<string, AgentState>>({});
   const [decision, setDecision] = useState<Decision | null>(null);
+  const [replay, setReplay] = useState<RunRow | null>(null);
+  const [runMeta, setRunMeta] = useState<{ symbol: string; assetClass: AssetClass; depth: Depth } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const reloadAccount = useCallback(() => {
@@ -107,6 +116,15 @@ export function ResearchDesk() {
 
   const toggleAnalyst = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+
+  const resetRunView = () => {
+    setError(null);
+    setSnapshot(null);
+    setAgentOrder([]);
+    setAgents({});
+    setDecision(null);
+    setReplay(null);
+  };
 
   const handleEvent = useCallback((evt: ResearchEvent) => {
     switch (evt.event) {
@@ -168,11 +186,8 @@ export function ResearchDesk() {
     const valid = selected.filter((s) => availableAnalysts.some((a) => a.id === s));
     if (valid.length === 0) return;
     setRunning(true);
-    setError(null);
-    setSnapshot(null);
-    setAgentOrder([]);
-    setAgents({});
-    setDecision(null);
+    resetRunView();
+    setRunMeta({ symbol: symbol.trim().toUpperCase(), assetClass, depth });
     const controller = new AbortController();
     abortRef.current = controller;
     try {
@@ -191,27 +206,109 @@ export function ResearchDesk() {
     }
   }, [running, symbol, selected, availableAnalysts, assetClass, depth, handleEvent, reloadAccount]);
 
+  // Replay a past run from history — same cards, no credits spent.
+  const loadRun = useCallback(async (row: RunRow) => {
+    if (running) return;
+    try {
+      const detail = await researchApi.run(row.id);
+      resetRunView();
+      setReplay(row);
+      setRunMeta({ symbol: row.symbol, assetClass: row.asset_class, depth: row.depth });
+      const order = Object.keys(detail.agents).filter((k) => k !== "portfolio_manager");
+      setAgentOrder(order);
+      const restored: Record<string, AgentState> = {};
+      for (const key of order) {
+        const a = detail.agents[key];
+        restored[key] = a.error
+          ? { status: "error", text: "", error: a.error }
+          : {
+              status: "complete",
+              text: typeof a.output === "string" ? a.output : "",
+              model: a.model,
+              durationMs: a.duration_ms,
+            };
+      }
+      setAgents(restored);
+      setDecision(detail.decision);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }, [running]);
+
+  const exportReport = useCallback(() => {
+    if (!runMeta) return;
+    const lines: string[] = [
+      `# Equity Research — ${runMeta.symbol} (${runMeta.assetClass}, ${runMeta.depth} run)`,
+      "",
+      `Generated ${new Date().toLocaleString()} · AI-generated research, not financial advice.`,
+      "",
+    ];
+    if (snapshot) {
+      lines.push(`Last close ${snapshot.last_close} as of ${snapshot.as_of}.`, "");
+    }
+    for (const key of agentOrder) {
+      const a = agents[key];
+      if (!a?.text) continue;
+      lines.push(`## ${agentMeta(key, catalog).label}`, "", a.text, "");
+    }
+    if (decision) {
+      lines.push(
+        "## Final decision",
+        "",
+        `**${decision.action}** — conviction ${decision.conviction}/100, size ${decision.position_size_pct}% of portfolio, horizon ${decision.time_horizon}.`,
+        "",
+        `- Entry zone: ${decision.entry_zone}`,
+        `- Stop loss: ${decision.stop_loss}`,
+        `- Take profit: ${decision.take_profit}`,
+        "",
+        `**Bull case:** ${decision.bull_case}`,
+        "",
+        `**Bear case:** ${decision.bear_case}`,
+        "",
+        "**Key risks:**",
+        ...decision.key_risks.map((r) => `- ${r}`),
+        "",
+        decision.summary,
+      );
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${runMeta.symbol}-research-${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [runMeta, snapshot, agentOrder, agents, decision, catalog]);
+
+  const hasOutput = agentOrder.length > 0;
+
   return (
     <div className="p-4 space-y-4 max-w-6xl mx-auto">
-      {/* header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-accent" />
-            <h1 className="text-base font-semibold text-text-primary">Equity Research</h1>
+      {/* hero */}
+      <div className="rounded-lg border border-accent/25 bg-gradient-to-br from-accent/15 via-surface to-surface p-4 md:p-5">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-md bg-accent/20 border border-accent/30 flex items-center justify-center">
+                <Sparkles size={14} className="text-accent" />
+              </span>
+              <h1 className="text-lg font-semibold text-text-primary tracking-tight">Equity Research Desk</h1>
+              <Badge variant="accent">Multi-agent AI</Badge>
+            </div>
+            <p className="text-xs text-text-secondary max-w-xl leading-relaxed">
+              A full research team on demand — specialist analysts, an adversarial bull/bear debate,
+              a trading desk and a portfolio manager produce one accountable call on any stock, ETF or token.
+            </p>
           </div>
-          <p className="text-xs text-text-secondary mt-0.5">
-            Multi-agent analysis for stocks, ETFs and crypto — analyst team, bull/bear debate, risk review, final call.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="accent" className="text-xs normal-case tracking-normal px-2 py-1">
-            <CreditCard size={11} />
-            {account ? `${account.balance} credits` : "…"}
-          </Badge>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/research/pricing">Pricing &amp; top-up</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Badge variant="accent" className="text-xs normal-case tracking-normal px-2.5 py-1.5">
+              <CreditCard size={12} />
+              {account ? `${account.balance} credits` : "…"}
+            </Badge>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/research/pricing">Pricing &amp; top-up</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -329,6 +426,35 @@ export function ResearchDesk() {
         </div>
       )}
 
+      {/* how it works — until the first run */}
+      {!hasOutput && !running && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {PIPELINE_STEPS.map((step, i) => (
+            <div key={step.title} className="rounded-lg border border-border bg-surface p-3.5 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-md bg-accent/10 border border-accent/20 flex items-center justify-center">
+                  <step.icon size={12} className="text-accent" />
+                </span>
+                <span className="text-[10px] font-mono text-text-muted">0{i + 1}</span>
+              </div>
+              <div className="text-xs font-medium text-text-primary">{step.title}</div>
+              <p className="text-[11px] text-text-secondary leading-relaxed">{step.desc}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* replay banner */}
+      {replay && (
+        <div className="flex items-center gap-2 rounded-md border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-text-secondary">
+          <History size={13} className="text-accent" />
+          Replaying run #{replay.id} — {replay.symbol} ({replay.depth}, {new Date(replay.ran_at).toLocaleString()})
+          <button onClick={resetRunView} className="ml-auto text-text-muted hover:text-text-primary" aria-label="Close replay">
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
       {/* market snapshot */}
       {snapshot && (
         <div className="flex flex-wrap gap-2 text-[11px] text-text-secondary">
@@ -355,14 +481,14 @@ export function ResearchDesk() {
       )}
 
       {/* streaming agents */}
-      {agentOrder.length > 0 && (
+      {hasOutput && (
         <div className="grid gap-3 md:grid-cols-2">
-          {agentOrder.map((key) => {
+          {agentOrder.filter((k) => k !== "portfolio_manager").map((key) => {
             const state = agents[key];
             const { label, icon: Icon } = agentMeta(key, catalog);
             if (!state) return null;
             return (
-              <Card key={key} className={cn(key === "portfolio_manager" && "md:col-span-2")}>
+              <Card key={key}>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-xs">
                     <Icon size={13} className="text-accent" />
@@ -379,7 +505,7 @@ export function ResearchDesk() {
                   {state.error ? (
                     <p className="text-xs text-down">{state.error}</p>
                   ) : (
-                    <div className="prose prose-invert prose-xs max-w-none text-xs text-text-secondary leading-relaxed [&_p]:my-1">
+                    <div className="prose prose-invert max-w-none text-xs text-text-secondary leading-relaxed [&_p]:my-1 [&_strong]:text-text-primary">
                       <ReactMarkdown>{state.text || "…"}</ReactMarkdown>
                     </div>
                   )}
@@ -390,19 +516,44 @@ export function ResearchDesk() {
         </div>
       )}
 
+      {/* portfolio manager still thinking */}
+      {agents["portfolio_manager"]?.status === "running" && (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-xs text-text-secondary">
+          <Loader2 size={13} className="animate-spin text-accent" />
+          Portfolio manager is weighing the evidence…
+        </div>
+      )}
+      {agents["portfolio_manager"]?.status === "error" && (
+        <div className="flex items-center gap-2 rounded-md border border-down/30 bg-down/10 px-3 py-2 text-xs text-down">
+          <XCircle size={13} /> Portfolio manager failed: {agents["portfolio_manager"].error}
+        </div>
+      )}
+
       {/* final decision */}
-      {decision && <DecisionCard decision={decision} />}
+      {decision && (
+        <DecisionCard
+          decision={decision}
+          onExport={exportReport}
+        />
+      )}
 
       {/* history */}
       {history.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs">Recent runs</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-xs">
+              <History size={13} className="text-accent" /> Recent runs
+              <span className="text-[10px] font-normal text-text-muted">click to replay — free</span>
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="divide-y divide-border/60">
               {history.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 py-1.5 text-xs">
+                <button
+                  key={r.id}
+                  onClick={() => loadRun(r)}
+                  className="w-full flex items-center gap-3 py-1.5 text-xs text-left hover:bg-surface-2/60 rounded-sm px-1 transition-colors"
+                >
                   <span className="font-mono text-text-primary w-16">{r.symbol}</span>
                   <Badge variant="muted">{r.asset_class}</Badge>
                   <span className="text-text-muted">{r.depth}</span>
@@ -414,7 +565,7 @@ export function ResearchDesk() {
                   <span className="ml-auto text-text-muted">
                     {r.credits_charged} cr · {new Date(r.ran_at).toLocaleString()}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           </CardContent>
@@ -430,7 +581,7 @@ function fmtNum(v: unknown): string {
   return n >= 1000 ? n.toLocaleString(undefined, { maximumFractionDigits: 0 }) : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
 }
 
-function DecisionCard({ decision }: { decision: Decision }) {
+function DecisionCard({ decision, onExport }: { decision: Decision; onExport: () => void }) {
   const actionVariant = decision.action === "BUY" ? "up" : decision.action === "SELL" ? "down" : "warning";
   return (
     <Card className="border-accent/40">
@@ -442,6 +593,9 @@ function DecisionCard({ decision }: { decision: Decision }) {
           <span className="text-[11px] font-normal text-text-muted">
             conviction {decision.conviction}/100 · size {decision.position_size_pct}% · {decision.time_horizon}
           </span>
+          <Button variant="outline" size="sm" className="ml-auto" onClick={onExport}>
+            <Download size={12} /> Export report
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3 text-xs">

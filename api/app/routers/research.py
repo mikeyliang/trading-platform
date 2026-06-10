@@ -21,12 +21,12 @@ import logging
 import time
 from typing import Any, AsyncIterator, Dict, List, Optional
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from ..config import settings
-from ..services import credits, db
+from ..services import billing, credits, db
 from ..services.equity_agents import (
     ANALYSTS,
     COST_DECISION,
@@ -105,21 +105,62 @@ class CheckoutRequest(BaseModel):
 
 @router.post("/credits/checkout")
 async def checkout(req: CheckoutRequest, x_user_id: str = Header(default="default")) -> Dict[str, Any]:
-    """Buy a credit pack. Without a Stripe key configured this grants
-    instantly (dev mode); with one, this is where a Checkout Session
-    would be created and the grant deferred to the payment webhook."""
+    """Buy a credit pack. Dev mode (no Stripe key) grants instantly;
+    Stripe mode returns a hosted Checkout URL and the grant happens in
+    the webhook once payment is confirmed."""
     pack = credits.pack_by_id(req.pack_id)
     if pack is None:
         raise HTTPException(404, f"unknown pack '{req.pack_id}'")
-    if settings.stripe_secret_key:
-        raise HTTPException(501, "Stripe checkout not wired yet — unset STRIPE_SECRET_KEY for dev grants")
+    if billing.stripe_enabled():
+        try:
+            url = await billing.create_checkout_session(
+                x_user_id, pack["id"], pack["name"], pack["credits"], pack["price_usd"]
+            )
+        except billing.BillingError as e:
+            raise HTTPException(502, str(e)) from e
+        return {"granted": False, "dev_mode": False, "pack": pack, "checkout_url": url}
     balance = await credits.adjust(x_user_id, pack["credits"], f"pack_purchase:{pack['id']}")
-    return {
-        "granted": True,
-        "dev_mode": True,
-        "pack": pack,
-        "balance": balance,
-    }
+    return {"granted": True, "dev_mode": True, "pack": pack, "balance": balance}
+
+
+@router.post("/stripe/webhook")
+async def stripe_webhook(request: Request) -> Dict[str, Any]:
+    """Stripe event sink. Verifies the signature, grants pack credits on
+    ``checkout.session.completed`` — idempotent per session id."""
+    payload = await request.body()
+    signature = request.headers.get("stripe-signature", "")
+    if not billing.verify_webhook_signature(payload, signature):
+        raise HTTPException(400, "invalid stripe signature")
+    grant = billing.parse_completed_checkout(payload)
+    if grant is None:
+        return {"received": True, "acted": False}
+    reason = f"stripe:{grant['session_id']}"
+    if await credits.has_ledger_reason(reason):
+        return {"received": True, "acted": False, "duplicate": True}
+    balance = await credits.adjust(grant["user_id"], grant["credits"], reason)
+    logger.info("stripe grant: %s +%s credits (balance %s)", grant["user_id"], grant["credits"], balance)
+    return {"received": True, "acted": True}
+
+
+class SubscribeRequest(BaseModel):
+    plan_id: str
+
+
+@router.post("/plan/subscribe")
+async def subscribe(req: SubscribeRequest, x_user_id: str = Header(default="default")) -> Dict[str, Any]:
+    """Switch plans. Dev mode applies the plan and grants the monthly
+    credit allotment immediately; recurring Stripe subscriptions are the
+    natural next step once a Stripe account is wired."""
+    plan = credits.plan_by_id(req.plan_id)
+    if plan is None:
+        raise HTTPException(404, f"unknown plan '{req.plan_id}'")
+    if billing.stripe_enabled():
+        raise HTTPException(501, "recurring subscriptions not wired yet — use credit packs")
+    await credits.set_plan(x_user_id, plan["id"])
+    balance = (await credits.get_account(x_user_id))["balance"]
+    if plan["credits_month"] > 0:
+        balance = await credits.adjust(x_user_id, plan["credits_month"], f"plan_grant:{plan['id']}")
+    return {"plan": plan["id"], "balance": balance, "dev_mode": True}
 
 
 class EstimateRequest(BaseModel):
