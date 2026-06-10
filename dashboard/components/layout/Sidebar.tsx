@@ -13,6 +13,7 @@ import {
   Bot,
   Layers,
   FlaskConical,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -38,6 +39,7 @@ const market: NavEntry[] = [
 ];
 
 const research: NavEntry[] = [
+  { href: "/research",        icon: Sparkles,     label: "Equity Research" },
   { href: "/backtest",        icon: FlaskConical, label: "Backtest" },
   { href: "/agents",          icon: Bot,          label: "AI Debate" },
   { href: "/trade/history",   icon: Clock,        label: "Trade History" },

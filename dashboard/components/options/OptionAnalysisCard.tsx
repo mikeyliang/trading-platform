@@ -51,9 +51,17 @@ const VISIBLE_BARS_DEFAULT = 60;
  * moved, if IV stayed where it is now."
  */
 export function OptionAnalysisCard({ result }: Props) {
+  // Hooks live in the inner component, so this guard can return early
+  // without violating the rules of hooks.
   const oc = result.option_chart;
   if (!oc || oc.synthetic_prices.length === 0) return null;
+  return <OptionAnalysisCardInner result={result} oc={oc} />;
+}
 
+function OptionAnalysisCardInner({
+  result,
+  oc,
+}: Props & { oc: NonNullable<OptionAnalyzeResult["option_chart"]> }) {
   const N = oc.synthetic_prices.length;
   // Align option series to the underlying-chart bar timestamps — option_chart
   // has no time field of its own, but the backend guarantees same length

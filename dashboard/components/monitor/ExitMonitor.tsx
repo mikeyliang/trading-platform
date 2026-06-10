@@ -194,7 +194,7 @@ function EmptyState() {
     <div className="py-16 text-center">
       <p className="text-sm text-text-secondary">No open spreads to watch.</p>
       <p className="text-xs text-text-muted mt-2">
-        When you open a credit spread, it'll appear here and the monitor will track its delta every 5 minutes during market hours.
+        When you open a credit spread, it&apos;ll appear here and the monitor will track its delta every 5 minutes during market hours.
       </p>
     </div>
   );

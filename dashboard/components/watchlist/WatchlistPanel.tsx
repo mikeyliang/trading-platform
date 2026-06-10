@@ -1,14 +1,12 @@
 "use client";
 
-
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { ws } from "@/lib/ws";
 import { cn, fmtPct } from "@/lib/utils";
-
-import type { Position, WatchlistItem } from "@/types";
-import { Plus, X, Eye } from "lucide-react";
+import type { WatchlistItem } from "@/types";
+import { ArrowDown, ArrowUp, Eye, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { List, type RowComponentProps } from "react-window";
 import { Button } from "@/components/ui/button";
@@ -17,37 +15,43 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toaster";
 
+// Threshold at which we switch from straight DOM to react-window virtual
+// scrolling. Below this, virtualization adds layout overhead without
+// meaningful savings.
+const VIRTUAL_THRESHOLD = 30;
+const ROW_HEIGHT = 38;
 
-export function WatchlistPanel() {
-  const { quotes, positions, setWatchlist, updateQuote } = useStore();
+type SortKey = "symbol" | "change_pct" | "price";
+type SortDir = "asc" | "desc";
+
+const SORT_OPTIONS: { key: SortKey; label: string; defaultDir: SortDir }[] = [
+  { key: "symbol", label: "Sym", defaultDir: "asc" },
+  { key: "change_pct", label: "%", defaultDir: "desc" },
+  { key: "price", label: "$", defaultDir: "desc" },
+];
+
+export const WatchlistPanel = memo(function WatchlistPanel() {
+  // Granular zustand selectors — `useStore()` with destructuring subscribes to
+  // every key in the store, so the whole panel would re-render on any state
+  // change (positions, account, health…). Selectors keep us bound only to the
+  // slices we actually read.
+  const quotes = useStore((s) => s.quotes);
+  const setWatchlist = useStore((s) => s.setWatchlist);
+  const updateQuote = useStore((s) => s.updateQuote);
   const [items, setItems] = useState<WatchlistItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [input, setInput] = useState("");
   const [filter, setFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("symbol");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
-
-  // Aggregate unrealized P&L per underlying so we can surface a "total gain"
-  // alongside each watchlist row when the user has open positions in it.
-  const upnlBySymbol = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const p of positions as Position[]) {
-      m[p.symbol] = (m[p.symbol] ?? 0) + (p.unrealized_pnl ?? 0);
-    }
-    return m;
-  }, [positions]);
-
-  const load = async () => {
+  const load = useCallback(async () => {
     const data = await api.watchlist().catch(() => []);
     setItems(data);
     setWatchlist(data);
-    setLoading(false);
-  };
+  }, [setWatchlist]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -195,43 +199,36 @@ export function WatchlistPanel() {
         </div>
       )}
 
-
-      <ScrollArea className="flex-1">
-        {loading && items.length === 0 && (
-          <div className="px-2.5 py-2 space-y-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Skeleton className="h-5 w-5 rounded-full shrink-0" />
-                <div className="flex-1 flex flex-col gap-1">
-                  <Skeleton className="h-2.5 w-14" />
-                  <Skeleton className="h-2 w-10" />
-                </div>
-                <Skeleton className="h-2.5 w-10 shrink-0" />
-              </div>
-            ))}
+      {/* Filter + sort bar — only shown when the watchlist has any rows, so
+          empty-state stays uncluttered. Filter is a substring search over
+          symbol; sort is a 3-way segmented control where the active button
+          shows the current direction arrow (click to flip). */}
+      {items.length > 0 && (
+        <div className="px-2 py-1.5 border-b border-border shrink-0 flex items-center gap-1.5">
+          <div className={cn(
+            "flex items-center gap-1 h-6 px-1.5 rounded-sm border border-border bg-surface-2/40 flex-1 min-w-0 transition-colors",
+            filter ? "border-accent/50" : "hover:bg-surface-2/70"
+          )}>
+            <Search size={10} className="text-text-muted shrink-0" />
+            <input
+              value={filter}
+              onChange={(e) => setFilter(e.target.value.toUpperCase())}
+              placeholder="Filter"
+              className="flex-1 min-w-0 bg-transparent text-[10px] tabular text-text-primary placeholder:text-text-muted/60 outline-none"
+            />
+            {filter && (
+              <button
+                onClick={() => setFilter("")}
+                className="text-text-muted hover:text-text-primary shrink-0"
+                aria-label="Clear filter"
+              >
+                <X size={10} />
+              </button>
+            )}
           </div>
-        )}
-        {Object.entries(grouped).map(([sector, stocks]) => (
-          <div key={sector}>
-            <div className="px-3 py-1 text-[9px] font-medium text-text-muted uppercase tracking-wider bg-surface/80 backdrop-blur sticky top-0 z-10 border-b border-border/40 flex items-center gap-2">
-              <span>{sector}</span>
-              <span className="text-text-muted/70 tabular">{stocks.length}</span>
-            </div>
-            {stocks.map((item) => {
-              const q = quotes[item.symbol];
-              // Treat 0 as "no data" when bid/ask are also zero — the NT
-              // bridge emits last=0/change=0/change_pct=0 placeholders until
-              // a real tick arrives, and rendering those as "$0.00 +0.00%"
-              // misleads the trader into thinking the symbol crashed.
-              const stale = isStaleZero(q);
-              const last = stale ? null : pickNumber(q?.last, item.last);
-              const changePct = stale ? null : pickNumber(q?.change_pct, item.change_pct);
-              const change = stale ? null : pickNumber(q?.change, item.change);
-              const hasData = last != null && (changePct != null || change != null);
-              const positive = (changePct ?? change ?? 0) >= 0;
-              const totalGain = upnlBySymbol[item.symbol];
-              const hasPosition = totalGain != null && totalGain !== 0;
-
+          <div className="flex h-6 rounded-sm border border-border overflow-hidden shrink-0">
+            {SORT_OPTIONS.map((o, i) => {
+              const active = sortKey === o.key;
               return (
                 <button
                   key={o.key}
@@ -245,65 +242,17 @@ export function WatchlistPanel() {
                   )}
                   aria-label={`Sort by ${o.label} ${active ? (sortDir === "asc" ? "ascending" : "descending") : ""}`}
                 >
-
-                  <Link
-                    href={`/chart/${item.symbol}`}
-                    className="flex-1 flex items-center gap-2 min-w-0"
-                  >
-                    <Logo symbol={item.symbol} size={20} />
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-[11px] font-semibold text-text-primary leading-tight">
-                        {item.symbol}
-                      </span>
-                      <span className="tabular text-[10px] text-text-muted leading-tight">
-                        {last != null ? `$${last.toFixed(2)}` : "—"}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end leading-tight shrink-0">
-                      {hasData ? (
-                        <>
-                          <span
-                            className={cn(
-                              "tabular text-[10px] font-medium leading-none",
-                              positive ? "text-up" : "text-down"
-                            )}
-                          >
-                            {change != null && fmtSignedDollar(change)}
-                            {change != null && changePct != null && (
-                              <span className="text-text-muted/70"> · </span>
-                            )}
-                            {changePct != null && fmtPct(changePct)}
-                          </span>
-                          {hasPosition && (
-                            <span
-                              className={cn(
-                                "tabular text-[9px] leading-none mt-0.5",
-                                totalGain >= 0 ? "text-up/80" : "text-down/80"
-                              )}
-                              title="Total unrealized P&L on this symbol"
-                            >
-                              {fmtSignedDollar(totalGain)}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span className="tabular text-[10px] text-text-muted leading-none">—</span>
-                      )}
-                    </div>
-                  </Link>
-                  <button
-                    onClick={() => remove(item.symbol)}
-                    className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-sm flex items-center justify-center text-text-muted hover:text-down hover:bg-down/10 transition-all"
-                    aria-label={`Remove ${item.symbol}`}
-                  >
-                    <X size={10} />
-                  </button>
-                </div>
+                  {o.label}
+                  {active && (sortDir === "asc" ? <ArrowUp size={8} /> : <ArrowDown size={8} />)}
+                </button>
               );
             })}
           </div>
-        ))}
-        {!loading && items.length === 0 && (
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <ScrollArea className="flex-1">
           <EmptyState
             icon={Eye}
             title="Empty watchlist"
@@ -387,31 +336,57 @@ function VirtualWatchRow({
   );
 }
 
+const SectorHeader = memo(function SectorHeader({ sector, count }: { sector: string; count: number }) {
+  return (
+    <div className="px-3 py-1 text-[9px] font-medium text-text-muted uppercase tracking-wider bg-surface/80 backdrop-blur sticky top-0 z-10 border-b border-border/40 flex items-center gap-2">
+      <span>{sector}</span>
+      <span className="text-text-muted/70 tabular">{count}</span>
+    </div>
+  );
+});
 
-// Pick the first numeric value. The NT bridge emits 0 placeholders for
-// change/change_pct until a real prior-close comparison is available;
-// treat undefined/null as "missing" but trust explicit zeros from the
-// REST item (which only sets them when a quote came through).
-function pickNumber(
-  primary: number | null | undefined,
-  fallback: number | null | undefined,
-): number | null {
-  if (typeof primary === "number" && Number.isFinite(primary)) return primary;
-  if (typeof fallback === "number" && Number.isFinite(fallback)) return fallback;
-  return null;
-}
-
-function isStaleZero(q: { last?: number | null; bid?: number | null; ask?: number | null } | undefined): boolean {
-  if (!q) return false;
-  const z = (x: number | null | undefined) => x == null || x === 0;
-  return z(q.last) && z(q.bid) && z(q.ask);
-}
-
-function fmtSignedDollar(n: number): string {
-  const sign = n >= 0 ? "+" : "-";
-  const abs = Math.abs(n);
-  // Sub-dollar moves get 2dp; bigger swings round to whole dollars so
-  // the row stays narrow.
-  const body = abs >= 100 ? abs.toFixed(0) : abs.toFixed(2);
-  return `${sign}$${body}`;
-}
+const WatchRow = memo(function WatchRow({
+  symbol,
+  last,
+  changePct,
+  onRemove,
+}: {
+  symbol: string;
+  last: number | null;
+  changePct: number;
+  onRemove: (sym: string) => void;
+}) {
+  const positive = changePct >= 0;
+  return (
+    <div className="group flex items-center gap-2 px-2.5 py-1.5 hover:bg-surface-2 transition-colors border-b border-border/20 last:border-b-0">
+      <Link href={`/chart/${symbol}`} className="flex-1 flex items-center gap-2 min-w-0">
+        <Logo symbol={symbol} size={20} />
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-[11px] font-semibold text-text-primary leading-tight">
+            {symbol}
+          </span>
+          {last != null && (
+            <span className="tabular text-[10px] text-text-muted leading-tight">
+              ${last.toFixed(2)}
+            </span>
+          )}
+        </div>
+        <span
+          className={cn(
+            "tabular text-[10px] font-medium leading-none shrink-0",
+            positive ? "text-up" : "text-down"
+          )}
+        >
+          {fmtPct(changePct)}
+        </span>
+      </Link>
+      <button
+        onClick={() => onRemove(symbol)}
+        className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-sm flex items-center justify-center text-text-muted hover:text-down hover:bg-down/10 transition-all"
+        aria-label={`Remove ${symbol}`}
+      >
+        <X size={10} />
+      </button>
+    </div>
+  );
+});

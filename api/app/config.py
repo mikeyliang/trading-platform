@@ -59,6 +59,19 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     chat_model: str = "claude-opus-4-7"
 
+    # Equity research desk (multi-agent runs). Deep model drives the
+    # researcher debate / trader / risk / portfolio-manager calls; quick
+    # model drives the parallel analyst reads. Both default to the most
+    # capable model — point equity_quick_model at a cheaper model (e.g.
+    # claude-haiku-4-5) to trade quality for cost on the analyst tier.
+    equity_deep_model: str = "claude-opus-4-8"
+    equity_quick_model: str = "claude-opus-4-8"
+
+    # Credits: signup grant for new accounts; Stripe key reserved for
+    # real checkout (empty = dev mode, packs grant instantly).
+    free_signup_credits: int = 25
+    stripe_secret_key: str = ""
+
     # Shared secret that callers of /api/agent/* must send as X-Agent-Key.
     # Empty disables auth (dev only) — production deployments must set this.
     agent_api_key: str = ""

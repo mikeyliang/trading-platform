@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableBody,
   TableRow,
+  TableHead,
   TableCell,
   TableEmpty,
   SortableTableHead,
@@ -24,7 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
 
 import { TableSkeletonRows } from "@/components/ui/skeleton";
-import { Briefcase, Layers, Activity, Target, Search, X } from "lucide-react";
+import { Briefcase, Layers, Activity, Target, Search, SearchX, X } from "lucide-react";
 
 type Tab = "positions" | "spreads" | "trades";
 type SideFilter = "all" | "long" | "short";
@@ -350,9 +351,7 @@ function TableSkeleton({ cols, headers, rows = 6 }: { cols: number; headers: rea
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Array.from({ length: rows }).map((_, i) => (
-          <TableRowSkeleton key={i} cols={cols} />
-        ))}
+        <TableSkeletonRows rows={rows} cols={cols} />
       </TableBody>
     </Table>
   );

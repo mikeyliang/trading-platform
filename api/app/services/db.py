@@ -131,6 +131,46 @@ CREATE INDEX IF NOT EXISTS trade_history_symbol_idx ON trade_history (symbol);
 CREATE INDEX IF NOT EXISTS trade_history_agent_id_idx ON trade_history (agent_id);
 CREATE INDEX IF NOT EXISTS trade_history_strategy_idx ON trade_history (strategy);
 CREATE INDEX IF NOT EXISTS trade_history_timestamp_idx ON trade_history (timestamp DESC);
+
+-- Equity research desk: credit accounts + ledger + run history.
+CREATE TABLE IF NOT EXISTS credit_accounts (
+  user_id     TEXT PRIMARY KEY,
+  plan        TEXT NOT NULL DEFAULT 'free',
+  balance     INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS credit_ledger (
+  id             BIGSERIAL PRIMARY KEY,
+  user_id        TEXT NOT NULL,
+  delta          INTEGER NOT NULL,
+  balance_after  INTEGER NOT NULL,
+  reason         TEXT NOT NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS credit_ledger_user_idx ON credit_ledger (user_id, id DESC);
+
+-- One row per multi-agent research run. agents JSONB holds every
+-- agent's output/model/latency so any run can be replayed; decision
+-- is the portfolio manager's structured final call.
+CREATE TABLE IF NOT EXISTS equity_research_runs (
+  id               BIGSERIAL PRIMARY KEY,
+  ran_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  user_id          TEXT NOT NULL,
+  asset_class      TEXT NOT NULL,
+  symbol           TEXT NOT NULL,
+  depth            TEXT NOT NULL,
+  analysts         TEXT[] NOT NULL,
+  agents           JSONB NOT NULL,
+  decision         JSONB,
+  credits_charged  INTEGER NOT NULL,
+  duration_ms      INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS equity_research_runs_user_idx ON equity_research_runs (user_id, ran_at DESC);
+CREATE INDEX IF NOT EXISTS equity_research_runs_symbol_idx ON equity_research_runs (symbol, ran_at DESC);
 """
 
 

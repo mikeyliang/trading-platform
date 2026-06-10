@@ -27,7 +27,7 @@ export default function TradeHistoryPage() {
       <div className="flex items-center gap-2">
         <Clock size={18} className="text-text-muted" />
         <h1 className="text-lg font-semibold">Trade History</h1>
-        <Badge variant="secondary" className="ml-2">{trades.length}</Badge>
+        <Badge variant="muted" className="ml-2">{trades.length}</Badge>
       </div>
 
       {loading ? (

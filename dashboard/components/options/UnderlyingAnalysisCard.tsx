@@ -60,13 +60,10 @@ const VISIBLE_BARS_DEFAULT = 60;
  *  - Bottom forecast readout only when the crosshair is in the projection
  *    band (otherwise the top strip carries all needed info)
  */
-export function UnderlyingAnalysisCard({
-  result,
-  timeframe,
-  onTimeframeChange,
-  loading,
-}: Props) {
-  const chart = result.chart;
+export function UnderlyingAnalysisCard(props: Props) {
+  // Hooks live in the inner component, so this guard can return early
+  // without violating the rules of hooks.
+  const chart = props.result.chart;
   if (!chart) {
     return (
       <div className="rounded-md border border-border bg-bg overflow-hidden">
@@ -81,6 +78,16 @@ export function UnderlyingAnalysisCard({
       </div>
     );
   }
+  return <UnderlyingAnalysisCardInner {...props} chart={chart} />;
+}
+
+function UnderlyingAnalysisCardInner({
+  result,
+  timeframe,
+  onTimeframeChange,
+  loading,
+  chart,
+}: Props & { chart: NonNullable<OptionAnalyzeResult["chart"]> }) {
   const tfs = chart.supported_timeframes;
 
   // Forecast horizon picker — drives the projection cone.
