@@ -961,6 +961,23 @@ export interface OptionAnalyzeResult {
     realized_vol_30d: number | null;
     realized_vol_90d: number | null;
     iv_to_rv_ratio: number | null;
+    // Real IV-regime context from IBKR's vol indices (52-week window).
+    iv_rank: number | null;
+    iv_percentile: number | null;
+    iv_52w_high: number | null;
+    iv_52w_low: number | null;
+    underlying_iv_now: number | null;
+    iv_history: { time: number; value: number }[];
+    hv_history: { time: number; value: number }[];
+  };
+  // ---- unrealized P&L vs entry for the analyzed position ----
+  position_pnl: {
+    cost_basis: number | null;
+    market_value: number | null;
+    unrealized_pnl: number | null;
+    unrealized_pnl_pct: number | null;
+    mark: number | null;
+    mark_source: string | null;
   };
   narrative: string;
 
@@ -986,9 +1003,22 @@ export interface OptionAnalyzeResult {
     ema9: number[];
     ema21: number[];
   };
-  // ---- option-side chart: synthetic-price replay + indicators on the option ----
+  // ---- option-side chart: real IBKR option history when available,
+  //      synthetic BS-replay fallback. `synthetic_prices` carries the
+  //      active close series either way (back-compat name). ----
   option_chart: {
     timeframe: OptionAnalyzerTimeframe;
+    source: "ibkr" | "synthetic";
+    times: number[];
+    bars: {
+      time: number;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume: number;
+    }[];
+    volume: number[];
     synthetic_prices: number[];
     rsi: number[];
     macd: number[];
@@ -1053,6 +1083,7 @@ export interface OptionAnalyzeResult {
     } | null;
     iv: number;
     iv_rv_ratio: number | null;
+    iv_rank: number | null;
     dte: number;
     abs_delta: number | null;
   };

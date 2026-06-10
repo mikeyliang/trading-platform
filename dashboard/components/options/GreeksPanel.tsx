@@ -358,7 +358,7 @@ function ScenarioControls({
                 Reading the scenario
               </span>
               <span className="text-[11px] text-text-secondary flex-1 min-w-0">
-                Greek values above swap to what they'd be at <b>${newSpot.toFixed(2)}</b>,
+                Greek values above swap to what they&apos;d be at <b>${newSpot.toFixed(2)}</b>,
                 IV <b>{(newIv * 100).toFixed(1)}%</b>, in <b>{daysFwd}d</b>.
                 ΔΔ chip = shift from baseline.
               </span>

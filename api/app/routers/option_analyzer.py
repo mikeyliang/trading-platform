@@ -283,6 +283,47 @@ def _norm_cdf(z: float) -> float:
     return 0.5 * (1 + math.erf(z / math.sqrt(2)))
 
 
+def _iv_rank_metrics(
+    iv_series: List[Dict[str, Any]],
+    hv_series: List[Dict[str, Any]],
+    lookback: int = 252,
+    chart_points: int = 252,
+) -> Dict[str, Any]:
+    """IV rank / percentile from the underlying's real IV-index history (IBKR
+    OPTION_IMPLIED_VOLATILITY daily series).
+
+    IV rank = where today's IV sits between the 52-week low and high (0-100).
+    IV percentile = % of days in the window with IV below today's. Rank is
+    the headline number ("is vol high or low for THIS name"); percentile is
+    robust to one-day spikes stretching the range. Both use the IV *index*
+    (~30d ATM), the standard convention — not the contract's own IV, which
+    mixes in skew/term-structure.
+    """
+    empty = {
+        "iv_rank": None, "iv_percentile": None,
+        "iv_52w_high": None, "iv_52w_low": None,
+        "underlying_iv_now": None,
+        "iv_history": [], "hv_history": [],
+    }
+    values = [p["value"] for p in iv_series][-lookback:]
+    if len(values) < 60:
+        return empty
+    iv_now = values[-1]
+    hi, lo = max(values), min(values)
+    rank = ((iv_now - lo) / (hi - lo) * 100) if hi > lo else 50.0
+    below = sum(1 for v in values[:-1] if v < iv_now)
+    pctile = below / max(len(values) - 1, 1) * 100
+    return {
+        "iv_rank": round(rank, 1),
+        "iv_percentile": round(pctile, 1),
+        "iv_52w_high": round(hi, 4),
+        "iv_52w_low": round(lo, 4),
+        "underlying_iv_now": round(iv_now, 4),
+        "iv_history": iv_series[-chart_points:],
+        "hv_history": hv_series[-chart_points:],
+    }
+
+
 def _realized_vol(closes: List[float], lookback_days: int = 30) -> Optional[float]:
     """Annualized realized vol from log returns over the trailing window.
 
@@ -395,6 +436,10 @@ def _advice(
     # actually decayed, not when the contract is just OTM.
     entry_price: Optional[float] = None,
     mid: Optional[float] = None,
+    # IV rank (0-100) from the underlying's real 52-week IV-index history
+    # (IBKR). Where the contract's IV sits in the name's own vol regime —
+    # far more informative than the absolute IV level.
+    iv_rank: Optional[float] = None,
 ) -> Dict[str, Any]:
     """Compose a -100..+100 score and a human label for this option position.
 
@@ -477,6 +522,16 @@ def _advice(
         if iv and iv > 0.7:
             score -= 6
             notes.append(f"IV {iv*100:.0f}% — expensive premium, vega risk")
+        # IV rank — regime-relative vol. Holding long premium bought near the
+        # 52w vol highs is exposed to IV mean-reversion (vega crush) even if
+        # the direction call is right; bottom-decile vol is a tailwind.
+        if iv_rank is not None:
+            if iv_rank >= 70:
+                score -= 7
+                notes.append(f"IV rank {iv_rank:.0f} — vol near 52w highs, crush risk on longs")
+            elif iv_rank <= 20:
+                score += 4
+                notes.append(f"IV rank {iv_rank:.0f} — vol near 52w lows, cheap premium")
     else:
         # short options — theta is your friend, but assignment risk near strike
         if abs_d >= 0.40:
@@ -494,6 +549,15 @@ def _advice(
         if iv and iv > 0.5:
             score += 5
             notes.append(f"IV {iv*100:.0f}% — rich premium collected")
+        # IV rank — short premium wants to be sold high in the name's own
+        # vol regime; collecting bottom-quartile vol is poor pay for the risk.
+        if iv_rank is not None:
+            if iv_rank >= 60:
+                score += 6
+                notes.append(f"IV rank {iv_rank:.0f} — selling rich vol, mean-reversion tailwind")
+            elif iv_rank <= 25:
+                score -= 6
+                notes.append(f"IV rank {iv_rank:.0f} — thin premium for the risk taken")
 
     # underlying alignment — favors holding if trend matches option side
     long_call = is_long and delta is not None and delta > 0
@@ -691,6 +755,7 @@ def _narrative(
     delta: Optional[float], theta: Optional[float],
     sigma: Dict[str, Any], prob: Dict[str, Any], liquidity: Dict[str, Any],
     advice: Dict[str, Any], forecast: Optional[Dict[str, Any]] = None,
+    iv_rank: Optional[float] = None,
 ) -> str:
     """One-sentence reading of the position. The headline numbers (spot, IV,
     DTE, POP, etc.) are already in the market-state strip — the narrative is
@@ -720,7 +785,11 @@ def _narrative(
         frames.append(f"low POP {pop*100:.0f}%")
     elif pop is not None and pop >= 0.65:
         frames.append(f"high POP {pop*100:.0f}%")
-    if iv_rv is not None and iv_rv >= 1.3 and is_long:
+    if iv_rank is not None and iv_rank >= 75 and is_long:
+        frames.append(f"IV rank {iv_rank:.0f} — vol near 52w highs")
+    elif iv_rank is not None and iv_rank <= 20 and not is_long:
+        frames.append(f"IV rank {iv_rank:.0f} — collecting bottom-of-range vol")
+    elif iv_rv is not None and iv_rv >= 1.3 and is_long:
         frames.append(f"IV/RV {iv_rv:.2f}× — paying up for vol")
     elif iv_rv is not None and iv_rv <= 0.8 and not is_long:
         frames.append(f"IV/RV {iv_rv:.2f}× — collecting cheap vol")
@@ -777,6 +846,8 @@ async def analyze_option(
     #   - chart bars: at user-selected timeframe, for the underlying-analysis card
     #     (skipped when timeframe == "1d" since both views collapse to the same series)
     #   - option snapshot for the specific contract
+    #   - real historical option bars (IBKR) — replaces the BS-replay when available
+    #   - underlying IV/HV history (IBKR vol indices) — powers IV rank/percentile
     import asyncio as _asyncio
     daily_task = _asyncio.create_task(get_bars(symbol, "1d", 200))
     chart_task = (
@@ -784,10 +855,18 @@ async def analyze_option(
         if timeframe != "1d" else None
     )
     snap_task = _asyncio.create_task(ib_options.get_option_snapshot(symbol, strike, expiry, right))
+    opt_bars_task = _asyncio.create_task(
+        ib_options.get_option_bars(symbol, strike, expiry, right, timeframe, _TF_DAYS[timeframe])
+    )
+    vol_hist_task = _asyncio.create_task(ib_options.get_vol_history(symbol, 365))
     if chart_task is not None:
-        daily_resp, chart_resp, row = await _asyncio.gather(daily_task, chart_task, snap_task)
+        daily_resp, chart_resp, row, real_option_bars, vol_history = await _asyncio.gather(
+            daily_task, chart_task, snap_task, opt_bars_task, vol_hist_task
+        )
     else:
-        daily_resp, row = await _asyncio.gather(daily_task, snap_task)
+        daily_resp, row, real_option_bars, vol_history = await _asyncio.gather(
+            daily_task, snap_task, opt_bars_task, vol_hist_task
+        )
         chart_resp = daily_resp
 
     bars = daily_resp.get("bars", [])
@@ -903,6 +982,11 @@ async def analyze_option(
     rv_30 = _realized_vol(closes, lookback_days=30)
     rv_90 = _realized_vol(closes, lookback_days=90)
     iv_rv_ratio = round(iv / rv_30, 3) if rv_30 and rv_30 > 0 else None
+    # IV rank/percentile from IBKR's real IV-index history (52-week window).
+    ivr = _iv_rank_metrics(
+        (vol_history or {}).get("iv", []),
+        (vol_history or {}).get("hv", []),
+    )
     liquidity = _liquidity(bid=bid, ask=ask, last=last,
                            volume=row.get("vol") if row else None,
                            oi=row.get("oi") if row else None)
@@ -920,12 +1004,18 @@ async def analyze_option(
     # the requested timeframe) so what the user sees lines up bar-for-bar.
     chart_bars = chart_resp.get("bars", []) if chart_resp else []
     chart_indicators = _chart_indicators(chart_bars, timeframe)
-    # 5b2. Companion option-chart: synthetic option price replay + RSI/MACD/EMA
-    # on the option, plus RV30 as IV-history proxy. Held-through-time semantics
-    # so DTE decreases as bars walk forward.
-    option_chart_block = _option_chart_indicators(
-        chart_bars, strike, side_full, iv, dte_years, timeframe
-    )
+    # 5b2. Companion option-chart. Preferred source: REAL historical option
+    # bars from IBKR (true traded prices, embodying the actual IV path and
+    # real volume). Fallback: the synthetic BS-replay when the contract has
+    # no usable history (fresh listings, very illiquid strikes).
+    if real_option_bars and len(real_option_bars) >= 10:
+        option_chart_block = _option_chart_from_real_bars(
+            real_option_bars, chart_bars, timeframe
+        )
+    else:
+        option_chart_block = _option_chart_indicators(
+            chart_bars, strike, side_full, iv, dte_years, timeframe
+        )
     # 5b3. Multi-TF snapshot — current value of every indicator across all
     # supported TFs. Lets the UI render a "is the trend on every TF
     # confirming?" matrix and lets the advice scoring use cross-TF
@@ -1026,11 +1116,32 @@ async def analyze_option(
         chart_tf=timeframe,
         entry_price=effective_entry,
         mid=mid,
+        iv_rank=ivr["iv_rank"],
     )
 
     # max profit/loss for the position
     multiplier = 100
     qty_abs = abs(quantity) or 1
+
+    # Unrealized P&L vs entry — THE number a trader reviewing their own
+    # position wants first. Sign-aware: shorts profit when the mark drops.
+    position_pnl: Dict[str, Optional[float]] = {
+        "cost_basis": round(effective_entry * multiplier * qty_abs, 2),
+        "market_value": None,
+        "unrealized_pnl": None,
+        "unrealized_pnl_pct": None,
+        "mark": round(mid, 4) if mid is not None else None,
+        "mark_source": mid_source,
+    }
+    if mid is not None and effective_entry > 0:
+        pnl_sign = 1 if is_long else -1
+        unreal = pnl_sign * (mid - effective_entry) * multiplier * qty_abs
+        position_pnl["market_value"] = round(mid * multiplier * qty_abs, 2)
+        position_pnl["unrealized_pnl"] = round(unreal, 2)
+        position_pnl["unrealized_pnl_pct"] = round(
+            pnl_sign * (mid - effective_entry) / effective_entry * 100, 2
+        )
+
     if is_long:
         max_loss = -effective_entry * multiplier * qty_abs  # premium paid
         max_profit = float("inf") if side_full == "call" else (strike - effective_entry) * multiplier * qty_abs
@@ -1051,6 +1162,7 @@ async def analyze_option(
         delta=delta, theta=theta,
         sigma=sigma, prob=probability, liquidity=liquidity,
         advice=advice, forecast=forecast,
+        iv_rank=ivr["iv_rank"],
     )
 
     resp = {
@@ -1107,7 +1219,16 @@ async def analyze_option(
             "realized_vol_30d": rv_30,
             "realized_vol_90d": rv_90,
             "iv_to_rv_ratio": iv_rv_ratio,
+            # Real IV-regime context from IBKR's vol indices (52-week window).
+            "iv_rank": ivr["iv_rank"],
+            "iv_percentile": ivr["iv_percentile"],
+            "iv_52w_high": ivr["iv_52w_high"],
+            "iv_52w_low": ivr["iv_52w_low"],
+            "underlying_iv_now": ivr["underlying_iv_now"],
+            "iv_history": ivr["iv_history"],
+            "hv_history": ivr["hv_history"],
         },
+        "position_pnl": position_pnl,
         "narrative": narrative,
 
         # ---- chart-timeframe block (drives the underlying analysis card) ----
@@ -1156,6 +1277,7 @@ async def analyze_option(
             ),
             "iv": round(iv, 4),
             "iv_rv_ratio": iv_rv_ratio,
+            "iv_rank": ivr["iv_rank"],
             "dte": dte,
             "abs_delta": round(abs(delta), 4) if delta is not None else None,
         },
@@ -1257,13 +1379,7 @@ def _option_chart_indicators(
     """
     n = len(bars)
     if n == 0:
-        return {
-            "timeframe": timeframe,
-            "synthetic_prices": [],
-            "rsi": [], "macd": [], "macd_signal": [], "macd_hist": [],
-            "ema9": [], "ema21": [],
-            "rv30": [],
-        }
+        return _empty_option_chart(timeframe, source="synthetic")
     underlying_closes = [b["close"] for b in bars]
     syn_prices = _held_option_history(bars, strike, side, iv, dte_now_years, timeframe)
 
@@ -1278,7 +1394,82 @@ def _option_chart_indicators(
 
     return {
         "timeframe": timeframe,
+        "source": "synthetic",
+        "times": [b["time"] for b in bars],
+        "bars": [],
+        "volume": [],
         "synthetic_prices": [round(v, 4) for v in syn_prices],
+        "rsi": [round(v, 2) for v in rsi],
+        "macd": [round(v, 5) for v in macd["macd"]],
+        "macd_signal": [round(v, 5) for v in macd["signal"]],
+        "macd_hist": [round(v, 5) for v in macd["hist"]],
+        "ema9": [round(v, 4) for v in ema9_s],
+        "ema21": [round(v, 4) for v in ema21_s],
+        "rv30": [round(v, 4) for v in rv30],
+    }
+
+
+def _empty_option_chart(timeframe: str, source: str) -> Dict[str, Any]:
+    return {
+        "timeframe": timeframe,
+        "source": source,
+        "times": [], "bars": [], "volume": [],
+        "synthetic_prices": [],
+        "rsi": [], "macd": [], "macd_signal": [], "macd_hist": [],
+        "ema9": [], "ema21": [],
+        "rv30": [],
+    }
+
+
+def _option_chart_from_real_bars(
+    opt_bars: List[Dict[str, Any]],
+    underlying_chart_bars: List[Dict[str, Any]],
+    timeframe: str,
+) -> Dict[str, Any]:
+    """Option chart block built from REAL IBKR option history.
+
+    Same shape as the synthetic block (so the UI/AI consumers work
+    unchanged) plus real OHLCV bars and volume. Indicators run on the real
+    close series — option momentum as it actually traded, IV path included.
+    `synthetic_prices` carries the real closes for back-compat. RV30 of the
+    underlying is tail-aligned to the option bars (both are on the same
+    timeframe/session grid, so aligning from the most recent bar back is
+    accurate where it matters and only approximate in the warm-up region).
+    """
+    n = len(opt_bars)
+    if n == 0:
+        return _empty_option_chart(timeframe, source="ibkr")
+    closes = [b["close"] for b in opt_bars]
+
+    rsi = compute_rsi_series(closes, 14) if n > 15 else [50.0] * n
+    macd = (
+        compute_macd_series(closes)
+        if n > 35 else {"macd": [0.0] * n, "signal": [0.0] * n, "hist": [0.0] * n}
+    )
+    ema9_s = compute_ema_series(closes, 9) if n >= 9 else closes[:]
+    ema21_s = compute_ema_series(closes, 21) if n >= 21 else closes[:]
+
+    underlying_closes = [b["close"] for b in underlying_chart_bars]
+    rv30_full = _rolling_realized_vol(underlying_closes, window=30, annualize=True)
+    rv30 = rv30_full[-n:] if len(rv30_full) >= n else [0.0] * (n - len(rv30_full)) + rv30_full
+
+    return {
+        "timeframe": timeframe,
+        "source": "ibkr",
+        "times": [b["time"] for b in opt_bars],
+        "bars": [
+            {
+                "time": b["time"],
+                "open": round(b["open"], 4),
+                "high": round(b["high"], 4),
+                "low": round(b["low"], 4),
+                "close": round(b["close"], 4),
+                "volume": b.get("volume", 0),
+            }
+            for b in opt_bars
+        ],
+        "volume": [b.get("volume", 0) for b in opt_bars],
+        "synthetic_prices": [round(v, 4) for v in closes],
         "rsi": [round(v, 2) for v in rsi],
         "macd": [round(v, 5) for v in macd["macd"]],
         "macd_signal": [round(v, 5) for v in macd["signal"]],

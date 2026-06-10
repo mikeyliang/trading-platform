@@ -67,21 +67,7 @@ export function UnderlyingAnalysisCard({
   loading,
 }: Props) {
   const chart = result.chart;
-  if (!chart) {
-    return (
-      <div className="rounded-md border border-border bg-bg overflow-hidden">
-        <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
-            Underlying analysis
-          </span>
-        </div>
-        <div className="h-[200px] flex items-center justify-center text-[11px] text-text-muted">
-          Indicator data unavailable — backend may need a restart.
-        </div>
-      </div>
-    );
-  }
-  const tfs = chart.supported_timeframes;
+  const tfs = chart?.supported_timeframes ?? [];
 
   // Forecast horizon picker — drives the projection cone.
   const fe = result.forecast_ensemble;
@@ -111,13 +97,14 @@ export function UnderlyingAnalysisCard({
   // Header display: hovered bar OHLCV when crosshair is in history, else
   // the last bar. Computed from the underlying-chart bars, not the analyzer
   // page's `spot` (which can lag the candle close by a tick).
-  const lastBar = chart.bars[chart.bars.length - 1];
+  const bars = chart?.bars;
+  const lastBar = bars ? bars[bars.length - 1] : undefined;
   const headerDisplay = useMemo(() => {
-    if (!lastBar) return null;
-    const idx = hover?.barIdx ?? chart.bars.length - 1;
-    const b = chart.bars[idx];
+    if (!bars || !lastBar) return null;
+    const idx = hover?.barIdx ?? bars.length - 1;
+    const b = bars[idx];
     if (!b) return null;
-    const prev = idx > 0 ? chart.bars[idx - 1] : null;
+    const prev = idx > 0 ? bars[idx - 1] : null;
     const ref = prev ? prev.close : b.open;
     const chg = b.close - ref;
     const chgPct = ref !== 0 ? (chg / ref) * 100 : 0;
@@ -131,7 +118,23 @@ export function UnderlyingAnalysisCard({
       chg,
       chgPct,
     };
-  }, [hover, chart.bars, lastBar]);
+  }, [hover, bars, lastBar]);
+
+  // After all hooks — rules-of-hooks requires unconditional hook order.
+  if (!chart) {
+    return (
+      <div className="rounded-md border border-border bg-bg overflow-hidden">
+        <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            Underlying analysis
+          </span>
+        </div>
+        <div className="h-[200px] flex items-center justify-center text-[11px] text-text-muted">
+          Indicator data unavailable — backend may need a restart.
+        </div>
+      </div>
+    );
+  }
 
   const positive = (headerDisplay?.chg ?? 0) >= 0;
   const symbolLabel = result.symbol;

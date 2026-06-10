@@ -184,10 +184,21 @@ export default function OptionsAnalyzerPage() {
         mid: result.option.mid, bid: result.option.bid, ask: result.option.ask,
         iv: result.option.iv,
       },
+      position_pnl: result.position_pnl,
       greeks: result.greeks,
       probability: result.probability,
       sigma_ranges: result.sigma_ranges,
-      vol_context: result.vol_context,
+      // vol_context minus the daily history arrays — they'd dwarf the snapshot.
+      vol_context: {
+        realized_vol_30d: result.vol_context.realized_vol_30d,
+        realized_vol_90d: result.vol_context.realized_vol_90d,
+        iv_to_rv_ratio: result.vol_context.iv_to_rv_ratio,
+        iv_rank: result.vol_context.iv_rank,
+        iv_percentile: result.vol_context.iv_percentile,
+        iv_52w_high: result.vol_context.iv_52w_high,
+        iv_52w_low: result.vol_context.iv_52w_low,
+        underlying_iv_now: result.vol_context.underlying_iv_now,
+      },
       liquidity: result.liquidity,
       underlying_trend: {
         rsi: result.underlying.rsi,
@@ -433,6 +444,12 @@ function AnalysisBody({
   const emPct = result.sigma_ranges.expected_move_pct;
   const emAbs = result.sigma_ranges.expected_move_abs;
 
+  // Unrealized P&L — the first thing a trader reviewing their own position
+  // wants to see, so it leads the metric grid.
+  const upnl = result.position_pnl?.unrealized_pnl;
+  const upnlPct = result.position_pnl?.unrealized_pnl_pct;
+  const ivRank = result.vol_context.iv_rank;
+
   return (
     <>
       {/* ── HERO ─────────────────────────────────────────────────────────
@@ -527,10 +544,17 @@ function AnalysisBody({
           </span>
         </div>
 
-        {/* Stable grid for headline metrics — 4 cols mobile / 8 cols md+.
-            Avoids the flex-wrap chaos where 8 inline label-value pairs
-            wrapped differently each width. */}
-        <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-4 md:grid-cols-8 gap-x-4 gap-y-2">
+        {/* Stable grid for headline metrics — 5 cols mobile / 10 cols md+.
+            Avoids the flex-wrap chaos where inline label-value pairs
+            wrapped differently each width. P&L leads: it's the question
+            the user deep-linked from their position to answer. */}
+        <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-5 md:grid-cols-10 gap-x-4 gap-y-2">
+          <HeroMetric label="P&L"
+            value={upnl != null ? fmtCurrency(upnl) : "—"}
+            tone={upnl == null ? undefined : upnl >= 0 ? "up" : "down"}
+            hint={upnlPct != null
+              ? `${upnlPct >= 0 ? "+" : ""}${upnlPct.toFixed(1)}% vs entry $${result.option.entry_price.toFixed(2)} (mark ${result.position_pnl?.mark_source ?? "—"})`
+              : "Unrealized P&L vs entry"} />
           <HeroMetric label="Spot" value={`$${result.spot.toFixed(2)}`}
             hint="Live underlying price." />
           <HeroMetric label="Mid"
@@ -542,6 +566,12 @@ function AnalysisBody({
             value={`${(result.option.iv * 100).toFixed(1)}%`}
             tone={ivPctOfRv != null && ivPctOfRv >= 1.3 ? "down" : ivPctOfRv != null && ivPctOfRv <= 0.8 ? "up" : undefined}
             hint={ivPctOfRv != null ? `${ivPctOfRv.toFixed(2)}× RV30 — ${ivPctOfRv >= 1.3 ? "rich" : ivPctOfRv <= 0.8 ? "cheap" : "fair"}` : "Implied volatility"} />
+          <HeroMetric label="IV Rank"
+            value={ivRank != null ? ivRank.toFixed(0) : "—"}
+            tone={ivRank == null ? undefined : ivRank >= 70 ? (result.is_long ? "down" : "up") : ivRank <= 20 ? (result.is_long ? "up" : "down") : undefined}
+            hint={ivRank != null
+              ? `52w IV range ${result.vol_context.iv_52w_low != null ? (result.vol_context.iv_52w_low * 100).toFixed(0) : "—"}–${result.vol_context.iv_52w_high != null ? (result.vol_context.iv_52w_high * 100).toFixed(0) : "—"}% · percentile ${result.vol_context.iv_percentile?.toFixed(0) ?? "—"} (IBKR IV index)`
+              : "IV rank unavailable — needs IBKR vol history"} />
           <HeroMetric label="DTE" value={`${result.dte}d`}
             tone={result.dte <= 7 ? "down" : result.dte <= 21 ? "warning" : undefined}
             hint="Days to expiration. ≤7d = gamma+theta zone." />
@@ -939,9 +969,12 @@ function buildAIPrompt(r: OptionAnalyzeResult): string {
     "",
     `Position: ${r.quantity} × ${r.strike} ${r.right} exp ${fmtExp(r.expiry)} (${r.dte}d)`,
     `Entry: $${r.option.entry_price.toFixed(2)}/share, current mid $${r.option.mid?.toFixed(2) ?? "—"}`,
+    r.position_pnl?.unrealized_pnl != null
+      ? `Unrealized P&L: ${r.position_pnl.unrealized_pnl >= 0 ? "+" : ""}$${r.position_pnl.unrealized_pnl.toFixed(0)} (${r.position_pnl.unrealized_pnl_pct! >= 0 ? "+" : ""}${r.position_pnl.unrealized_pnl_pct!.toFixed(1)}%)`
+      : `Unrealized P&L: unavailable`,
     `Spot: $${r.spot.toFixed(2)} (${r.distance_pct >= 0 ? "+" : ""}${r.distance_pct.toFixed(2)}% from strike)`,
     `Greeks: Δ=${r.greeks.delta?.toFixed(3) ?? "—"} Γ=${r.greeks.gamma?.toFixed(4) ?? "—"} Θ=${r.greeks.theta?.toFixed(3) ?? "—"} ν=${r.greeks.vega?.toFixed(3) ?? "—"}`,
-    `IV: ${(r.option.iv * 100).toFixed(1)}%, breakeven $${r.breakeven.toFixed(2)}`,
+    `IV: ${(r.option.iv * 100).toFixed(1)}%${r.vol_context.iv_rank != null ? ` (IV rank ${r.vol_context.iv_rank.toFixed(0)}, percentile ${r.vol_context.iv_percentile?.toFixed(0) ?? "—"})` : ""}, breakeven $${r.breakeven.toFixed(2)}`,
     `Underlying: EMA9 ${r.underlying.ema9?.toFixed(2) ?? "—"}, EMA21 ${r.underlying.ema21?.toFixed(2) ?? "—"}, EMA200 ${r.underlying.ema200?.toFixed(2) ?? "—"}, RSI ${r.underlying.rsi.toFixed(0)}, trend score ${r.underlying.trend_score}`,
     r.forecast
       ? `Model (Chronos 5d): median ${r.forecast.expected_return_pct >= 0 ? "+" : ""}${r.forecast.expected_return_pct.toFixed(1)}% (p10/p90 band ±${r.forecast.band_pct.toFixed(1)}%)`

@@ -683,7 +683,7 @@ function EquityCurveChart({
             labelStyle={{ color: CHART.textMuted, marginBottom: 2 }}
             itemStyle={{ color: CHART.text }}
             labelFormatter={(v) => new Date(v as number).toLocaleString()}
-            formatter={(value: number, _name, item) => {
+            formatter={(value: number, _name, item: { payload?: unknown }) => {
               const p = (item?.payload ?? {}) as Partial<EquityPoint>;
               const trade =
                 p.symbol && p.pnl != null

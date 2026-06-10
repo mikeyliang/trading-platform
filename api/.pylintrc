@@ -1,0 +1,18 @@
+[MASTER]
+# Cython/compiled packages whose members pylint cannot introspect statically.
+# Without this, every `from nautilus_trader... import X` raises a spurious
+# E0611 and pydantic BaseSettings fields are inferred as FieldInfo (E1101).
+extension-pkg-allow-list=pydantic,pydantic_core,nautilus_trader
+
+ignored-modules=nautilus_trader,
+                nautilus_trader.model,
+                nautilus_trader.model.data,
+                nautilus_trader.model.identifiers,
+                nautilus_trader.trading,
+                nautilus_trader.trading.strategy,
+                ib_async
+
+[TYPECHECK]
+# pydantic BaseSettings declares fields as `name: str = "default"`; pylint
+# infers the class attribute as FieldInfo and flags str methods on it.
+ignored-classes=FieldInfo
