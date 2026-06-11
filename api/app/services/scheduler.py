@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import monitor, preflight, scan_store
+from . import ib_trade_log, monitor, preflight, scan_store
 from .spread_finder import scan as run_spread_scan
 
 logger = logging.getLogger(__name__)
@@ -39,6 +39,17 @@ async def _preflight_job():
         return
     logger.info("monthly pre-flight firing for %s", today)
     await preflight.run(scope="scheduled")
+
+
+async def _trade_sync_job():
+    """Log today's IBKR fills into trade_history. reqExecutions only covers
+    the current session, so this runs every 10 min during RTH (plus once
+    after the close) to keep the log complete without any manual sync."""
+    result = await ib_trade_log.sync_executions()
+    if result.get("inserted"):
+        logger.info("trade sync: %d new fill(s) logged", result["inserted"])
+    elif result.get("error"):
+        logger.debug("trade sync skipped: %s", result["error"])
 
 
 async def _opportunity_scan_job():
@@ -80,9 +91,28 @@ def start():
         replace_existing=True,
         max_instances=1,
     )
+    # Every 10 min during RTH + a 16:20 sweep so fills landing in the last
+    # bucket of the day still get logged.
+    scheduler.add_job(
+        _trade_sync_job,
+        CronTrigger(day_of_week="mon-fri", hour="9-16", minute="*/10",
+                    timezone="US/Eastern"),
+        id="trade-sync",
+        replace_existing=True,
+        max_instances=1,
+    )
+    scheduler.add_job(
+        _trade_sync_job,
+        CronTrigger(day_of_week="mon-fri", hour=16, minute=20,
+                    timezone="US/Eastern"),
+        id="trade-sync-close",
+        replace_existing=True,
+        max_instances=1,
+    )
     scheduler.start()
     logger.info(
-        "scheduler started: exit-monitor (5min RTH), opportunity-scan (09:30 ET), preflight (3rd Fri 09:05 ET)"
+        "scheduler started: exit-monitor (5min RTH), trade-sync (10min RTH), "
+        "opportunity-scan (09:30 ET), preflight (3rd Fri 09:05 ET)"
     )
 
 

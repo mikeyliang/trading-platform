@@ -562,6 +562,76 @@ async def delete_trade(trade_id: int) -> bool:
         return False
 
 
+async def existing_exec_ids(exec_ids: List[str]) -> Optional[set]:
+    """Subset of ``exec_ids`` already present in trade_history (matched on
+    the IBKR execution id stored in metadata). None when the DB is
+    unavailable — callers must treat that differently from "none known",
+    or every sync would duplicate the whole day's fills."""
+    if not exec_ids:
+        return set()
+    pool = db.pool()
+    if pool is None:
+        return None
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT metadata_->>'exec_id' AS exec_id FROM trade_history "
+                "WHERE metadata_->>'exec_id' = ANY($1::text[])",
+                exec_ids,
+            )
+        return {r["exec_id"] for r in rows if r["exec_id"]}
+    except Exception as e:  # noqa: BLE001
+        logger.warning("existing_exec_ids failed: %s", e)
+        return None
+
+
+async def trades_for_markers(symbol: str, days: int = 90) -> List[Dict[str, Any]]:
+    """Lean trade list for chart markers: every non-deleted fill on
+    ``symbol`` in the trailing window, oldest first. Only the columns the
+    chart needs — no pagination, capped at 500 rows."""
+    pool = db.pool()
+    if pool is None:
+        return []
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT timestamp, side, quantity, price, pnl, strategy, metadata_ "
+                "FROM trade_history "
+                "WHERE is_deleted = FALSE AND symbol = $1 "
+                "  AND timestamp >= NOW() - ($2 || ' days')::interval "
+                "ORDER BY timestamp ASC LIMIT 500",
+                symbol.strip().upper(), str(max(1, days)),
+            )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("trades_for_markers failed: %s", e)
+        return []
+    out: List[Dict[str, Any]] = []
+    for r in rows:
+        d = _row_to_dict(r)
+        meta = d.get("metadata_") or {}
+        ts = d.get("timestamp")
+        if isinstance(ts, str):
+            try:
+                ts = datetime.fromisoformat(ts)
+            except ValueError:
+                continue
+        if not isinstance(ts, datetime):
+            continue
+        out.append({
+            "time": int(ts.timestamp()),
+            "side": (d.get("side") or "").upper(),
+            "quantity": d.get("quantity"),
+            "price": d.get("price"),
+            "pnl": d.get("pnl"),
+            "strategy": d.get("strategy"),
+            "is_option": (meta.get("sec_type") == "OPT") if isinstance(meta, dict) else False,
+            "strike": meta.get("strike") if isinstance(meta, dict) else None,
+            "right": meta.get("right") if isinstance(meta, dict) else None,
+            "expiry": meta.get("expiry") if isinstance(meta, dict) else None,
+        })
+    return out
+
+
 def _row_to_dict(row: Any) -> Dict[str, Any]:
     d = dict(row)
     ts = d.get("timestamp")

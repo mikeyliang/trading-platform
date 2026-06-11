@@ -273,8 +273,42 @@ export const api = {
   tradeHistoryUpdate: (id: number, payload: TradeHistoryUpdatePayload) =>
     put<TradeHistoryRecord>(`/api/trade-history/${id}`, payload),
   tradeHistoryDelete: (id: number) => del<void>(`/api/trade-history/${id}`),
+  // Pull today's fills from the IBKR gateway into trade_history (deduped
+  // on execution id). Also runs on a 10-min RTH schedule server-side.
+  tradeHistorySyncIbkr: () =>
+    post<TradeSyncResult>("/api/trade-history/sync-ibkr", {}),
+  // Fills on a symbol shaped for chart markers.
+  tradeMarkers: (symbol: string, days = 90) =>
+    get<TradeMarkersResponse>(
+      `/api/trade-history/markers/${encodeURIComponent(symbol)}?days=${days}`
+    ),
 
 };
+
+export interface TradeSyncResult {
+  fetched: number;
+  inserted: number;
+  skipped: number;
+  error: string | null;
+}
+
+export interface TradeMarker {
+  time: number; // epoch seconds
+  side: TradeSide;
+  quantity: number | null;
+  price: number | null;
+  pnl: number | null;
+  strategy: string | null;
+  is_option: boolean;
+  strike: number | null;
+  right: string | null;
+  expiry: string | null;
+}
+
+export interface TradeMarkersResponse {
+  symbol: string;
+  trades: TradeMarker[];
+}
 
 export type TradeSide = "BUY" | "SELL";
 export type TradeStatus =

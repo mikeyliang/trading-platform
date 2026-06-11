@@ -28,7 +28,7 @@ from ..schemas.trade_history import (
     TradeHistoryUpdate,
     TradeStats,
 )
-from ..services import trade_history_store
+from ..services import ib_trade_log, trade_history_store
 
 _EXPORT_COLUMNS = [
     "id", "timestamp", "symbol", "side", "quantity", "price",
@@ -114,6 +114,30 @@ async def trade_history_analysis(
         end=end,
     )
     return TradeAnalysisResponse(**result)
+
+
+@router.post(
+    "/sync-ibkr",
+    summary="Pull today's fills from IBKR and log the new ones.",
+)
+async def sync_ibkr_trades() -> dict:
+    """Fetch current-session executions from the IBKR gateway, dedupe on
+    execution id, and persist the new fills. Returns
+    ``{fetched, inserted, skipped, error}``. Also wired to a scheduler job
+    every 10 minutes during RTH, so the manual button is just "sync now"."""
+    return await ib_trade_log.sync_executions()
+
+
+@router.get(
+    "/markers/{symbol}",
+    summary="Trades on a symbol shaped for chart markers.",
+)
+async def trade_markers(
+    symbol: str,
+    days: int = Query(90, ge=1, le=365, description="Trailing window."),
+) -> dict:
+    trades = await trade_history_store.trades_for_markers(symbol, days=days)
+    return {"symbol": symbol.upper(), "trades": trades}
 
 
 @router.post(

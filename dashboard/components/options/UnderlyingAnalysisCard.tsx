@@ -17,6 +17,7 @@ import {
 import { cn, fmt, fmtCompact } from "@/lib/utils";
 import { CHART, baseChartOptions } from "@/lib/chartTheme";
 import type { OptionAnalyzeResult, OptionAnalyzerTimeframe } from "@/lib/api";
+import { useTradeMarkersOverlay } from "@/components/chart/useTradeMarkersOverlay";
 
 interface Props {
   result: OptionAnalyzeResult;
@@ -233,6 +234,7 @@ export function UnderlyingAnalysisCard({
             hover={hover}
             spot={result.spot}
             symbolWatermark={symbolLabel}
+            symbol={result.symbol}
           />
         </>
       )}
@@ -265,6 +267,8 @@ interface PaneStackProps {
   onHoverChange: (h: HoverState | null) => void;
   hover: HoverState | null;
   symbolWatermark: string;
+  /** Underlying ticker — drives the own-fills trade markers overlay. */
+  symbol: string;
 }
 
 interface HoverState {
@@ -287,6 +291,7 @@ function PaneStack({
   onHoverChange,
   hover,
   symbolWatermark,
+  symbol,
 }: PaneStackProps) {
   const priceContainerRef = useRef<HTMLDivElement>(null);
   const rsiContainerRef = useRef<HTMLDivElement>(null);
@@ -301,6 +306,15 @@ function PaneStack({
 
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
+
+  // Own fills on this underlying as BUY/SELL arrow markers — when the user
+  // is analyzing their own position, their entries/exits belong on the chart.
+  useTradeMarkersOverlay({
+    candleSeries: candleSeriesRef,
+    symbol,
+    bars: chart.bars,
+    enabled: true,
+  });
   const ema9SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const ema21SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const vwapSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
