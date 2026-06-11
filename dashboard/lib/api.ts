@@ -550,6 +550,12 @@ export interface SpreadCandidate {
   kelly_pct: number;
   underlying_price: number;
   passes: Record<string, boolean>;
+  // Informational analytics (not entry gates): breakeven at expiry, 1σ
+  // expected move to expiry from the short leg's live IV, and how many σ
+  // of cushion the short strike has (distance ÷ expected move).
+  breakeven?: number | null;
+  expected_move_pct?: number | null;
+  cushion_sigma?: number | null;
 }
 
 export interface SpreadScanResult {
@@ -567,6 +573,12 @@ export interface SpreadScanResult {
     trade_type: string;
     candidate: SpreadCandidate;
     reason: string;
+    runner_up_type?: string | null;
+    span_pct?: number;
+    // Qualifying trades on OTHER underlyings (e.g. Space when the
+    // recommendation is a RUT-family trade) — independent books, can
+    // be placed alongside the primary pick.
+    also_qualifying?: string[];
   } | null;
 }
 

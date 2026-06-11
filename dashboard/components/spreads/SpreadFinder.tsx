@@ -315,9 +315,28 @@ function RecommendationRow({ result, bankroll }: { result: SpreadScanResult; ban
         <Stat label="POP"    value={`${c.win_prob_pct.toFixed(0)}%`} />
         <Stat label="Δ"      value={(c.short_delta * 100).toFixed(0)} />
         <Stat label="adj %"  value={`${c.adj_distance_pct.toFixed(1)}%`} />
+        {c.cushion_sigma != null && (
+          <span
+            title={`Short strike sits ${c.cushion_sigma.toFixed(1)}× the IV-implied 1σ move to expiry (${c.expected_move_pct?.toFixed(1) ?? "—"}%) away from spot. Live-IV context for the adj-%OTM gate.`}
+          >
+            <Stat
+              label="cushion"
+              value={`${c.cushion_sigma.toFixed(1)}σ`}
+              tone={c.cushion_sigma >= 1.5 ? "up" : c.cushion_sigma < 1 ? "down" : undefined}
+            />
+          </span>
+        )}
         <Stat label="size"   value={`${sizing.recommendedContracts} ×`} tone="up" />
       </div>
-      <p className="text-[11px] text-text-muted leading-relaxed">{rec.reason}</p>
+      <p className="text-[11px] text-text-muted leading-relaxed">
+        {rec.reason}
+        {rec.also_qualifying && rec.also_qualifying.length > 0 && (
+          <span className="text-text-secondary">
+            {" "}Also qualifying: {rec.also_qualifying.map((t) => TRADE_LABEL[t] ?? t).join(", ")}{" "}
+            (different underlying — independent book, can be placed alongside).
+          </span>
+        )}
+      </p>
       <div className="flex gap-3 text-[11px]">
         <Link href={chartHref} className="text-accent hover:underline">View on chart →</Link>
       </div>
