@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PayoffChart } from "./PayoffChart";
+import { StrategyGuideButton } from "./StrategyGuide";
 import { cn, fmt, fmtCurrency } from "@/lib/utils";
 import { Check, X, Rocket, Info } from "lucide-react";
 
@@ -82,9 +83,12 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
           <span className="text-xs font-medium text-text-primary">Rule One Screener</span>
           <Badge variant="accent" className="normal-case tracking-normal">{underlying}</Badge>
         </div>
-        <Badge variant={passing.length > 0 ? "up" : "muted"}>
-          {passing.length}/{applicable.length} pass
-        </Badge>
+        <div className="flex items-center gap-2">
+          <StrategyGuideButton />
+          <Badge variant={passing.length > 0 ? "up" : "muted"}>
+            {passing.length}/{applicable.length} pass
+          </Badge>
+        </div>
       </div>
 
       <Card>

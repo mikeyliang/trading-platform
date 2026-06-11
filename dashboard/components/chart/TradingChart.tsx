@@ -32,6 +32,7 @@ import { useShortStrikeOverlay } from "./useShortStrikeOverlay";
 import { useTradeMarkersOverlay } from "./useTradeMarkersOverlay";
 import { useHistoricalStrikesOverlay } from "./useHistoricalStrikesOverlay";
 import { OverlaysMenu, type OverlayGroup } from "./OverlaysMenu";
+import { StrategyGuideButton } from "@/components/ruleone/StrategyGuide";
 import { STRATEGIES, type StrategyId, type StrategySpec } from "@/lib/ruleone";
 import { RuleOneCycleCard } from "@/components/ruleone/RuleOneCycleCard";
 
@@ -610,6 +611,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           >
             Reset Zoom
           </button>
+          {cycleSupported && <StrategyGuideButton />}
           <OverlaysMenu groups={buildOverlayGroups({
             emaOn, setEmaOn, smiOn, setSmiOn, vwapOn, setVwapOn,
             rsiOn, setRsiOn, macdOn, setMacdOn, volumeOn, setVolumeOn,

@@ -17,6 +17,7 @@ import {
 import { RefreshCw, CheckCircle2, XCircle, ChevronDown } from "lucide-react";
 import { useLiveBankroll } from "@/lib/useLiveBankroll";
 import { MonitorMiniStrip } from "@/components/monitor/MonitorMiniStrip";
+import { StrategyGuideButton } from "@/components/ruleone/StrategyGuide";
 
 const DEFAULT_SYMBOL = "ALL";
 const REFRESH_OPTIONS: { label: string; seconds: number }[] = [
@@ -130,6 +131,7 @@ export function SpreadFinder() {
         description="Mars · Mars Max · Space · RUT — same trade types as Picker, ranked side-by-side."
         actions={
           <div className="flex items-end gap-2 flex-wrap">
+            <StrategyGuideButton className="h-8 self-end" />
             <Field label="Symbol">
               <Input
                 value={pending}

@@ -32,6 +32,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from ..config import settings
 from ..services import db
 from ..services.news import fetch_news
 
@@ -164,6 +165,41 @@ _PER_CALL_TIMEOUT_S = 35
 # get an answer in 75s, bail and surface "agent timed out" — the
 # pipeline progresses with the remaining agents.
 _PER_AGENT_TIMEOUT_S = 75
+
+
+# Claude model for agent calls — same env override as llm_read.
+_ANTHROPIC_MODEL = os.getenv("ANTHROPIC_ANALYSIS_MODEL", "claude-opus-4-8")
+
+
+async def _call_anthropic(prompt: str, system: str) -> tuple[str, str]:
+    """One Claude call via the direct Anthropic API. Returns
+    (output_text, model_used) — same contract as _call_openrouter."""
+    from anthropic import AsyncAnthropic
+
+    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    msg = await client.messages.create(
+        model=_ANTHROPIC_MODEL,
+        max_tokens=2048,
+        thinking={"type": "adaptive"},
+        system=system,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
+    return text.strip(), _ANTHROPIC_MODEL
+
+
+async def _call_llm(prompt: str, system: str) -> tuple[str, str]:
+    """Provider-preference wrapper: direct Anthropic API when the key is
+    configured (better, more consistent agent reads), OpenRouter free-model
+    chain otherwise — and as the rescue path if the Claude call errors."""
+    if settings.anthropic_api_key:
+        try:
+            return await _call_anthropic(prompt, system)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("anthropic agent call failed (%s) — falling back to OpenRouter", e)
+            if not os.getenv("OPENROUTER_API_KEY"):
+                raise HTTPException(502, f"Anthropic call failed: {e}")
+    return await _call_openrouter(prompt, system)
 
 
 async def _call_openrouter(prompt: str, system: str) -> tuple[str, str]:
@@ -511,17 +547,17 @@ async def _run_pipeline(r: AgentRunRequest) -> AsyncIterator[str]:
         # outer wait_for guards against everything afterward.
         items = await fetch_news(r.symbol)
         prompt = _news_prompt(items, r)
-        text, model = await _call_openrouter(prompt, _SYSTEM_BASE)
+        text, model = await _call_llm(prompt, _SYSTEM_BASE)
         return text, model, items
 
     async def underlying_task() -> tuple[str, str]:
-        return await _call_openrouter(_underlying_prompt(r), _SYSTEM_BASE)
+        return await _call_llm(_underlying_prompt(r), _SYSTEM_BASE)
 
     async def option_task() -> tuple[str, str]:
-        return await _call_openrouter(_option_prompt(r), _SYSTEM_BASE)
+        return await _call_llm(_option_prompt(r), _SYSTEM_BASE)
 
     async def decay_task() -> tuple[str, str]:
-        return await _call_openrouter(_decay_prompt(r), _SYSTEM_BASE)
+        return await _call_llm(_decay_prompt(r), _SYSTEM_BASE)
 
     results: Dict[str, Dict[str, Any]] = {}
 
@@ -585,7 +621,7 @@ async def _run_pipeline(r: AgentRunRequest) -> AsyncIterator[str]:
     yield _sse("agent.start", agent="synthesis")
     try:
         synthesis_text, syn_model = await asyncio.wait_for(
-            _call_openrouter(
+            _call_llm(
                 _synthesis_prompt(
                     r,
                     results.get("news", {}).get("output", "(news agent failed)"),
