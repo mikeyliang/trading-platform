@@ -18,7 +18,7 @@ import { api, type RuleOneCycle, type RuleOneHistoryCycle } from "@/lib/api";
 import { ws } from "@/lib/ws";
 import type { Bar, Quote, Timeframe, WSMessage } from "@/types";
 import { cn, fmt, fmtCompact } from "@/lib/utils";
-import { Activity, BarChart2, BarChart3, CalendarDays, Gauge, Loader2, Ruler, TrendingUp, Waves, Layers, Search } from "lucide-react";
+import { Activity, BarChart2, BarChart3, CalendarDays, Crosshair, Gauge, Loader2, Ruler, TrendingUp, Waves, Layers, Search } from "lucide-react";
 import { useSpreadOverlay, SUPPORTED_OVERLAY_SYMBOLS } from "./useSpreadOverlay";
 import { useSpreadFinderOverlay } from "./useSpreadFinderOverlay";
 import { usePinnedSpreadOverlay, type PinnedSpread } from "./usePinnedSpreadOverlay";
@@ -29,8 +29,10 @@ import { useMonthlyExpiryOverlay, MONTHLY_OPEX_SYMBOLS } from "./useMonthlyExpir
 import { useFibLevelsOverlay, type FibRange } from "./useFibLevelsOverlay";
 import { useCycleOverlay } from "./useCycleOverlay";
 import { useShortStrikeOverlay } from "./useShortStrikeOverlay";
+import { useTradeMarkersOverlay } from "./useTradeMarkersOverlay";
 import { useHistoricalStrikesOverlay } from "./useHistoricalStrikesOverlay";
 import { OverlaysMenu, type OverlayGroup } from "./OverlaysMenu";
+import { StrategyGuideButton } from "@/components/ruleone/StrategyGuide";
 import { STRATEGIES, type StrategyId, type StrategySpec } from "@/lib/ruleone";
 import { RuleOneCycleCard } from "@/components/ruleone/RuleOneCycleCard";
 
@@ -107,6 +109,10 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   // Default the strategy overlay ON — it's a no-op when there are no spreads
   // or projection for the symbol, and the toggle is visible if anything renders.
   const [spreadsOn, setSpreadsOn] = useState(true);
+  // Own-trade markers (fills logged from IBKR) — ON by default: it's a no-op
+  // until trades exist for the symbol, and "where did I trade?" is the first
+  // thing the chart should answer about your own history.
+  const [tradesOn, setTradesOn] = useState(true);
   // Spread Finder overlay — calls the backend scanner and draws the top
   // candidate per trade type (RUT/Mars/MarsMax/Space). Off by default
   // because a fresh scan on the free Massive tier is rate-limited to
@@ -173,6 +179,14 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   });
 
   usePinnedSpreadOverlay({ chart: chartRef, candleSeries: candleRef, pinned: pinnedSpread });
+
+  // Own fills as arrow markers on the candles (BUY ↑ / SELL ↓).
+  const { visibleCount: tradeMarkerCount } = useTradeMarkersOverlay({
+    candleSeries: candleRef,
+    symbol,
+    bars: barsState,
+    enabled: tradesOn,
+  });
 
   // Daily bars: 10 years — enough for the 12-year Mars backtest reference and
   // multi-year fib views. Intraday timeframes are wider too now that we run
@@ -597,6 +611,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           >
             Reset Zoom
           </button>
+          {cycleSupported && <StrategyGuideButton />}
           <OverlaysMenu groups={buildOverlayGroups({
             emaOn, setEmaOn, smiOn, setSmiOn, vwapOn, setVwapOn,
             rsiOn, setRsiOn, macdOn, setMacdOn, volumeOn, setVolumeOn,
@@ -605,6 +620,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
             applicableStrategies, currentStrategy, setStrategyId,
             spreadsOn, setSpreadsOn, openSpreads,
             scanOn, setScanOn, scanLoading, scanResult,
+            tradesOn, setTradesOn, tradeMarkerCount,
             projected, symbol,
           })} />
 
@@ -1013,6 +1029,8 @@ function buildOverlayGroups(args: {
   scanOn: boolean; setScanOn: (fn: (v: boolean) => boolean) => void;
   scanLoading: boolean;
   scanResult: { trade_types?: Record<string, { passes: Record<string, boolean> }[]> } | null;
+  tradesOn: boolean; setTradesOn: (fn: (v: boolean) => boolean) => void;
+  tradeMarkerCount: number;
   projected: unknown; symbol: string;
 }): OverlayGroup[] {
   const groups: OverlayGroup[] = [];
@@ -1028,6 +1046,15 @@ function buildOverlayGroups(args: {
       { id: "vwap", label: "VWAP", icon: BarChart2,    hint: "intraday", active: args.vwapOn, onToggle: () => args.setVwapOn((v) => !v), title: "Volume-weighted average price (intraday daily-reset)" },
       { id: "opex", label: "OPEX", icon: CalendarDays, hint: "3rd Fri", active: args.opexOn, onToggle: () => args.setOpexOn((v) => !v), title: "Monthly OPEX guide lines (3rd Friday)" },
       { id: "fib",  label: "Fib floors", icon: Ruler,  active: args.fibOn,  onToggle: () => args.setFibOn((v) => !v),  title: "Fibonacci floors over loaded range" },
+      {
+        id: "trades",
+        label: "My trades",
+        icon: Crosshair,
+        hint: args.tradeMarkerCount > 0 ? `${args.tradeMarkerCount} fills` : undefined,
+        active: args.tradesOn,
+        onToggle: () => args.setTradesOn((v) => !v),
+        title: "Your IBKR fills as arrow markers — BUY ↑ below the bar, SELL ↓ above it",
+      },
     ],
     extra: args.fibOn ? (
       <div className="flex flex-wrap gap-0.5 pt-1.5 pl-1.5">

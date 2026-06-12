@@ -25,18 +25,18 @@ interface Args {
 }
 
 /**
- * Render the user's pinned bull-put spread as three SHORT line segments
+ * Render the user's pinned bull-put spread as SHORT line segments
  * spanning today → expiration only — not horizontal lines across the
  * entire chart. Matches how a monthly RUT/SPY trade actually lives: a
  * 25-DTE bracket, not a forever-line.
  *
- * Three lines per pin:
- *   1. short strike  — solid, primary color
- *   2. long  strike  — dashed, same color
- *   3. 2% exit       — dotted, same color (Jamal's final-day exit rule)
- *
- * The lightweight-charts time axis auto-extends to fit the expiry data
- * point, so the chart shows the runway out to the trade's last day.
+ * Four labelled levels per pin (all spec-driven, see lib/ruleone.ts):
+ *   1. short strike   — solid, primary color
+ *   2. long  strike   — dashed, same color
+ *   3. rule-2 exit    — dotted: strike ± buffer% (3% trad RUT, 2% others).
+ *                       On the last trade day, price here = close NOW.
+ *   4. alert level    — sparse-dotted at half the buffer: "set your
+ *                       broker alert here" pre-warning level.
  */
 export function usePinnedSpreadOverlay({ chart, candleSeries, pinned }: Args) {
   const seriesRef = useRef<ISeriesApi<"Line">[]>([]);
@@ -69,6 +69,13 @@ export function usePinnedSpreadOverlay({ chart, candleSeries, pinned }: Args) {
     const tEnd = expiryTimestamp(pinned.expiry);
     if (tStart == null || tEnd == null || tEnd <= tStart) return;
 
+    // Spec-driven rule-2 buffer: traditional RUT closes within 3% of the
+    // short strike on the last trade day; Mars / Mars Max / Space use 2%.
+    const bufferPct = pinned.tradeType === "rut" ? 3 : 2;
+    const dir = pinned.side === "put" ? 1 : -1; // puts: levels sit ABOVE strike
+    const exitPrice = pinned.shortStrike * (1 + dir * bufferPct / 100);
+    const alertPrice = pinned.shortStrike * (1 + dir * (bufferPct / 2) / 100);
+
     const segments: Array<{
       price: number;
       width: 1 | 2;
@@ -79,9 +86,10 @@ export function usePinnedSpreadOverlay({ chart, candleSeries, pinned }: Args) {
         title: `${label} short · ${pinned.shortStrike}${right} · ${expLabel}` },
       { price: pinned.longStrike,  width: 1, style: LineStyle.Dashed,
         title: `${label} long · ${pinned.longStrike}${right}` },
-      { price: pinned.side === "put" ? pinned.shortStrike * 1.02 : pinned.shortStrike * 0.98,
-        width: 1, style: LineStyle.Dotted,
-        title: `${label} 2% exit` },
+      { price: exitPrice, width: 1, style: LineStyle.Dotted,
+        title: `${label} R2 exit · ${exitPrice.toFixed(0)} (${bufferPct}% buffer, last day)` },
+      { price: alertPrice, width: 1, style: LineStyle.SparseDotted,
+        title: `${label} alert · ${alertPrice.toFixed(0)}` },
     ];
 
     for (const seg of segments) {

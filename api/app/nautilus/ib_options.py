@@ -451,6 +451,176 @@ async def get_bars(symbol: str, timeframe: str, days: int) -> list[dict]:
     return out
 
 
+# Historical option bars cache. Real option history barely changes within a
+# couple of minutes; the analyzer re-runs on every qty/entry tweak, so a
+# short TTL keeps those re-runs off the gateway.
+_OPTION_BARS_TTL_S = 120.0
+_option_bars_cache: Dict[tuple, tuple[float, list]] = {}
+
+
+async def get_option_bars(
+    symbol: str,
+    strike: float,
+    expiry: str,
+    right: str,
+    timeframe: str,
+    days: int,
+) -> list[dict]:
+    """Real historical OHLCV bars for a specific option contract.
+
+    Unlike the synthetic BS-replay the analyzer falls back to, these are
+    actual traded prices from IBKR — they embody the contract's real IV
+    path, not "IV frozen at today's level". TRADES first (real prints),
+    MIDPOINT fallback for illiquid contracts that quote but rarely trade.
+    Empty list on failure so callers can degrade to the synthetic series.
+    """
+    sym_u = symbol.upper()
+    key = (sym_u, float(strike), expiry, right.upper(), timeframe, days)
+    cached = _option_bars_cache.get(key)
+    if cached and (asyncio.get_event_loop().time() - cached[0]) < _OPTION_BARS_TTL_S:
+        return cached[1]
+
+    ib = await _client.get()
+    if ib is None:
+        return []
+    try:
+        meta = await _get_chain_meta(ib, sym_u)
+        if meta is None:
+            return []
+        exchange, trading_class, multiplier = meta
+        opt = Option(sym_u, expiry, float(strike), right.upper(), exchange, multiplier, "USD")
+        opt.tradingClass = trading_class
+        qualified = await ib.qualifyContractsAsync(opt)
+        if not qualified or not getattr(qualified[0], "conId", 0):
+            return []
+        contract = qualified[0]
+
+        bar_size = _BAR_SIZE.get(timeframe, "1 day")
+        duration = _duration_for(timeframe, days)
+        bars = None
+        for what in ("TRADES", "MIDPOINT"):
+            try:
+                bars = await ib.reqHistoricalDataAsync(
+                    contract,
+                    endDateTime="",
+                    durationStr=duration,
+                    barSizeSetting=bar_size,
+                    whatToShow=what,
+                    useRTH=True,
+                    formatDate=2,
+                )
+            except Exception as e:  # noqa: BLE001
+                logger.debug("option bars %s failed for %s %s %s%s: %s",
+                             what, sym_u, expiry, strike, right, e)
+                bars = None
+            if bars:
+                break
+        out = _bars_to_dicts(bars, price_decimals=4)
+        if out:
+            _option_bars_cache[key] = (asyncio.get_event_loop().time(), out)
+        return out
+    except Exception as e:  # noqa: BLE001
+        logger.warning("get_option_bars(%s %s %s%s) failed: %s",
+                       sym_u, expiry, strike, right, e)
+        return []
+
+
+# Vol-history cache. IV/HV are daily series — refreshing more than every
+# 15 minutes buys nothing.
+_VOL_HISTORY_TTL_S = 900.0
+_vol_history_cache: Dict[str, tuple[float, Dict[str, Any]]] = {}
+
+
+async def get_vol_history(symbol: str, days: int = 365) -> Dict[str, Any]:
+    """Daily implied-vol and historical-vol series for the underlying.
+
+    IBKR exposes both directly via reqHistoricalData:
+      - OPTION_IMPLIED_VOLATILITY: the exchange-computed ~30d ATM IV index
+        for the underlying (same series TWS charts as "IV").
+      - HISTORICAL_VOLATILITY: 30d close-to-close realized vol.
+
+    Both arrive as OHLC bars whose close is the vol level (annualized
+    decimal). This is the real IV history the analyzer previously had to
+    proxy with rolling realized vol. Shape:
+      {"iv": [{time, value}], "hv": [{time, value}]}  — empty lists on failure.
+    """
+    sym_u = symbol.upper()
+    cached = _vol_history_cache.get(sym_u)
+    if cached and (asyncio.get_event_loop().time() - cached[0]) < _VOL_HISTORY_TTL_S:
+        return cached[1]
+
+    ib = await _client.get()
+    if ib is None:
+        return {"iv": [], "hv": []}
+
+    contract = _resolve_contract(sym_u)
+    try:
+        await ib.qualifyContractsAsync(contract)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("get_vol_history qualify %s failed: %s", sym_u, e)
+        return {"iv": [], "hv": []}
+
+    years = max(1, min((days + 364) // 365, 2))
+
+    async def _fetch(what: str) -> list:
+        try:
+            bars = await ib.reqHistoricalDataAsync(
+                contract,
+                endDateTime="",
+                durationStr=f"{years} Y",
+                barSizeSetting="1 day",
+                whatToShow=what,
+                useRTH=True,
+                formatDate=2,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.debug("get_vol_history %s/%s failed: %s", sym_u, what, e)
+            return []
+        out = []
+        for b in bars or []:
+            v = _safe(b.close)
+            if v is None or v <= 0:
+                continue
+            ts = b.date
+            if hasattr(ts, "timestamp"):
+                t = int(ts.timestamp())
+            else:
+                from datetime import datetime as _dt
+                t = int(_dt(ts.year, ts.month, ts.day).timestamp())
+            out.append({"time": t, "value": round(float(v), 4)})
+        return out
+
+    iv_series, hv_series = await asyncio.gather(
+        _fetch("OPTION_IMPLIED_VOLATILITY"),
+        _fetch("HISTORICAL_VOLATILITY"),
+    )
+    result = {"iv": iv_series, "hv": hv_series}
+    if iv_series or hv_series:
+        _vol_history_cache[sym_u] = (asyncio.get_event_loop().time(), result)
+    return result
+
+
+def _bars_to_dicts(bars, price_decimals: int = 2) -> list[dict]:
+    """Convert ib_async BarData list to the app's bar-dict shape."""
+    out = []
+    for b in bars or []:
+        ts = b.date
+        if hasattr(ts, "timestamp"):
+            t = int(ts.timestamp())
+        else:
+            from datetime import datetime as _dt
+            t = int(_dt(ts.year, ts.month, ts.day).timestamp())
+        out.append({
+            "time": t,
+            "open": round(float(b.open), price_decimals),
+            "high": round(float(b.high), price_decimals),
+            "low": round(float(b.low), price_decimals),
+            "close": round(float(b.close), price_decimals),
+            "volume": float(b.volume) if b.volume and b.volume > 0 else 0.0,
+        })
+    return out
+
+
 async def get_quote(symbol: str) -> Optional[Dict[str, Any]]:
     """Snapshot quote from IBKR. Returns None if unavailable.
 

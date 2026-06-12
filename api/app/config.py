@@ -57,7 +57,7 @@ class Settings(BaseSettings):
 
     # Claude API for the assistant / multi-agent debate
     anthropic_api_key: str = ""
-    chat_model: str = "claude-opus-4-7"
+    chat_model: str = "claude-opus-4-8"
 
     # Shared secret that callers of /api/agent/* must send as X-Agent-Key.
     # Empty disables auth (dev only) — production deployments must set this.

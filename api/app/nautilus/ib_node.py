@@ -804,8 +804,12 @@ if NT_IB_AVAILABLE:
                     })
                 done.set()
 
-            # NT exposes request_bars on Strategy; delivery comes through on_historical_data.
-            self.request_bars(bar_type)
+            # NT exposes request_bars(bar_type) on Strategy; delivery comes
+            # through on_historical_data. super() is required — this class
+            # shadows the name with its own (symbol, timeframe, days)
+            # overload, so self.request_bars(bar_type) would recurse into
+            # this method with the wrong arguments.
+            super().request_bars(bar_type)
             try:
                 await asyncio.wait_for(done.wait(), timeout=15)
             except asyncio.TimeoutError:

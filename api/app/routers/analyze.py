@@ -254,17 +254,18 @@ async def analyze_symbol(
         horizon = 5  # default for unknown
     
     fc = chronos.forecast(closes, horizon=horizon)
+    delta_str = f"{delta_value:.2f}" if delta_value is not None else "N/A"
     if fc:
         expected = fc["expected_return_pct"]
         band = fc["band_pct"]
         if expected > 3.0:
-            signals.append({"name": "Forecast bullish", "score": +2, "detail": f"DTE={dte_value}d (δ={delta_value:.2f if delta_value else "N/A"}), {horizon}d forecast: +{expected:.1f}% (±{band:.1f}%)"})
+            signals.append({"name": "Forecast bullish", "score": +2, "detail": f"DTE={dte_value}d (δ={delta_str}), {horizon}d forecast: +{expected:.1f}% (±{band:.1f}%)"})
         elif expected > 0.5:
-            signals.append({"name": "Forecast mild bull", "score": +1, "detail": f"DTE={dte_value}d (δ={delta_value:.2f if delta_value else "N/A"}), {horizon}d forecast: +{expected:.1f}% (±{band:.1f}%)"})
+            signals.append({"name": "Forecast mild bull", "score": +1, "detail": f"DTE={dte_value}d (δ={delta_str}), {horizon}d forecast: +{expected:.1f}% (±{band:.1f}%)"})
         elif expected < -3.0:
-            signals.append({"name": "Forecast bearish", "score": -2, "detail": f"DTE={dte_value}d, {moneyness} (δ={delta_value:.2f if delta_value else "N/A"}), {horizon}d forecast: {expected:.1f}% (±{band:.1f}%)"})
+            signals.append({"name": "Forecast bearish", "score": -2, "detail": f"DTE={dte_value}d, {moneyness} (δ={delta_str}), {horizon}d forecast: {expected:.1f}% (±{band:.1f}%)"})
         elif expected < -0.5:
-            signals.append({"name": "Forecast mild bear", "score": -1, "detail": f"DTE={dte_value}d, {moneyness} (δ={delta_value:.2f if delta_value else "N/A"}), {horizon}d forecast: {expected:.1f}% (±{band:.1f}%)"})
+            signals.append({"name": "Forecast mild bear", "score": -1, "detail": f"DTE={dte_value}d, {moneyness} (δ={delta_str}), {horizon}d forecast: {expected:.1f}% (±{band:.1f}%)"})
         else:
             signals.append({"name": "Forecast flat", "score": 0, "detail": f"{horizon}d model median {expected:+.1f}% (±{band:.1f}%)"})
 

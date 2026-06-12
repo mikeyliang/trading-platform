@@ -1,8 +1,8 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Activity, LineChart as LineChartIcon, Search, Table as TableIcon, X } from "lucide-react";
+import { Activity, LineChart as LineChartIcon, RefreshCw, Search, Table as TableIcon, X } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -19,6 +19,7 @@ import { cn, fmt, fmtCompact, fmtCurrency, fmtPct, pnlClass } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/components/ui/toaster";
 import {
   Table,
   TableBody,
@@ -78,6 +79,32 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState<string | null>(null);
 
+  // IBKR fill sync — pulls today's executions from the gateway into the
+  // store. The server also runs this every 10 min during RTH; the button is
+  // "sync right now". refreshKey re-fires the list effect after new inserts.
+  const [syncing, setSyncing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const syncIbkr = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const res = await api.tradeHistorySyncIbkr();
+      if (res.error === "ibkr_unavailable") {
+        toast.error("IBKR gateway unreachable — is TWS/Gateway running?");
+      } else if (res.error === "db_unavailable") {
+        toast.error("Trade store unavailable — fills fetched but not logged");
+      } else if (res.inserted > 0) {
+        toast.success(`Logged ${res.inserted} new fill${res.inserted === 1 ? "" : "s"} from IBKR`);
+        setRefreshKey((k) => k + 1);
+      } else {
+        toast(`Up to date — ${res.fetched} fill${res.fetched === 1 ? "" : "s"} today, all logged`);
+      }
+    } catch {
+      toast.error("Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  }, []);
+
   // Server-side filters: symbol / side / strategy go to the API so paging is
   // accurate and stats reflect the filtered set. Resetting page state is
   // unnecessary — we always pull the first page and cap at PAGE_SIZE.
@@ -121,7 +148,7 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [symbolQ, strategyQ, side]);
+  }, [symbolQ, strategyQ, side, refreshKey]);
 
   // Chart view pulls a larger, unpaginated slice so the equity curve covers
   // the full filtered set rather than just the first table page. Skipped
@@ -211,6 +238,20 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
               Clear all
             </button>
           )}
+          <button
+            onClick={syncIbkr}
+            disabled={syncing}
+            title="Pull today's fills from the IBKR gateway (auto-syncs every 10 min during market hours)"
+            className={cn(
+              "inline-flex items-center gap-1.5 h-6 px-2 rounded-sm border border-border text-[10px] transition-colors",
+              syncing
+                ? "text-text-muted bg-surface-2/40 cursor-wait"
+                : "text-text-secondary bg-surface-2/60 hover:bg-surface-2 hover:text-text-primary"
+            )}
+          >
+            <RefreshCw size={10} className={syncing ? "animate-spin" : undefined} />
+            {syncing ? "Syncing…" : "Sync IBKR"}
+          </button>
           <ViewToggle value={view} onChange={setView} />
         </div>
       </div>
@@ -683,7 +724,7 @@ function EquityCurveChart({
             labelStyle={{ color: CHART.textMuted, marginBottom: 2 }}
             itemStyle={{ color: CHART.text }}
             labelFormatter={(v) => new Date(v as number).toLocaleString()}
-            formatter={(value: number, _name, item) => {
+            formatter={(value: number, _name, item: { payload?: unknown }) => {
               const p = (item?.payload ?? {}) as Partial<EquityPoint>;
               const trade =
                 p.symbol && p.pnl != null

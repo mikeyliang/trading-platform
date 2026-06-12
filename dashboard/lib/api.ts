@@ -273,8 +273,42 @@ export const api = {
   tradeHistoryUpdate: (id: number, payload: TradeHistoryUpdatePayload) =>
     put<TradeHistoryRecord>(`/api/trade-history/${id}`, payload),
   tradeHistoryDelete: (id: number) => del<void>(`/api/trade-history/${id}`),
+  // Pull today's fills from the IBKR gateway into trade_history (deduped
+  // on execution id). Also runs on a 10-min RTH schedule server-side.
+  tradeHistorySyncIbkr: () =>
+    post<TradeSyncResult>("/api/trade-history/sync-ibkr", {}),
+  // Fills on a symbol shaped for chart markers.
+  tradeMarkers: (symbol: string, days = 90) =>
+    get<TradeMarkersResponse>(
+      `/api/trade-history/markers/${encodeURIComponent(symbol)}?days=${days}`
+    ),
 
 };
+
+export interface TradeSyncResult {
+  fetched: number;
+  inserted: number;
+  skipped: number;
+  error: string | null;
+}
+
+export interface TradeMarker {
+  time: number; // epoch seconds
+  side: TradeSide;
+  quantity: number | null;
+  price: number | null;
+  pnl: number | null;
+  strategy: string | null;
+  is_option: boolean;
+  strike: number | null;
+  right: string | null;
+  expiry: string | null;
+}
+
+export interface TradeMarkersResponse {
+  symbol: string;
+  trades: TradeMarker[];
+}
 
 export type TradeSide = "BUY" | "SELL";
 export type TradeStatus =
@@ -516,6 +550,12 @@ export interface SpreadCandidate {
   kelly_pct: number;
   underlying_price: number;
   passes: Record<string, boolean>;
+  // Informational analytics (not entry gates): breakeven at expiry, 1σ
+  // expected move to expiry from the short leg's live IV, and how many σ
+  // of cushion the short strike has (distance ÷ expected move).
+  breakeven?: number | null;
+  expected_move_pct?: number | null;
+  cushion_sigma?: number | null;
 }
 
 export interface SpreadScanResult {
@@ -533,6 +573,12 @@ export interface SpreadScanResult {
     trade_type: string;
     candidate: SpreadCandidate;
     reason: string;
+    runner_up_type?: string | null;
+    span_pct?: number;
+    // Qualifying trades on OTHER underlyings (e.g. Space when the
+    // recommendation is a RUT-family trade) — independent books, can
+    // be placed alongside the primary pick.
+    also_qualifying?: string[];
   } | null;
 }
 
@@ -961,6 +1007,23 @@ export interface OptionAnalyzeResult {
     realized_vol_30d: number | null;
     realized_vol_90d: number | null;
     iv_to_rv_ratio: number | null;
+    // Real IV-regime context from IBKR's vol indices (52-week window).
+    iv_rank: number | null;
+    iv_percentile: number | null;
+    iv_52w_high: number | null;
+    iv_52w_low: number | null;
+    underlying_iv_now: number | null;
+    iv_history: { time: number; value: number }[];
+    hv_history: { time: number; value: number }[];
+  };
+  // ---- unrealized P&L vs entry for the analyzed position ----
+  position_pnl: {
+    cost_basis: number | null;
+    market_value: number | null;
+    unrealized_pnl: number | null;
+    unrealized_pnl_pct: number | null;
+    mark: number | null;
+    mark_source: string | null;
   };
   narrative: string;
 
@@ -986,9 +1049,22 @@ export interface OptionAnalyzeResult {
     ema9: number[];
     ema21: number[];
   };
-  // ---- option-side chart: synthetic-price replay + indicators on the option ----
+  // ---- option-side chart: real IBKR option history when available,
+  //      synthetic BS-replay fallback. `synthetic_prices` carries the
+  //      active close series either way (back-compat name). ----
   option_chart: {
     timeframe: OptionAnalyzerTimeframe;
+    source: "ibkr" | "synthetic";
+    times: number[];
+    bars: {
+      time: number;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume: number;
+    }[];
+    volume: number[];
     synthetic_prices: number[];
     rsi: number[];
     macd: number[];
@@ -1053,6 +1129,7 @@ export interface OptionAnalyzeResult {
     } | null;
     iv: number;
     iv_rv_ratio: number | null;
+    iv_rank: number | null;
     dte: number;
     abs_delta: number | null;
   };

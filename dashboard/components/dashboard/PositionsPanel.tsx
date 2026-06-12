@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableHeader,
+  TableHead,
   TableBody,
   TableRow,
   TableCell,
@@ -24,7 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
 
 import { TableSkeletonRows } from "@/components/ui/skeleton";
-import { Briefcase, Layers, Activity, Target, Search, X } from "lucide-react";
+import { Briefcase, Layers, Activity, Target, Search, SearchX, X } from "lucide-react";
 
 type Tab = "positions" | "spreads" | "trades";
 type SideFilter = "all" | "long" | "short";
@@ -350,9 +351,7 @@ function TableSkeleton({ cols, headers, rows = 6 }: { cols: number; headers: rea
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Array.from({ length: rows }).map((_, i) => (
-          <TableRowSkeleton key={i} cols={cols} />
-        ))}
+        <TableSkeletonRows rows={rows} cols={cols} />
       </TableBody>
     </Table>
   );
@@ -800,10 +799,12 @@ function formatExpiry(yyyymmdd: string | undefined): string {
 
 function positionHref(p: Position): string {
   if (p.is_option && p.expiry && p.strike != null && p.right) {
-    const qty = Math.abs(p.quantity);
+    // Quantity stays SIGNED — the analyzer reads negative qty as a short
+    // position, and short options score on completely different rules
+    // (assignment risk, theta-in-your-favor) than longs.
     return `/monitor/analyzer?symbol=${encodeURIComponent(p.symbol)}` +
       `&expiry=${p.expiry}&strike=${p.strike}&right=${p.right}` +
-      `&qty=${qty}&entry=${p.avg_price}`;
+      `&qty=${p.quantity}&entry=${p.avg_price}`;
   }
   return `/chart/${encodeURIComponent(p.symbol)}`;
 }
