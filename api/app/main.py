@@ -91,6 +91,16 @@ async def _status_broadcaster():
             logger.debug("status broadcast error: %s", e)
 
 
+# Bound each position's mark refresh. Option snapshots for illiquid far-dated
+# contracts can stall on an unbounded qualify / reqSecDefOptParams await on the
+# shared ib_async socket, which previously hung /api/positions, /api/account and
+# the 5s WS broadcaster for 40s+ (curl saw HTTP 000). wait_for caps each refresh
+# and we fall back to the last good mark so the table loads with real (if slightly
+# stale) P&L instead of a spinner.
+_POSITION_MARK_TIMEOUT_S = 8.0
+_last_mark_cache: dict[int, dict] = {}
+
+
 async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
     """Refresh ``current_price`` on each position with a fresh ib_async
     snapshot and recompute unrealized P&L. Option positions go through
@@ -136,19 +146,42 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
                     new_price = snap.get("mid") or snap.get("last") or snap.get("bid") or snap.get("ask")
 
         if not new_price:
-            return p
+            return _apply_cached_mark(p)
 
         new_price = float(new_price)
         upnl = (new_price - avg) * qty * multiplier
         pnl_pct = (new_price - avg) / avg * 100 if avg else 0.0
-        return {
+        marked = {
             **p,
             "current_price": round(new_price, 4),
             "unrealized_pnl": round(upnl, 2),
             "unrealized_pnl_pct": round(pnl_pct, 2),
         }
+        conid = p.get("_conId")
+        if conid:
+            _last_mark_cache[conid] = {
+                "current_price": marked["current_price"],
+                "unrealized_pnl": marked["unrealized_pnl"],
+                "unrealized_pnl_pct": marked["unrealized_pnl_pct"],
+            }
+        return marked
 
-    return await asyncio.gather(*(refresh_one(p) for p in positions))
+    def _apply_cached_mark(p: dict) -> dict:
+        """Overlay the last successfully-fetched mark for this contract so a
+        transient snapshot miss / timeout doesn't reset the row to entry price
+        (which reads as a misleading $0 unrealized P&L)."""
+        cached = _last_mark_cache.get(p.get("_conId"))
+        return {**p, **cached} if cached else p
+
+    async def bounded(p: dict) -> dict:
+        try:
+            return await asyncio.wait_for(
+                refresh_one(p), timeout=_POSITION_MARK_TIMEOUT_S
+            )
+        except Exception:  # noqa: BLE001  (TimeoutError included)
+            return _apply_cached_mark(p)
+
+    return await asyncio.gather(*(bounded(p) for p in positions))
 
 
 async def _mock_price_broadcaster():
