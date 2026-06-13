@@ -552,6 +552,19 @@ function AnalysisBody({
           <HeroMetric label="±1σ"
             value={emPct != null ? `±${emPct.toFixed(1)}%` : "—"}
             hint={emAbs != null ? `±$${emAbs.toFixed(2)} by expiry` : "Expected 1σ move"} />
+          <HeroMetric label="Delta"
+            value={result.greeks.delta != null ? result.greeks.delta.toFixed(3) : "—"}
+            hint="Delta — option move per $1 move in the underlying (per share)." />
+          <HeroMetric label="Theta"
+            value={result.greeks.theta != null ? result.greeks.theta.toFixed(3) : "—"}
+            tone={result.greeks.theta != null && (result.is_long ? result.greeks.theta < 0 : result.greeks.theta > 0) ? "down" : undefined}
+            hint="Theta — daily time decay (per share)." />
+          <HeroMetric label="Max profit"
+            value={result.max_profit != null && isFinite(result.max_profit) ? fmtCurrency(result.max_profit) : "∞"}
+            tone="up" hint="Maximum profit on the position." />
+          <HeroMetric label="Max loss"
+            value={result.max_loss != null && isFinite(result.max_loss) ? fmtCurrency(result.max_loss) : "−∞"}
+            tone="down" hint="Maximum loss on the position." />
         </div>
       </div>
 
@@ -564,7 +577,15 @@ function AnalysisBody({
           <TabsList className="!flex w-full overflow-x-auto rounded-none border-b border-border/60">
             <TabsTrigger value="pnl">P/L Profile</TabsTrigger>
             <TabsTrigger value="underlying">Underlying · {timeframe}</TabsTrigger>
-            <TabsTrigger value="option">Option contract</TabsTrigger>
+            <TabsTrigger value="option">Option</TabsTrigger>
+            <TabsTrigger value="greeks">Greeks</TabsTrigger>
+            <TabsTrigger value="ai">AI Read</TabsTrigger>
+            <TabsTrigger value="forecast">Forecast</TabsTrigger>
+            <TabsTrigger value="decay">P/L · time</TabsTrigger>
+            <TabsTrigger value="momentum">Multi-TF</TabsTrigger>
+            <TabsTrigger value="vol">Vol</TabsTrigger>
+            <TabsTrigger value="liquidity">Liquidity</TabsTrigger>
+            <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
           </TabsList>
 
           {/* P/L Profile */}
@@ -663,29 +684,53 @@ function AnalysisBody({
               </div>
             </div>
           </TabsContent>
+          {/* Greeks — full per-contract breakdown */}
+          <TabsContent value="greeks" className="p-3">
+            <GreeksPanel
+              delta={result.greeks.delta}
+              gamma={result.greeks.gamma}
+              theta={result.greeks.theta}
+              vega={result.greeks.vega}
+              isLong={result.is_long}
+              quantity={result.quantity}
+            />
+          </TabsContent>
+
+          <TabsContent value="ai" className="p-4 min-h-[260px]">
+            <AIRead result={result} />
+          </TabsContent>
+
+          <TabsContent value="forecast" className="p-3 min-h-[260px]">
+            <ForecastBreakdownPanel result={result} />
+          </TabsContent>
+
+          <TabsContent value="decay" className="p-3 min-h-[260px]">
+            {result.decay_profile && result.decay_profile.length > 0 ? (
+              <PnlDecayChart data={result.decay_profile} height={260} />
+            ) : (
+              <div className="h-[210px] flex items-center justify-center text-[11px] text-text-muted">
+                No decay profile
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="momentum" className="p-3 min-h-[260px]">
+            <MultiTfMomentumPanel result={result} />
+          </TabsContent>
+
+          <TabsContent value="vol" className="p-3 min-h-[260px]">
+            <VolContextPanel result={result} />
+          </TabsContent>
+
+          <TabsContent value="liquidity" className="p-3 min-h-[260px]">
+            <LiquidityPanel result={result} />
+          </TabsContent>
+
+          <TabsContent value="scenarios" className="p-3 min-h-[260px]">
+            <ScenarioMatrixPanel result={result} />
+          </TabsContent>
         </Tabs>
       </div>
-
-      {/* ── GREEKS — self-contained card with its own header bar so it
-          sits in the same visual family as the tabbed panels above
-          (no floating section divider breaking the rhythm). */}
-      <div className="rounded-md border border-border bg-surface overflow-hidden shrink-0">
-        <CardBar title="Greeks" hint="per-contract · exposure beneath" />
-        <div className="p-3">
-          <GreeksPanel
-            delta={result.greeks.delta}
-            gamma={result.greeks.gamma}
-            theta={result.greeks.theta}
-            vega={result.greeks.vega}
-            isLong={result.is_long}
-            quantity={result.quantity}
-          />
-        </div>
-      </div>
-
-      {/* ── ANALYTICS — lower-priority detail behind a tab strip (the tab
-          strip is its own header, so no external divider needed). */}
-      <AnalyticsTabs result={result} />
     </>
   );
 }
