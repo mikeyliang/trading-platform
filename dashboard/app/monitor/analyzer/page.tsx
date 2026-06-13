@@ -409,6 +409,28 @@ function AnalysisBody({
     : action === "EXIT" ? "down"
     : action === "TRIM" || action === "SPEC" ? "warning"
     : "muted";
+  // Plain-English verdict: spell out the action (no cryptic "SPEC"), split the
+  // label into the reasoning clause, and put the raw score into words so the
+  // number actually means something on screen.
+  const actionPhrase =
+    action === "ADD" ? "Add / hold"
+    : action === "HOLD" ? "Hold"
+    : action === "SPEC" ? "Speculative hold"
+    : action === "TRIM" ? "Reduce"
+    : action === "EXIT" ? "Close"
+    : (advice.label || "—");
+  const labelExplanation = (() => {
+    const l = advice.label || "";
+    const dash = l.indexOf("—");
+    const tail = dash >= 0 ? l.slice(dash + 1).trim() : l;
+    return tail || l;
+  })();
+  const scoreWord =
+    advice.score >= 40 ? "strong keep"
+    : advice.score >= 15 ? "lean keep"
+    : advice.score > -15 ? "leans neutral"
+    : advice.score > -40 ? "lean close"
+    : "strong close";
   const ivPctOfRv = result.vol_context.iv_to_rv_ratio;
 
   // POP and expected move pulled up into the state strip so probability is
@@ -442,56 +464,41 @@ function AnalysisBody({
 
         {/* Verdict row: score + label + scale on the left, narrative right. */}
         <div className="flex items-start gap-4 pl-5 pr-4 pt-3 pb-3">
-          <div
-            className="shrink-0 flex flex-col gap-1.5 min-w-[150px]"
-            title={
-              "Verdict score on a -100 → +100 scale.\n" +
-              "  ≤ -40 : strong close\n" +
-              "  -40 to -15 : lean close\n" +
-              "  -15 to +15 : neutral / review\n" +
-              "  +15 to +40 : lean keep\n" +
-              "  ≥ +40 : strong keep"
-            }
-          >
-            <div className="flex items-baseline gap-2">
+          <div className="shrink-0 flex flex-col gap-1.5 w-[232px]">
+            {/* Action verdict — the headline, in plain words (no "SPEC"). */}
+            <div className="flex items-center gap-2 flex-wrap">
               <span className={cn(
-                "text-[32px] leading-none font-bold tabular tracking-tight",
+                "text-[20px] leading-none font-bold tracking-tight",
                 tone === "up" && "text-up",
                 tone === "down" && "text-down",
                 tone === "warning" && "text-warning",
                 tone === "muted" && "text-text-secondary",
               )}>
-                {advice.score > 0 ? "+" : ""}{advice.score}
-              </span>
-              {action && (
-                <span className={cn(
-                  "shrink-0 self-center px-2 py-0.5 rounded text-[13px] font-bold uppercase tracking-wide",
-                  actionTone === "up" && "bg-up/20 text-up",
-                  actionTone === "down" && "bg-down/20 text-down",
-                  actionTone === "warning" && "bg-warning/20 text-warning",
-                  actionTone === "muted" && "bg-surface-2 text-text-secondary",
-                )}>
-                  {action}
-                </span>
-              )}
-              <span className={cn(
-                "px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider font-semibold inline-flex items-center gap-1",
-                tone === "up" && "bg-up/15 text-up",
-                tone === "down" && "bg-down/15 text-down",
-                tone === "warning" && "bg-warning/15 text-warning",
-                tone === "muted" && "bg-surface-2 text-text-secondary",
-              )}>
-                <TrendIcon size={10} />
-                {advice.label}
+                {actionPhrase}
               </span>
               {advice.conviction && (
-                <span className="self-center text-[10px] text-text-muted lowercase whitespace-nowrap">
+                <span
+                  className="px-1.5 py-0.5 rounded-sm text-[9px] uppercase tracking-wider font-semibold bg-surface-2 text-text-muted"
+                  title="How much to trust this call — from signal strength + model agreement."
+                >
                   {advice.conviction} conviction
                 </span>
               )}
             </div>
-            {/* Scale bar -100..+100 with the score marker. */}
-            <div className="relative w-full h-1 bg-surface-2 rounded-full overflow-hidden">
+
+            {/* Reasoning — full sentence, never clipped. */}
+            <p className="text-[11px] leading-snug text-text-secondary">{labelExplanation}</p>
+
+            {/* Signal meter — the score made legible: where it sits between
+                "close it" and "keep it", with the number spelled out. */}
+            <div
+              className="relative w-full h-1 bg-surface-2 rounded-full overflow-hidden mt-0.5"
+              title={
+                "Verdict signal, −100 (close) → +100 (keep):\n" +
+                "  ≤ −40 strong close · −40…−15 lean close\n" +
+                "  −15…+15 neutral · +15…+40 lean keep · ≥ +40 strong keep"
+              }
+            >
               <div className="absolute top-0 bottom-0 left-1/2 w-px bg-text-muted/40" />
               <div
                 className={cn(
@@ -504,9 +511,11 @@ function AnalysisBody({
                 style={{ left: `${Math.max(0, Math.min(100, ((advice.score + 100) / 200) * 100))}%`, transform: "translateX(-50%)" }}
               />
             </div>
-            <div className="flex justify-between text-[8px] uppercase tracking-wider text-text-muted/60 leading-none">
+            <div className="flex justify-between items-baseline text-[8px] uppercase tracking-wider text-text-muted/60 leading-none">
               <span>close</span>
-              <span className="text-text-muted">{result.is_long ? "long" : "short"} {Math.abs(result.quantity)}×</span>
+              <span className="text-text-muted normal-case tracking-normal tabular">
+                signal {advice.score > 0 ? "+" : ""}{advice.score} · {scoreWord}
+              </span>
               <span>keep</span>
             </div>
           </div>
