@@ -79,6 +79,11 @@ class Position(BaseModel):
     expiry: Optional[str] = None       # YYYYMMDD
     right: Optional[str] = None        # "C" or "P"
     multiplier: Optional[float] = None # 100 for standard options
+    # How current_price was derived: "live" (fresh IBKR quote), "modeled"
+    # (Black-Scholes theoretical — no quote available), or "stale" (last good
+    # mark; this cycle's refresh missed). Lets the UI flag non-live marks
+    # instead of showing a theoretical price as if it were real.
+    mark_source: Optional[str] = None
 
     model_config = ConfigDict(json_schema_extra={
         "example": {

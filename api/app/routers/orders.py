@@ -56,6 +56,7 @@ def _to_position(raw: Dict[str, Any]) -> Position:
         expiry=raw.get("expiry"),
         right=raw.get("right"),
         multiplier=raw.get("multiplier"),
+        mark_source=raw.get("mark_source"),
     )
 
 

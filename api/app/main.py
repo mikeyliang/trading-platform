@@ -167,6 +167,10 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
         sym = p.get("symbol")
 
         new_price = None
+        # How the mark was derived — surfaced to the UI so a Black-Scholes
+        # theoretical isn't shown as if it were a real quote. "live" = fresh
+        # IBKR quote, "modeled" = BS fallback, "stale" = cached last-good.
+        mark_source = None
         if sec_type == "OPT":
             strike = p.get("strike")
             expiry = p.get("expiry")
@@ -178,6 +182,8 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
                     snap = None
                 if snap:
                     new_price = snap.get("mid") or snap.get("last") or snap.get("bid") or snap.get("ask")
+                    if new_price:
+                        mark_source = "live"
                 # No live/frozen quote (closed market, illiquid LEAPS) — mark
                 # to a Black-Scholes theoretical so unrealized P&L isn't falsely
                 # pinned at $0. Same last-resort the analyzer uses for its mid.
@@ -186,6 +192,8 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
                         sym, float(strike), str(expiry), str(right),
                         iv_hint=(snap or {}).get("iv"),
                     )
+                    if new_price:
+                        mark_source = "modeled"
         else:
             if sym:
                 try:
@@ -194,6 +202,8 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
                     snap = None
                 if snap:
                     new_price = snap.get("mid") or snap.get("last") or snap.get("bid") or snap.get("ask")
+                    if new_price:
+                        mark_source = "live"
 
         if not new_price:
             return _apply_cached_mark(p)
@@ -206,6 +216,7 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
             "current_price": round(new_price, 4),
             "unrealized_pnl": round(upnl, 2),
             "unrealized_pnl_pct": round(pnl_pct, 2),
+            "mark_source": mark_source or "live",
         }
         conid = p.get("_conId")
         if conid:
@@ -213,6 +224,7 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
                 "current_price": marked["current_price"],
                 "unrealized_pnl": marked["unrealized_pnl"],
                 "unrealized_pnl_pct": marked["unrealized_pnl_pct"],
+                "mark_source": marked["mark_source"],
             }
         return marked
 
@@ -221,7 +233,9 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
         transient snapshot miss / timeout doesn't reset the row to entry price
         (which reads as a misleading $0 unrealized P&L)."""
         cached = _last_mark_cache.get(p.get("_conId"))
-        return {**p, **cached} if cached else p
+        # Re-served from cache this cycle (snapshot missed/timed out) → flag
+        # it stale rather than presenting an aged mark as fresh.
+        return {**p, **cached, "mark_source": "stale"} if cached else p
 
     async def bounded(p: dict) -> dict:
         try:

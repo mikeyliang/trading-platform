@@ -500,7 +500,26 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
 
               <TableCell className="text-right tabular">{p.quantity}</TableCell>
               <TableCell className="text-right tabular">{fmt(p.avg_price)}</TableCell>
-              <TableCell className="text-right tabular">{fmt(p.current_price)}</TableCell>
+              <TableCell className="text-right tabular">
+                <span className="inline-flex items-center gap-1 justify-end">
+                  {p.mark_source && p.mark_source !== "live" && (
+                    <span
+                      title={p.mark_source === "modeled"
+                        ? "Modeled mark — Black-Scholes theoretical; no live quote available"
+                        : "Stale mark — last good quote; this refresh missed"}
+                      className={cn(
+                        "px-1 rounded-sm text-[8px] font-semibold uppercase tracking-wide leading-none py-0.5",
+                        p.mark_source === "modeled"
+                          ? "bg-warning/20 text-warning"
+                          : "bg-surface-2 text-text-muted",
+                      )}
+                    >
+                      {p.mark_source === "modeled" ? "model" : "stale"}
+                    </span>
+                  )}
+                  {fmt(p.current_price)}
+                </span>
+              </TableCell>
               <TableCell className={cn("text-right tabular font-medium", pnlClass(p.unrealized_pnl))}>
                 {pnlUp ? "+" : ""}{fmtCurrency(p.unrealized_pnl)}
               </TableCell>

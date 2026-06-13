@@ -60,6 +60,10 @@ export interface Position {
   expiry?: string;  // YYYYMMDD
   right?: "C" | "P";
   multiplier?: number;
+  // How current_price was derived: "live" (fresh IBKR quote), "modeled"
+  // (Black-Scholes theoretical — no quote available), or "stale" (last good
+  // mark; this refresh missed). Drives a non-live indicator in the table.
+  mark_source?: "live" | "modeled" | "stale" | string | null;
 }
 
 export interface Trade {
