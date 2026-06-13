@@ -57,11 +57,22 @@ class Settings(BaseSettings):
 
     # Claude API for the assistant / multi-agent debate
     anthropic_api_key: str = ""
-    chat_model: str = "claude-opus-4-8"
+    chat_model: str = "claude-opus-4-7"
 
     # Shared secret that callers of /api/agent/* must send as X-Agent-Key.
     # Empty disables auth (dev only) — production deployments must set this.
     agent_api_key: str = ""
+
+    # IBKR Flex Web Service — used by the trade-history backfill endpoint to
+    # pull full execution history from IBKR (the live TWS API only returns
+    # same-day executions). Token + query ID are generated once in Client
+    # Portal → Performance & Reports → Flex Queries. Token rotates yearly.
+    ibkr_flex_token: str = ""
+    ibkr_flex_query_id: str = ""
+    # Delay between Flex requests in a multi-slice sweep. IBKR rate-limits
+    # the Flex Web Service per token; 2s tripped 1025 ("too many failed
+    # attempts"). 8s leaves plenty of headroom.
+    ibkr_flex_slice_delay_sec: float = 8.0
 
     @property
     def cors_origins(self) -> List[str]:

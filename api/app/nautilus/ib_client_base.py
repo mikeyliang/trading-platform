@@ -47,6 +47,70 @@ except Exception as e:  # noqa: BLE001
 _FARM_LOST_CODES = {1100, 1101, 1300, 2103, 2105, 2107}
 _FARM_OK_CODES = {1102, 2104, 2106, 2108}
 
+# IBKR per-request errors that mean "you asked for data this account is not
+# entitled to". The errorString IBKR sends with these *names the data line*
+# (e.g. "...RUSSELL/IND/CBOE...") — that is the only authoritative source for
+# which subscription is missing, so we capture it per-symbol instead of
+# discarding it like the other per-request rejections.
+#   354:   Requested market data is not subscribed (live snapshot/stream).
+#   10089/10090: Requested market data requires additional subscription for API.
+#   10167/10168: Requested market data is not subscribed; delayed (not) enabled.
+#   10197: No market data during competing live session.
+#   162:   Historical Market Data Service error — "No market data permissions for …".
+_MKT_DATA_PERMISSION_CODES = {354, 10089, 10090, 10167, 10168, 10197, 162}
+
+# Curated, best-effort hint of the IBKR Account Management subscription that
+# unlocks each index. IBKR renames these periodically, so the verbatim
+# errorString we capture alongside is authoritative — this only gives the
+# user a clean name to search for. Keyed by contract.symbol (upper-cased).
+_SUBSCRIPTION_HINTS = {
+    "RUT": "Cboe Global Indexes (covers Russell US indices / RUSSELL)",
+    "SPX": "Cboe Global Indexes (S&P US index data)",
+    "VIX": "Cboe Global Indexes (CFE volatility indices)",
+    "NDX": "Nasdaq (Network C/UTP) — Nasdaq US index data",
+    "DJX": "Cboe Global Indexes (Dow Jones US index data)",
+}
+
+# symbol (upper) -> {"code", "message", "hint", "exchange"} for the most
+# recent market-data permission rejection. Process-wide and intentionally
+# unbounded-ish (one entry per distinct symbol the user touches). Read by the
+# market router to tell the UI which subscription is missing.
+_subscription_errors: dict[str, dict[str, Any]] = {}
+
+
+def _looks_like_permission(message: str) -> bool:
+    """True when an IBKR error message is about a missing data entitlement
+    rather than a transient/availability problem."""
+    m = (message or "").lower()
+    return ("permission" in m or "not subscribed" in m
+            or "requires additional subscription" in m)
+
+
+def record_subscription_error(symbol: str, code: int, message: str,
+                              exchange: Optional[str] = None) -> None:
+    """Remember that ``symbol`` was rejected for lack of a data subscription."""
+    sym = (symbol or "").upper().lstrip("^")
+    if not sym:
+        return
+    _subscription_errors[sym] = {
+        "code": code,
+        "message": (message or "").strip(),
+        "hint": _SUBSCRIPTION_HINTS.get(sym),
+        "exchange": exchange,
+    }
+
+
+def get_subscription_error(symbol: str) -> Optional[dict[str, Any]]:
+    """Return the last captured market-data permission error for ``symbol``,
+    or None if we've never seen one (or data is flowing fine)."""
+    return _subscription_errors.get((symbol or "").upper().lstrip("^"))
+
+
+def clear_subscription_error(symbol: str) -> None:
+    """Drop a remembered error — call once data for ``symbol`` flows, so a
+    transient/resolved entitlement issue doesn't haunt the UI forever."""
+    _subscription_errors.pop((symbol or "").upper().lstrip("^"), None)
+
 # Defaults tuned for IB Gateway behaviour: heartbeats every 15s catch a
 # silent socket death within one cycle; the backoff schedule reaches its
 # cap after ~2 minutes which matches how long the gateway can take to
@@ -237,6 +301,24 @@ class ResilientIBClient:
         elif code in _FARM_OK_CODES:
             logger.info("%s farm status ok (code %s: %s)",
                         self.name, code, errorString)
+        elif code in _MKT_DATA_PERMISSION_CODES:
+            # Per-request entitlement rejection. The contract tells us which
+            # symbol, the errorString names the data line — stash both so the
+            # market router can tell the UI exactly which subscription to buy.
+            # Code 162 is HMDS-generic: it fires both for genuine "No market
+            # data permissions for …" AND for benign "No historical market
+            # data for …" (e.g. an unsupported whatToShow). Only the former is
+            # a subscription issue — gate on the wording so we don't tell the
+            # user to buy data they already have.
+            msg = str(errorString)
+            if code == 162 and not _looks_like_permission(msg):
+                return
+            sym = getattr(contract, "symbol", None) or getattr(contract, "localSymbol", None)
+            exch = getattr(contract, "primaryExchange", None) or getattr(contract, "exchange", None)
+            if sym:
+                record_subscription_error(str(sym), code, msg, exch)
+                logger.info("%s market-data not entitled (code %s) for %s: %s",
+                            self.name, code, sym, errorString)
 
     async def _heartbeat_loop(self) -> None:
         """Probe the gateway on a fixed cadence and trigger a reconnect

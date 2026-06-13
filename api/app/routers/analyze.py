@@ -254,10 +254,10 @@ async def analyze_symbol(
         horizon = 5  # default for unknown
     
     fc = chronos.forecast(closes, horizon=horizon)
-    delta_str = f"{delta_value:.2f}" if delta_value is not None else "N/A"
     if fc:
         expected = fc["expected_return_pct"]
         band = fc["band_pct"]
+        delta_str = f"{delta_value:.2f}" if delta_value else "N/A"
         if expected > 3.0:
             signals.append({"name": "Forecast bullish", "score": +2, "detail": f"DTE={dte_value}d (δ={delta_str}), {horizon}d forecast: +{expected:.1f}% (±{band:.1f}%)"})
         elif expected > 0.5:

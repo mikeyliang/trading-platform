@@ -3,7 +3,6 @@ NautilusTrader engine wrapper.
 handles both backtest (via BacktestEngine) and live modes.
 falls back gracefully when NT or IB is unavailable.
 """
-import dataclasses
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -132,8 +131,8 @@ class TradingEngine:
         if strategy_id.startswith("bull-put-"):
             if strategy_id in self._runners:
                 await self._runners[strategy_id].stop()
-            valid_fields = {f.name for f in dataclasses.fields(BullPutSpreadConfig)}
-            cfg_kwargs = {k: v for k, v in s.params.items() if k in valid_fields}
+            cfg_kwargs = {k: v for k, v in s.params.items()
+                          if k in BullPutSpreadConfig.__dataclass_fields__}
             cfg = BullPutSpreadConfig(symbol=s.symbols[0], **cfg_kwargs)
             runner = BullPutSpreadStrategy(strategy_id, cfg)
             await runner.start()
@@ -209,21 +208,18 @@ class TradingEngine:
                 }
 
             elif sig["signal"] == "SELL" and position is not None:
-                # `or {}` keeps pylint's flow analysis happy — it can't narrow
-                # Optional[Dict] through the compound elif guard above.
-                pos: Dict[str, Any] = position or {}
                 exit_price = sig["price"]
-                pnl = (exit_price - pos["entry_price"]) * pos["quantity"]
-                pnl_pct = (exit_price - pos["entry_price"]) / pos["entry_price"] * 100
+                pnl = (exit_price - position["entry_price"]) * position["quantity"]
+                pnl_pct = (exit_price - position["entry_price"]) / position["entry_price"] * 100
                 capital += pnl
 
                 trades.append(BacktestTrade(
-                    entry_time=pos["entry_time"],
+                    entry_time=position["entry_time"],
                     exit_time=datetime.fromtimestamp(sig["time"], tz=timezone.utc),
                     side=OrderSide.BUY,
-                    entry_price=round(pos["entry_price"], 2),
+                    entry_price=round(position["entry_price"], 2),
                     exit_price=round(exit_price, 2),
-                    quantity=round(pos["quantity"], 2),
+                    quantity=round(position["quantity"], 2),
                     pnl=round(pnl, 2),
                     pnl_pct=round(pnl_pct, 2),
                 ))

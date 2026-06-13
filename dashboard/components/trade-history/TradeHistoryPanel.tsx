@@ -1,8 +1,8 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Activity, LineChart as LineChartIcon, RefreshCw, Search, Table as TableIcon, X } from "lucide-react";
+import { Activity, CalendarDays, ChevronDown, ChevronRight, LineChart as LineChartIcon, MessageSquare, Search, Table as TableIcon, X } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -19,7 +19,6 @@ import { cn, fmt, fmtCompact, fmtCurrency, fmtPct, pnlClass } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/components/ui/toaster";
 import {
   Table,
   TableBody,
@@ -32,6 +31,9 @@ import {
 } from "@/components/ui/table";
 
 type SideFilter = "all" | "BUY" | "SELL";
+type AssetFilter = "all" | "stock" | "option";
+type TxFilter = "all" | "ExchTrade" | "BookTrade" | "EXPIRATION" | "EXERCISE" | "ASSIGNMENT";
+type NotesFilter = "all" | "with" | "without";
 
 type SortKey =
   | "timestamp"
@@ -62,12 +64,16 @@ const PAGE_SIZE = 200;
 const CHART_PAGE_SIZE = 500;
 const REFRESH_MS = 30_000;
 
-type View = "table" | "chart";
+type View = "table" | "chart" | "daily";
 
 export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
   const [symbolQ, setSymbolQ] = useState("");
   const [side, setSide] = useState<SideFilter>("all");
   const [strategyQ, setStrategyQ] = useState("");
+  const [asset, setAsset] = useState<AssetFilter>("all");
+  const [accountQ, setAccountQ] = useState("");
+  const [tx, setTx] = useState<TxFilter>("all");
+  const [notes, setNotes] = useState<NotesFilter>("all");
   const [view, setView] = useState<View>("table");
 
   const [trades, setTrades] = useState<TradeHistoryRecord[]>([]);
@@ -79,40 +85,19 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState<string | null>(null);
 
-  // IBKR fill sync — pulls today's executions from the gateway into the
-  // store. The server also runs this every 10 min during RTH; the button is
-  // "sync right now". refreshKey re-fires the list effect after new inserts.
-  const [syncing, setSyncing] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const syncIbkr = useCallback(async () => {
-    setSyncing(true);
-    try {
-      const res = await api.tradeHistorySyncIbkr();
-      if (res.error === "ibkr_unavailable") {
-        toast.error("IBKR gateway unreachable — is TWS/Gateway running?");
-      } else if (res.error === "db_unavailable") {
-        toast.error("Trade store unavailable — fills fetched but not logged");
-      } else if (res.inserted > 0) {
-        toast.success(`Logged ${res.inserted} new fill${res.inserted === 1 ? "" : "s"} from IBKR`);
-        setRefreshKey((k) => k + 1);
-      } else {
-        toast(`Up to date — ${res.fetched} fill${res.fetched === 1 ? "" : "s"} today, all logged`);
-      }
-    } catch {
-      toast.error("Sync failed");
-    } finally {
-      setSyncing(false);
-    }
-  }, []);
-
-  // Server-side filters: symbol / side / strategy go to the API so paging is
-  // accurate and stats reflect the filtered set. Resetting page state is
-  // unnecessary — we always pull the first page and cap at PAGE_SIZE.
+  // Server-side filters: symbol / side / strategy / asset / account / tx
+  // go to the API so paging is accurate and stats reflect the filtered set.
+  // Resetting page state is unnecessary — we always pull the first page
+  // and cap at PAGE_SIZE.
   useEffect(() => {
     let cancelled = false;
     const symbolParam = symbolQ.trim().toUpperCase() || undefined;
     const strategyParam = strategyQ.trim() || undefined;
     const sideParam = side === "all" ? undefined : side;
+    const assetParam = asset === "all" ? undefined : asset;
+    const accountParam = accountQ.trim().toUpperCase() || undefined;
+    const txParam = tx === "all" ? undefined : tx;
+    const notesParam = notes === "all" ? undefined : notes === "with";
 
     const load = async () => {
       try {
@@ -121,6 +106,10 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
             symbol: symbolParam,
             side: sideParam,
             strategy: strategyParam,
+            asset_class: assetParam,
+            account_id: accountParam,
+            transaction_type: txParam,
+            has_note: notesParam,
             page: 1,
             page_size: PAGE_SIZE,
           }),
@@ -148,7 +137,7 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [symbolQ, strategyQ, side, refreshKey]);
+  }, [symbolQ, strategyQ, side, asset, accountQ, tx, notes]);
 
   // Chart view pulls a larger, unpaginated slice so the equity curve covers
   // the full filtered set rather than just the first table page. Skipped
@@ -159,6 +148,10 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
     const symbolParam = symbolQ.trim().toUpperCase() || undefined;
     const strategyParam = strategyQ.trim() || undefined;
     const sideParam = side === "all" ? undefined : side;
+    const assetParam = asset === "all" ? undefined : asset;
+    const accountParam = accountQ.trim().toUpperCase() || undefined;
+    const txParam = tx === "all" ? undefined : tx;
+    const notesParam = notes === "all" ? undefined : notes === "with";
 
     const load = async () => {
       try {
@@ -166,6 +159,10 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
           symbol: symbolParam,
           side: sideParam,
           strategy: strategyParam,
+          asset_class: assetParam,
+          account_id: accountParam,
+          transaction_type: txParam,
+          has_note: notesParam,
           page: 1,
           page_size: CHART_PAGE_SIZE,
         });
@@ -187,15 +184,25 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [view, symbolQ, strategyQ, side]);
+  }, [view, symbolQ, strategyQ, side, asset, accountQ, tx, notes]);
 
   const activeFilterCount =
-    (symbolQ ? 1 : 0) + (side !== "all" ? 1 : 0) + (strategyQ ? 1 : 0);
+    (symbolQ ? 1 : 0)
+    + (side !== "all" ? 1 : 0)
+    + (strategyQ ? 1 : 0)
+    + (asset !== "all" ? 1 : 0)
+    + (accountQ ? 1 : 0)
+    + (tx !== "all" ? 1 : 0)
+    + (notes !== "all" ? 1 : 0);
 
   const clearAll = () => {
     setSymbolQ("");
     setSide("all");
     setStrategyQ("");
+    setAsset("all");
+    setAccountQ("");
+    setTx("all");
+    setNotes("all");
   };
 
   return (
@@ -228,6 +235,48 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
           width="w-32"
         />
 
+        <FilterGroup
+          label="Asset"
+          value={asset}
+          options={[
+            { v: "all", label: "Any" },
+            { v: "stock", label: "Stock" },
+            { v: "option", label: "Option" },
+          ]}
+          onChange={(v) => setAsset(v as AssetFilter)}
+        />
+
+        <FilterGroup
+          label="Tx"
+          value={tx}
+          options={[
+            { v: "all", label: "Any" },
+            { v: "ExchTrade", label: "Fill" },
+            { v: "EXPIRATION", label: "Exp" },
+            { v: "EXERCISE", label: "Exr" },
+            { v: "ASSIGNMENT", label: "Asn" },
+          ]}
+          onChange={(v) => setTx(v as TxFilter)}
+        />
+
+        <SearchInput
+          value={accountQ}
+          onChange={(v) => setAccountQ(v.toUpperCase())}
+          placeholder="Account"
+          width="w-24"
+        />
+
+        <FilterGroup
+          label="Notes"
+          value={notes}
+          options={[
+            { v: "all", label: "Any" },
+            { v: "with", label: "With" },
+            { v: "without", label: "Without" },
+          ]}
+          onChange={(v) => setNotes(v as NotesFilter)}
+        />
+
         <div className={cn("flex items-center gap-2", activeFilterCount > 0 ? "" : "ml-auto")}>
           {activeFilterCount > 0 && (
             <button
@@ -238,20 +287,6 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
               Clear all
             </button>
           )}
-          <button
-            onClick={syncIbkr}
-            disabled={syncing}
-            title="Pull today's fills from the IBKR gateway (auto-syncs every 10 min during market hours)"
-            className={cn(
-              "inline-flex items-center gap-1.5 h-6 px-2 rounded-sm border border-border text-[10px] transition-colors",
-              syncing
-                ? "text-text-muted bg-surface-2/40 cursor-wait"
-                : "text-text-secondary bg-surface-2/60 hover:bg-surface-2 hover:text-text-primary"
-            )}
-          >
-            <RefreshCw size={10} className={syncing ? "animate-spin" : undefined} />
-            {syncing ? "Syncing…" : "Sync IBKR"}
-          </button>
           <ViewToggle value={view} onChange={setView} />
         </div>
       </div>
@@ -290,6 +325,8 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
                 : "Trade rows will appear here as orders fill."
             }
           />
+        ) : view === "daily" ? (
+          <DailyRollupView trades={trades} />
         ) : (
           <TradeHistoryTable trades={trades} />
         )}
@@ -303,6 +340,7 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
 function ViewToggle({ value, onChange }: { value: View; onChange: (v: View) => void }) {
   const opts: { v: View; label: string; Icon: typeof TableIcon }[] = [
     { v: "table", label: "Table", Icon: TableIcon },
+    { v: "daily", label: "Daily", Icon: CalendarDays },
     { v: "chart", label: "Chart", Icon: LineChartIcon },
   ];
   return (
@@ -567,13 +605,19 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
 
   const pnl = t.pnl;
   const pnlPct = t.pnl_percentage;
+  const contract = useMemo(() => readContractMeta(t), [t]);
 
   return (
     <TableRow>
       <TableCell className="text-text-muted whitespace-nowrap" title={time.abs}>
         {time.rel}
       </TableCell>
-      <TableCell className="font-medium">{t.symbol}</TableCell>
+      <TableCell className="font-medium">
+        <div className="inline-flex items-center gap-1.5">
+          <ContractCell symbol={t.symbol} contract={contract} />
+          <NoteIndicator note={contract.note} />
+        </div>
+      </TableCell>
       <TableCell>
         <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
       </TableCell>
@@ -724,15 +768,16 @@ function EquityCurveChart({
             labelStyle={{ color: CHART.textMuted, marginBottom: 2 }}
             itemStyle={{ color: CHART.text }}
             labelFormatter={(v) => new Date(v as number).toLocaleString()}
-            formatter={(value: number, _name, item: { payload?: unknown }) => {
+            formatter={(value, _name, item: any) => {
+              const v = value as number;
               const p = (item?.payload ?? {}) as Partial<EquityPoint>;
               const trade =
                 p.symbol && p.pnl != null
                   ? `${p.symbol}  ${p.pnl >= 0 ? "+" : ""}${fmtCurrency(p.pnl)}`
                   : null;
               return [
-                <span key="v" className={value >= 0 ? "text-up" : "text-down"}>
-                  {fmtCurrency(value)}
+                <span key="v" className={v >= 0 ? "text-up" : "text-down"}>
+                  {fmtCurrency(v)}
                 </span>,
                 trade ?? "Cumulative",
               ];
@@ -752,6 +797,267 @@ function EquityCurveChart({
       </ResponsiveContainer>
     </div>
   );
+}
+
+// --- daily roll-up view --------------------------------------------------------
+
+interface DayGroup {
+  /** yyyy-mm-dd in user local time so adjacent rows are visually 1 day apart. */
+  key: string;
+  /** Day label, e.g. "Mon, May 20". */
+  label: string;
+  /** ISO date for sorting (yyyy-mm-dd, lexicographic). */
+  sortKey: string;
+  trades: TradeHistoryRecord[];
+  netPnl: number;
+  buys: number;
+  sells: number;
+  wins: number;
+  losses: number;
+  /** Distinct symbols traded that day — sized to hint diversification. */
+  symbols: string[];
+}
+
+function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
+  const groups = useMemo(() => groupByDay(trades), [trades]);
+  // Open the most recent day by default — the rest are collapsed so the
+  // page loads compactly. User clicks to expand others.
+  const [openKeys, setOpenKeys] = useState<Set<string>>(() => {
+    if (groups.length === 0) return new Set();
+    return new Set([groups[0].key]);
+  });
+  // Re-seed once when the underlying data shape changes (new filter,
+  // new page). Using a length+first-key fingerprint as the seed signal
+  // avoids the infinite-set-state loop a plain `groups` dep would cause.
+  const fingerprint = `${groups.length}:${groups[0]?.key ?? ""}`;
+  useEffect(() => {
+    if (groups.length > 0) setOpenKeys(new Set([groups[0].key]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fingerprint]);
+
+  if (groups.length === 0) {
+    return (
+      <EmptyState
+        icon={CalendarDays}
+        title="No trades to group by day"
+        description="Adjust filters or switch back to the table view."
+      />
+    );
+  }
+
+  return (
+    <ul className="flex flex-col">
+      {groups.map((g) => {
+        const open = openKeys.has(g.key);
+        return (
+          <li key={g.key} className="border-b border-border/40">
+            <button
+              type="button"
+              onClick={() =>
+                setOpenKeys((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(g.key)) next.delete(g.key);
+                  else next.add(g.key);
+                  return next;
+                })
+              }
+              className="w-full flex items-center gap-3 px-3 py-1.5 text-[11px] tabular hover:bg-surface-2/40 transition-colors"
+            >
+              <span className="text-text-muted shrink-0">
+                {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+              </span>
+              <span className="text-text-primary font-medium min-w-[110px] text-left">
+                {g.label}
+              </span>
+              <span className="text-text-muted text-[10px]">
+                {g.trades.length} trade{g.trades.length === 1 ? "" : "s"}
+              </span>
+              <span className="text-text-muted text-[10px]">
+                {g.buys}B / {g.sells}S
+              </span>
+              <span
+                className={cn(
+                  "text-[11px] tabular ml-auto font-medium",
+                  g.netPnl === 0 ? "text-text-muted" : pnlClass(g.netPnl),
+                )}
+                title={`${g.wins} winning / ${g.losses} losing trades`}
+              >
+                {g.netPnl === 0 ? "—" : fmtCurrency(g.netPnl)}
+              </span>
+              <span
+                className="text-[10px] text-text-muted max-w-[160px] truncate hidden md:inline-block"
+                title={g.symbols.join(", ")}
+              >
+                {g.symbols.slice(0, 4).join(" · ")}
+                {g.symbols.length > 4 && ` +${g.symbols.length - 4}`}
+              </span>
+            </button>
+            {open && (
+              <div className="bg-surface-2/15 border-t border-border/30">
+                <Table>
+                  <TableBody>
+                    {g.trades.map((t) => (
+                      <TradeRow key={t.id} trade={t} />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function groupByDay(trades: TradeHistoryRecord[]): DayGroup[] {
+  // Group keyed by yyyy-mm-dd in the user's local time so a 22:00 ET
+  // fill doesn't end up under the next UTC day.
+  const m = new Map<string, DayGroup>();
+  for (const t of trades) {
+    const d = new Date(t.timestamp);
+    if (Number.isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    let g = m.get(key);
+    if (!g) {
+      g = {
+        key,
+        label: d.toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        }),
+        sortKey: key,
+        trades: [],
+        netPnl: 0,
+        buys: 0,
+        sells: 0,
+        wins: 0,
+        losses: 0,
+        symbols: [],
+      };
+      m.set(key, g);
+    }
+    g.trades.push(t);
+    const side = (t.side || "").toString().toUpperCase();
+    if (side.startsWith("B")) g.buys++;
+    else if (side.startsWith("S")) g.sells++;
+    if (t.pnl != null && Number.isFinite(t.pnl)) {
+      g.netPnl += t.pnl;
+      if (t.pnl > 0) g.wins++;
+      else if (t.pnl < 0) g.losses++;
+    }
+    if (t.symbol && !g.symbols.includes(t.symbol)) g.symbols.push(t.symbol);
+  }
+  return Array.from(m.values()).sort((a, b) => (a.sortKey < b.sortKey ? 1 : -1));
+}
+
+function pad(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+// --- contract metadata --------------------------------------------------------
+
+interface ContractMeta {
+  isOption: boolean;
+  isExpiration: boolean;       // EAE row: EXPIRATION / EXERCISE / ASSIGNMENT
+  txType: string | null;       // ExchTrade / BookTrade / EXPIRATION / EXERCISE / ASSIGNMENT
+  strike: number | null;
+  expiry: string | null;       // yyyymmdd or yyyy-mm-dd
+  right: "C" | "P" | null;
+  account: string | null;
+  note: string | null;         // metadata.note — set via the chart-marker journal
+}
+
+function readContractMeta(t: TradeHistoryRecord): ContractMeta {
+  const m = (t.metadata ?? {}) as Record<string, unknown>;
+  const asset = typeof m.asset_category === "string" ? (m.asset_category as string).toUpperCase() : "";
+  const isOption = asset === "OPT" || asset === "FOP";
+  const txType = typeof m.transaction_type === "string" ? (m.transaction_type as string) : null;
+  const isExpiration = !!txType && /EXPIRATION|EXERCISE|ASSIGNMENT/i.test(txType);
+  const strikeRaw = m.option_strike;
+  const expiryRaw = m.option_expiry;
+  const rightRaw = m.option_right;
+  const strike = typeof strikeRaw === "number" ? strikeRaw : null;
+  const expiry = typeof expiryRaw === "string" && expiryRaw.length >= 6 ? expiryRaw : null;
+  const right = rightRaw === "C" || rightRaw === "P" ? rightRaw : null;
+  const account = typeof m.account_id === "string" ? (m.account_id as string) : null;
+  const noteRaw = m.note;
+  const note = typeof noteRaw === "string" && noteRaw.trim().length > 0 ? (noteRaw as string) : null;
+  return { isOption, isExpiration, txType, strike, expiry, right, account, note };
+}
+
+function NoteIndicator({ note }: { note: string | null }) {
+  if (!note) return null;
+  // Truncate the tooltip preview so a 3-paragraph journal entry doesn't
+  // produce an absurd hover label.
+  const preview = note.length > 200 ? note.slice(0, 200) + "…" : note;
+  return (
+    <span
+      className="inline-flex items-center text-accent/80 hover:text-accent transition-colors cursor-help"
+      title={preview}
+    >
+      <MessageSquare size={10} />
+    </span>
+  );
+}
+
+function ContractCell({
+  symbol, contract,
+}: { symbol: string; contract: ContractMeta }) {
+  if (!contract.isOption) {
+    return <span>{symbol}</span>;
+  }
+  const exp = contract.expiry ? fmtOptionExpiry(contract.expiry) : null;
+  return (
+    <span className="inline-flex items-baseline gap-1.5">
+      <span className="text-text-primary">{symbol}</span>
+      {contract.strike != null && contract.right && (
+        <span className="text-text-secondary tabular text-[11px]">
+          {formatStrike(contract.strike)}{contract.right}
+        </span>
+      )}
+      {exp && (
+        <span className="text-text-muted text-[10px] tabular">{exp}</span>
+      )}
+      {contract.isExpiration && contract.txType && (
+        <span
+          className="px-1 py-px rounded-sm bg-surface-2 text-text-muted text-[9px] uppercase tracking-wider"
+          title={`Transaction type: ${contract.txType}`}
+        >
+          {shortTxLabel(contract.txType)}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function formatStrike(s: number): string {
+  // Drop trailing .00 / .0 for cleaner display.
+  if (Number.isInteger(s)) return s.toString();
+  return s.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function fmtOptionExpiry(s: string): string {
+  // Accept yyyymmdd or yyyy-mm-dd; emit "MMM dd" or "MMM dd 'YY".
+  const digits = s.replace(/[^0-9]/g, "");
+  if (digits.length < 8) return s;
+  const y = digits.slice(2, 4);
+  const m = parseInt(digits.slice(4, 6), 10);
+  const d = digits.slice(6, 8);
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const mo = months[m - 1] ?? digits.slice(4, 6);
+  const now = new Date();
+  const yyyy = parseInt(digits.slice(0, 4), 10);
+  return yyyy === now.getFullYear() ? `${mo} ${d}` : `${mo} ${d} '${y}`;
+}
+
+function shortTxLabel(tx: string): string {
+  const u = tx.toUpperCase();
+  if (u.startsWith("EXPIR")) return "EXP";
+  if (u.startsWith("EXER")) return "EXR";
+  if (u.startsWith("ASSIGN")) return "ASN";
+  return u.slice(0, 3);
 }
 
 function fmtAxisDate(ms: number): string {

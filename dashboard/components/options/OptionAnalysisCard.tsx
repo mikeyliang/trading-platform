@@ -52,35 +52,32 @@ const VISIBLE_BARS_DEFAULT = 60;
  */
 export function OptionAnalysisCard({ result }: Props) {
   const oc = result.option_chart;
+  // `prices` is canonical; fall back to the legacy synthetic_prices field.
+  const ocPrices = oc?.prices ?? oc?.synthetic_prices ?? [];
+  if (!oc || ocPrices.length === 0) return null;
 
-  const isReal = oc?.source === "ibkr" && (oc?.bars?.length ?? 0) > 0;
-  const N = oc?.synthetic_prices.length ?? 0;
-  // Bar timestamps: the backend now ships them on option_chart directly
-  // (real IBKR bars carry their own times; synthetic carries the underlying
-  // chart's times). Fall back to the old tail-alignment against the
-  // underlying bars for older API responses.
+  const isReal = oc.source === "ibkr";
+  const N = ocPrices.length;
+  // Real bars carry their own timestamps; the modeled replay aligns to the
+  // underlying-chart bars (same length/ordering) when it has no times of its own.
   const underlyingBars = result.chart?.bars ?? [];
   const offset = underlyingBars.length - N;
-  const ocTimes = oc?.times;
   const times: number[] = useMemo(() => {
-    if (ocTimes && ocTimes.length === N) return ocTimes;
+    if (oc.times && oc.times.length === N) return oc.times;
     const out: number[] = [];
     for (let i = 0; i < N; i++) {
       const ub = underlyingBars[offset + i];
       out.push(ub ? ub.time : i);
     }
     return out;
-  }, [ocTimes, underlyingBars, offset, N]);
+  }, [oc.times, underlyingBars, offset, N]);
 
   // Hover state lifted up for the top OHLCV-style strip.
   const [hover, setHover] = useState<{ idx: number; time: number } | null>(null);
   const display = useMemo(() => {
-    if (!oc || N === 0) {
-      return { idx: 0, time: 0, px: 0, chg: 0, chgPct: 0, ema9: 0, ema21: 0, rv30: 0, rsi: 0, macd: 0, hist: 0 };
-    }
     const idx = hover?.idx ?? N - 1;
-    const px = oc.synthetic_prices[idx];
-    const pxPrev = idx > 0 ? oc.synthetic_prices[idx - 1] : px;
+    const px = ocPrices[idx];
+    const pxPrev = idx > 0 ? ocPrices[idx - 1] : px;
     const chg = px - pxPrev;
     const chgPct = pxPrev !== 0 ? (chg / pxPrev) * 100 : 0;
     return {
@@ -98,12 +95,9 @@ export function OptionAnalysisCard({ result }: Props) {
     };
   }, [hover, oc, times, N]);
 
-  // After all hooks — rules-of-hooks requires unconditional hook order.
-  if (!oc || N === 0) return null;
-
   const positive = display.chg >= 0;
-  const firstPx = oc.synthetic_prices[Math.max(0, N - VISIBLE_BARS_DEFAULT)];
-  const lastPx = oc.synthetic_prices[N - 1];
+  const firstPx = ocPrices[Math.max(0, N - VISIBLE_BARS_DEFAULT)];
+  const lastPx = ocPrices[N - 1];
   const periodPct = firstPx > 0 ? ((lastPx - firstPx) / firstPx) * 100 : 0;
 
   return (
@@ -115,40 +109,33 @@ export function OptionAnalysisCard({ result }: Props) {
         <HintLabel
           className="text-[10px] uppercase tracking-wider text-text-muted"
           hint={
-            isReal ? (
-              <div className="flex flex-col gap-1">
-                <div className="font-medium">Option price & indicators</div>
+            <div className="flex flex-col gap-1">
+              <div className="font-medium">Option price & indicators</div>
+              {isReal ? (
                 <div>
-                  Real traded option prices from IBKR history — actual OHLC and
-                  volume for this contract, IV path included. Indicators (RSI,
-                  MACD, EMAs) run on the real close series.
+                  Real <em>IBKR option bars</em> ({oc.bar_size} MIDPOINT) — the
+                  contract&apos;s actual quoted price history. IBKR serves option
+                  history intraday only (no daily bars), capped at ~81 days back.
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1">
-                <div className="font-medium">Option price & indicators</div>
+              ) : (
                 <div>
-                  No usable trade history for this contract — prices are a{" "}
-                  <em>Black-Scholes replay</em> using the option&apos;s current IV.
-                  Shows what the contract <em>would</em> have been worth as the
-                  underlying moved, if IV stayed at today&apos;s level.
+                  No real IBKR bars for this contract, so prices are a{" "}
+                  <em>Black-Scholes replay</em> using the option&apos;s current IV
+                  — what it <em>would</em> have been worth as the underlying moved,
+                  if IV stayed at today&apos;s level.
                 </div>
+              )}
+              <div>
+                RV30 (rolling 30-bar realized vol of the underlying) is shown as
+                an IV-history proxy.
               </div>
-            )
+            </div>
           }
         >
           Option contract
         </HintLabel>
-        <span
-          className={cn(
-            "ml-auto text-[10px] tabular px-1.5 py-0.5 rounded",
-            isReal ? "text-up bg-up/10" : "text-text-muted bg-surface-2",
-          )}
-          title={isReal
-            ? "Real IBKR option trade history"
-            : "Synthetic Black-Scholes replay — no trade history available for this contract"}
-        >
-          {isReal ? "IBKR history" : "BS replay · IV-as-of-now"}
+        <span className="ml-auto text-[10px] tabular text-text-muted">
+          BS replay · IV-as-of-now
         </span>
       </div>
 
@@ -162,6 +149,39 @@ export function OptionAnalysisCard({ result }: Props) {
           <span className="text-[10px] tabular text-text-muted">
             {fmtExp(result.expiry)}
           </span>
+          {isReal ? (
+            <span
+              className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-300/90 cursor-help"
+              title={
+                `Real IBKR option bars (${oc.bar_size} MIDPOINT). ${N} bars of the ` +
+                "contract's actual quoted price history — IBKR serves option history " +
+                "intraday only (no daily bars), so this is the finest/longest real " +
+                "series available, ~81 days back."
+              }
+            >
+              IBKR {oc.bar_size.replace(/\s+/g, "")}
+            </span>
+          ) : (
+            <span
+              className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/10 text-amber-300/90 cursor-help"
+              title={
+                "Modeled, not traded history. This contract has no real IBKR bars, so " +
+                "the series is a Black-Scholes replay of the underlying's moves" +
+                (result.vol_context?.iv_source === "calibrated_to_mark"
+                  ? ` at IV ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}% — calibrated so the right edge equals the live mark $${fmt(result.option.mid ?? display.px)}` +
+                    (result.vol_context.market_iv
+                      ? ` (IBKR model IV ${((result.vol_context.market_iv) * 100).toFixed(1)}%)`
+                      : "")
+                  : result.vol_context?.iv_source === "ibkr_model"
+                  ? ` at IBKR's model IV ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}% (no live quote to calibrate against)`
+                  : result.vol_context?.iv_source === "realized_vol"
+                  ? ` at realized vol ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}% — no quote or IBKR IV available, using RV30 as the proxy`
+                  : " at a default 35% IV — no market data available")
+              }
+            >
+              modeled
+            </span>
+          )}
           <span className="text-base tabular font-medium text-text-primary">
             ${fmt(display.px)}
           </span>
@@ -211,9 +231,7 @@ export function OptionAnalysisCard({ result }: Props) {
 
       <Panes
         times={times}
-        prices={oc.synthetic_prices}
-        bars={isReal ? oc.bars : null}
-        volume={isReal ? oc.volume : null}
+        prices={ocPrices}
         ema9={oc.ema9}
         ema21={oc.ema21}
         rv30={oc.rv30}
@@ -232,11 +250,6 @@ export function OptionAnalysisCard({ result }: Props) {
 interface PanesProps {
   times: number[];
   prices: number[];
-  /** Real IBKR option OHLCV bars — when present the price pane renders true
-   *  candles (with wicks) and the bottom histogram shows real volume instead
-   *  of the |Δclose| proxy. */
-  bars: { time: number; open: number; high: number; low: number; close: number; volume: number }[] | null;
-  volume: number[] | null;
   ema9: number[];
   ema21: number[];
   rv30: number[];
@@ -255,8 +268,6 @@ interface PanesProps {
 function Panes({
   times,
   prices,
-  bars,
-  volume,
   ema9,
   ema21,
   rv30,
@@ -578,45 +589,26 @@ function Panes({
   useEffect(() => {
     if (disposedRef.current) return;
 
-    // Real OHLCV candles + volume histogram when IBKR history is available;
-    // delta candles + change-magnitude histogram for the synthetic replay.
+    // Delta candles + change-magnitude histogram.
     const candles: CandlestickData[] = [];
     const change: HistogramData[] = [];
-    if (bars && bars.length === times.length) {
-      for (let i = 0; i < bars.length; i++) {
-        const b = bars[i];
-        candles.push({
-          time: times[i] as UTCTimestamp,
-          open: b.open,
-          high: b.high,
-          low: b.low,
-          close: b.close,
-        });
-        change.push({
-          time: times[i] as UTCTimestamp,
-          value: volume?.[i] ?? 0,
-          color: b.close >= b.open ? `${CHART.candle.up}66` : `${CHART.candle.down}66`,
-        });
-      }
-    } else {
-      for (let i = 0; i < prices.length; i++) {
-        const o = i > 0 ? prices[i - 1] : prices[i];
-        const c = prices[i];
-        const hi = Math.max(o, c);
-        const lo = Math.min(o, c);
-        candles.push({
-          time: times[i] as UTCTimestamp,
-          open: o,
-          high: hi,
-          low: lo,
-          close: c,
-        });
-        change.push({
-          time: times[i] as UTCTimestamp,
-          value: Math.abs(c - o),
-          color: c >= o ? `${CHART.candle.up}66` : `${CHART.candle.down}66`,
-        });
-      }
+    for (let i = 0; i < prices.length; i++) {
+      const o = i > 0 ? prices[i - 1] : prices[i];
+      const c = prices[i];
+      const hi = Math.max(o, c);
+      const lo = Math.min(o, c);
+      candles.push({
+        time: times[i] as UTCTimestamp,
+        open: o,
+        high: hi,
+        low: lo,
+        close: c,
+      });
+      change.push({
+        time: times[i] as UTCTimestamp,
+        value: Math.abs(c - o),
+        color: c >= o ? `${CHART.candle.up}66` : `${CHART.candle.down}66`,
+      });
     }
     candleSeriesRef.current?.setData(candles);
     changeHistRef.current?.setData(change);
@@ -672,7 +664,7 @@ function Panes({
         to: times.length - 0.5,
       });
     }
-  }, [times, prices, bars, volume, ema9, ema21, rv30, rsi, macd, macdSignal, macdHist]);
+  }, [times, prices, ema9, ema21, rv30, rsi, macd, macdSignal, macdHist]);
 
   return (
     <>
@@ -696,7 +688,7 @@ function Panes({
         ]}
         rightTone={tonedRv30VsIv(rv30[rv30.length - 1], currentIv)}
         containerRef={volContainerRef}
-        title="RV30 — realized volatility of the underlying over the trailing 30 bars. When the RV30 line is below the dashed IV reference, today's IV is rich vs what the underlying has actually been doing (sellers' favor). When above, IV is cheap (buyers' favor). For the real daily IV-index history (IBKR) see the Vol tab below."
+        title="True historical IV needs paid data (not available). RV30 — realized volatility of the underlying over the trailing 30 bars — is the standard proxy. When RV30 line is below the dashed IV reference, today's IV is rich vs what the underlying has actually been doing (sellers' favor). When above, IV is cheap (buyers' favor)."
       />
       <Subpane
         label="RSI"

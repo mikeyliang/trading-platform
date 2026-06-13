@@ -112,15 +112,15 @@ body {
 input[type="range"].slider-range {
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
-  border-radius: 3px;
+  height: 4px;
+  border-radius: 2px;
   outline: none;
   cursor: pointer;
 }
 input[type="range"].slider-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: #f4f4f5;
   border: 1px solid #1f1f23;
@@ -129,16 +129,51 @@ input[type="range"].slider-range::-webkit-slider-thumb {
 }
 input[type="range"].slider-range::-webkit-slider-thumb:active {
   cursor: grabbing;
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 input[type="range"].slider-range::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: #f4f4f5;
   border: 1px solid #1f1f23;
   cursor: grab;
 }
+
+/* Scenario sliders (P&L profile redesign) — a transparent native range
+   layered over a custom-drawn track + thumb so we get reliable drag/keyboard
+   behaviour while controlling every pixel of the visuals in React. The thumb
+   is a full-height invisible hit target (easy to grab); the visible thumb is
+   a sibling div positioned at the value %. */
+input[type="range"].pnl-scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: grab;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+input[type="range"].pnl-scrub:active { cursor: grabbing; }
+input[type="range"].pnl-scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: grab;
+}
+input[type="range"].pnl-scrub::-webkit-slider-thumb:active { cursor: grabbing; }
+input[type="range"].pnl-scrub::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  cursor: grab;
+}
+input[type="range"].pnl-scrub::-moz-range-track { background: transparent; }
 
 /* Shimmer skeleton — a subtle gradient sweep across loading placeholders.
    Reads as "data is on the way" without the jarring opacity pulse. */

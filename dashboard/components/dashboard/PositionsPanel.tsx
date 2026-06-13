@@ -12,10 +12,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableHeader,
-  TableHead,
   TableBody,
   TableRow,
   TableCell,
+  TableHead,
   TableEmpty,
   SortableTableHead,
   useTableSort,
@@ -25,7 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
 
 import { TableSkeletonRows } from "@/components/ui/skeleton";
-import { Briefcase, Layers, Activity, Target, Search, SearchX, X } from "lucide-react";
+import { Briefcase, Layers, Activity, Target, Search, X } from "lucide-react";
 
 type Tab = "positions" | "spreads" | "trades";
 type SideFilter = "all" | "long" | "short";
@@ -160,7 +160,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
             value={symbolQ}
             onChange={(e) => setSymbolQ(e.target.value.toUpperCase())}
             placeholder="Symbol"
-            className="w-20 bg-transparent text-[11px] tabular text-text-primary placeholder:text-text-muted/60 outline-none"
+            className="w-20 bg-transparent text-xs tabular leading-normal text-text-primary placeholder:text-text-muted/60 outline-none"
           />
           {symbolQ && (
             <button
@@ -306,7 +306,7 @@ function FilterEmpty({ label, onClear }: { label: string; onClear?: () => void }
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-3 py-10 text-center animate-fade-in">
       <div className="w-7 h-7 rounded-full bg-surface-2 border border-border flex items-center justify-center">
-        <SearchX size={13} className="text-text-muted" strokeWidth={1.75} aria-hidden="true" />
+        <Search size={13} className="text-text-muted" strokeWidth={1.75} aria-hidden="true" />
       </div>
       <p className="text-[11px] text-text-secondary max-w-xs">{label}</p>
       {onClear && (
@@ -799,12 +799,10 @@ function formatExpiry(yyyymmdd: string | undefined): string {
 
 function positionHref(p: Position): string {
   if (p.is_option && p.expiry && p.strike != null && p.right) {
-    // Quantity stays SIGNED — the analyzer reads negative qty as a short
-    // position, and short options score on completely different rules
-    // (assignment risk, theta-in-your-favor) than longs.
+    const qty = Math.abs(p.quantity);
     return `/monitor/analyzer?symbol=${encodeURIComponent(p.symbol)}` +
       `&expiry=${p.expiry}&strike=${p.strike}&right=${p.right}` +
-      `&qty=${p.quantity}&entry=${p.avg_price}`;
+      `&qty=${qty}&entry=${p.avg_price}`;
   }
   return `/chart/${encodeURIComponent(p.symbol)}`;
 }

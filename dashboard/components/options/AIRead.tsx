@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type OptionAnalyzeResult } from "@/lib/api";
+import { resolveApiBase } from "@/lib/api-base";
 import { cn, fmtCurrency } from "@/lib/utils";
 import { CHART } from "@/lib/chartTheme";
 
@@ -177,7 +178,7 @@ export function AIRead({ result }: Props) {
         right: result.right,
         limit: "5",
       });
-      const resp = await fetch(`/api/options/agent-runs?${q}`);
+      const resp = await fetch(`${resolveApiBase()}/api/options/agent-runs?${q}`);
       if (!resp.ok) return;
       const rows = (await resp.json()) as RunHistoryRow[];
       setHistory(rows);
@@ -231,7 +232,7 @@ export function AIRead({ result }: Props) {
     });
 
     try {
-      const resp = await fetch("/api/options/agent-run", {
+      const resp = await fetch(`${resolveApiBase()}/api/options/agent-run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(buildRequestBody(result)),

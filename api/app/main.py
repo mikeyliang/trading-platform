@@ -2,6 +2,7 @@ import asyncio
 import logging
 import uuid
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
@@ -18,6 +19,7 @@ from .middleware import (
 from .nautilus import ib_depth, ib_options, ib_ticks
 from .nautilus.ib_node import ib_node
 from .nautilus.ib_orders import orders_client
+from .services.black_scholes import bs_price
 from .routers import agent, agent_tools, agents, analyze, backtest, chat, depth, fundamentals, logos, market, monitor as monitor_router, okw, option_analyzer, options, orders, scans, strategies, ticks, trade_history, watchlist
 from .services import db, scheduler as job_scheduler
 from .ws.manager import manager
@@ -91,6 +93,46 @@ async def _status_broadcaster():
             logger.debug("status broadcast error: %s", e)
 
 
+async def _theoretical_option_mark(
+    symbol: str, strike: float, expiry: str, right: str,
+    iv_hint: Optional[float] = None,
+) -> Optional[float]:
+    """Black-Scholes mark (per-share premium) for an option that has no live
+    or frozen quote — closed market, or an illiquid/deep strike IBKR won't
+    quote. Without this, ``_refresh_position_marks`` leaves ``current_price``
+    equal to ``avg_price`` and unrealized P&L reads a misleading $0.
+
+    Spot is the underlying's frozen quote; IV is the snapshot's implied vol
+    when present, else a 0.35 default (the same last-resort the analyzer's
+    theoretical mid uses). Returns ``None`` when spot/expiry are unusable so
+    the caller falls through to the stale mark rather than a bogus number.
+    """
+    try:
+        quote = await ib_options.get_quote(symbol)
+    except Exception:  # noqa: BLE001
+        quote = None
+    spot = None
+    if quote:
+        spot = quote.get("last") or quote.get("bid") or quote.get("ask")
+    if not spot or spot <= 0:
+        return None
+    try:
+        exp_dt = datetime.strptime(expiry, "%Y%m%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    side = "call" if right.upper() == "C" else "put"
+    dte_years = max((exp_dt - datetime.now(timezone.utc)).days, 0) / 365.25
+    if dte_years <= 0:
+        intrinsic = max(spot - strike, 0.0) if side == "call" else max(strike - spot, 0.0)
+        return round(intrinsic, 4)
+    iv = iv_hint if (iv_hint and iv_hint > 0) else 0.35
+    try:
+        theo = bs_price(float(spot), float(strike), dte_years, float(iv), side)
+    except Exception:  # noqa: BLE001
+        return None
+    return round(theo, 4) if theo and theo > 0 else None
+
+
 # Bound each position's mark refresh. Option snapshots for illiquid far-dated
 # contracts can stall on an unbounded qualify / reqSecDefOptParams await on the
 # shared ib_async socket, which previously hung /api/positions, /api/account and
@@ -136,6 +178,14 @@ async def _refresh_position_marks(positions: list[dict]) -> list[dict]:
                     snap = None
                 if snap:
                     new_price = snap.get("mid") or snap.get("last") or snap.get("bid") or snap.get("ask")
+                # No live/frozen quote (closed market, illiquid LEAPS) — mark
+                # to a Black-Scholes theoretical so unrealized P&L isn't falsely
+                # pinned at $0. Same last-resort the analyzer uses for its mid.
+                if not new_price:
+                    new_price = await _theoretical_option_mark(
+                        sym, float(strike), str(expiry), str(right),
+                        iv_hint=(snap or {}).get("iv"),
+                    )
         else:
             if sym:
                 try:
@@ -216,6 +266,9 @@ async def lifespan(app: FastAPI):
     logger.info("trading API starting (mock_mode=%s)", settings.mock_mode)
     await db.init()
     await ib_node.start()
+    # Resume the paper-trading bot loop if it was running before restart.
+    from .bot.runner import bot_engine
+    bot_engine.resume_if_running()
     mock_task = asyncio.create_task(_mock_price_broadcaster())
     status_task = asyncio.create_task(_status_broadcaster())
     job_scheduler.start()
@@ -316,6 +369,12 @@ app.include_router(fundamentals.router)
 app.include_router(agents.router)
 app.include_router(monitor_router.router)
 app.include_router(scans.router)
+from .routers import sim  # noqa: E402  (router registration only)
+app.include_router(sim.router)
+from .routers import news_analyst  # noqa: E402  (router registration only)
+app.include_router(news_analyst.router)
+from .routers import bot  # noqa: E402  (router registration only)
+app.include_router(bot.router)
 from .routers import ruleone  # noqa: E402  (router registration only)
 app.include_router(ruleone.router)
 from .routers import llm_read  # noqa: E402  (router registration only)

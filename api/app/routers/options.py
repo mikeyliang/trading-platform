@@ -37,6 +37,21 @@ async def chain(
 
 
 @router.get(
+    "/earnings/{symbol}",
+    summary="Next earnings date (IBKR Wall Street Horizon)",
+    description=(
+        "Returns the next scheduled earnings date for ``symbol`` as "
+        "``{symbol, next_date: 'YYYYMMDD'|null, source: 'wsh'|'unavailable'}``. "
+        "Requires a WSH market-data subscription on the IBKR account; without "
+        "one the endpoint returns ``source='unavailable'`` (never 5xx) so the "
+        "UI can simply hide the badge. Indices short-circuit to unavailable."
+    ),
+)
+async def next_earnings(symbol: str) -> Dict[str, Any]:
+    return await ib_options.get_next_earnings(symbol)
+
+
+@router.get(
     "/spreads/scan",
     response_model=SpreadScanResponse,
     response_model_exclude_none=False,

@@ -115,21 +115,217 @@ async def bulk_insert_trades(payloads: List[Dict[str, Any]]) -> int:
         return 0
 
 
-async def export_trades(
-    symbol: Optional[str] = None,
-    status: Optional[str] = None,
-    side: Optional[str] = None,
-    strategy: Optional[str] = None,
-    agent_id: Optional[str] = None,
-    start: Optional[datetime] = None,
-    end: Optional[datetime] = None,
-) -> List[Dict[str, Any]]:
-    """All matching trades, unpaginated, newest-first. Same filter semantics
-    as ``list_trades`` but skips the COUNT/LIMIT/OFFSET — callers stream
-    the result straight into CSV."""
+async def bulk_insert_external_trades(payloads: List[Dict[str, Any]]) -> Dict[str, int]:
+    """Insert trade rows sourced from an external system (Flex / CSV) with
+    idempotent dedup keyed on (source, external_id). Rows already present
+    are skipped via ON CONFLICT DO NOTHING against the partial unique index.
+
+    Returns ``{"inserted": n, "skipped": m}``. Rows missing source or
+    external_id are skipped at the application level (they'd defeat dedup).
+    """
+    out = {"inserted": 0, "skipped": 0}
+    if not payloads:
+        return out
     pool = db.pool()
     if pool is None:
-        return []
+        return out
+    cols = [
+        "timestamp", "symbol", "side", "quantity", "price", "order_type",
+        "status", "pnl", "pnl_percentage", "strategy", "agent_id",
+        "metadata_", "source", "external_id",
+    ]
+    placeholders = [
+        f"${i}::jsonb" if c == "metadata_" else f"${i}"
+        for i, c in enumerate(cols, start=1)
+    ]
+    sql = (
+        f"INSERT INTO trade_history ({','.join(cols)}) "
+        f"VALUES ({','.join(placeholders)}) "
+        f"ON CONFLICT (source, external_id) "
+        f"WHERE source IS NOT NULL AND external_id IS NOT NULL "
+        f"DO NOTHING"
+    )
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                for p in payloads:
+                    src = p.get("source")
+                    ext = p.get("external_id")
+                    if not src or not ext:
+                        out["skipped"] += 1
+                        continue
+                    side = p.get("side")
+                    if isinstance(side, str):
+                        side = side.strip().lower()
+                    meta = p.get("metadata_") if "metadata_" in p else p.get("metadata")
+                    row = await conn.fetchrow(
+                        sql + " RETURNING id",
+                        p.get("timestamp"),
+                        p.get("symbol"),
+                        side,
+                        p.get("quantity"),
+                        p.get("price"),
+                        p.get("order_type"),
+                        p.get("status"),
+                        p.get("pnl"),
+                        p.get("pnl_percentage"),
+                        p.get("strategy"),
+                        p.get("agent_id"),
+                        json.dumps(meta) if meta is not None else None,
+                        src,
+                        ext,
+                    )
+                    if row is None:
+                        out["skipped"] += 1
+                    else:
+                        out["inserted"] += 1
+    except Exception as e:  # noqa: BLE001
+        logger.warning("bulk_insert_external_trades failed: %s", e)
+    return out
+
+
+async def bulk_upsert_external_trades(payloads: List[Dict[str, Any]]) -> Dict[str, int]:
+    """Like ``bulk_insert_external_trades`` but **updates** existing rows
+    on conflict instead of skipping them. Used by the Flex refresh mode
+    to repair rows imported before the timestamp parser improved — only
+    fields likely to have changed are overwritten (timestamp, price, pnl,
+    metadata), preserving any local edits to side/qty/status/strategy.
+
+    Returns ``{"inserted": n, "updated": m, "skipped": k}`` so the caller
+    can distinguish fresh rows from refreshed ones.
+    """
+    out = {"inserted": 0, "updated": 0, "skipped": 0}
+    if not payloads:
+        return out
+    pool = db.pool()
+    if pool is None:
+        return out
+    cols = [
+        "timestamp", "symbol", "side", "quantity", "price", "order_type",
+        "status", "pnl", "pnl_percentage", "strategy", "agent_id",
+        "metadata_", "source", "external_id",
+    ]
+    placeholders = [
+        f"${i}::jsonb" if c == "metadata_" else f"${i}"
+        for i, c in enumerate(cols, start=1)
+    ]
+    # ON CONFLICT DO UPDATE: refresh the volatile fields (timestamp, price,
+    # pnl, metadata), leave behavioural fields alone. ``xmax = 0`` is the
+    # canonical Postgres trick for distinguishing INSERT from UPDATE in
+    # the same query: 0 means a fresh row was inserted, non-zero means
+    # an existing row was updated.
+    sql = (
+        f"INSERT INTO trade_history ({','.join(cols)}) "
+        f"VALUES ({','.join(placeholders)}) "
+        f"ON CONFLICT (source, external_id) "
+        f"WHERE source IS NOT NULL AND external_id IS NOT NULL "
+        f"DO UPDATE SET "
+        f"  timestamp = EXCLUDED.timestamp, "
+        f"  price = EXCLUDED.price, "
+        f"  pnl = COALESCE(EXCLUDED.pnl, trade_history.pnl), "
+        f"  metadata_ = EXCLUDED.metadata_ "
+        f"RETURNING (xmax = 0) AS inserted"
+    )
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                for p in payloads:
+                    src = p.get("source")
+                    ext = p.get("external_id")
+                    if not src or not ext:
+                        out["skipped"] += 1
+                        continue
+                    side = p.get("side")
+                    if isinstance(side, str):
+                        side = side.strip().lower()
+                    meta = p.get("metadata_") if "metadata_" in p else p.get("metadata")
+                    row = await conn.fetchrow(
+                        sql,
+                        p.get("timestamp"),
+                        p.get("symbol"),
+                        side,
+                        p.get("quantity"),
+                        p.get("price"),
+                        p.get("order_type"),
+                        p.get("status"),
+                        p.get("pnl"),
+                        p.get("pnl_percentage"),
+                        p.get("strategy"),
+                        p.get("agent_id"),
+                        json.dumps(meta) if meta is not None else None,
+                        src,
+                        ext,
+                    )
+                    if row is None:
+                        out["skipped"] += 1
+                    elif row["inserted"]:
+                        out["inserted"] += 1
+                    else:
+                        out["updated"] += 1
+    except Exception as e:  # noqa: BLE001
+        logger.warning("bulk_upsert_external_trades failed: %s", e)
+    return out
+
+
+async def flex_summary() -> Dict[str, Any]:
+    """Compact stats for the Flex-sourced subset of trade_history. Used by
+    the UI's backfill panel: total rows, date span, per-account counts."""
+    out: Dict[str, Any] = {
+        "total_rows": 0,
+        "earliest": None,
+        "latest": None,
+        "accounts": [],
+    }
+    pool = db.pool()
+    if pool is None:
+        return out
+    try:
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT count(*) AS n, min(timestamp) AS lo, max(timestamp) AS hi "
+                "FROM trade_history WHERE source = 'ibkr_flex' AND is_deleted = FALSE"
+            )
+            if row is not None:
+                out["total_rows"] = int(row["n"] or 0)
+                out["earliest"] = row["lo"].isoformat() if row["lo"] else None
+                out["latest"] = row["hi"].isoformat() if row["hi"] else None
+            accounts = await conn.fetch(
+                "SELECT metadata_->>'account_id' AS account, count(*) AS n "
+                "FROM trade_history "
+                "WHERE source = 'ibkr_flex' AND is_deleted = FALSE "
+                "  AND metadata_->>'account_id' IS NOT NULL "
+                "GROUP BY metadata_->>'account_id' "
+                "ORDER BY n DESC"
+            )
+            out["accounts"] = [
+                {"account_id": r["account"], "rows": int(r["n"])}
+                for r in accounts
+            ]
+    except Exception as e:  # noqa: BLE001
+        logger.warning("flex_summary failed: %s", e)
+    return out
+
+
+def _build_filter_sql(
+    *,
+    symbol: Optional[str],
+    status: Optional[str],
+    side: Optional[str],
+    strategy: Optional[str],
+    agent_id: Optional[str],
+    start: Optional[datetime],
+    end: Optional[datetime],
+    asset_class: Optional[str] = None,
+    account_id: Optional[str] = None,
+    transaction_type: Optional[str] = None,
+    has_note: Optional[bool] = None,
+) -> tuple[str, list[Any]]:
+    """Shared WHERE-builder for list_trades / export_trades. Asset / account
+    / tx_type live in ``metadata_`` JSONB — extracted with ``->>'key'``.
+
+    ``asset_class`` is a high-level bucket the UI passes ('stock' | 'option');
+    options expand to ``IN ('OPT', 'FOP')`` and stock to the complement
+    (with NULL treated as stock-ish so legacy non-Flex rows aren't hidden)."""
     clauses = ["is_deleted = FALSE"]
     args: list[Any] = []
     if symbol:
@@ -153,7 +349,63 @@ async def export_trades(
     if end is not None:
         args.append(end)
         clauses.append(f"timestamp <= ${len(args)}")
-    where = f"WHERE {' AND '.join(clauses)}"
+    if asset_class:
+        bucket = asset_class.strip().lower()
+        if bucket == "option":
+            clauses.append("(metadata_->>'asset_category') IN ('OPT', 'FOP')")
+        elif bucket == "stock":
+            # Treat NULL asset_category as stock — legacy non-Flex rows
+            # don't carry the field but are almost always equities.
+            clauses.append(
+                "((metadata_->>'asset_category') IS NULL OR "
+                "(metadata_->>'asset_category') NOT IN ('OPT', 'FOP', 'FUT'))"
+            )
+        elif bucket == "future":
+            clauses.append("(metadata_->>'asset_category') = 'FUT'")
+        # any other value: no-op (treat as 'all')
+    if account_id:
+        args.append(account_id.strip())
+        clauses.append(f"(metadata_->>'account_id') = ${len(args)}")
+    if transaction_type:
+        args.append(transaction_type.strip())
+        clauses.append(f"(metadata_->>'transaction_type') = ${len(args)}")
+    if has_note is True:
+        # Only rows where a non-empty journal note was saved into metadata.
+        clauses.append(
+            "(metadata_->>'note') IS NOT NULL AND length(trim(metadata_->>'note')) > 0"
+        )
+    elif has_note is False:
+        clauses.append(
+            "((metadata_->>'note') IS NULL OR length(trim(metadata_->>'note')) = 0)"
+        )
+    return f"WHERE {' AND '.join(clauses)}", args
+
+
+async def export_trades(
+    symbol: Optional[str] = None,
+    status: Optional[str] = None,
+    side: Optional[str] = None,
+    strategy: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    asset_class: Optional[str] = None,
+    account_id: Optional[str] = None,
+    transaction_type: Optional[str] = None,
+    has_note: Optional[bool] = None,
+) -> List[Dict[str, Any]]:
+    """All matching trades, unpaginated, newest-first. Same filter semantics
+    as ``list_trades`` but skips the COUNT/LIMIT/OFFSET — callers stream
+    the result straight into CSV."""
+    pool = db.pool()
+    if pool is None:
+        return []
+    where, args = _build_filter_sql(
+        symbol=symbol, status=status, side=side, strategy=strategy,
+        agent_id=agent_id, start=start, end=end,
+        asset_class=asset_class, account_id=account_id,
+        transaction_type=transaction_type, has_note=has_note,
+    )
     try:
         async with pool.acquire() as conn:
             rows = await conn.fetch(
@@ -175,6 +427,10 @@ async def list_trades(
     agent_id: Optional[str] = None,
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
+    asset_class: Optional[str] = None,
+    account_id: Optional[str] = None,
+    transaction_type: Optional[str] = None,
+    has_note: Optional[bool] = None,
     page: int = 1,
     page_size: int = 50,
 ) -> Dict[str, Any]:
@@ -188,30 +444,12 @@ async def list_trades(
     pool = db.pool()
     if pool is None:
         return empty
-    clauses = ["is_deleted = FALSE"]
-    args: list[Any] = []
-    if symbol:
-        args.append(symbol.strip().upper())
-        clauses.append(f"symbol = ${len(args)}")
-    if status:
-        args.append(status)
-        clauses.append(f"status = ${len(args)}")
-    if side:
-        args.append(side.strip().lower())
-        clauses.append(f"side = ${len(args)}")
-    if strategy:
-        args.append(strategy)
-        clauses.append(f"strategy = ${len(args)}")
-    if agent_id:
-        args.append(agent_id)
-        clauses.append(f"agent_id = ${len(args)}")
-    if start is not None:
-        args.append(start)
-        clauses.append(f"timestamp >= ${len(args)}")
-    if end is not None:
-        args.append(end)
-        clauses.append(f"timestamp <= ${len(args)}")
-    where = f"WHERE {' AND '.join(clauses)}"
+    where, args = _build_filter_sql(
+        symbol=symbol, status=status, side=side, strategy=strategy,
+        agent_id=agent_id, start=start, end=end,
+        asset_class=asset_class, account_id=account_id,
+        transaction_type=transaction_type, has_note=has_note,
+    )
     try:
         async with pool.acquire() as conn:
             total = int(await conn.fetchval(
@@ -560,76 +798,6 @@ async def delete_trade(trade_id: int) -> bool:
     except Exception as e:  # noqa: BLE001
         logger.warning("delete_trade failed: %s", e)
         return False
-
-
-async def existing_exec_ids(exec_ids: List[str]) -> Optional[set]:
-    """Subset of ``exec_ids`` already present in trade_history (matched on
-    the IBKR execution id stored in metadata). None when the DB is
-    unavailable — callers must treat that differently from "none known",
-    or every sync would duplicate the whole day's fills."""
-    if not exec_ids:
-        return set()
-    pool = db.pool()
-    if pool is None:
-        return None
-    try:
-        async with pool.acquire() as conn:
-            rows = await conn.fetch(
-                "SELECT metadata_->>'exec_id' AS exec_id FROM trade_history "
-                "WHERE metadata_->>'exec_id' = ANY($1::text[])",
-                exec_ids,
-            )
-        return {r["exec_id"] for r in rows if r["exec_id"]}
-    except Exception as e:  # noqa: BLE001
-        logger.warning("existing_exec_ids failed: %s", e)
-        return None
-
-
-async def trades_for_markers(symbol: str, days: int = 90) -> List[Dict[str, Any]]:
-    """Lean trade list for chart markers: every non-deleted fill on
-    ``symbol`` in the trailing window, oldest first. Only the columns the
-    chart needs — no pagination, capped at 500 rows."""
-    pool = db.pool()
-    if pool is None:
-        return []
-    try:
-        async with pool.acquire() as conn:
-            rows = await conn.fetch(
-                "SELECT timestamp, side, quantity, price, pnl, strategy, metadata_ "
-                "FROM trade_history "
-                "WHERE is_deleted = FALSE AND symbol = $1 "
-                "  AND timestamp >= NOW() - ($2 || ' days')::interval "
-                "ORDER BY timestamp ASC LIMIT 500",
-                symbol.strip().upper(), str(max(1, days)),
-            )
-    except Exception as e:  # noqa: BLE001
-        logger.warning("trades_for_markers failed: %s", e)
-        return []
-    out: List[Dict[str, Any]] = []
-    for r in rows:
-        d = _row_to_dict(r)
-        meta = d.get("metadata_") or {}
-        ts = d.get("timestamp")
-        if isinstance(ts, str):
-            try:
-                ts = datetime.fromisoformat(ts)
-            except ValueError:
-                continue
-        if not isinstance(ts, datetime):
-            continue
-        out.append({
-            "time": int(ts.timestamp()),
-            "side": (d.get("side") or "").upper(),
-            "quantity": d.get("quantity"),
-            "price": d.get("price"),
-            "pnl": d.get("pnl"),
-            "strategy": d.get("strategy"),
-            "is_option": (meta.get("sec_type") == "OPT") if isinstance(meta, dict) else False,
-            "strike": meta.get("strike") if isinstance(meta, dict) else None,
-            "right": meta.get("right") if isinstance(meta, dict) else None,
-            "expiry": meta.get("expiry") if isinstance(meta, dict) else None,
-        })
-    return out
 
 
 def _row_to_dict(row: Any) -> Dict[str, Any]:

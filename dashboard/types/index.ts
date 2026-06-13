@@ -7,6 +7,17 @@ export interface Bar {
   volume: number;
 }
 
+// Why a /bars (or quote) request returned no live data: the IBKR account
+// isn't entitled to this symbol's market-data line. `message` is IBKR's
+// verbatim error text (authoritative — it names the data line); `hint` is a
+// best-effort friendly name of the Account Management subscription to buy.
+export interface SubscriptionError {
+  code: number;
+  message: string;
+  hint?: string | null;
+  exchange?: string | null;
+}
+
 export interface Quote {
   symbol: string;
   // Live ticks from the NT bridge fill bid/ask/last; REST snapshots may

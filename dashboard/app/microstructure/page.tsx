@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { OpenInterestByStrike } from "@/components/microstructure/OpenInterest";
 /** Market microstructure page — the four "where did real activity happen"
  *  views grouped together. Single symbol selector, dense four-quadrant grid
  *  (depth + tape on top, volume profile + OI on bottom). */
-export default function MicrostructurePage() {
+function MicrostructureContent() {
   const router = useRouter();
   const params = useSearchParams();
   const initial = (params?.get("symbol") || "SPY").toUpperCase();
@@ -68,5 +68,13 @@ export default function MicrostructurePage() {
         </Card>
       </div>
     </PageShell>
+  );
+}
+
+export default function MicrostructurePage() {
+  return (
+    <Suspense>
+      <MicrostructureContent />
+    </Suspense>
   );
 }

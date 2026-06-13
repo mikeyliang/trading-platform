@@ -1,26 +1,21 @@
 """Lightweight LLM "AI read" endpoint for the options analyzer page.
 
 Different from /api/agents (the heavy multi-agent LangGraph debate that
-takes ~30s + multiple LLM calls). This endpoint makes ONE prompt and
-returns four short analyst paragraphs:
+takes ~30s + multiple LLM calls). This endpoint makes ONE prompt to a
+fast/cheap OpenRouter model and returns four short analyst paragraphs:
 
   - underlying : trend / momentum / forecast read
   - option     : IV-vs-RV, contract setup, liquidity
   - position   : keep / close / hedge recommendation
   - risk       : the single biggest thing that hurts this trade
 
-Provider preference: the direct Anthropic API (Claude) when
-ANTHROPIC_API_KEY is set — same credential the chat co-pilot uses — with
-the OpenRouter free-model chain as the no-key fallback. Claude gives
-materially better, more consistent reads than the free OpenRouter pool;
-the fallback keeps the feature alive on unconfigured deployments.
-
 Designed to complement (not replace) the rule-based insights — the LLM
 sees the same numbers the trader sees plus cross-position synthesis
 that's hard to encode as deterministic rules.
 
 Caches per (symbol, strike, expiry, right, quantity, is_long) for 5
-minutes so repeat clicks don't re-spend tokens.
+minutes so repeat clicks don't re-spend tokens. Falls back gracefully
+when OPENROUTER_API_KEY isn't set.
 """
 from __future__ import annotations
 
@@ -34,13 +29,8 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from ..config import settings
-
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/options", tags=["analyzer"])
-
-# Claude model for the analysis read. Overridable per deployment.
-_ANTHROPIC_MODEL = os.getenv("ANTHROPIC_ANALYSIS_MODEL", "claude-opus-4-8")
 
 # Free model fallback chain. We try each in order until one accepts the
 # request (free tier on OpenRouter is shared across users and individual
@@ -191,15 +181,10 @@ async def _call_openrouter(api_key: str, prompt: str, model: str) -> Dict[str, s
         content = raw["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError):
         raise HTTPException(status_code=502, detail="OpenRouter returned unexpected shape")
-    return _parse_llm_json(content)
-
-
-def _parse_llm_json(content: str) -> Dict[str, str]:
-    """Parse the model's JSON reply, tolerating ```json fences. Returns a
-    degraded-but-renderable payload instead of raising so the UI never
-    crashes on a malformed reply."""
+    # Some free models return JSON wrapped in ```json ... ``` fences.
     content = content.strip()
     if content.startswith("```"):
+        # strip ```json ... ```
         lines = content.splitlines()
         if lines[0].startswith("```"):
             lines = lines[1:]
@@ -210,6 +195,7 @@ def _parse_llm_json(content: str) -> Dict[str, str]:
         return json.loads(content)
     except json.JSONDecodeError as e:
         logger.error("LLM JSON parse failed: %s\n%s", e, content[:500])
+        # Fall back to a single-string response so the UI doesn't crash.
         return {
             "underlying": "(model returned non-JSON)",
             "option": content[:500],
@@ -218,32 +204,13 @@ def _parse_llm_json(content: str) -> Dict[str, str]:
         }
 
 
-async def _call_anthropic(prompt: str) -> Dict[str, str]:
-    """One Claude call via the direct Anthropic API. Adaptive thinking on —
-    the read is a synthesis task, not a lookup — and JSON enforced by the
-    prompt + lenient parse (same contract as the OpenRouter path)."""
-    from anthropic import AsyncAnthropic
-
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-    msg = await client.messages.create(
-        model=_ANTHROPIC_MODEL,
-        max_tokens=2048,
-        thinking={"type": "adaptive"},
-        system="You are a senior options trader. Respond ONLY with the exact JSON schema requested.",
-        messages=[{"role": "user", "content": prompt}],
-    )
-    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
-    return _parse_llm_json(text)
-
-
 @router.post("/llm-read", response_model=LlmReadResponse)
 async def llm_read(req: LlmReadRequest) -> LlmReadResponse:
-    openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    anthropic_key = settings.anthropic_api_key
-    if not anthropic_key and not openrouter_key:
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
         raise HTTPException(
             status_code=503,
-            detail="Neither ANTHROPIC_API_KEY nor OPENROUTER_API_KEY is set on the API server",
+            detail="OPENROUTER_API_KEY not set on the API server",
         )
 
     # Cache hit?
@@ -254,46 +221,31 @@ async def llm_read(req: LlmReadRequest) -> LlmReadResponse:
         return LlmReadResponse(**hit[1], cached=True)
 
     prompt = _build_prompt(req)
+    # Try the primary first, then walk down the fallback list. Skip
+    # duplicates if the primary is already in the fallback list.
+    tried = []
+    last_err: Optional[HTTPException] = None
+    chain = [_PRIMARY_MODEL] + [m for m in _FALLBACK_MODELS if m != _PRIMARY_MODEL]
     parsed = None
-    used_model = ""
-
-    # Preferred provider: direct Anthropic API. Fall through to the
-    # OpenRouter chain only when Claude is unconfigured or errors.
-    if anthropic_key:
+    used_model = chain[0]
+    for model in chain:
+        tried.append(model)
         try:
-            parsed = await _call_anthropic(prompt)
-            used_model = _ANTHROPIC_MODEL
-        except Exception as e:  # noqa: BLE001
-            logger.warning("anthropic llm-read failed (%s) — falling back to OpenRouter", e)
-            parsed = None
-            if not openrouter_key:
-                raise HTTPException(status_code=502, detail=f"Anthropic call failed: {e}")
-
+            parsed = await _call_openrouter(api_key, prompt, model)
+            used_model = model
+            break
+        except HTTPException as e:
+            last_err = e
+            # 429 (rate-limited), 402 (out of free credits), 503 (upstream
+            # busy), 404/400 (model no longer hosted or invalid ID) → try
+            # next in the fallback chain.
+            if e.status_code in (429, 402, 503, 404, 400):
+                logger.warning("model %s rate-limited (%s) — falling back", model, e.status_code)
+                continue
+            # Anything else (auth, bad request) — bail; not a rate-limit
+            raise
     if parsed is None:
-        # Try the primary first, then walk down the fallback list. Skip
-        # duplicates if the primary is already in the fallback list.
-        tried = []
-        last_err: Optional[HTTPException] = None
-        chain = [_PRIMARY_MODEL] + [m for m in _FALLBACK_MODELS if m != _PRIMARY_MODEL]
-        used_model = chain[0]
-        for model in chain:
-            tried.append(model)
-            try:
-                parsed = await _call_openrouter(openrouter_key, prompt, model)
-                used_model = model
-                break
-            except HTTPException as e:
-                last_err = e
-                # 429 (rate-limited), 402 (out of free credits), 503 (upstream
-                # busy), 404/400 (model no longer hosted or invalid ID) → try
-                # next in the fallback chain.
-                if e.status_code in (429, 402, 503, 404, 400):
-                    logger.warning("model %s rate-limited (%s) — falling back", model, e.status_code)
-                    continue
-                # Anything else (auth, bad request) — bail; not a rate-limit
-                raise
-        if parsed is None:
-            raise last_err or HTTPException(status_code=503, detail=f"all models rate-limited: {tried}")
+        raise last_err or HTTPException(status_code=503, detail=f"all models rate-limited: {tried}")
 
     payload = {
         "underlying": str(parsed.get("underlying", "")).strip() or "(empty)",

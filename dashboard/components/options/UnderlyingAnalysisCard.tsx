@@ -16,8 +16,9 @@ import {
 } from "lightweight-charts";
 import { cn, fmt, fmtCompact } from "@/lib/utils";
 import { CHART, baseChartOptions } from "@/lib/chartTheme";
-import type { OptionAnalyzeResult, OptionAnalyzerTimeframe } from "@/lib/api";
-import { useTradeMarkersOverlay } from "@/components/chart/useTradeMarkersOverlay";
+import type { OptionAnalyzeResult, OptionAnalyzerTimeframe, TradeHistoryRecord } from "@/lib/api";
+import { useTradeMarkers } from "@/components/chart/useTradeMarkers";
+import { TradeMarkerPopover } from "@/components/chart/TradeMarkerPopover";
 
 interface Props {
   result: OptionAnalyzeResult;
@@ -68,7 +69,21 @@ export function UnderlyingAnalysisCard({
   loading,
 }: Props) {
   const chart = result.chart;
-  const tfs = chart?.supported_timeframes ?? [];
+  if (!chart) {
+    return (
+      <div className="rounded-md border border-border bg-bg overflow-hidden">
+        <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            Underlying analysis
+          </span>
+        </div>
+        <div className="h-[200px] flex items-center justify-center text-[11px] text-text-muted">
+          Indicator data unavailable — backend may need a restart.
+        </div>
+      </div>
+    );
+  }
+  const tfs = chart.supported_timeframes;
 
   // Forecast horizon picker — drives the projection cone.
   const fe = result.forecast_ensemble;
@@ -98,14 +113,13 @@ export function UnderlyingAnalysisCard({
   // Header display: hovered bar OHLCV when crosshair is in history, else
   // the last bar. Computed from the underlying-chart bars, not the analyzer
   // page's `spot` (which can lag the candle close by a tick).
-  const bars = chart?.bars;
-  const lastBar = bars ? bars[bars.length - 1] : undefined;
+  const lastBar = chart.bars[chart.bars.length - 1];
   const headerDisplay = useMemo(() => {
-    if (!bars || !lastBar) return null;
-    const idx = hover?.barIdx ?? bars.length - 1;
-    const b = bars[idx];
+    if (!lastBar) return null;
+    const idx = hover?.barIdx ?? chart.bars.length - 1;
+    const b = chart.bars[idx];
     if (!b) return null;
-    const prev = idx > 0 ? bars[idx - 1] : null;
+    const prev = idx > 0 ? chart.bars[idx - 1] : null;
     const ref = prev ? prev.close : b.open;
     const chg = b.close - ref;
     const chgPct = ref !== 0 ? (chg / ref) * 100 : 0;
@@ -119,23 +133,7 @@ export function UnderlyingAnalysisCard({
       chg,
       chgPct,
     };
-  }, [hover, bars, lastBar]);
-
-  // After all hooks — rules-of-hooks requires unconditional hook order.
-  if (!chart) {
-    return (
-      <div className="rounded-md border border-border bg-bg overflow-hidden">
-        <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
-            Underlying analysis
-          </span>
-        </div>
-        <div className="h-[200px] flex items-center justify-center text-[11px] text-text-muted">
-          Indicator data unavailable — backend may need a restart.
-        </div>
-      </div>
-    );
-  }
+  }, [hover, chart.bars, lastBar]);
 
   const positive = (headerDisplay?.chg ?? 0) >= 0;
   const symbolLabel = result.symbol;
@@ -234,7 +232,6 @@ export function UnderlyingAnalysisCard({
             hover={hover}
             spot={result.spot}
             symbolWatermark={symbolLabel}
-            symbol={result.symbol}
           />
         </>
       )}
@@ -267,8 +264,6 @@ interface PaneStackProps {
   onHoverChange: (h: HoverState | null) => void;
   hover: HoverState | null;
   symbolWatermark: string;
-  /** Underlying ticker — drives the own-fills trade markers overlay. */
-  symbol: string;
 }
 
 interface HoverState {
@@ -291,7 +286,6 @@ function PaneStack({
   onHoverChange,
   hover,
   symbolWatermark,
-  symbol,
 }: PaneStackProps) {
   const priceContainerRef = useRef<HTMLDivElement>(null);
   const rsiContainerRef = useRef<HTMLDivElement>(null);
@@ -306,15 +300,6 @@ function PaneStack({
 
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
-
-  // Own fills on this underlying as BUY/SELL arrow markers — when the user
-  // is analyzing their own position, their entries/exits belong on the chart.
-  useTradeMarkersOverlay({
-    candleSeries: candleSeriesRef,
-    symbol,
-    bars: chart.bars,
-    enabled: true,
-  });
   const ema9SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const ema21SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const vwapSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
@@ -337,6 +322,21 @@ function PaneStack({
   // Surface lightweight-charts init failures so the user doesn't see
   // a silent empty 560px area when something goes wrong on mount.
   const [initError, setInitError] = useState<string | null>(null);
+
+  // Executed trades for this underlying, rendered as arrow markers on the
+  // candle series — same hook + popover the main TradingChart uses, so
+  // option/stock trades on `symbolWatermark` (the underlying ticker) line
+  // up on the analyzer's price pane too. Click a marker to journal it.
+  const tradeMarkers = useTradeMarkers({
+    candleSeries: candleSeriesRef,
+    symbol: symbolWatermark,
+    enabled: true,
+    bars: chart.bars,
+  });
+  const [activePopover, setActivePopover] = useState<{
+    trades: TradeHistoryRecord[];
+    anchor: { x: number; y: number };
+  } | null>(null);
 
   const barIndexByTime = useMemo(() => {
     const m = new Map<number, number>();
@@ -984,6 +984,35 @@ function PaneStack({
     };
   }, [forecast, futureTimes, chart.bars, ensemble, coneHorizon]);
 
+  // Trade-marker clicks → open the journal popover for the bucket of trades
+  // on the clicked bar. lightweight-charts doesn't tell us "you hit a
+  // marker", so we map the click time back through the hook's bucket index.
+  useEffect(() => {
+    const chartApi = priceChartRef.current;
+    if (!chartApi) return;
+    const handler = (param: MouseEventParams) => {
+      if (param.time == null || !param.point) return;
+      const bucket = tradeMarkers.bucketAt(param.time);
+      if (!bucket) {
+        setActivePopover(null);
+        return;
+      }
+      setActivePopover({
+        trades: bucket.trades,
+        anchor: { x: param.point.x, y: param.point.y },
+      });
+    };
+    chartApi.subscribeClick(handler);
+    return () => {
+      try { chartApi.unsubscribeClick(handler); } catch { /* */ }
+    };
+  }, [tradeMarkers.bucketAt]);
+
+  // Drop the popover when the underlying changes — its trades no longer apply.
+  useEffect(() => {
+    setActivePopover(null);
+  }, [symbolWatermark]);
+
   return (
     <>
       {/* ── Price pane — dominant, with symbol watermark behind the
@@ -999,6 +1028,36 @@ function PaneStack({
         </div>
         <div ref={priceContainerRef} className="absolute inset-0 z-10" />
         <div ref={coneOverlayRef} className="pointer-events-none absolute inset-0 z-20" />
+        {/* Trade-marker badge — count of this underlying's executions pinned
+            on the timeline. Off-range trades (outside the loaded bars) are
+            fetched but can't render, so we distinguish the two states. */}
+        {(tradeMarkers.renderedCount > 0 || tradeMarkers.trades.length > 0) && (
+          <div
+            className={cn(
+              "absolute top-2 left-2 z-20 inline-flex items-center gap-1 h-5 px-1.5 rounded-sm border text-[10px] tabular pointer-events-none",
+              tradeMarkers.renderedCount > 0
+                ? "border-up/30 bg-up/10 text-up"
+                : "border-warning/30 bg-warning/10 text-warning",
+            )}
+            title={`${tradeMarkers.trades.length} trade(s) on ${symbolWatermark}; ${tradeMarkers.renderedCount} pinned in the loaded range. Click a marker to journal.`}
+          >
+            {tradeMarkers.renderedCount > 0
+              ? `${tradeMarkers.renderedCount} trade${tradeMarkers.renderedCount > 1 ? "s" : ""}`
+              : `${tradeMarkers.trades.length} off-range`}
+          </div>
+        )}
+        {activePopover && priceContainerRef.current && (
+          <TradeMarkerPopover
+            trades={activePopover.trades}
+            anchor={activePopover.anchor}
+            container={{
+              width: priceContainerRef.current.clientWidth,
+              height: priceContainerRef.current.clientHeight,
+            }}
+            onClose={() => setActivePopover(null)}
+            onSaved={() => tradeMarkers.refresh()}
+          />
+        )}
         {initError && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-bg/70 backdrop-blur-sm p-4">
             <div className="max-w-md text-center">

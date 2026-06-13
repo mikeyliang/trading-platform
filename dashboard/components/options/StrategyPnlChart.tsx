@@ -482,12 +482,12 @@ export function StrategyPnlChart({
         ))}
       </svg>
 
-      {/* sliders */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 pt-2 border-t border-border/40">
+      {/* controls — dense single-line rows, tracks aligned across rows */}
+      <div className="flex flex-col gap-1 pt-2.5 border-t border-border/40">
         <StratSlider
           label="Date" accent={CHART.pnl.expiry}
           valueText={dateLabel}
-          subText={`${tRemainingDays}d to expiry`}
+          subText={`${tRemainingDays}d left`}
           min={0} max={dteDays} step={1}
           value={daysFromNow} onChange={setDaysFromNow}
           isDefault={daysFromNow === 0}
@@ -502,7 +502,7 @@ export function StrategyPnlChart({
         <StratSlider
           label="IV" accent={CHART.forecast.cone}
           valueText={`${(ivMult * iv * 100).toFixed(1)}%`}
-          subText={`${(ivMult * 100).toFixed(0)}% of current`}
+          subText={`${ivMult.toFixed(2)}× cur`}
           min={0.3} max={3} step={0.05}
           value={ivMult} onChange={setIvMult}
           isDefault={ivMult === 1}
@@ -516,7 +516,7 @@ export function StrategyPnlChart({
         <StratSlider
           label="Range" accent={CHART.ref.strike}
           valueText={`±${(range * 100).toFixed(0)}%`}
-          subText="window around spot"
+          subText="zoom"
           min={0.05} max={0.6} step={0.05}
           value={range} onChange={setRange}
           isDefault={range === 0.25}
@@ -648,38 +648,31 @@ function StratSlider({
   const pct = ((value - min) / (max - min)) * 100;
   const isActivePreset = (pv: number) => Math.abs(value - pv) < step / 2;
   return (
-    <div className="flex flex-col gap-1.5 min-w-0">
-      <div className="flex items-baseline gap-2">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+    <div className="flex items-center gap-3 h-[26px]">
+      <span className="w-9 shrink-0 text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <div className="w-[104px] shrink-0 flex items-baseline gap-1.5 overflow-hidden">
         <span className="text-[13px] tabular font-semibold leading-none" style={{ color: accent }}>
           {valueText}
         </span>
-        {!isDefault && (
-          <button
-            type="button" onClick={onReset}
-            className="ml-auto text-[10px] uppercase tracking-wider text-text-muted hover:text-text-secondary"
-          >
-            reset
-          </button>
-        )}
+        <span className="text-[10px] tabular text-text-muted leading-none truncate">{subText}</span>
       </div>
-      <span className="text-[10px] tabular text-text-muted leading-none">{subText}</span>
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="slider-range w-full mt-1"
+        aria-label={label}
+        className="slider-range flex-1 min-w-[60px]"
         style={{
           background: `linear-gradient(to right, ${accent} 0%, ${accent} ${pct}%, ${CHART.surface} ${pct}%, ${CHART.surface} 100%)`,
         }}
       />
-      <div className="flex items-center gap-1 mt-0.5">
+      <div className="flex items-center gap-0.5 shrink-0">
         {presets.map((p) => {
           const active = isActivePreset(p.value);
           return (
             <button
               key={p.label} type="button" onClick={() => onChange(p.value)}
               className={cn(
-                "px-2 py-0.5 rounded text-[10px] tabular border transition-colors",
+                "px-1.5 h-[18px] rounded text-[10px] tabular border leading-none transition-colors",
                 active
                   ? "border-transparent text-bg font-semibold"
                   : "border-border text-text-muted hover:text-text-secondary hover:border-text-muted/50",
@@ -691,6 +684,17 @@ function StratSlider({
           );
         })}
       </div>
+      <button
+        type="button" onClick={onReset}
+        tabIndex={isDefault ? -1 : 0}
+        aria-hidden={isDefault}
+        className={cn(
+          "w-8 shrink-0 text-right text-[10px] uppercase tracking-wider transition-colors",
+          isDefault ? "invisible pointer-events-none" : "text-text-muted hover:text-text-primary",
+        )}
+      >
+        reset
+      </button>
     </div>
   );
 }

@@ -134,17 +134,6 @@ export function SignalInputsPanel({ result }: Props) {
     : ivRv <= 0.8 && !isLong ? "fires-against"
     : "neutral";
 
-  // IV rank — same long/short asymmetry as IV/RV: rich vol hurts longs,
-  // pays shorts; bottom-of-range vol does the reverse.
-  const ivRank = s.iv_rank;
-  const ivRankMood = ivRank == null
-    ? "neutral"
-    : ivRank >= 70 && isLong ? "fires-against"
-    : ivRank >= 60 && !isLong ? "fires-for"
-    : ivRank <= 20 && isLong ? "fires-for"
-    : ivRank <= 25 && !isLong ? "fires-against"
-    : "neutral";
-
   const dte = s.dte;
   const absD = s.abs_delta;
   const dteMood = dte <= 7
@@ -220,15 +209,6 @@ export function SignalInputsPanel({ result }: Props) {
       mood: ivMood,
     },
     {
-      name: "IV rank",
-      source: "IBKR 52w",
-      value: ivRank == null ? "—" : ivRank.toFixed(0),
-      label: ivRank == null ? "no vol history" :
-        ivRank >= 70 ? "vol near highs" :
-        ivRank <= 20 ? "vol near lows" : "mid-range",
-      mood: ivRankMood,
-    },
-    {
       name: "DTE",
       source: "expiry",
       value: `${dte}d`,
@@ -260,7 +240,7 @@ export function SignalInputsPanel({ result }: Props) {
               <div className="font-medium mb-0.5">Signal disposition</div>
               <div><span className="text-up">●</span> aligned — pushes score toward keep/hold</div>
               <div><span className="text-down">●</span> against — pushes score toward close</div>
-              <div><span className="text-warning">●</span> caution — flags a risk but doesn&apos;t change direction</div>
+              <div><span className="text-warning">●</span> caution — flags a risk but doesn't change direction</div>
               <div><span className="text-text-muted">○</span> neutral — no scoring effect right now</div>
             </div>
           }

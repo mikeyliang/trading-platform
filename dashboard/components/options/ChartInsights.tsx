@@ -228,44 +228,18 @@ function buildOptionInsights(result: OptionAnalyzeResult): Insight[] {
   const oc = result.option_chart;
   if (!oc || oc.synthetic_prices.length < 2) return out;
 
-  const isReal = oc.source === "ibkr";
   const N = oc.synthetic_prices.length;
   const first = oc.synthetic_prices[Math.max(0, N - 90)];
   const last = oc.synthetic_prices[N - 1];
   const periodPct = first > 0 ? ((last - first) / first) * 100 : 0;
 
-  // Price trend — real traded prices when IBKR history is available,
-  // BS-replay wording otherwise.
+  // Synthetic price trend
   if (Math.abs(periodPct) > 3) {
     out.push({
       tone: periodPct > 0 ? "up" : "down",
-      label: `${isReal ? "Traded" : "Replay"} ${periodPct > 0 ? "+" : ""}${periodPct.toFixed(0)}% over last ~90 bars`,
-      detail: isReal
-        ? `real IBKR option prices — the contract actually ${periodPct > 0 ? "gained" : "lost"} that much over the visible window`
-        : `If you'd held this contract through the visible window (at today's IV), you'd be ${periodPct > 0 ? "ahead" : "behind"} by that much`,
+      label: `Replay ${periodPct > 0 ? "+" : ""}${periodPct.toFixed(0)}% over last ~90 bars`,
+      detail: `If you'd held this contract through the visible window (at today's IV), you'd be ${periodPct > 0 ? "ahead" : "behind"} by that much`,
     });
-  }
-
-  // IV rank — regime-relative vol from IBKR's 52-week IV-index history.
-  const ivRank = result.vol_context?.iv_rank;
-  if (ivRank != null) {
-    if (ivRank >= 70) {
-      out.push({
-        tone: result.is_long ? "down" : "up",
-        label: `IV rank ${ivRank.toFixed(0)} · near 52w vol highs`,
-        detail: result.is_long
-          ? "long premium bought into rich vol — IV mean-reversion (crush) can hurt even if direction is right"
-          : "short premium sold near the top of the vol range — mean-reversion is a tailwind",
-      });
-    } else if (ivRank <= 20) {
-      out.push({
-        tone: result.is_long ? "up" : "down",
-        label: `IV rank ${ivRank.toFixed(0)} · near 52w vol lows`,
-        detail: result.is_long
-          ? "premium is cheap for this name — vol expansion would add value on top of direction"
-          : "collecting bottom-of-range premium — thin pay for the risk",
-      });
-    }
   }
 
   // RV30 as IV proxy
@@ -309,18 +283,13 @@ function buildPnlInsights(result: OptionAnalyzeResult): Insight[] {
   const entry = result.option.entry_price;
   const mid = result.option.mid ?? entry;
   const qty = Math.abs(result.quantity);
-  // Prefer the backend's position_pnl block (sign-aware, mark-source aware);
-  // fall back to the local calc for older API responses.
-  const liveUnrealized =
-    result.position_pnl?.unrealized_pnl ??
-    (mid - entry) * qty * 100 * (isLong ? 1 : -1);
-  const livePct = result.position_pnl?.unrealized_pnl_pct;
+  const liveUnrealized = (mid - entry) * qty * 100 * (isLong ? 1 : -1);
 
   // Current P/L
   if (Number.isFinite(liveUnrealized)) {
     out.push({
       tone: liveUnrealized >= 0 ? "up" : "down",
-      label: `${liveUnrealized >= 0 ? "Up" : "Down"} ${fmtCurrency(Math.abs(liveUnrealized))}${livePct != null ? ` (${livePct >= 0 ? "+" : ""}${livePct.toFixed(1)}%)` : ""} on the position right now`,
+      label: `${liveUnrealized >= 0 ? "Up" : "Down"} ${fmtCurrency(Math.abs(liveUnrealized))} on the position right now`,
       detail: `mid ${fmt(mid)} vs entry ${fmt(entry)} × ${qty}× × ${isLong ? "long" : "short"}`,
     });
   }

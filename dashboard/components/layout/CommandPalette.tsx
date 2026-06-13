@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CommandDialog,
@@ -22,6 +22,7 @@ import {
   LineChart,
   CandlestickChart,
   Layers,
+  ArrowRight,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { WatchlistItem } from "@/types";
@@ -42,6 +43,10 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  // Controlled input so we can show a "Open <typed> chart" fallthrough
+  // for any symbol the user types, even ones outside the hardcoded
+  // suggestions / watchlist.
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -62,14 +67,58 @@ export function CommandPalette() {
 
   const go = (href: string) => {
     setOpen(false);
+    setQuery("");
     router.push(href);
   };
 
+  // Normalize whatever the user typed into a chart-friendly ticker:
+  // uppercase, strip spaces/punctuation that ticker symbols never have.
+  // We keep '.' and '-' since legitimate IBKR tickers include them
+  // (e.g. BRK.B, RDS-A).
+  const typedSymbol = useMemo(() => {
+    return query
+      .toUpperCase()
+      .replace(/[^A-Z0-9.\-]/g, "")
+      .slice(0, 12);
+  }, [query]);
+
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search symbols or jump to a page…" className="text-sm" />
+      <CommandInput
+        value={query}
+        onValueChange={setQuery}
+        placeholder="Search symbols or jump to a page…"
+        className="text-sm"
+      />
       <CommandList className="max-h-[400px] overflow-y-auto">
-        <CommandEmpty>No results.</CommandEmpty>
+        <CommandEmpty>No results. Press Enter to open as a chart.</CommandEmpty>
+
+        {/* Free-text fallthrough: lets the user open a chart for any
+            ticker, not just the ones in PAGES / watchlist / SUGGESTED.
+            Top-of-list so Enter selects it by default while typing.
+            Value includes the literal query so cmdk's fuzzy filter
+            always keeps this item visible. */}
+        {typedSymbol && (
+          <CommandGroup heading="Open chart">
+            <CommandItem
+              value={`${typedSymbol} ${query} open chart symbol`}
+              onSelect={() => go(`/chart/${typedSymbol}`)}
+            >
+              <ArrowRight size={12} className="mr-2 text-accent" />
+              <span className="font-medium mr-2">{typedSymbol}</span>
+              <span className="text-text-muted truncate">chart</span>
+              <CommandShortcut>↵</CommandShortcut>
+            </CommandItem>
+            <CommandItem
+              value={`${typedSymbol} ${query} open chain options`}
+              onSelect={() => go(`/options/${typedSymbol}`)}
+            >
+              <Layers size={12} className="mr-2 text-text-muted" />
+              <span className="font-medium mr-2">{typedSymbol}</span>
+              <span className="text-text-muted truncate">options chain</span>
+            </CommandItem>
+          </CommandGroup>
+        )}
 
         <CommandGroup heading="Pages">
           {PAGES.map((p) => (

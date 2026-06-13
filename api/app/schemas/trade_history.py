@@ -4,8 +4,19 @@ from datetime import datetime
 
 
 _ALLOWED_SIDES = {"BUY", "SELL"}
-_ALLOWED_ORDER_TYPES = {"market", "limit", "stop", "stop_limit"}
 _ALLOWED_STATUSES = {"PENDING", "FILLED", "PARTIALLY_FILLED", "CANCELLED", "REJECTED", "CLOSED"}
+
+# IBKR / Flex emit short codes for order types. Translate the ones we know
+# back to our canonical lowercase form so they round-trip cleanly. Unknown
+# strings are accepted as-is — the column is free-form in the DB and we'd
+# rather surface the raw IBKR label than reject an entire response payload.
+_ORDER_TYPE_ALIASES = {
+    "lmt": "limit",
+    "mkt": "market",
+    "stp": "stop",
+    "stp_limit": "stop_limit",
+    "stp lmt": "stop_limit",
+}
 
 
 class TradeHistoryBase(BaseModel):
@@ -48,11 +59,10 @@ class TradeHistoryBase(BaseModel):
     @field_validator("order_type", mode="before")
     @classmethod
     def _norm_order_type(cls, v: Any) -> Any:
-        if isinstance(v, str):
-            v = v.strip().lower()
-        if v not in _ALLOWED_ORDER_TYPES:
-            raise ValueError(f"order_type must be one of {sorted(_ALLOWED_ORDER_TYPES)}")
-        return v
+        if not isinstance(v, str):
+            return v
+        s = v.strip().lower()
+        return _ORDER_TYPE_ALIASES.get(s, s) or "market"
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -144,12 +154,23 @@ class TradeHistoryUpdate(BaseModel):
 
 class TradeHistoryResponse(TradeHistoryBase):
     id: int = Field(..., description="Database row ID.")
+    # Historical rows legitimately include price-0 fills: option EXPIRATION /
+    # ASSIGNMENT / BookTrade events (and rare qty-0 corporate actions). The
+    # create-input constraints on TradeHistoryBase are deliberately strict
+    # (gt=0), but the *response* must reflect whatever is in the DB or the
+    # whole list payload 500s. Relax to ge=0 here.
+    quantity: float = Field(..., ge=0, le=1_000_000, description="Trade quantity (shares/contracts).")
+    price: float = Field(..., ge=0, le=1_000_000, description="Execution price per unit.")
     status: str = Field(..., description="Current trade status.")
     pnl: Optional[float] = Field(None, description="Realized P&L (USD), if closed.")
     pnl_percentage: Optional[float] = Field(None, description="Realized P&L percentage, if closed.")
     timestamp: datetime = Field(..., description="Execution timestamp.")
-    created_at: datetime = Field(..., description="Row insert time.")
-    updated_at: datetime = Field(..., description="Row last-update time.")
+    # created_at / updated_at aren't materialized in the trade_history
+    # schema today — they're optional on response so legacy rows (and
+    # Flex-imported rows) don't fail validation. Will become required
+    # if/when the columns are added.
+    created_at: Optional[datetime] = Field(None, description="Row insert time, if tracked.")
+    updated_at: Optional[datetime] = Field(None, description="Row last-update time, if tracked.")
 
     model_config = ConfigDict(
         populate_by_name=True,

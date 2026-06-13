@@ -47,11 +47,11 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
       <button
         type="button"
         onClick={openPalette}
-        className="flex items-center gap-2 h-7 w-72 px-3 rounded-md bg-surface-2 hover:bg-surface-3 hover:border-border transition-all text-text-muted border border-border/40 hover:shadow-sm"
+        className="flex items-center gap-2 h-6 w-64 px-3 rounded-md bg-surface-2 hover:bg-surface-3 hover:border-border transition-all text-text-muted border border-border/40 hover:shadow-sm"
         aria-label="Open command palette"
       >
         <Search size={12} className="shrink-0 text-text-secondary" />
-        <span className="text-[11px] flex-1 text-left">Search symbol, strategy, page…</span>
+        <span className="text-xs flex-1 text-left leading-normal whitespace-nowrap">Search symbol, strategy, page…</span>
         <kbd className="text-[10px] tabular font-mono bg-bg/80 px-1.5 py-0.5 rounded border border-border/60">⌘K</kbd>
       </button>
 

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { resolveApiBase } from "./api-base";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// API origin resolved at call time (env override → Coder port-swap →
+// same-origin). See lib/api-base.ts.
 
 let cached: boolean | null = null;
 let inflight: Promise<boolean> | null = null;
@@ -10,7 +12,7 @@ let inflight: Promise<boolean> | null = null;
 async function check(): Promise<boolean> {
   if (cached !== null) return cached;
   if (inflight) return inflight;
-  inflight = fetch(`${BASE}/api/chat/status`)
+  inflight = fetch(`${resolveApiBase()}/api/chat/status`)
     .then((r) => r.json())
     .then((j) => {
       cached = !!j.available;

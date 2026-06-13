@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, type OptionAnalyzeResult, type OptionsChain, type OptionAnalyzerTimeframe } from "@/lib/api";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -47,7 +46,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PnlInsights, UnderlyingInsights, OptionInsights } from "@/components/options/ChartInsights";
 import { AIRead } from "@/components/options/AIRead";
 
-export default function OptionsAnalyzerPage() {
+function AnalyzerContent() {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -184,21 +183,10 @@ export default function OptionsAnalyzerPage() {
         mid: result.option.mid, bid: result.option.bid, ask: result.option.ask,
         iv: result.option.iv,
       },
-      position_pnl: result.position_pnl,
       greeks: result.greeks,
       probability: result.probability,
       sigma_ranges: result.sigma_ranges,
-      // vol_context minus the daily history arrays — they'd dwarf the snapshot.
-      vol_context: {
-        realized_vol_30d: result.vol_context.realized_vol_30d,
-        realized_vol_90d: result.vol_context.realized_vol_90d,
-        iv_to_rv_ratio: result.vol_context.iv_to_rv_ratio,
-        iv_rank: result.vol_context.iv_rank,
-        iv_percentile: result.vol_context.iv_percentile,
-        iv_52w_high: result.vol_context.iv_52w_high,
-        iv_52w_low: result.vol_context.iv_52w_low,
-        underlying_iv_now: result.vol_context.underlying_iv_now,
-      },
+      vol_context: result.vol_context,
       liquidity: result.liquidity,
       underlying_trend: {
         rsi: result.underlying.rsi,
@@ -240,164 +228,134 @@ export default function OptionsAnalyzerPage() {
     <PageShell>
       <PageHeader title="Options Position Analyzer" />
 
-      {/* contract selector */}
-      <Card>
-        <CardContent className="p-3 flex flex-wrap items-end gap-3">
-          <div className="flex items-center gap-2">
-            <Logo symbol={symbol} size={28} />
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (pendingSym.trim()) {
-                  setSymbol(pendingSym.trim().toUpperCase());
-                  setStrike(null);
-                  setResult(null);
-                }
-              }}
-            >
-              <Input
-                value={pendingSym}
-                onChange={(e) => setPendingSym(e.target.value.toUpperCase())}
-                className="h-8 w-24 font-semibold tabular text-sm"
-              />
-            </form>
+      {/* ── Contract command bar ─────────────────────────────────────────
+          One dense terminal row: symbol → live spot/IV → expiry → strike →
+          side → qty → entry → actions, segmented by hairline dividers. */}
+      <div className="rounded-md border border-border bg-surface flex flex-wrap items-stretch overflow-hidden divide-x divide-border/60 shrink-0">
+        {/* Symbol */}
+        <div className="flex items-center gap-2 px-3 py-1.5">
+          <Logo symbol={symbol} size={22} />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (pendingSym.trim()) {
+                setSymbol(pendingSym.trim().toUpperCase());
+                setStrike(null);
+                setResult(null);
+              }
+            }}
+          >
+            <Input
+              value={pendingSym}
+              onChange={(e) => setPendingSym(e.target.value.toUpperCase())}
+              className="h-7 w-[68px] font-bold tabular text-sm px-2"
+              aria-label="Symbol"
+            />
+          </form>
+        </div>
+
+        {/* Live readout: spot + IV */}
+        {(spot != null || result) && (
+          <div className="flex items-center gap-3 px-3 text-[11px] tabular">
             {spot != null && (
-              <span className="text-[10px] text-text-muted">
-                spot <span className="text-text-primary tabular font-medium">${spot.toFixed(2)}</span>
-              </span>
+              <span><span className="text-text-muted">spot </span>
+                <span className="text-text-primary font-semibold">${spot.toFixed(2)}</span></span>
+            )}
+            {result && (
+              <span className="hidden sm:inline"><span className="text-text-muted">IV </span>
+                <span className="text-text-primary font-semibold">{(result.option.iv * 100).toFixed(1)}%</span></span>
             )}
           </div>
+        )}
 
-          <Field label="Expiry">
-            <Select value={expiry} onValueChange={setExpiry} disabled={!chain || chain.expirations.length === 0}>
-              <SelectTrigger className="h-8 w-32 tabular text-xs">
-                <SelectValue placeholder="—" />
-              </SelectTrigger>
+        {/* Expiry */}
+        <BarSeg label="Exp">
+          <Select value={expiry} onValueChange={setExpiry} disabled={!chain || chain.expirations.length === 0}>
+            <SelectTrigger className="h-7 w-[112px] tabular text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectContent>
+              {(chain?.expirations || []).map((e) => (
+                <SelectItem key={e} value={e} className="tabular text-xs">{fmtExp(e)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </BarSeg>
+
+        {/* Strike with steppers */}
+        <BarSeg label="Strike">
+          <div className="flex h-7">
+            <button
+              onClick={() => {
+                if (strike == null || strikes.length === 0) return;
+                const idx = strikes.findIndex((s) => s === strike);
+                if (idx > 0) setStrike(strikes[idx - 1]);
+              }}
+              disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) <= 0}
+              className="px-1.5 border border-border rounded-l-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] tabular"
+              title="Lower strike"
+            >◀</button>
+            <Select value={strike != null ? String(strike) : ""} onValueChange={(v: string) => setStrike(Number(v))} disabled={strikes.length === 0}>
+              <SelectTrigger className="h-7 w-[88px] tabular text-xs border-l-0 border-r-0 rounded-none"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
-                {(chain?.expirations || []).map((e) => (
-                  <SelectItem key={e} value={e} className="tabular text-xs">
-                    {fmtExp(e)}
-                  </SelectItem>
-                ))}
+                {strikes.map((s) => {
+                  const atm = spot != null && Math.abs(s - spot) === Math.min(...strikes.map((k) => Math.abs(k - spot!)));
+                  return (
+                    <SelectItem key={s} value={String(s)} className="tabular text-xs">{s}{atm ? " · ATM" : ""}</SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
-          </Field>
-
-          <Field label="Strike">
-            <div className="flex h-8">
-              <button
-                onClick={() => {
-                  if (strike == null || strikes.length === 0) return;
-                  const idx = strikes.findIndex((s) => s === strike);
-                  if (idx > 0) setStrike(strikes[idx - 1]);
-                }}
-                disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) <= 0}
-                className="px-2 border border-border rounded-l-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs tabular"
-                title="Lower strike"
-              >
-                ◀
-              </button>
-              <Select
-                value={strike != null ? String(strike) : ""}
-                onValueChange={(v: string) => setStrike(Number(v))}
-                disabled={strikes.length === 0}
-              >
-                <SelectTrigger className="h-8 w-24 tabular text-xs border-l-0 border-r-0 rounded-none">
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  {strikes.map((s) => {
-                    const atm = spot != null && Math.abs(s - spot) === Math.min(...strikes.map((k) => Math.abs(k - spot!)));
-                    return (
-                      <SelectItem key={s} value={String(s)} className="tabular text-xs">
-                        {s}{atm ? " · ATM" : ""}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              <button
-                onClick={() => {
-                  if (strike == null || strikes.length === 0) return;
-                  const idx = strikes.findIndex((s) => s === strike);
-                  if (idx >= 0 && idx < strikes.length - 1) setStrike(strikes[idx + 1]);
-                }}
-                disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) >= strikes.length - 1}
-                className="px-2 border border-border rounded-r-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs tabular"
-                title="Higher strike"
-              >
-                ▶
-              </button>
-            </div>
-          </Field>
-
-          <Field label="Right">
-            <div className="flex h-8 rounded-md border border-border overflow-hidden">
-              <button
-                onClick={() => setRight("C")}
-                className={cn(
-                  "px-3 text-xs font-medium transition-colors",
-                  right === "C" ? "bg-up/15 text-up" : "text-text-muted hover:bg-surface-2"
-                )}
-              >
-                CALL
-              </button>
-              <button
-                onClick={() => setRight("P")}
-                className={cn(
-                  "px-3 text-xs font-medium border-l border-border transition-colors",
-                  right === "P" ? "bg-down/15 text-down" : "text-text-muted hover:bg-surface-2"
-                )}
-              >
-                PUT
-              </button>
-            </div>
-          </Field>
-
-          <Field label="Qty (± = long/short)">
-            <Input
-              type="number"
-              value={qty}
-              onChange={(e) => setQty(Number(e.target.value || 0))}
-              className="h-8 w-20 tabular text-xs"
-            />
-          </Field>
-
-          <Field label="Entry $ / share">
-            <Input
-              type="number"
-              step="0.01"
-              value={entry}
-              onChange={(e) => setEntry(e.target.value)}
-              placeholder="mid"
-              className="h-8 w-24 tabular text-xs"
-            />
-          </Field>
-
-          <div className="ml-auto flex items-center gap-2">
-            {loading && <Loader2 size={14} className="animate-spin text-text-muted" />}
-            {result && (
-              <Button variant="outline" size="sm" onClick={copyAISnapshot} title="Copy LLM-ready position snapshot">
-                {copied ? <ClipboardCheck /> : <Clipboard />}
-                {copied ? "Copied" : "AI Snapshot"}
-              </Button>
-            )}
-            {chatAvailable && result && (
-              <Button variant="outline" size="sm" onClick={askAI}>
-                <Sparkles />
-                Ask AI
-              </Button>
-            )}
-            {result?.tradingagents_enabled && (
-              <Button variant="default" size="sm" onClick={goAgents}>
-                <Brain />
-                Multi-Agent Debate
-                <ChevronRight />
-              </Button>
-            )}
+            <button
+              onClick={() => {
+                if (strike == null || strikes.length === 0) return;
+                const idx = strikes.findIndex((s) => s === strike);
+                if (idx >= 0 && idx < strikes.length - 1) setStrike(strikes[idx + 1]);
+              }}
+              disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) >= strikes.length - 1}
+              className="px-1.5 border border-border rounded-r-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] tabular"
+              title="Higher strike"
+            >▶</button>
           </div>
-        </CardContent>
-      </Card>
+        </BarSeg>
+
+        {/* Side */}
+        <BarSeg label="Side">
+          <div className="flex h-7 rounded-md border border-border overflow-hidden">
+            <button onClick={() => setRight("C")}
+              className={cn("px-2.5 text-xs font-semibold transition-colors", right === "C" ? "bg-up/15 text-up" : "text-text-muted hover:bg-surface-2")}>CALL</button>
+            <button onClick={() => setRight("P")}
+              className={cn("px-2.5 text-xs font-semibold border-l border-border transition-colors", right === "P" ? "bg-down/15 text-down" : "text-text-muted hover:bg-surface-2")}>PUT</button>
+          </div>
+        </BarSeg>
+
+        {/* Qty */}
+        <BarSeg label="Qty ±">
+          <Input type="number" value={qty} onChange={(e) => setQty(Number(e.target.value || 0))}
+            className="h-7 w-16 tabular text-xs px-2" title="± = long / short" />
+        </BarSeg>
+
+        {/* Entry */}
+        <BarSeg label="Entry">
+          <Input type="number" step="0.01" value={entry} onChange={(e) => setEntry(e.target.value)}
+            placeholder="mid" className="h-7 w-[72px] tabular text-xs px-2" />
+        </BarSeg>
+
+        {/* Actions */}
+        <div className="ml-auto flex items-center gap-2 px-3 py-1.5">
+          {loading && <Loader2 size={14} className="animate-spin text-text-muted" />}
+          {result && (
+            <Button variant="outline" size="sm" onClick={copyAISnapshot} title="Copy LLM-ready position snapshot">
+              {copied ? <ClipboardCheck /> : <Clipboard />}
+              {copied ? "Copied" : "Snapshot"}
+            </Button>
+          )}
+          {chatAvailable && result && (
+            <Button variant="outline" size="sm" onClick={askAI}><Sparkles />Ask AI</Button>
+          )}
+          {result?.tradingagents_enabled && (
+            <Button variant="default" size="sm" onClick={goAgents}><Brain />Debate<ChevronRight /></Button>
+          )}
+        </div>
+      </div>
 
       {!canAnalyze ? (
         <EmptyState
@@ -419,6 +377,14 @@ export default function OptionsAnalyzerPage() {
   );
 }
 
+export default function OptionsAnalyzerPage() {
+  return (
+    <Suspense fallback={<AnalysisSkeleton />}>
+      <AnalyzerContent />
+    </Suspense>
+  );
+}
+
 function AnalysisBody({
   result,
   timeframe,
@@ -434,6 +400,15 @@ function AnalysisBody({
   const tone =
     advice.score >= 40 ? "up" : advice.score <= -40 ? "down" : Math.abs(advice.score) >= 15 ? "warning" : "muted";
   const TrendIcon = advice.score >= 0 ? TrendingUp : TrendingDown;
+  // Concrete action verdict (ADD/HOLD/SPEC/TRIM/EXIT) — the single most
+  // actionable element; colored independently of the raw score so EXIT/TRIM
+  // read red/amber even when the score is only mildly negative.
+  const action = advice.action ?? null;
+  const actionTone =
+    action === "ADD" ? "up"
+    : action === "EXIT" ? "down"
+    : action === "TRIM" || action === "SPEC" ? "warning"
+    : "muted";
   const ivPctOfRv = result.vol_context.iv_to_rv_ratio;
 
   // POP and expected move pulled up into the state strip so probability is
@@ -443,12 +418,6 @@ function AnalysisBody({
   const popTone = pop == null ? undefined : pop >= 0.6 ? "up" : pop >= 0.4 ? "warning" : "down";
   const emPct = result.sigma_ranges.expected_move_pct;
   const emAbs = result.sigma_ranges.expected_move_abs;
-
-  // Unrealized P&L — the first thing a trader reviewing their own position
-  // wants to see, so it leads the metric grid.
-  const upnl = result.position_pnl?.unrealized_pnl;
-  const upnlPct = result.position_pnl?.unrealized_pnl_pct;
-  const ivRank = result.vol_context.iv_rank;
 
   return (
     <>
@@ -461,7 +430,7 @@ function AnalysisBody({
           `shrink-0` keeps the band from collapsing under flex pressure
           when the page is tall — that was the root cause of "the section
           above P/L profile has small height". */}
-      <div className="relative rounded-md border border-border bg-surface px-5 py-4 overflow-hidden shrink-0">
+      <div className="relative rounded-md border border-border bg-surface overflow-hidden shrink-0">
         {/* Side rule — tone color, full-height. */}
         <div className={cn(
           "absolute left-0 top-0 bottom-0 w-1",
@@ -471,12 +440,10 @@ function AnalysisBody({
           tone === "muted" && "bg-border",
         )} />
 
-        <div className="flex items-center gap-4">
-          {/* Prominent score block — big tabular number with explicit
-              scale + tooltip so the user knows what -46 vs +42 actually
-              means. The pill underneath is the human-readable label. */}
+        {/* Verdict row: score + label + scale on the left, narrative right. */}
+        <div className="flex items-start gap-4 pl-5 pr-4 pt-3 pb-3">
           <div
-            className="shrink-0 flex flex-col items-center gap-1 min-w-[78px]"
+            className="shrink-0 flex flex-col gap-1.5 min-w-[150px]"
             title={
               "Verdict score on a -100 → +100 scale.\n" +
               "  ≤ -40 : strong close\n" +
@@ -486,12 +453,9 @@ function AnalysisBody({
               "  ≥ +40 : strong keep"
             }
           >
-            <span className="text-[9px] uppercase tracking-wider text-text-muted leading-none">
-              score
-            </span>
-            <div className="flex items-baseline gap-0.5">
+            <div className="flex items-baseline gap-2">
               <span className={cn(
-                "text-[26px] leading-none font-bold tabular tracking-tight",
+                "text-[32px] leading-none font-bold tabular tracking-tight",
                 tone === "up" && "text-up",
                 tone === "down" && "text-down",
                 tone === "warning" && "text-warning",
@@ -499,22 +463,35 @@ function AnalysisBody({
               )}>
                 {advice.score > 0 ? "+" : ""}{advice.score}
               </span>
-              <span className="text-[10px] tabular text-text-muted leading-none">
-                /100
+              {action && (
+                <span className={cn(
+                  "shrink-0 self-center px-2 py-0.5 rounded text-[13px] font-bold uppercase tracking-wide",
+                  actionTone === "up" && "bg-up/20 text-up",
+                  actionTone === "down" && "bg-down/20 text-down",
+                  actionTone === "warning" && "bg-warning/20 text-warning",
+                  actionTone === "muted" && "bg-surface-2 text-text-secondary",
+                )}>
+                  {action}
+                </span>
+              )}
+              <span className={cn(
+                "px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider font-semibold inline-flex items-center gap-1",
+                tone === "up" && "bg-up/15 text-up",
+                tone === "down" && "bg-down/15 text-down",
+                tone === "warning" && "bg-warning/15 text-warning",
+                tone === "muted" && "bg-surface-2 text-text-secondary",
+              )}>
+                <TrendIcon size={10} />
+                {advice.label}
               </span>
+              {advice.conviction && (
+                <span className="self-center text-[10px] text-text-muted lowercase whitespace-nowrap">
+                  {advice.conviction} conviction
+                </span>
+              )}
             </div>
-            <span className={cn(
-              "px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider font-semibold inline-flex items-center gap-1",
-              tone === "up" && "bg-up/15 text-up",
-              tone === "down" && "bg-down/15 text-down",
-              tone === "warning" && "bg-warning/15 text-warning",
-              tone === "muted" && "bg-surface-2 text-text-secondary",
-            )}>
-              <TrendIcon size={10} />
-              {advice.label}
-            </span>
-            {/* Mini scale bar — visual position of the score on -100..+100. */}
-            <div className="relative w-[68px] h-1 mt-0.5 bg-surface-2 rounded-full overflow-hidden">
+            {/* Scale bar -100..+100 with the score marker. */}
+            <div className="relative w-full h-1 bg-surface-2 rounded-full overflow-hidden">
               <div className="absolute top-0 bottom-0 left-1/2 w-px bg-text-muted/40" />
               <div
                 className={cn(
@@ -524,37 +501,23 @@ function AnalysisBody({
                   tone === "warning" && "bg-warning",
                   tone === "muted" && "bg-text-secondary",
                 )}
-                style={{
-                  left: `${Math.max(0, Math.min(100, ((advice.score + 100) / 200) * 100))}%`,
-                  transform: "translateX(-50%)",
-                }}
+                style={{ left: `${Math.max(0, Math.min(100, ((advice.score + 100) / 200) * 100))}%`, transform: "translateX(-50%)" }}
               />
             </div>
-            <div className="flex w-[68px] justify-between text-[8px] tabular text-text-muted/60 leading-none">
+            <div className="flex justify-between text-[8px] uppercase tracking-wider text-text-muted/60 leading-none">
               <span>close</span>
+              <span className="text-text-muted">{result.is_long ? "long" : "short"} {Math.abs(result.quantity)}×</span>
               <span>keep</span>
             </div>
           </div>
 
-          <p className="text-[12px] leading-relaxed text-text-secondary flex-1 min-w-0">
+          <p className="text-[12px] leading-relaxed text-text-secondary flex-1 min-w-0 self-center">
             {result.narrative}
           </p>
-          <span className="text-[10px] uppercase tracking-wider text-text-muted shrink-0 hidden md:inline self-start mt-0.5">
-            {result.is_long ? "long" : "short"} {Math.abs(result.quantity)}×
-          </span>
         </div>
 
-        {/* Stable grid for headline metrics — 5 cols mobile / 10 cols md+.
-            Avoids the flex-wrap chaos where inline label-value pairs
-            wrapped differently each width. P&L leads: it's the question
-            the user deep-linked from their position to answer. */}
-        <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-5 md:grid-cols-10 gap-x-4 gap-y-2">
-          <HeroMetric label="P&L"
-            value={upnl != null ? fmtCurrency(upnl) : "—"}
-            tone={upnl == null ? undefined : upnl >= 0 ? "up" : "down"}
-            hint={upnlPct != null
-              ? `${upnlPct >= 0 ? "+" : ""}${upnlPct.toFixed(1)}% vs entry $${result.option.entry_price.toFixed(2)} (mark ${result.position_pnl?.mark_source ?? "—"})`
-              : "Unrealized P&L vs entry"} />
+        {/* Headline metrics — one divided terminal strip; scrolls on narrow. */}
+        <div className="flex divide-x divide-border/60 border-t border-border/40 overflow-x-auto">
           <HeroMetric label="Spot" value={`$${result.spot.toFixed(2)}`}
             hint="Live underlying price." />
           <HeroMetric label="Mid"
@@ -566,12 +529,6 @@ function AnalysisBody({
             value={`${(result.option.iv * 100).toFixed(1)}%`}
             tone={ivPctOfRv != null && ivPctOfRv >= 1.3 ? "down" : ivPctOfRv != null && ivPctOfRv <= 0.8 ? "up" : undefined}
             hint={ivPctOfRv != null ? `${ivPctOfRv.toFixed(2)}× RV30 — ${ivPctOfRv >= 1.3 ? "rich" : ivPctOfRv <= 0.8 ? "cheap" : "fair"}` : "Implied volatility"} />
-          <HeroMetric label="IV Rank"
-            value={ivRank != null ? ivRank.toFixed(0) : "—"}
-            tone={ivRank == null ? undefined : ivRank >= 70 ? (result.is_long ? "down" : "up") : ivRank <= 20 ? (result.is_long ? "up" : "down") : undefined}
-            hint={ivRank != null
-              ? `52w IV range ${result.vol_context.iv_52w_low != null ? (result.vol_context.iv_52w_low * 100).toFixed(0) : "—"}–${result.vol_context.iv_52w_high != null ? (result.vol_context.iv_52w_high * 100).toFixed(0) : "—"}% · percentile ${result.vol_context.iv_percentile?.toFixed(0) ?? "—"} (IBKR IV index)`
-              : "IV rank unavailable — needs IBKR vol history"} />
           <HeroMetric label="DTE" value={`${result.dte}d`}
             tone={result.dte <= 7 ? "down" : result.dte <= 21 ? "warning" : undefined}
             hint="Days to expiration. ≤7d = gamma+theta zone." />
@@ -589,133 +546,150 @@ function AnalysisBody({
         </div>
       </div>
 
-      {/* ── P/L PROFILE (the visual) + WHY (audit column) ──────────────
-          Section announced by typography header, not by an outer Card. */}
-      <SectionHeader title="P/L Profile" hint={`${result.is_long ? "long" : "short"} ${Math.abs(result.quantity)}×`} />
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3 shrink-0">
-        <div className="rounded-md border border-border bg-surface overflow-hidden">
-          <div className="p-3">
-            <PnlProfileChart
-              spot={result.spot}
-              breakeven={result.breakeven}
-              strike={result.strike}
-              sigma1Low={result.sigma_ranges.sigma1_low}
-              sigma1High={result.sigma_ranges.sigma1_high}
-              sigma2Low={result.sigma_ranges.sigma2_low}
-              sigma2High={result.sigma_ranges.sigma2_high}
-              maxProfit={result.max_profit}
-              maxLoss={result.max_loss}
-              iv={result.option.iv}
-              dteYears={result.dte / 365.25}
-              right={result.right}
-              entryPrice={result.option.entry_price}
-              quantity={result.quantity}
-              isLong={result.is_long}
-              pop={result.probability.pop}
-              probItm={result.probability.prob_itm}
-              height={440}
-            />
-            <div className="grid grid-cols-3 mt-3 pt-2 border-t border-border/40 text-[10px] tabular">
-              <RiskCell label="Max profit"
-                value={result.max_profit != null && isFinite(result.max_profit) ? fmtCurrency(result.max_profit) : "∞"}
-                tone="up" />
-              <RiskCell label="Max loss"
-                value={result.max_loss != null && isFinite(result.max_loss) ? fmtCurrency(result.max_loss) : "−∞"}
-                tone="down" />
-              <RiskCell label="R / R"
-                value={rrRatio(result.max_profit, result.max_loss)} />
+      {/* ── PRIMARY VIEW — P/L · Underlying · Option behind one tab strip ──
+          Was three full-width stacked sections (a long scroll). Now one
+          switcher: each tab keeps its chart + interpretation rail side by
+          side, but the page only renders one at a time. */}
+      <div className="rounded-md border border-border bg-surface overflow-hidden shrink-0">
+        <Tabs defaultValue="pnl">
+          <TabsList className="!flex w-full overflow-x-auto rounded-none border-b border-border/60">
+            <TabsTrigger value="pnl">P/L Profile</TabsTrigger>
+            <TabsTrigger value="underlying">Underlying · {timeframe}</TabsTrigger>
+            <TabsTrigger value="option">Option contract</TabsTrigger>
+          </TabsList>
+
+          {/* P/L Profile */}
+          <TabsContent value="pnl" className="p-3">
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3">
+              <div>
+                <PnlProfileChart
+                  spot={result.spot}
+                  breakeven={result.breakeven}
+                  strike={result.strike}
+                  sigma1Low={result.sigma_ranges.sigma1_low}
+                  sigma1High={result.sigma_ranges.sigma1_high}
+                  sigma2Low={result.sigma_ranges.sigma2_low}
+                  sigma2High={result.sigma_ranges.sigma2_high}
+                  maxProfit={result.max_profit}
+                  maxLoss={result.max_loss}
+                  iv={result.option.iv}
+                  dteYears={result.dte / 365.25}
+                  right={result.right}
+                  entryPrice={result.option.entry_price}
+                  quantity={result.quantity}
+                  isLong={result.is_long}
+                  pop={result.probability.pop}
+                  probItm={result.probability.prob_itm}
+                  height={440}
+                />
+                <div className="grid grid-cols-3 mt-3 pt-2 border-t border-border/40 text-[10px] tabular">
+                  <RiskCell label="Max profit"
+                    value={result.max_profit != null && isFinite(result.max_profit) ? fmtCurrency(result.max_profit) : "∞"}
+                    tone="up" />
+                  <RiskCell label="Max loss"
+                    value={result.max_loss != null && isFinite(result.max_loss) ? fmtCurrency(result.max_loss) : "−∞"}
+                    tone="down" />
+                  <RiskCell label="R / R" value={rrRatio(result.max_profit, result.max_loss)} />
+                </div>
+              </div>
+
+              {/* interpretation rail */}
+              <div className="flex flex-col gap-3 min-w-0">
+                <div className="rounded-md border border-border bg-surface overflow-hidden">
+                  <PnlInsights result={result} />
+                </div>
+                <SignalInputsPanel result={result} />
+                <div className="rounded-md border border-border bg-surface flex-1">
+                  <div className="flex items-baseline gap-2 px-3 h-7 border-b border-border/60">
+                    <span className="text-[10px] uppercase tracking-wider text-text-muted">Rationale</span>
+                    <span className="ml-auto text-[10px] tabular text-text-muted">
+                      {advice.notes.length} {advice.notes.length === 1 ? "note" : "notes"}
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    <ul className="space-y-1.5">
+                      {advice.notes.map((n, i) => (
+                        <li key={i} className="flex items-start gap-2 text-[11px] text-text-secondary leading-snug">
+                          <ArrowRight size={11} className={cn(
+                            "shrink-0 mt-0.5",
+                            tone === "up" && "text-up",
+                            tone === "down" && "text-down",
+                            tone === "warning" && "text-warning",
+                            tone === "muted" && "text-text-muted",
+                          )} />
+                          <span>{n}</span>
+                        </li>
+                      ))}
+                      {advice.notes.length === 0 && (
+                        <li className="text-[11px] text-text-muted">No specific concerns flagged.</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </TabsContent>
 
-        {/* WHY rail — position read + signals + rationale stacked. Reads
-            beside the chart so the verdict has its receipts (per-rule
-            interpretation, signal inputs, free-text notes) visible
-            without scrolling. */}
-        <div className="flex flex-col gap-3 min-w-0">
-          <div className="rounded-md border border-border bg-surface overflow-hidden">
-            <PnlInsights result={result} />
-          </div>
-          <SignalInputsPanel result={result} />
-          <div className="rounded-md border border-border bg-surface flex-1">
-            <div className="flex items-baseline gap-2 px-3 h-7 border-b border-border/60">
-              <span className="text-[10px] uppercase tracking-wider text-text-muted">Rationale</span>
-              <span className="ml-auto text-[10px] tabular text-text-muted">
-                {advice.notes.length} {advice.notes.length === 1 ? "note" : "notes"}
-              </span>
+          {/* Underlying */}
+          <TabsContent value="underlying" className="p-3">
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3">
+              <UnderlyingAnalysisCard
+                result={result}
+                timeframe={timeframe}
+                onTimeframeChange={onTimeframeChange}
+                loading={loading}
+              />
+              <div className="rounded-md border border-border bg-surface overflow-hidden">
+                <UnderlyingInsights result={result} />
+              </div>
             </div>
-            <div className="p-3">
-              <ul className="space-y-1.5">
-                {advice.notes.map((n, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[11px] text-text-secondary leading-snug">
-                    <ArrowRight size={11} className={cn(
-                      "shrink-0 mt-0.5",
-                      tone === "up" && "text-up",
-                      tone === "down" && "text-down",
-                      tone === "warning" && "text-warning",
-                      tone === "muted" && "text-text-muted",
-                    )} />
-                    <span>{n}</span>
-                  </li>
-                ))}
-                {advice.notes.length === 0 && (
-                  <li className="text-[11px] text-text-muted">No specific concerns flagged.</li>
-                )}
-              </ul>
+          </TabsContent>
+
+          {/* Option contract */}
+          <TabsContent value="option" className="p-3">
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3">
+              <OptionAnalysisCard result={result} />
+              <div className="rounded-md border border-border bg-surface overflow-hidden">
+                <OptionInsights result={result} />
+              </div>
             </div>
-          </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* ── GREEKS — self-contained card with its own header bar so it
+          sits in the same visual family as the tabbed panels above
+          (no floating section divider breaking the rhythm). */}
+      <div className="rounded-md border border-border bg-surface overflow-hidden shrink-0">
+        <CardBar title="Greeks" hint="per-contract · exposure beneath" />
+        <div className="p-3">
+          <GreeksPanel
+            delta={result.greeks.delta}
+            gamma={result.greeks.gamma}
+            theta={result.greeks.theta}
+            vega={result.greeks.vega}
+            isLong={result.is_long}
+            quantity={result.quantity}
+          />
         </div>
       </div>
 
-      {/* ── UNDERLYING ──────────────────────────────────────────────────
-          Chart on the left, insights rail on the right. Side-by-side
-          means the trader reads the chart's interpretation while still
-          looking at the candles — no scroll-back-to-context tax. */}
-      <SectionHeader title="Underlying" hint={`${result.symbol} · ${timeframe}`} />
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3 shrink-0">
-        <UnderlyingAnalysisCard
-          result={result}
-          timeframe={timeframe}
-          onTimeframeChange={onTimeframeChange}
-          loading={loading}
-        />
-        <div className="rounded-md border border-border bg-surface overflow-hidden">
-          <UnderlyingInsights result={result} />
-        </div>
-      </div>
-
-      {/* ── OPTION CONTRACT ─────────────────────────────────────────── */}
-      <SectionHeader title="Option contract" hint={`${result.strike}${result.right} · BS-replay`} />
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3 shrink-0">
-        <OptionAnalysisCard result={result} />
-        <div className="rounded-md border border-border bg-surface overflow-hidden">
-          <OptionInsights result={result} />
-        </div>
-      </div>
-
-      {/* ── GREEKS ─────────────────────────────────────────────────────
-          Always visible — it's the analytic users check most often
-          (delta-vs-quantity, theta/day, vega exposure). Hiding it
-          behind a tab made it feel like content went missing. */}
-      <SectionHeader title="Greeks" hint="per-contract · exposure beneath" />
-      <div className="rounded-md border border-border bg-surface p-3 shrink-0">
-        <GreeksPanel
-          delta={result.greeks.delta}
-          gamma={result.greeks.gamma}
-          theta={result.greeks.theta}
-          vega={result.greeks.vega}
-          isLong={result.is_long}
-          quantity={result.quantity}
-        />
-      </div>
-
-      {/* ── ANALYTICS (tabbed) ─────────────────────────────────────────
-          Lower-priority detail panels live behind tabs so the page
-          doesn't scroll forever AND new analytics can be added later
-          without further bloat. One tab is open at a time. */}
-      <SectionHeader title="Analytics" hint="click a tab" />
+      {/* ── ANALYTICS — lower-priority detail behind a tab strip (the tab
+          strip is its own header, so no external divider needed). */}
       <AnalyticsTabs result={result} />
     </>
+  );
+}
+
+// A card's own header strip — title + optional hint, matching the rail
+// panels' header rows. Keeps every block self-contained instead of relying
+// on floating dividers between them.
+function CardBar({ title, hint }: { title: string; hint?: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-2 px-3 h-8 border-b border-border/60">
+      <span className="text-[11px] uppercase tracking-wider text-text-primary font-semibold">{title}</span>
+      {hint && <span className="text-[10px] uppercase tracking-wider text-text-muted">{hint}</span>}
+    </div>
   );
 }
 
@@ -732,8 +706,8 @@ function HeroMetric({
   hint?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1 min-w-0" title={hint}>
-      <span className="text-[10px] uppercase tracking-wider text-text-muted leading-none">
+    <div className="flex flex-col gap-1 min-w-[82px] flex-1 px-3 py-1.5" title={hint}>
+      <span className="text-[9px] uppercase tracking-wider text-text-muted leading-none">
         {label}
       </span>
       <span className={cn(
@@ -745,27 +719,6 @@ function HeroMetric({
       )}>
         {value}
       </span>
-    </div>
-  );
-}
-
-// ─── SectionHeader — typography divider between major sections. Reads
-//     as a clear visual anchor: bigger uppercase title, tone-tinted left
-//     accent rule, optional metadata on the right. Mid-density: bigger
-//     than the previous 10px hairline (which got lost in the page flow)
-//     but still typography-only — no card chrome.
-function SectionHeader({ title, hint }: { title: string; hint?: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 pl-2.5 border-l-2 border-accent">
-      <span className="text-[12px] uppercase tracking-wider text-text-primary font-semibold leading-none">
-        {title}
-      </span>
-      {hint && (
-        <span className="text-[10px] uppercase tracking-wider text-text-muted leading-none">
-          {hint}
-        </span>
-      )}
-      <div className="flex-1 h-px bg-border" />
     </div>
   );
 }
@@ -947,10 +900,12 @@ function AnalysisSkeleton() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+// One segment of the contract command bar: a tiny inline label + control,
+// padded to align with its dividers.
+function BarSeg({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+    <div className="flex items-center gap-2 px-3 py-1.5">
+      <span className="text-[9px] uppercase tracking-wider text-text-muted shrink-0">{label}</span>
       {children}
     </div>
   );
@@ -969,12 +924,9 @@ function buildAIPrompt(r: OptionAnalyzeResult): string {
     "",
     `Position: ${r.quantity} × ${r.strike} ${r.right} exp ${fmtExp(r.expiry)} (${r.dte}d)`,
     `Entry: $${r.option.entry_price.toFixed(2)}/share, current mid $${r.option.mid?.toFixed(2) ?? "—"}`,
-    r.position_pnl?.unrealized_pnl != null
-      ? `Unrealized P&L: ${r.position_pnl.unrealized_pnl >= 0 ? "+" : ""}$${r.position_pnl.unrealized_pnl.toFixed(0)} (${r.position_pnl.unrealized_pnl_pct! >= 0 ? "+" : ""}${r.position_pnl.unrealized_pnl_pct!.toFixed(1)}%)`
-      : `Unrealized P&L: unavailable`,
     `Spot: $${r.spot.toFixed(2)} (${r.distance_pct >= 0 ? "+" : ""}${r.distance_pct.toFixed(2)}% from strike)`,
     `Greeks: Δ=${r.greeks.delta?.toFixed(3) ?? "—"} Γ=${r.greeks.gamma?.toFixed(4) ?? "—"} Θ=${r.greeks.theta?.toFixed(3) ?? "—"} ν=${r.greeks.vega?.toFixed(3) ?? "—"}`,
-    `IV: ${(r.option.iv * 100).toFixed(1)}%${r.vol_context.iv_rank != null ? ` (IV rank ${r.vol_context.iv_rank.toFixed(0)}, percentile ${r.vol_context.iv_percentile?.toFixed(0) ?? "—"})` : ""}, breakeven $${r.breakeven.toFixed(2)}`,
+    `IV: ${(r.option.iv * 100).toFixed(1)}%, breakeven $${r.breakeven.toFixed(2)}`,
     `Underlying: EMA9 ${r.underlying.ema9?.toFixed(2) ?? "—"}, EMA21 ${r.underlying.ema21?.toFixed(2) ?? "—"}, EMA200 ${r.underlying.ema200?.toFixed(2) ?? "—"}, RSI ${r.underlying.rsi.toFixed(0)}, trend score ${r.underlying.trend_score}`,
     r.forecast
       ? `Model (Chronos 5d): median ${r.forecast.expected_return_pct >= 0 ? "+" : ""}${r.forecast.expected_return_pct.toFixed(1)}% (p10/p90 band ±${r.forecast.band_pct.toFixed(1)}%)`

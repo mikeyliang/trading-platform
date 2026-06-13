@@ -261,18 +261,38 @@ def _ticker_to_row(contract: Any, ticker: Any) -> Dict[str, Any]:
 
 
 async def _resolve_underlying_price(ib: Any, underlying: Any, symbol: str) -> Optional[float]:
-    """Best-effort spot lookup: snapshot first, daily-close bar fallback."""
+    """Best-effort spot lookup.
+
+    Primary source is the NautilusTrader node's live quote stream — the same
+    one ``/api/market/quote`` uses. It carries cash-index prices (RUT, SPX,
+    NDX) that the options client's own snapshot and historical-bar requests
+    can't obtain without a separate market-data subscription, so without this
+    the chain's ``underlying_price`` came back ``None`` for indices (and the
+    UI couldn't centre on ATM or rank contracts). Falls back to a direct
+    snapshot, then a daily-close bar (equities only — indices return nothing
+    here and the ETF-proxy fallback lives in the market router).
+    """
+    sym = symbol.upper()
+
+    # 1. Snapshot quote via get_quote. It qualifies the *correct* contract
+    #    (Index on its primary exchange for cash indices like RUT/SPX/NDX,
+    #    Stock via SMART otherwise) and uses frozen market data — so it
+    #    returns a last/bid/ask even for cash indices, which the NT bridge
+    #    can't stream and which have no historical-data subscription. This is
+    #    the same path /api/market/quote falls through to, and the reason RUT
+    #    now resolves where the old direct-snapshot/bars approach returned None.
     try:
-        ticker = ib.reqMktData(underlying, "", snapshot=True, regulatorySnapshot=False)
-        await asyncio.sleep(1.5)
-        for candidate in (ticker.last, ticker.marketPrice(), ticker.close, ticker.bid, ticker.ask):
-            v = _safe_price(candidate)
-            if v is not None:
-                ib.cancelMktData(underlying)
-                return v
-        ib.cancelMktData(underlying)
+        q = await get_quote(sym)
+        if q:
+            for key in ("last", "bid", "ask"):
+                v = _safe_price(q.get(key))
+                if v is not None:
+                    return v
     except Exception:  # noqa: BLE001
         pass
+
+    # 2. Daily-close bar — only helps equities (indices return nothing here;
+    #    the ETF-proxy fallback lives in the market router, not this layer).
     try:
         bars = await get_bars(symbol, "1d", 5)
         if bars:
@@ -296,34 +316,46 @@ def _select_strikes(strikes: List[float], spot: Optional[float], window: int) ->
     return sorted(by_dist)
 
 
-async def _wait_for_ticks(tickers: List[Any], deadline_s: float, ratio: float) -> None:
+async def _wait_for_ticks(tickers: List[Any], deadline_s: float, ratio: float,
+                          require_price: bool = False) -> None:
     """Poll tickers until ``ratio`` of them have usable data or ``deadline_s`` elapses.
 
     A ticker counts as populated when it has any of bid, ask, last, or model
     delta — that covers both quoted contracts and ones for which only Greeks
     are streaming.
+
+    ``require_price=True`` only counts a ticker once it has an actual bid/ask/
+    last — Greeks alone don't satisfy it. Used by the single-contract snapshot
+    so the analyzer waits for the real mark (which it calibrates IV against)
+    instead of bailing the instant Greeks arrive but the quote hasn't. We
+    still return on ``deadline_s`` so a genuinely quote-less contract doesn't
+    hang the request — the caller falls back to Greeks/model from there.
     """
     if not tickers:
         return
     target = max(1, int(len(tickers) * ratio))
     elapsed = 0.0
     step = 0.5
+    ready_check = _ticker_has_price if require_price else _ticker_has_data
     while elapsed < deadline_s:
         await asyncio.sleep(step)
         elapsed += step
         ready = 0
         for t in tickers:
-            if _ticker_has_data(t):
+            if ready_check(t):
                 ready += 1
                 if ready >= target:
                     return
 
 
+def _ticker_has_price(t: Any) -> bool:
+    """True once any of bid/ask/last is a real number (no Greeks-only)."""
+    return any(_safe_price(f) is not None for f in (t.bid, t.ask, t.last))
+
+
 def _ticker_has_data(t: Any) -> bool:
-    for f in (t.bid, t.ask, t.last):
-        v = _safe_price(f)
-        if v is not None:
-            return True
+    if _ticker_has_price(t):
+        return True
     greeks = t.modelGreeks or t.bidGreeks or t.askGreeks
     if greeks and _safe(getattr(greeks, "delta", None)) is not None:
         return True
@@ -367,6 +399,124 @@ def _empty_chain(symbol: str) -> Dict[str, Any]:
         "puts": [],
         "underlying_price": None,
     }
+
+
+# Earnings dates are cached longer than chains — they move at most once a
+# quarter, so a re-fetch on every chain click would be pure waste.
+EARNINGS_CACHE_TTL_S = 6 * 3600.0
+_earnings_cache: Dict[str, tuple[float, Dict[str, Any]]] = {}
+
+
+async def get_next_earnings(symbol: str) -> Dict[str, Any]:
+    """Next earnings date for ``symbol`` via IBKR Wall Street Horizon (WSH).
+
+    Shape: ``{symbol, next_date: "YYYYMMDD"|None, source: "wsh"|"unavailable"}``.
+
+    WSH event data requires a (paid) market-data subscription on the account.
+    Without it IBKR returns nothing or errors — we degrade gracefully to
+    ``source="unavailable"`` so the UI can simply hide the earnings badge
+    rather than break. Indices (RUT, SPX, …) have no earnings; we short-circuit
+    those to ``unavailable`` without a round-trip.
+    """
+    sym = symbol.upper()
+    out: Dict[str, Any] = {"symbol": sym, "next_date": None, "source": "unavailable"}
+
+    # Cash-settled indices don't report earnings.
+    if sym.lstrip("^") in _INDEX_SYMBOLS:
+        return out
+
+    cached = _earnings_cache.get(sym)
+    if cached and (asyncio.get_event_loop().time() - cached[0]) < EARNINGS_CACHE_TTL_S:
+        return cached[1]
+
+    try:
+        from ib_async import WshEventData  # type: ignore
+    except Exception:  # noqa: BLE001
+        return out
+
+    ib = await _client.get()
+    if ib is None:
+        return out
+
+    try:
+        from datetime import date, timedelta
+
+        underlying = _resolve_contract(sym)
+        await ib.qualifyContractsAsync(underlying)
+        con_id = getattr(underlying, "conId", None)
+        if not con_id:
+            return out
+
+        # WSH requires a metadata request before event data can flow. It's a
+        # no-op when already initialised; swallow failures (no subscription).
+        try:
+            await asyncio.wait_for(ib.reqWshMetaDataAsync(), timeout=8.0)
+        except Exception:  # noqa: BLE001
+            pass
+
+        today = date.today()
+        end = today + timedelta(days=420)  # next ~4 quarters
+        ev = WshEventData(
+            conId=con_id,
+            startDate=today.strftime("%Y%m%d"),
+            endDate=end.strftime("%Y%m%d"),
+            totalLimit=25,
+        )
+        raw = await asyncio.wait_for(ib.getWshEventDataAsync(ev), timeout=10.0)
+        today_str = today.strftime("%Y%m%d")
+        future = sorted(d for d in _parse_wsh_earnings(raw) if d >= today_str)
+        if future:
+            out["next_date"] = future[0]
+            out["source"] = "wsh"
+    except Exception as e:  # noqa: BLE001
+        logger.debug("WSH earnings fetch failed for %s: %s", sym, e)
+
+    _earnings_cache[sym] = (asyncio.get_event_loop().time(), out)
+    return out
+
+
+def _parse_wsh_earnings(raw: Any) -> List[str]:
+    """Best-effort extraction of earnings dates (YYYYMMDD) from a WSH payload.
+
+    WSH event JSON is vendor-shaped and varies by entitlement, so rather than
+    bind to one schema we walk the structure: any dict that looks earnings-
+    related contributes every date-like string it contains. Robustness beats
+    precision here — the worst case is an empty list, which the caller treats
+    as 'unavailable'.
+    """
+    import json
+    import re
+
+    if not raw:
+        return []
+    try:
+        obj = json.loads(raw) if isinstance(raw, str) else raw
+    except Exception:  # noqa: BLE001
+        return []
+
+    date_re = re.compile(r"(\d{4})[-/]?(\d{2})[-/]?(\d{2})")
+    found: List[str] = []
+
+    def _walk(node: Any, earnings_ctx: bool) -> None:
+        if isinstance(node, dict):
+            blob = " ".join(
+                str(v) for v in node.values() if isinstance(v, (str, int, float))
+            ).lower()
+            is_earn = earnings_ctx or "earning" in blob or "eps" in blob.split()
+            for v in node.values():
+                _walk(v, is_earn)
+            if is_earn:
+                for v in node.values():
+                    if isinstance(v, str):
+                        m = date_re.search(v)
+                        if m:
+                            found.append(f"{m.group(1)}{m.group(2)}{m.group(3)}")
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item, earnings_ctx)
+
+    _walk(obj, False)
+    return found
 
 
 _INDEX_SYMBOLS = {"RUT": "RUSSELL", "SPX": "CBOE", "NDX": "NASDAQ", "DJX": "CBOE", "VIX": "CBOE"}
@@ -424,7 +574,12 @@ async def get_bars(symbol: str, timeframe: str, days: int) -> list[dict]:
             endDateTime="",
             durationStr=duration,
             barSizeSetting=bar_size,
-            whatToShow="TRADES" if not isinstance(contract, Index) else "MIDPOINT",
+            # Indices have no bid/ask, so MIDPOINT historical comes back empty
+            # ("Error 162: No historical market data for …/IND@… MidPoint") and
+            # we'd needlessly fall back to the ETF proxy. IBKR serves the index
+            # level itself under TRADES — verified live: RUT/RUSSELL returns
+            # real bars (~2919) on TRADES, zero on MIDPOINT.
+            whatToShow="TRADES",
             useRTH=True,
             formatDate=2,
         )
@@ -447,176 +602,6 @@ async def get_bars(symbol: str, timeframe: str, days: int) -> list[dict]:
             "low": round(float(b.low), 2),
             "close": round(float(b.close), 2),
             "volume": float(b.volume) if b.volume else 0.0,
-        })
-    return out
-
-
-# Historical option bars cache. Real option history barely changes within a
-# couple of minutes; the analyzer re-runs on every qty/entry tweak, so a
-# short TTL keeps those re-runs off the gateway.
-_OPTION_BARS_TTL_S = 120.0
-_option_bars_cache: Dict[tuple, tuple[float, list]] = {}
-
-
-async def get_option_bars(
-    symbol: str,
-    strike: float,
-    expiry: str,
-    right: str,
-    timeframe: str,
-    days: int,
-) -> list[dict]:
-    """Real historical OHLCV bars for a specific option contract.
-
-    Unlike the synthetic BS-replay the analyzer falls back to, these are
-    actual traded prices from IBKR — they embody the contract's real IV
-    path, not "IV frozen at today's level". TRADES first (real prints),
-    MIDPOINT fallback for illiquid contracts that quote but rarely trade.
-    Empty list on failure so callers can degrade to the synthetic series.
-    """
-    sym_u = symbol.upper()
-    key = (sym_u, float(strike), expiry, right.upper(), timeframe, days)
-    cached = _option_bars_cache.get(key)
-    if cached and (asyncio.get_event_loop().time() - cached[0]) < _OPTION_BARS_TTL_S:
-        return cached[1]
-
-    ib = await _client.get()
-    if ib is None:
-        return []
-    try:
-        meta = await _get_chain_meta(ib, sym_u)
-        if meta is None:
-            return []
-        exchange, trading_class, multiplier = meta
-        opt = Option(sym_u, expiry, float(strike), right.upper(), exchange, multiplier, "USD")
-        opt.tradingClass = trading_class
-        qualified = await ib.qualifyContractsAsync(opt)
-        if not qualified or not getattr(qualified[0], "conId", 0):
-            return []
-        contract = qualified[0]
-
-        bar_size = _BAR_SIZE.get(timeframe, "1 day")
-        duration = _duration_for(timeframe, days)
-        bars = None
-        for what in ("TRADES", "MIDPOINT"):
-            try:
-                bars = await ib.reqHistoricalDataAsync(
-                    contract,
-                    endDateTime="",
-                    durationStr=duration,
-                    barSizeSetting=bar_size,
-                    whatToShow=what,
-                    useRTH=True,
-                    formatDate=2,
-                )
-            except Exception as e:  # noqa: BLE001
-                logger.debug("option bars %s failed for %s %s %s%s: %s",
-                             what, sym_u, expiry, strike, right, e)
-                bars = None
-            if bars:
-                break
-        out = _bars_to_dicts(bars, price_decimals=4)
-        if out:
-            _option_bars_cache[key] = (asyncio.get_event_loop().time(), out)
-        return out
-    except Exception as e:  # noqa: BLE001
-        logger.warning("get_option_bars(%s %s %s%s) failed: %s",
-                       sym_u, expiry, strike, right, e)
-        return []
-
-
-# Vol-history cache. IV/HV are daily series — refreshing more than every
-# 15 minutes buys nothing.
-_VOL_HISTORY_TTL_S = 900.0
-_vol_history_cache: Dict[str, tuple[float, Dict[str, Any]]] = {}
-
-
-async def get_vol_history(symbol: str, days: int = 365) -> Dict[str, Any]:
-    """Daily implied-vol and historical-vol series for the underlying.
-
-    IBKR exposes both directly via reqHistoricalData:
-      - OPTION_IMPLIED_VOLATILITY: the exchange-computed ~30d ATM IV index
-        for the underlying (same series TWS charts as "IV").
-      - HISTORICAL_VOLATILITY: 30d close-to-close realized vol.
-
-    Both arrive as OHLC bars whose close is the vol level (annualized
-    decimal). This is the real IV history the analyzer previously had to
-    proxy with rolling realized vol. Shape:
-      {"iv": [{time, value}], "hv": [{time, value}]}  — empty lists on failure.
-    """
-    sym_u = symbol.upper()
-    cached = _vol_history_cache.get(sym_u)
-    if cached and (asyncio.get_event_loop().time() - cached[0]) < _VOL_HISTORY_TTL_S:
-        return cached[1]
-
-    ib = await _client.get()
-    if ib is None:
-        return {"iv": [], "hv": []}
-
-    contract = _resolve_contract(sym_u)
-    try:
-        await ib.qualifyContractsAsync(contract)
-    except Exception as e:  # noqa: BLE001
-        logger.warning("get_vol_history qualify %s failed: %s", sym_u, e)
-        return {"iv": [], "hv": []}
-
-    years = max(1, min((days + 364) // 365, 2))
-
-    async def _fetch(what: str) -> list:
-        try:
-            bars = await ib.reqHistoricalDataAsync(
-                contract,
-                endDateTime="",
-                durationStr=f"{years} Y",
-                barSizeSetting="1 day",
-                whatToShow=what,
-                useRTH=True,
-                formatDate=2,
-            )
-        except Exception as e:  # noqa: BLE001
-            logger.debug("get_vol_history %s/%s failed: %s", sym_u, what, e)
-            return []
-        out = []
-        for b in bars or []:
-            v = _safe(b.close)
-            if v is None or v <= 0:
-                continue
-            ts = b.date
-            if hasattr(ts, "timestamp"):
-                t = int(ts.timestamp())
-            else:
-                from datetime import datetime as _dt
-                t = int(_dt(ts.year, ts.month, ts.day).timestamp())
-            out.append({"time": t, "value": round(float(v), 4)})
-        return out
-
-    iv_series, hv_series = await asyncio.gather(
-        _fetch("OPTION_IMPLIED_VOLATILITY"),
-        _fetch("HISTORICAL_VOLATILITY"),
-    )
-    result = {"iv": iv_series, "hv": hv_series}
-    if iv_series or hv_series:
-        _vol_history_cache[sym_u] = (asyncio.get_event_loop().time(), result)
-    return result
-
-
-def _bars_to_dicts(bars, price_decimals: int = 2) -> list[dict]:
-    """Convert ib_async BarData list to the app's bar-dict shape."""
-    out = []
-    for b in bars or []:
-        ts = b.date
-        if hasattr(ts, "timestamp"):
-            t = int(ts.timestamp())
-        else:
-            from datetime import datetime as _dt
-            t = int(_dt(ts.year, ts.month, ts.day).timestamp())
-        out.append({
-            "time": t,
-            "open": round(float(b.open), price_decimals),
-            "high": round(float(b.high), price_decimals),
-            "low": round(float(b.low), price_decimals),
-            "close": round(float(b.close), price_decimals),
-            "volume": float(b.volume) if b.volume and b.volume > 0 else 0.0,
         })
     return out
 
@@ -765,11 +750,50 @@ async def get_account_summary() -> Optional[Dict[str, Any]]:
     currency = "USD"
     account_id: Optional[str] = None
 
+    # accountValues() is fed by reqAccountUpdates which ib_async auto-issues on
+    # connect — so the wrapper cache is populated and the call is non-blocking.
+    # accountSummaryAsync is a one-shot req/resp that occasionally times out
+    # silently; treat it as a top-up only.
+    raw_values: List[Any] = []
+    try:
+        raw_values.extend(ib.accountValues())
+    except Exception as e:  # noqa: BLE001
+        logger.debug("ib.accountValues() raised: %s", e)
+    try:
+        raw_values.extend(await ib.accountSummaryAsync())
+    except Exception as e:  # noqa: BLE001
+        logger.debug("accountSummaryAsync raised: %s", e)
+
+    # One IBKR login can expose several managed accounts (e.g. a funded
+    # trading account plus a near-empty secondary). accountValues() emits one
+    # row per (tag, account, currency); merging them blindly let the secondary
+    # account's tiny balances clobber the primary's — BuyingPower / cash /
+    # NetLiquidation all collapsed to the empty account's value. Pin every tag
+    # to a single account: the one with the largest NetLiquidation, i.e. the
+    # funded account that actually holds the positions shown on the dashboard.
+    def _pick_primary_account(values: List[Any]) -> Optional[str]:
+        netliq: Dict[str, float] = {}
+        for v in values:
+            if v.tag != "NetLiquidation":
+                continue
+            acct = getattr(v, "account", "") or ""
+            if not acct or acct.upper() == "ALL":
+                continue
+            try:
+                val = float(v.value)
+            except (TypeError, ValueError):
+                continue
+            netliq[acct] = max(netliq.get(acct, float("-inf")), val)
+        return max(netliq, key=netliq.get) if netliq else None
+
+    target_account = _pick_primary_account(raw_values)
+
     def _absorb(values: List[Any]) -> None:
-        """Merge account values into the tag dict. IBKR emits multiple rows
-        per tag (one per currency, plus -C/-S segment variants). We prefer
-        the USD/base-tag entry; segment suffixes are kept under their own
-        keys so callers can still see breakdowns if they want.
+        """Merge a single account's values into the tag dict. IBKR emits
+        multiple rows per tag (one per currency / segment); we prefer the
+        explicit USD entry, then BASE/empty aggregates. Rows belonging to a
+        managed account other than ``target_account`` are skipped so a
+        secondary account can't clobber the primary's balances.
 
         Order of preference for the unsuffixed tag (e.g. ``NetLiquidation``):
           1. an explicit USD entry (these reflect the consolidated USD view),
@@ -780,8 +804,11 @@ async def get_account_summary() -> Optional[Dict[str, Any]]:
         priority = {"USD": 3, "": 2, "BASE": 2}
         chosen_priority: Dict[str, int] = {}
         for v in values:
-            if account_id is None and getattr(v, "account", None):
-                account_id = v.account
+            acct = getattr(v, "account", "") or ""
+            if target_account and acct and acct != target_account:
+                continue
+            if account_id is None and acct and acct.upper() != "ALL":
+                account_id = acct
             c = getattr(v, "currency", "") or ""
             if c and c != "BASE":
                 currency = c
@@ -794,18 +821,7 @@ async def get_account_summary() -> Optional[Dict[str, Any]]:
                 tags[v.tag] = val
                 chosen_priority[v.tag] = p
 
-    # accountValues() is fed by reqAccountUpdates which ib_async auto-issues on
-    # connect — so the wrapper cache is populated and the call is non-blocking.
-    # accountSummaryAsync is a one-shot req/resp that occasionally times out
-    # silently; treat it as a top-up only.
-    try:
-        _absorb(ib.accountValues())
-    except Exception as e:  # noqa: BLE001
-        logger.debug("ib.accountValues() raised: %s", e)
-    try:
-        _absorb(await ib.accountSummaryAsync())
-    except Exception as e:  # noqa: BLE001
-        logger.debug("accountSummaryAsync raised: %s", e)
+    _absorb(raw_values)
 
     if not tags:
         logger.warning("get_account_summary: ib_async returned no account tags "
@@ -874,7 +890,9 @@ _chain_meta_cache: Dict[str, tuple[str, str, str]] = {}  # symbol → (exchange,
 # Single-contract snapshot wait deadline. The chain snapshot uses 8s because
 # it waits for ~30 contracts in parallel; one contract usually populates in
 # under 2s, so 4s is a healthy upper bound that doesn't punish cold calls.
-_SINGLE_TICK_DEADLINE_S = 4.0
+_SINGLE_TICK_DEADLINE_S = 6.0
+# Historical option-bar requests are heavier than a snapshot; give IBKR room.
+_OPTION_BARS_DEADLINE_S = 15.0
 
 
 async def _get_chain_meta(ib: Any, symbol: str) -> Optional[tuple[str, str, str]]:
@@ -987,14 +1005,109 @@ async def _fetch_option_snapshot(
             return None
         contract = qualified[0]
 
-        # Snapshots auto-cancel; no need to track / cancel manually.
+        # Snapshots auto-cancel; no need to track / cancel manually. Wait for
+        # an actual price (not just Greeks) so the analyzer gets the live mark
+        # it calibrates IV against — a quote-less first call otherwise degrades
+        # the whole card to a model guess.
         ticker = ib.reqMktData(contract, "", snapshot=True, regulatorySnapshot=False)
-        await _wait_for_ticks([ticker], deadline_s=_SINGLE_TICK_DEADLINE_S, ratio=1.0)
+        await _wait_for_ticks([ticker], deadline_s=_SINGLE_TICK_DEADLINE_S,
+                              ratio=1.0, require_price=True)
         return _ticker_to_row(contract, ticker)
     except Exception as e:  # noqa: BLE001
         logger.exception("get_option_snapshot(%s %s %s%s) failed: %s",
                          sym_u, expiry, strike, right_u, e)
         return None
+
+
+# Real per-contract option price history. Cached for 5 min per (contract,
+# bar_size, duration) — the analyzer re-requests on every qty/entry tweak.
+_OPTION_BARS_TTL_S = 300.0
+_option_bars_cache: Dict[tuple, tuple[float, list[dict]]] = {}
+
+
+async def get_option_bars(
+    symbol: str,
+    strike: float,
+    expiry: str,
+    right: str,
+    bar_size: str = "1 hour",
+    duration: str = "90 D",
+    what_to_show: str = "MIDPOINT",
+) -> list[dict]:
+    """Real historical OHLCV bars for a single option contract from IBKR.
+
+    IBKR does not serve *daily* ("EODChart") historical data for options on
+    this account — `reqHistoricalData` with a '1 day' bar size fails with
+    error 162. Intraday bar sizes DO work and go back ~81 calendar days, so
+    callers must pass an intraday ``bar_size`` (1 hour, 30 mins, …). MIDPOINT
+    is the default ``what_to_show`` — it's the fair value (mean of bid/ask),
+    populated even for contracts that rarely trade, and its last bar lines up
+    with the live mid. Returns [] on any failure so the caller can fall back
+    to a modeled series.
+    """
+    sym_u = symbol.upper()
+    right_u = right.upper()
+    key = (sym_u, float(strike), expiry, right_u, bar_size, duration, what_to_show)
+
+    cached = _option_bars_cache.get(key)
+    if cached is not None:
+        loop = asyncio.get_event_loop()
+        if (loop.time() - cached[0]) < _OPTION_BARS_TTL_S:
+            return cached[1]
+
+    ib = await _client.get()
+    if ib is None:
+        return []
+    try:
+        try:
+            ib.reqMarketDataType(2)  # frozen — last-known when closed
+        except Exception:  # noqa: BLE001
+            pass
+        meta = await _get_chain_meta(ib, sym_u)
+        if meta is None:
+            return []
+        exchange, trading_class, multiplier = meta
+        opt = Option(sym_u, expiry, float(strike), right_u, exchange, multiplier, "USD")
+        opt.tradingClass = trading_class
+        qualified = await ib.qualifyContractsAsync(opt)
+        if not qualified or not getattr(qualified[0], "conId", 0):
+            return []
+        contract = qualified[0]
+        bars = await asyncio.wait_for(
+            ib.reqHistoricalDataAsync(
+                contract,
+                endDateTime="",
+                durationStr=duration,
+                barSizeSetting=bar_size,
+                whatToShow=what_to_show,
+                useRTH=True,
+                formatDate=2,
+            ),
+            timeout=_OPTION_BARS_DEADLINE_S,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.info("get_option_bars %s %s %s%s (%s/%s) -> none: %s",
+                    sym_u, expiry, strike, right_u, bar_size, what_to_show, e)
+        return []
+    out: list[dict] = []
+    for b in bars or []:
+        ts = b.date
+        if hasattr(ts, "timestamp"):
+            t = int(ts.timestamp())
+        else:
+            from datetime import datetime as _dt
+            t = int(_dt(ts.year, ts.month, ts.day).timestamp())
+        out.append({
+            "time": t,
+            "open": round(float(b.open), 4),
+            "high": round(float(b.high), 4),
+            "low": round(float(b.low), 4),
+            "close": round(float(b.close), 4),
+            "volume": float(b.volume) if b.volume else 0.0,
+        })
+    if out:
+        _option_bars_cache[key] = (asyncio.get_event_loop().time(), out)
+    return out
 
 
 async def get_option_mark(conid: int) -> Optional[float]:

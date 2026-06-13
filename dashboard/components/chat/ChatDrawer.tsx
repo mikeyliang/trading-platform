@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
+import { resolveApiBase } from "@/lib/api-base";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,8 @@ interface ChatStatus {
   model: string;
 }
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// API origin resolved at call time (env override → Coder port-swap →
+// same-origin). See lib/api-base.ts.
 
 export function ChatDrawer() {
   const available = useChatAvailable();
@@ -71,7 +73,7 @@ export function ChatDrawer() {
 
   useEffect(() => {
     if (open && !status) {
-      fetch(`${BASE}/api/chat/status`)
+      fetch(`${resolveApiBase()}/api/chat/status`)
         .then((r) => r.json())
         .then(setStatus)
         .catch(() => setStatus({ available: false, model: "unknown" }));
@@ -100,7 +102,7 @@ export function ChatDrawer() {
     abortRef.current = ac;
 
     try {
-      const resp = await fetch(`${BASE}/api/chat`, {
+      const resp = await fetch(`${resolveApiBase()}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

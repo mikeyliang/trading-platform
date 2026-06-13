@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { Trade } from "@/types";
-import { Clock } from "lucide-react";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
@@ -25,9 +25,9 @@ export default function TradeHistoryPage() {
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <div className="flex items-center gap-2">
-        <Clock size={18} className="text-text-muted" />
+        
         <h1 className="text-lg font-semibold">Trade History</h1>
-        <Badge variant="muted" className="ml-2">{trades.length}</Badge>
+        <Badge variant="default" className="ml-2">{trades.length}</Badge>
       </div>
 
       {loading ? (

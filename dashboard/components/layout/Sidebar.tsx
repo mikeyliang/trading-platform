@@ -38,8 +38,8 @@ const market: NavEntry[] = [
 ];
 
 const research: NavEntry[] = [
-  { href: "/backtest",        icon: FlaskConical, label: "Backtest" },
-  { href: "/agents",          icon: Bot,          label: "AI Debate" },
+  { href: "/backtest",        icon: FlaskConical, label: "Simulate" },
+  { href: "/bot",             icon: Bot,          label: "Bot" },
   { href: "/trade/history",   icon: Clock,        label: "Trade History" },
   { href: "/monitor/journal", icon: BookOpen,     label: "Journal" },
 ];

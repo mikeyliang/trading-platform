@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useChartHover } from "@/lib/useChartHover";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { cn } from "@/lib/utils";
 import { CHART } from "@/lib/chartTheme";
 import {
@@ -12,14 +11,13 @@ import {
 } from "@/lib/bs";
 
 interface Props {
-  /** Live underlying price — drives the spot marker and is the center of
-   *  the sampled price axis. */
+  /** Live underlying price — drives the spot marker and centres the axis. */
   spot: number;
   /** Break-even at expiry. Annotated on the zero line. */
   breakeven: number;
   /** Strike. Annotated as a vertical line. */
   strike: number;
-  /** ±1σ band from the backend forecast — drawn as faint top-edge ticks. */
+  /** ±1σ band from the backend forecast — drawn as a shaded vertical band. */
   sigma1Low: number | null;
   sigma1High: number | null;
   /** ±2σ (unused but kept in the API for future widening). */
@@ -28,8 +26,7 @@ interface Props {
   /** Static max/min reference lines. */
   maxProfit: number | null;
   maxLoss: number | null;
-  /** Position + contract details — fed to the Black-Scholes pricer when
-   *  the user drags the sliders. */
+  /** Position + contract details — fed to the Black-Scholes pricer. */
   iv: number;
   dteYears: number;
   right: "C" | "P";
@@ -44,19 +41,15 @@ interface Props {
 
 /** OptionStrat-style interactive P/L profile.
  *
- *  Three sliders below the chart drive the curve:
- *   - **Date**       (0d → DTE): which future date the curve evaluates at.
- *                    0 = today; DTE = expiry intrinsic.
- *   - **IV**         (50% → 200% of current): what-if implied vol moved.
- *   - **Range**      (±10% → ±50% of spot): X-axis zoom.
+ *  The signature interaction is a **draggable price cursor**: grab anywhere on
+ *  the chart and slide to read the position's P/L at that underlying price,
+ *  for the date + IV the sliders below are set to. Two curves: the bright
+ *  "live" curve (today, or whatever future date the Date slider picks) and a
+ *  faded dashed expiry-intrinsic reference behind it. Profit is shaded green
+ *  above the zero line, loss red below.
  *
- *  Curves are computed client-side via Black-Scholes (lib/bs.ts), so
- *  dragging is instant — no backend round-trip. A faint at-expiry
- *  intrinsic curve sits behind the live curve as a reference shape.
- *
- *  Replaces the old three-discrete-curves (today / halfway / expiry)
- *  pre-computed by the backend, which couldn't answer "what about day
- *  18 at IV 150%?" without scrolling back to ask.
+ *  All curves are Black-Scholes, computed client-side (lib/bs.ts), so dragging
+ *  any control redraws instantly with no backend round-trip.
  */
 export function PnlProfileChart({
   spot, breakeven, strike,
@@ -65,44 +58,34 @@ export function PnlProfileChart({
   iv, dteYears,
   right, entryPrice, quantity, isLong,
   pop, probItm,
-  height = 360,
+  height = 340,
 }: Props) {
-  // Chart-only height now. Sliders sit OUTSIDE the SVG (as real DOM
-  // controls below the chart), which lets them be properly interactive
-  // and accessible — the previous in-SVG approach mixed render space.
   const W = 920;
   const H = height;
-  const PAD_L = 60;
-  const PAD_R = 18;
-  const PAD_T = 32;
-  const PAD_B = 36;
+  const PAD_L = 58;
+  const PAD_R = 16;
+  const PAD_T = 30;
+  const PAD_B = 34;
   const innerW = W - PAD_L - PAD_R;
   const innerH = H - PAD_T - PAD_B;
 
-  // ── slider state ─────────────────────────────────────────────────────
+  // ── scenario state ─────────────────────────────────────────────────────
   const dteDays = Math.max(1, Math.round(dteYears * 365.25));
   const [daysFromNow, setDaysFromNow] = useState(0);
   const [ivMult, setIvMult] = useState(1);
   const [range, setRange] = useState(0.25);
 
-  // Reset sliders when the contract changes — the absolute DTE bound
-  // can shift and stale slider values produce nonsense curves.
+  // Reset scenario when the contract changes (stale slider values otherwise
+  // produce nonsense curves once the DTE bound shifts).
   useEffect(() => {
     setDaysFromNow(0);
     setIvMult(1);
   }, [strike, right, entryPrice, dteYears, iv]);
 
-  // Pinned target price (click on chart).
-  const [target, setTarget] = useState<number | null>(null);
-  useEffect(() => { setTarget(null); }, [strike, spot]);
-
-  // ── curve computation ────────────────────────────────────────────────
+  // ── curves ───────────────────────────────────────────────────────────
   const inputs: PnlInputs = useMemo(() => ({
     spot, strike, dteYears, iv,
-    isCall: right === "C",
-    isLong,
-    entryPrice,
-    quantity,
+    isCall: right === "C", isLong, entryPrice, quantity,
   }), [spot, strike, dteYears, iv, right, isLong, entryPrice, quantity]);
 
   const prices = useMemo(() => samplePriceAxis(spot, range, 161), [spot, range]);
@@ -110,17 +93,17 @@ export function PnlProfileChart({
     () => pnlCurve(prices, daysFromNow, ivMult, inputs),
     [prices, daysFromNow, ivMult, inputs],
   );
-  const expiryCurve = useMemo(
-    () => expiryIntrinsicCurve(prices, inputs),
-    [prices, inputs],
-  );
+  const expiryCurve = useMemo(() => expiryIntrinsicCurve(prices, inputs), [prices, inputs]);
+
+  // Cost basis (net debit/credit) for % return readouts.
+  const costBasis = Math.abs(entryPrice * Math.abs(quantity) * 100) || 0;
 
   // ── axes ─────────────────────────────────────────────────────────────
-  const { xOf, yOf, yZero, yTicks, xMin, xMax, mu, sd } = useMemo(() => {
+  const { xOf, yOf, yZero, yTicks, xMin, xMax, sd } = useMemo(() => {
     const all = [...liveCurve, ...expiryCurve];
     const minPnl = all.length ? Math.min(...all, 0) : 0;
     const maxPnl = all.length ? Math.max(...all, 0) : 0;
-    const padY = Math.max(1, (maxPnl - minPnl) * 0.12);
+    const padY = Math.max(1, (maxPnl - minPnl) * 0.14);
     const yMn = minPnl - padY;
     const yMx = maxPnl + padY;
     const xMn = Math.min(...prices);
@@ -128,26 +111,20 @@ export function PnlProfileChart({
 
     const xOf = (p: number) => PAD_L + ((p - xMn) / (xMx - xMn)) * innerW;
     const yOf = (v: number) => PAD_T + innerH - ((v - yMn) / (yMx - yMn)) * innerH;
-    const yZero = yOf(0);
 
     const rng = yMx - yMn;
-    const target = 5;
-    const rawStep = rng / target;
-    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-    const step = Math.ceil(rawStep / mag) * mag;
+    const rawStep = rng / 5;
+    const mag = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+    const step = Math.max(1, Math.ceil(rawStep / mag) * mag);
     const ticks: number[] = [];
     const start = Math.ceil(yMn / step) * step;
     for (let v = start; v <= yMx; v += step) ticks.push(v);
 
-    // Lognormal density backdrop (still here as a subtle hint of where
-    // the realized return is likely to land).
     const sd = iv > 0 && dteYears > 0 ? iv * Math.sqrt(dteYears) : 0;
-    const mu = spot > 0 ? Math.log(spot) - 0.5 * sd * sd : 0;
+    return { xOf, yOf, yZero: yOf(0), yTicks: ticks, xMin: xMn, xMax: xMx, sd };
+  }, [prices, liveCurve, expiryCurve, innerW, innerH, iv, dteYears]);
 
-    return { xOf, yOf, yZero, yTicks: ticks, xMin: xMn, xMax: xMx, mu, sd };
-  }, [prices, liveCurve, expiryCurve, innerW, innerH, iv, dteYears, spot]);
-
-  // Smooth cubic-Bezier curve generator (Catmull-Rom interpolation).
+  // Catmull-Rom → cubic-bezier smoothing for the curves.
   const smoothPath = (vals: number[]) => {
     const pts = prices.map((p, i) => [xOf(p), yOf(vals[i])] as [number, number]);
     if (pts.length < 2) return "";
@@ -165,11 +142,10 @@ export function PnlProfileChart({
     }
     return d;
   };
-
   const livePath = useMemo(() => smoothPath(liveCurve), [prices, liveCurve, xOf, yOf]);
   const expiryPath = useMemo(() => smoothPath(expiryCurve), [prices, expiryCurve, xOf, yOf]);
 
-  // Profit/loss fills under the LIVE curve (the slider-driven one).
+  // Green-above-zero / red-below-zero fills under the live curve.
   const { profitArea, lossArea } = useMemo(() => {
     const build = (test: (v: number) => boolean) => {
       const segs: string[] = [];
@@ -178,364 +154,297 @@ export function PnlProfileChart({
         const v = liveCurve[i];
         const x = xOf(prices[i]);
         const y = yOf(v);
-        if (test(v) && !inSeg) {
-          inSeg = true;
-          segs.push(`M${x.toFixed(1)},${yZero.toFixed(1)} L${x.toFixed(1)},${y.toFixed(1)}`);
-        } else if (test(v) && inSeg) {
-          segs.push(`L${x.toFixed(1)},${y.toFixed(1)}`);
-        } else if (!test(v) && inSeg) {
-          inSeg = false;
-          segs.push(`L${x.toFixed(1)},${yZero.toFixed(1)} Z`);
-        }
+        if (test(v) && !inSeg) { inSeg = true; segs.push(`M${x.toFixed(1)},${yZero.toFixed(1)} L${x.toFixed(1)},${y.toFixed(1)}`); }
+        else if (test(v) && inSeg) { segs.push(`L${x.toFixed(1)},${y.toFixed(1)}`); }
+        else if (!test(v) && inSeg) { inSeg = false; segs.push(`L${x.toFixed(1)},${yZero.toFixed(1)} Z`); }
       }
-      if (inSeg) {
-        const x = xOf(prices[prices.length - 1]);
-        segs.push(`L${x.toFixed(1)},${yZero.toFixed(1)} Z`);
-      }
+      if (inSeg) segs.push(`L${xOf(prices[prices.length - 1]).toFixed(1)},${yZero.toFixed(1)} Z`);
       return segs.join(" ");
     };
     return { profitArea: build((v) => v >= 0), lossArea: build((v) => v < 0) };
   }, [prices, liveCurve, xOf, yOf, yZero]);
 
-  const densityStops = useMemo(() => {
-    if (sd <= 0 || spot <= 0) return [] as { offset: number; opacity: number }[];
-    const n = 50;
-    const samples: { offset: number; pdf: number }[] = [];
-    let maxPdf = 0;
-    for (let i = 0; i <= n; i++) {
-      const offset = i / n;
-      const p = xMin + offset * (xMax - xMin);
-      if (p <= 0) { samples.push({ offset, pdf: 0 }); continue; }
-      const z = (Math.log(p) - mu) / sd;
-      const pdf = (1 / (p * sd * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * z * z);
-      samples.push({ offset, pdf });
-      if (pdf > maxPdf) maxPdf = pdf;
-    }
-    if (maxPdf <= 0) return [];
-    return samples.map((s) => ({ offset: s.offset, opacity: (s.pdf / maxPdf) * 0.1 }));
-  }, [sd, mu, spot, xMin, xMax]);
-
-  const cdf = (price: number): number | null => {
-    if (sd <= 0 || price <= 0) return null;
-    const z = (Math.log(price) - mu) / sd;
-    return 0.5 * (1 + erf(z / Math.sqrt(2)));
-  };
-
   const xTicks = useMemo(() => {
     const n = 6;
-    const out: number[] = [];
-    for (let i = 0; i <= n; i++) out.push(xMin + ((xMax - xMin) * i) / n);
-    return out;
+    return Array.from({ length: n + 1 }, (_, i) => xMin + ((xMax - xMin) * i) / n);
   }, [xMin, xMax]);
 
-  const { activeIndex, onMouseMove, onMouseLeave } = useChartHover({
-    count: prices.length, svgWidth: W, padLeft: PAD_L, padRight: PAD_R,
-  });
-  const hover = activeIndex != null
-    ? {
-        price: prices[activeIndex],
-        live: liveCurve[activeIndex],
-        expiry: expiryCurve[activeIndex],
-        cumProb: cdf(prices[activeIndex]),
+  // ── draggable price cursor (the OptionStrat scrubber) ──────────────────
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [cursor, setCursor] = useState<number>(spot); // price the cursor sits on
+  const [dragging, setDragging] = useState(false);
+  // Re-centre the cursor on spot whenever the contract / spot changes.
+  useEffect(() => { setCursor(spot); }, [spot, strike]);
+
+  const clientXToPrice = (clientX: number): number => {
+    const el = svgRef.current;
+    if (!el) return cursor;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0) return cursor;
+    const padLpx = (PAD_L / W) * rect.width;
+    const dataWpx = ((W - PAD_L - PAD_R) / W) * rect.width;
+    let rel = (clientX - rect.left - padLpx) / dataWpx;
+    rel = Math.max(0, Math.min(1, rel));
+    return xMin + rel * (xMax - xMin);
+  };
+  const onPointerDown = (e: RPointerEvent<SVGSVGElement>) => {
+    setDragging(true);
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* noop */ }
+    setCursor(clientXToPrice(e.clientX));
+  };
+  const onPointerMove = (e: RPointerEvent<SVGSVGElement>) => {
+    if (!dragging) return;
+    setCursor(clientXToPrice(e.clientX));
+  };
+  const endDrag = () => setDragging(false);
+
+  // Interpolated curve value at an arbitrary price.
+  const interpAt = (price: number, curve: number[]): number => {
+    if (price <= prices[0]) return curve[0];
+    if (price >= prices[prices.length - 1]) return curve[curve.length - 1];
+    for (let i = 1; i < prices.length; i++) {
+      if (prices[i] >= price) {
+        const t = (price - prices[i - 1]) / (prices[i] - prices[i - 1] || 1);
+        return curve[i - 1] + t * (curve[i] - curve[i - 1]);
       }
-    : null;
-
-  const targetData = useMemo(() => {
-    if (target == null) return null;
-    let best = 0; let bestDiff = Infinity;
-    for (let i = 0; i < prices.length; i++) {
-      const d = Math.abs(prices[i] - target);
-      if (d < bestDiff) { bestDiff = d; best = i; }
     }
-    return {
-      price: target,
-      live: liveCurve[best],
-      expiry: expiryCurve[best],
-      cumProb: cdf(target),
-    };
-  }, [target, prices, liveCurve, expiryCurve]);
+    return curve[curve.length - 1];
+  };
 
-  const readout = hover ?? targetData;
-  const readoutLabel = hover ? "hover" : targetData ? "target" : null;
+  const cur = useMemo(() => {
+    const cp = Math.max(xMin, Math.min(xMax, cursor));
+    const live = interpAt(cp, liveCurve);
+    const exp = interpAt(cp, expiryCurve);
+    const movePct = spot > 0 ? ((cp - spot) / spot) * 100 : 0;
+    const retPct = costBasis > 0 ? (live / costBasis) * 100 : null;
+    return { price: cp, live, exp, movePct, retPct };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cursor, liveCurve, expiryCurve, xMin, xMax, spot, costBasis]);
 
-  // Derived display labels for slider state.
+  // ── scenario labels ────────────────────────────────────────────────────
   const tRemainingDays = Math.max(0, dteDays - daysFromNow);
-  const dateLabel = daysFromNow === 0
-    ? "today"
-    : daysFromNow >= dteDays
-      ? "expiry"
-      : `+${daysFromNow}d`;
-
-  // What's the position worth RIGHT NOW at current sliders? This is the
-  // single most useful number on the chart — surfaces as a big tabular
-  // headline above the curve. Recomputed on every slider drag via BS.
-  const spotPnlNow = useMemo(() => {
-    // Find the closest sampled price to spot (linear scan is fine for
-    // 161-sample axes).
-    let bi = 0;
-    let bd = Infinity;
-    for (let i = 0; i < prices.length; i++) {
-      const d = Math.abs(prices[i] - spot);
-      if (d < bd) { bd = d; bi = i; }
-    }
-    return { live: liveCurve[bi], expiry: expiryCurve[bi] };
-  }, [prices, spot, liveCurve, expiryCurve]);
+  const dateLabel = daysFromNow === 0 ? "Today" : daysFromNow >= dteDays ? "Expiry" : `+${daysFromNow}d`;
+  const scenarioActive = daysFromNow !== 0 || ivMult !== 1;
+  const resetAll = () => { setDaysFromNow(0); setIvMult(1); setRange(0.25); };
 
   // ── render ───────────────────────────────────────────────────────────
   return (
-    <div className="relative w-full">
-      {/* Position-at-spot summary — the headline reading. Big tabular
-          number on the left ("P/L if spot stays here at <date>, IV=<×>"),
-          comparison to expiry-intrinsic on the right. Both live curves
-          are surfaced so the user immediately sees the time-value vs
-          intrinsic split. */}
-      <div className="flex items-baseline gap-4 px-1 mb-3 flex-wrap">
-        <div className="flex items-baseline gap-2">
+    <div className="relative w-full select-none">
+      {/* ── Headline: P/L at the cursor price, for the chosen date ─────── */}
+      <div className="flex items-end gap-5 px-1 mb-2.5 flex-wrap">
+        <div className="flex flex-col gap-0.5">
           <span className="text-[10px] uppercase tracking-wider text-text-muted">
-            at spot @ {dateLabel}
+            P/L at ${cur.price.toFixed(2)}
+            <span className="ml-1 text-text-muted/70">
+              ({cur.movePct >= 0 ? "+" : ""}{cur.movePct.toFixed(1)}%)
+            </span>
+            <span className="ml-1.5 px-1 rounded bg-surface-2 text-text-secondary">{dateLabel}</span>
           </span>
-          <span className={cn(
-            "text-[18px] tabular font-bold leading-none",
-            spotPnlNow.live >= 0 ? "text-up" : "text-down",
-          )}>
-            {fmtPnl(spotPnlNow.live)}
+          <div className="flex items-baseline gap-2">
+            <span className={cn("text-[26px] tabular font-bold leading-none", cur.live >= 0 ? "text-up" : "text-down")}>
+              {fmtPnl(cur.live)}
+            </span>
+            {cur.retPct != null && (
+              <span className={cn("text-[12px] tabular font-semibold", cur.live >= 0 ? "text-up" : "text-down")}>
+                {cur.retPct >= 0 ? "+" : ""}{cur.retPct.toFixed(0)}%
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">at expiry</span>
+          <span className={cn("text-[15px] tabular font-semibold leading-tight", cur.exp >= 0 ? "text-up" : "text-down")}>
+            {fmtPnl(cur.exp)}
           </span>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">if expiry</span>
-          <span className={cn(
-            "text-[14px] tabular font-semibold",
-            spotPnlNow.expiry >= 0 ? "text-up" : "text-down",
-          )}>
-            {fmtPnl(spotPnlNow.expiry)}
-          </span>
+        <div className="ml-auto flex items-center gap-3">
+          {(pop != null || probItm != null) && (
+            <div className="flex items-center gap-2 text-[10px] tabular">
+              {pop != null && (
+                <span><span className="text-text-muted">POP </span>
+                  <span className={cn("font-semibold", pop >= 0.6 ? "text-up" : pop >= 0.4 ? "text-warning" : "text-down")}>
+                    {(pop * 100).toFixed(0)}%</span></span>
+              )}
+              {probItm != null && (
+                <span><span className="text-text-muted">P(ITM) </span>
+                  <span className="text-text-primary font-semibold">{(probItm * 100).toFixed(0)}%</span></span>
+              )}
+            </div>
+          )}
+          {scenarioActive && (
+            <button type="button" onClick={resetAll}
+              className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-warning hover:text-text-primary transition-colors"
+              title="Reset date + IV to now">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning" />
+              reset
+            </button>
+          )}
         </div>
-        <span className="ml-auto text-[10px] uppercase tracking-wider text-text-muted">
-          {(ivMult * 100).toFixed(0)}% IV · ±{(range * 100).toFixed(0)}% range
-        </span>
       </div>
 
       <svg
+        ref={svgRef}
         width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-        className="block cursor-crosshair"
-        onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}
-        onClick={() => { if (hover) setTarget(hover.price === target ? null : hover.price); }}
+        className={cn("block touch-none", dragging ? "cursor-grabbing" : "cursor-grab")}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
+        onPointerCancel={endDrag}
       >
         <defs>
-          <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={CHART.pnl.profit} stopOpacity="0.42" />
-            <stop offset="100%" stopColor={CHART.pnl.profit} stopOpacity="0.04" />
+          <linearGradient id="pnlProfitGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={CHART.pnl.profit} stopOpacity="0.34" />
+            <stop offset="100%" stopColor={CHART.pnl.profit} stopOpacity="0.02" />
           </linearGradient>
-          <linearGradient id="lossGrad" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stopColor={CHART.pnl.loss} stopOpacity="0.38" />
-            <stop offset="100%" stopColor={CHART.pnl.loss} stopOpacity="0.04" />
+          <linearGradient id="pnlLossGrad" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor={CHART.pnl.loss} stopOpacity="0.30" />
+            <stop offset="100%" stopColor={CHART.pnl.loss} stopOpacity="0.02" />
           </linearGradient>
-          {densityStops.length > 0 && (
-            <linearGradient id="densityGrad" x1="0" y1="0" x2="1" y2="0">
-              {densityStops.map((s, i) => (
-                <stop key={i} offset={`${(s.offset * 100).toFixed(1)}%`}
-                      stopColor={CHART.axisText} stopOpacity={s.opacity} />
-              ))}
-            </linearGradient>
-          )}
         </defs>
 
-        {/* Probability density backdrop */}
-        {densityStops.length > 0 && (
-          <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} fill="url(#densityGrad)" />
+        {/* ±1σ expected-range band */}
+        {sd > 0 && sigma1Low != null && sigma1High != null &&
+          sigma1High > xMin && sigma1Low < xMax && (
+          <rect
+            x={xOf(Math.max(xMin, sigma1Low))}
+            y={PAD_T}
+            width={Math.max(0, xOf(Math.min(xMax, sigma1High)) - xOf(Math.max(xMin, sigma1Low)))}
+            height={innerH}
+            fill={CHART.axisText} fillOpacity={0.04}
+          />
         )}
 
-        {/* Y gridlines */}
+        {/* Y gridlines + labels */}
         {yTicks.map((t, i) => (
           <g key={`gy-${i}`}>
             <line x1={PAD_L} x2={W - PAD_R} y1={yOf(t)} y2={yOf(t)}
-                  stroke={CHART.axisText}
-                  strokeOpacity={t === 0 ? 0.45 : 0.05}
-                  strokeWidth={t === 0 ? 1 : 1} />
+              stroke={CHART.axisText} strokeOpacity={t === 0 ? 0.5 : 0.05} />
             <text x={PAD_L - 8} y={yOf(t) + 4} fontSize="11"
-                  fill={t === 0 ? CHART.axisText : CHART.textMuted}
-                  textAnchor="end" className="tabular-nums">
+              fill={t === 0 ? CHART.axisText : CHART.textMuted} textAnchor="end" className="tabular-nums">
               {fmtPnl(t)}
             </text>
           </g>
         ))}
 
-        {/* X ticks */}
+        {/* X ticks: price + %-from-spot */}
         {xTicks.map((p, i) => (
           <g key={`xt-${i}`}>
-            <text x={xOf(p)} y={H - 8} fontSize="11" fill={CHART.axisText}
-                  textAnchor="middle" className="tabular-nums">
+            <text x={xOf(p)} y={H - 9} fontSize="11" fill={CHART.axisText} textAnchor="middle" className="tabular-nums">
               {p < 100 ? p.toFixed(2) : p.toFixed(0)}
             </text>
-            <text x={xOf(p)} y={H + 4} fontSize="9" fill={CHART.textMuted}
-                  textAnchor="middle" className="tabular-nums">
+            <text x={xOf(p)} y={H + 2} fontSize="9" fill={CHART.textMuted} textAnchor="middle" className="tabular-nums">
               {pctFromSpot(p, spot)}
             </text>
           </g>
         ))}
 
-        {/* Profit/loss fills under the LIVE curve */}
-        <path d={profitArea} fill="url(#profitGrad)" />
-        <path d={lossArea}   fill="url(#lossGrad)" />
+        {/* Fills under the live curve */}
+        <path d={profitArea} fill="url(#pnlProfitGrad)" />
+        <path d={lossArea} fill="url(#pnlLossGrad)" />
 
-        {/* Max profit / loss horizontal references */}
+        {/* Max profit / loss reference lines */}
         {maxProfit != null && isFinite(maxProfit) && maxProfit > 0 && (
           <line x1={PAD_L} x2={W - PAD_R} y1={yOf(maxProfit)} y2={yOf(maxProfit)}
-                stroke={CHART.pnl.profit} strokeOpacity={0.30} strokeDasharray="3 5" />
+            stroke={CHART.pnl.profit} strokeOpacity={0.25} strokeDasharray="2 6" />
         )}
         {maxLoss != null && isFinite(maxLoss) && maxLoss < 0 && (
           <line x1={PAD_L} x2={W - PAD_R} y1={yOf(maxLoss)} y2={yOf(maxLoss)}
-                stroke={CHART.pnl.loss} strokeOpacity={0.30} strokeDasharray="3 5" />
+            stroke={CHART.pnl.loss} strokeOpacity={0.25} strokeDasharray="2 6" />
         )}
 
-        {/* Expiry intrinsic reference — faded, behind the live curve. */}
-        <path d={expiryPath} stroke={CHART.pnl.expiry}
-              strokeOpacity={0.32} strokeWidth="1.5"
-              strokeDasharray="6 4" fill="none" />
-
-        {/* Live curve — slider-driven, bold, foreground. */}
-        <path d={livePath} stroke={CHART.pnl.expiry} strokeWidth="2.5"
-              fill="none" />
-
-        {/* Spot vertical line + chip */}
-        {spot >= xMin && spot <= xMax && (
-          <g>
-            <line x1={xOf(spot)} x2={xOf(spot)} y1={PAD_T} y2={H - 16}
-                  stroke={CHART.text} strokeOpacity={0.45} strokeWidth={1} />
-            <g transform={`translate(${xOf(spot)}, ${PAD_T - 4})`}>
-              <rect x={-32} y={-18} width="64" height="16" rx="3" fill={CHART.text} />
-              <text x={0} y={-7} fontSize="10" fill={CHART.bg} textAnchor="middle" fontWeight="600">
-                SPOT {spot.toFixed(2)}
-              </text>
-            </g>
-          </g>
-        )}
+        {/* Expiry intrinsic — faded dashed reference */}
+        <path d={expiryPath} stroke={CHART.pnl.expiry} strokeOpacity={0.4}
+          strokeWidth="1.5" strokeDasharray="5 4" fill="none" />
+        {/* Live curve — bright, bold, foreground */}
+        <path d={livePath} stroke={CHART.pnl.today} strokeWidth="2.5" fill="none" />
 
         {/* Strike marker */}
         {strike >= xMin && strike <= xMax && (
           <g>
-            <line x1={xOf(strike)} x2={xOf(strike)} y1={PAD_T} y2={H - 16}
-                  stroke={CHART.ref.strike} strokeOpacity={0.55} strokeDasharray="4 3" />
-            <text x={xOf(strike)} y={H - 24} fontSize="10" fill={CHART.ref.strike}
-                  textAnchor="middle" fontWeight="600">K {strike}</text>
+            <line x1={xOf(strike)} x2={xOf(strike)} y1={PAD_T} y2={H - PAD_B}
+              stroke={CHART.ref.strike} strokeOpacity={0.5} strokeDasharray="3 4" />
+            <text x={xOf(strike)} y={PAD_T - 4} fontSize="9" fill={CHART.ref.strike}
+              textAnchor="middle" fontWeight="600">K {strike}</text>
           </g>
         )}
 
-        {/* Breakeven dot on zero line */}
+        {/* Breakeven on the zero line */}
         {breakeven >= xMin && breakeven <= xMax && (
           <g>
-            <line x1={xOf(breakeven)} x2={xOf(breakeven)} y1={yZero - 7} y2={yZero + 7}
-                  stroke={CHART.text} strokeWidth={1.5} />
-            <circle cx={xOf(breakeven)} cy={yZero} r={3.5} fill={CHART.text} />
-            <text x={xOf(breakeven)} y={yZero - 11} fontSize="10" fill={CHART.text}
-                  textAnchor="middle" fontWeight="500">BE {breakeven.toFixed(2)}</text>
+            <circle cx={xOf(breakeven)} cy={yZero} r={3} fill={CHART.text} />
+            <text x={xOf(breakeven)} y={yZero - 7} fontSize="9" fill={CHART.text}
+              textAnchor="middle" fontWeight="500">BE {breakeven.toFixed(2)}</text>
           </g>
         )}
 
-        {/* ±1σ ticks at the top */}
-        {sigma1Low != null && sigma1Low >= xMin && sigma1Low <= xMax && (
+        {/* Spot marker (subtle — the cursor is the hero) */}
+        {spot >= xMin && spot <= xMax && (
           <g>
-            <line x1={xOf(sigma1Low)} x2={xOf(sigma1Low)} y1={PAD_T} y2={PAD_T + 5}
-                  stroke={CHART.axisText} strokeOpacity={0.7} />
-            <text x={xOf(sigma1Low)} y={PAD_T - 18} fontSize="9" fill={CHART.axisText}
-                  textAnchor="middle">−1σ</text>
-          </g>
-        )}
-        {sigma1High != null && sigma1High >= xMin && sigma1High <= xMax && (
-          <g>
-            <line x1={xOf(sigma1High)} x2={xOf(sigma1High)} y1={PAD_T} y2={PAD_T + 5}
-                  stroke={CHART.axisText} strokeOpacity={0.7} />
-            <text x={xOf(sigma1High)} y={PAD_T - 18} fontSize="9" fill={CHART.axisText}
-                  textAnchor="middle">+1σ</text>
+            <line x1={xOf(spot)} x2={xOf(spot)} y1={PAD_T} y2={H - PAD_B}
+              stroke={CHART.text} strokeOpacity={0.18} strokeWidth={1} />
+            <text x={xOf(spot)} y={H - PAD_B + 0} fontSize="8" fill={CHART.text} fillOpacity={0.5}
+              textAnchor="middle">spot</text>
           </g>
         )}
 
-        {/* Pinned target */}
-        {targetData && targetData.price >= xMin && targetData.price <= xMax && (
-          <g>
-            <line x1={xOf(targetData.price)} x2={xOf(targetData.price)}
-                  y1={PAD_T} y2={H - 16}
-                  stroke={CHART.pnl.target} strokeWidth={1.5} />
-            <g transform={`translate(${xOf(targetData.price)}, ${H - 12})`}>
-              <rect x={-32} y={0} width="64" height="14" rx="3" fill={CHART.pnl.target} />
-              <text x={0} y={10} fontSize="10" fill="white" textAnchor="middle" fontWeight="600">
-                TGT {targetData.price.toFixed(2)}
+        {/* ── Draggable price cursor ──────────────────────────────────── */}
+        {cur.price >= xMin && cur.price <= xMax && (
+          <g pointerEvents="none">
+            <line x1={xOf(cur.price)} x2={xOf(cur.price)} y1={PAD_T - 8} y2={H - PAD_B}
+              stroke={CHART.pnl.today} strokeOpacity={dragging ? 0.9 : 0.6} strokeWidth={1.5} />
+            {/* dot on the expiry reference */}
+            <circle cx={xOf(cur.price)} cy={yOf(cur.exp)} r={3}
+              fill="none" stroke={CHART.pnl.expiry} strokeWidth={1.2} strokeOpacity={0.7} />
+            {/* dot on the live curve */}
+            <circle cx={xOf(cur.price)} cy={yOf(cur.live)} r={5}
+              fill={CHART.pnl.today} stroke={CHART.bg} strokeWidth={2} />
+            {/* grab handle pill at the top with the price */}
+            <g transform={`translate(${xOf(cur.price)}, ${PAD_T - 8})`}>
+              <rect x={-30} y={-15} width="60" height="15" rx="7.5"
+                fill={CHART.pnl.today} />
+              <text x={0} y={-4.5} fontSize="10" fill={CHART.bg} textAnchor="middle" fontWeight="700">
+                {cur.price.toFixed(2)}
               </text>
             </g>
           </g>
         )}
-
-        {/* Hover crosshair */}
-        {hover && (
-          <g pointerEvents="none">
-            <line x1={xOf(hover.price)} x2={xOf(hover.price)} y1={PAD_T} y2={H - 16}
-                  stroke={CHART.text} strokeOpacity={0.3} strokeDasharray="3 3" />
-            <circle cx={xOf(hover.price)} cy={yOf(hover.live)} r={4}
-                    fill={CHART.pnl.expiry} stroke={CHART.bg} strokeWidth={1.5} />
-            <circle cx={xOf(hover.price)} cy={yOf(hover.expiry)} r={3}
-                    fill="none" stroke={CHART.pnl.expiry} strokeWidth={1}
-                    strokeOpacity={0.65} strokeDasharray="2 2" />
-          </g>
-        )}
       </svg>
+      <p className="text-[9px] text-text-muted text-center -mt-1 mb-1">
+        drag anywhere on the chart to read P/L at any price
+      </p>
 
-      {/* ── Sliders: Date · IV · Range ────────────────────────────────
-          OptionStrat-style. Each slider drives a useMemo recompute via
-          BS so the curves above redraw instantly. Preset chips next to
-          each slider snap to common values without dragging. */}
-      <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 px-1">
-        <SliderRow
-          label="Date"
-          accent={CHART.pnl.expiry}
-          valueText={dateLabel}
-          subText={`${tRemainingDays}d to expiry`}
-          min={0} max={dteDays} step={1}
-          value={daysFromNow}
-          onChange={setDaysFromNow}
-          minLabel="today"
-          maxLabel="expiry"
-          onReset={() => setDaysFromNow(0)}
-          isDefault={daysFromNow === 0}
+      {/* ── Scenario controls — Date is the hero, IV + Range secondary ── */}
+      <div className="mt-2 pt-3 border-t border-border/40 flex flex-col gap-3.5 px-1">
+        <ScenarioSlider
+          label="Date" accent={CHART.pnl.today}
+          valueText={dateLabel} subText={`${tRemainingDays}d to expiry`}
+          min={0} max={dteDays} step={1} value={daysFromNow} onChange={setDaysFromNow}
+          isDefault={daysFromNow === 0} onReset={() => setDaysFromNow(0)}
           presets={[
-            { label: "today", value: 0 },
+            { label: "Now", value: 0 },
             { label: "¼", value: Math.round(dteDays * 0.25) },
             { label: "½", value: Math.round(dteDays * 0.5) },
             { label: "¾", value: Math.round(dteDays * 0.75) },
-            { label: "exp", value: dteDays },
+            { label: "Exp", value: dteDays },
           ]}
         />
-        <SliderRow
-          label="IV"
-          accent={CHART.forecast.cone}
-          valueText={`${(ivMult * iv * 100).toFixed(1)}%`}
-          subText={`${(ivMult * 100).toFixed(0)}% of current`}
-          min={0.3} max={3} step={0.05}
-          value={ivMult}
-          onChange={setIvMult}
-          minLabel="30%"
-          maxLabel="300%"
-          onReset={() => setIvMult(1)}
-          isDefault={ivMult === 1}
+        <ScenarioSlider
+          label="IV" accent={CHART.forecast.cone}
+          valueText={`${(ivMult * iv * 100).toFixed(1)}%`} subText={`${ivMult.toFixed(2)}× current`}
+          min={0.3} max={3} step={0.05} value={ivMult} onChange={setIvMult}
+          isDefault={ivMult === 1} onReset={() => setIvMult(1)}
           presets={[
             { label: "−40%", value: 0.6 },
-            { label: "−20%", value: 0.8 },
-            { label: "now", value: 1 },
-            { label: "+20%", value: 1.2 },
+            { label: "Now", value: 1 },
             { label: "+40%", value: 1.4 },
           ]}
         />
-        <SliderRow
-          label="Range"
-          accent={CHART.ref.strike}
-          valueText={`±${(range * 100).toFixed(0)}%`}
-          subText="window around spot"
-          min={0.05} max={0.6} step={0.05}
-          value={range}
-          onChange={setRange}
-          minLabel="±5%"
-          maxLabel="±60%"
-          onReset={() => setRange(0.25)}
-          isDefault={range === 0.25}
+        <ScenarioSlider
+          label="Zoom" accent={CHART.ref.strike}
+          valueText={`±${(range * 100).toFixed(0)}%`} subText="price range"
+          min={0.05} max={0.6} step={0.05} value={range} onChange={setRange}
+          isDefault={range === 0.25} onReset={() => setRange(0.25)}
           presets={[
             { label: "±10%", value: 0.10 },
             { label: "±25%", value: 0.25 },
@@ -543,205 +452,124 @@ export function PnlProfileChart({
           ]}
         />
       </div>
-
-      {/* Top-right: POP chip */}
-      <div className="absolute top-3 right-3 flex items-center gap-2">
-        {(pop != null || probItm != null) && (
-          <div className="flex items-center gap-2 text-[10px] tabular bg-surface/90 backdrop-blur rounded-md px-2 py-1 border border-border/40">
-            {pop != null && (
-              <span>
-                <span className="text-text-muted">POP </span>
-                <span className={cn(
-                  "font-semibold",
-                  pop >= 0.6 ? "text-up" : pop >= 0.4 ? "text-warning" : "text-down"
-                )}>
-                  {(pop * 100).toFixed(0)}%
-                </span>
-              </span>
-            )}
-            {probItm != null && (
-              <span>
-                <span className="text-text-muted">P(ITM) </span>
-                <span className="text-text-primary font-semibold">{(probItm * 100).toFixed(0)}%</span>
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Bottom hover/target readout strip */}
-      {readout && (
-        <div className="absolute top-3 left-[68px] flex items-center gap-4 text-[11px] tabular bg-surface/90 backdrop-blur rounded-md px-3 py-1.5 border border-border/40">
-          <span className="text-text-muted uppercase tracking-wider text-[9px]">
-            {readoutLabel}
-          </span>
-          <span>
-            <span className="text-text-muted">price </span>
-            <span className="text-text-primary font-semibold">{readout.price.toFixed(2)}</span>
-          </span>
-          {readout.cumProb != null && (
-            <span>
-              <span className="text-text-muted">P(≤) </span>
-              <span className="text-text-primary font-semibold">{(readout.cumProb * 100).toFixed(0)}%</span>
-            </span>
-          )}
-          <span style={{ color: CHART.pnl.expiry }}>
-            {dateLabel}{" "}
-            <span className={pnlClass(readout.live)}>{fmtPnl(readout.live)}</span>
-          </span>
-          <span className="text-text-muted">
-            expiry{" "}
-            <span className={pnlClass(readout.expiry)}>{fmtPnl(readout.expiry)}</span>
-          </span>
-          {targetData && !hover && (
-            <button onClick={(e) => { e.stopPropagation(); setTarget(null); }}
-                    className="text-text-muted hover:text-text-primary ml-1">✕</button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
-// ── SliderRow ─────────────────────────────────────────────────────────
-//   Dense pro-terminal styling: uppercase label, big tabular current
-//   value (the headline), small secondary description below, then the
-//   track with min/max endpoint anchors. Reset link surfaces when the
-//   slider is off its default so a user always knows the way back.
-function SliderRow({
-  label,
-  accent,
-  valueText,
-  subText,
-  min,
-  max,
-  step,
-  value,
-  onChange,
-  minLabel,
-  maxLabel,
-  onReset,
-  isDefault,
-  presets,
+// ── ScenarioSlider ──────────────────────────────────────────────────────
+//   A tactile slider: a fat track, a clear draggable thumb with a value
+//   bubble that rides on it, and clickable preset ticks under the track. A
+//   transparent native <input type=range> sits on top for reliable drag +
+//   keyboard. ~34px tall including the tick labels.
+function ScenarioSlider({
+  label, accent, valueText, subText, min, max, step, value, onChange,
+  isDefault, onReset, presets,
 }: {
   label: string;
   accent: string;
   valueText: string;
   subText?: string;
-  min: number;
-  max: number;
-  step: number;
+  min: number; max: number; step: number;
   value: number;
   onChange: (v: number) => void;
-  minLabel: string;
-  maxLabel: string;
-  onReset: () => void;
   isDefault: boolean;
+  onReset: () => void;
   presets?: { label: string; value: number }[];
 }) {
-  const pct = ((value - min) / (max - min)) * 100;
-  // A preset chip is "active" when the current value matches it within a
-  // half-step — important for floating-point sliders like IV multiplier
-  // where 1.0 + drift wouldn't strictly equal 1.0.
-  const isPresetActive = (pv: number) => Math.abs(value - pv) < step / 2;
+  const pct = max > min ? ((value - min) / (max - min)) * 100 : 0;
+  const clamp = (p: number) => Math.max(0, Math.min(100, p));
+  const isActive = (pv: number) => Math.abs(value - pv) < step / 2;
 
   return (
-    <div className="flex flex-col gap-1.5 min-w-0">
+    <div className="flex flex-col gap-1">
+      {/* header line */}
       <div className="flex items-baseline gap-2">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">
-          {label}
-        </span>
-        <span
-          className="text-[14px] tabular font-semibold leading-none"
-          style={{ color: accent }}
+        <span className="w-10 shrink-0 text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+        <span className="text-[13px] tabular font-semibold leading-none" style={{ color: accent }}>{valueText}</span>
+        {subText && <span className="text-[10px] tabular text-text-muted leading-none">{subText}</span>}
+        <button
+          type="button" onClick={onReset}
+          tabIndex={isDefault ? -1 : 0} aria-hidden={isDefault}
+          className={cn(
+            "ml-auto text-[10px] uppercase tracking-wider transition-colors",
+            isDefault ? "invisible pointer-events-none" : "text-text-muted hover:text-text-primary",
+          )}
         >
-          {valueText}
-        </span>
-        {!isDefault && (
-          <button
-            type="button"
-            onClick={onReset}
-            className="ml-auto text-[10px] uppercase tracking-wider text-text-muted hover:text-text-secondary transition-colors"
-            title="Reset to default"
-          >
-            reset
-          </button>
-        )}
+          reset
+        </button>
       </div>
-      {subText && (
-        <span className="text-[11px] tabular text-text-muted leading-none">
-          {subText}
-        </span>
-      )}
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="slider-range w-full mt-1"
-        style={{
-          background: `linear-gradient(to right, ${accent} 0%, ${accent} ${pct}%, ${CHART.surface} ${pct}%, ${CHART.surface} 100%)`,
-        }}
-      />
-      {presets && presets.length > 0 ? (
-        <div className="flex items-center gap-1 mt-0.5">
+
+      {/* track + thumb + transparent input */}
+      <div className="relative h-5">
+        {/* base track */}
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[5px] rounded-full"
+          style={{ background: CHART.surface }} />
+        {/* filled portion */}
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-[5px] rounded-full"
+          style={{ width: `${clamp(pct)}%`, background: accent, opacity: 0.85 }} />
+        {/* preset ticks */}
+        {presets?.map((p) => {
+          const tpct = max > min ? ((p.value - min) / (max - min)) * 100 : 0;
+          return (
+            <span key={`tick-${p.label}`}
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-[2px] h-[9px] rounded-full"
+              style={{ left: `${clamp(tpct)}%`, background: isActive(p.value) ? accent : CHART.axisText, opacity: isActive(p.value) ? 1 : 0.3 }} />
+          );
+        })}
+        {/* visible thumb + value bubble */}
+        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none"
+          style={{ left: `${clamp(pct)}%` }}>
+          <div className="w-[15px] h-[15px] rounded-full border-2"
+            style={{ background: CHART.bg, borderColor: accent, boxShadow: `0 0 0 3px ${accent}22` }} />
+        </div>
+        {/* transparent native range on top for interaction */}
+        <input
+          type="range" min={min} max={max} step={step} value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          aria-label={label}
+          className="pnl-scrub absolute inset-0"
+        />
+      </div>
+
+      {/* preset labels — clickable, aligned under their ticks */}
+      {presets && presets.length > 0 && (
+        <div className="relative h-3">
           {presets.map((p) => {
-            const active = isPresetActive(p.value);
+            const tpct = max > min ? ((p.value - min) / (max - min)) * 100 : 0;
+            const active = isActive(p.value);
+            // Nudge the edge labels inward so they don't clip the track ends.
+            const anchor = tpct <= 2 ? "left-0 translate-x-0" : tpct >= 98 ? "right-0 left-auto translate-x-0" : "-translate-x-1/2";
             return (
               <button
-                key={p.label}
-                type="button"
-                onClick={() => onChange(p.value)}
+                key={`lbl-${p.label}`} type="button" onClick={() => onChange(p.value)}
                 className={cn(
-                  "px-2 py-0.5 rounded text-[10px] tabular border transition-colors",
-                  active
-                    ? "border-transparent text-bg font-semibold"
-                    : "border-border text-text-muted hover:text-text-secondary hover:border-text-muted/50",
+                  "absolute top-0 text-[9px] tabular leading-none transition-colors",
+                  anchor,
+                  active ? "font-semibold" : "text-text-muted hover:text-text-secondary",
                 )}
-                style={active ? { backgroundColor: accent } : undefined}
+                style={{ left: anchor === "-translate-x-1/2" ? `${tpct}%` : undefined, color: active ? accent : undefined }}
               >
                 {p.label}
               </button>
             );
           })}
         </div>
-      ) : (
-        <div className="flex justify-between text-[10px] tabular text-text-muted/70 leading-none">
-          <span>{minLabel}</span>
-          <span>{maxLabel}</span>
-        </div>
       )}
     </div>
   );
 }
 
-function pnlClass(v: number) {
-  return v >= 0 ? "text-up font-semibold" : "text-down font-semibold";
-}
-
 function fmtPnl(v: number): string {
   if (!isFinite(v)) return v > 0 ? "∞" : "−∞";
   const a = Math.abs(v);
-  if (a >= 1_000_000) return `${v < 0 ? "-" : ""}$${(a / 1_000_000).toFixed(2)}M`;
-  if (a >= 1_000) return `${v < 0 ? "-" : ""}$${(a / 1_000).toFixed(1)}k`;
-  return `${v < 0 ? "-" : ""}$${a.toFixed(0)}`;
+  if (a >= 1_000_000) return `${v < 0 ? "−" : ""}$${(a / 1_000_000).toFixed(2)}M`;
+  if (a >= 1_000) return `${v < 0 ? "−" : ""}$${(a / 1_000).toFixed(1)}k`;
+  return `${v < 0 ? "−" : ""}$${a.toFixed(0)}`;
 }
 
 function pctFromSpot(p: number, spot: number): string {
   if (!spot) return "";
-  const d = (p - spot) / spot * 100;
+  const d = ((p - spot) / spot) * 100;
   if (Math.abs(d) < 0.5) return "spot";
   return `${d >= 0 ? "+" : ""}${d.toFixed(0)}%`;
-}
-
-function erf(x: number): number {
-  const sign = x < 0 ? -1 : 1;
-  const ax = Math.abs(x);
-  const t = 1 / (1 + 0.3275911 * ax);
-  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
-  const a4 = -1.453152027, a5 = 1.061405429;
-  const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
-  return sign * y;
 }

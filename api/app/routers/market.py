@@ -15,6 +15,9 @@ from fastapi import APIRouter, Query
 
 from ..config import settings
 from ..nautilus import ib_options
+from ..nautilus.ib_client_base import (
+    clear_subscription_error, get_subscription_error,
+)
 from ..nautilus.ib_node import ib_node
 from ..nautilus.mock.data import (
     SECTORS, generate_historical_bars, get_all_symbols, simulate_tick,
@@ -135,12 +138,18 @@ async def _fetch_bars(symbol: str, timeframe: str, days: int, cache_key: tuple):
     if ib_node.is_connected:
         bars = await ib_options.get_bars(symbol, timeframe, days)
         if bars:
+            # Real data flowed — any prior entitlement gripe is resolved.
+            clear_subscription_error(symbol)
             resp = {"symbol": symbol, "timeframe": timeframe, "bars": bars, "source": "ibkr"}
             _bars_cache.set(cache_key, resp, ttl_seconds=ttl)
             return resp
-        # IBKR rejected (often: no subscription for the cash index). Try the
-        # ETF proxy so the chart still has data; the dashboard sees the
-        # requested symbol in the payload with ``proxy_used`` annotated.
+        # IBKR rejected (often: no subscription for the cash index). The
+        # ib_async error event has by now recorded *which* subscription is
+        # missing — surface it so the chart can name it instead of silently
+        # swapping in the proxy. Try the ETF proxy so the chart still has
+        # data; the dashboard sees the requested symbol with ``proxy_used``
+        # and ``subscription`` annotated.
+        sub = get_subscription_error(symbol)
         proxy = _INDEX_PROXY.get(symbol)
         if proxy:
             proxy_bars = await ib_options.get_bars(proxy, timeframe, days)
@@ -152,6 +161,8 @@ async def _fetch_bars(symbol: str, timeframe: str, days: int, cache_key: tuple):
                     "source": "ibkr",
                     "proxy_used": proxy,
                 }
+                if sub:
+                    resp["subscription"] = sub
                 _bars_cache.set(cache_key, resp, ttl_seconds=ttl)
                 return resp
 
@@ -160,7 +171,12 @@ async def _fetch_bars(symbol: str, timeframe: str, days: int, cache_key: tuple):
         return {"symbol": symbol, "timeframe": timeframe, "bars": bars, "source": "synthetic"}
 
     # Cache "unavailable" briefly so we don't refire every render cycle.
-    empty = {"symbol": symbol, "timeframe": timeframe, "bars": [], "source": "unavailable"}
+    empty: Dict[str, Any] = {
+        "symbol": symbol, "timeframe": timeframe, "bars": [], "source": "unavailable",
+    }
+    sub = get_subscription_error(symbol)
+    if sub:
+        empty["subscription"] = sub
     _bars_cache.set(cache_key, empty, ttl_seconds=30)
     return empty
 

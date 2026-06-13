@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import ib_trade_log, monitor, preflight, scan_store
+from . import forecast_scoring, monitor, position_analysis, preflight, scan_store
 from .spread_finder import scan as run_spread_scan
 
 logger = logging.getLogger(__name__)
@@ -41,15 +41,58 @@ async def _preflight_job():
     await preflight.run(scope="scheduled")
 
 
-async def _trade_sync_job():
-    """Log today's IBKR fills into trade_history. reqExecutions only covers
-    the current session, so this runs every 10 min during RTH (plus once
-    after the close) to keep the log complete without any manual sync."""
-    result = await ib_trade_log.sync_executions()
-    if result.get("inserted"):
-        logger.info("trade sync: %d new fill(s) logged", result["inserted"])
-    elif result.get("error"):
-        logger.debug("trade sync skipped: %s", result["error"])
+async def _forecast_scoring_job():
+    """Daily — score forecasts whose horizon has elapsed against the realised
+    close. Turns the ``forecast_log`` audit trail into a real track record so
+    the Insights surface can show "is the model actually any good?"."""
+    try:
+        scored = await forecast_scoring.run_scoring()
+        if scored:
+            logger.info("forecast scoring: %d forecast(s) scored", scored)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("forecast scoring failed: %s", e)
+
+
+async def _position_analysis_job():
+    """Daily — run the AI agent pipeline on every open option position and
+    store the verdict, so the Insights timeline accumulates a running record
+    of how the agents read each holding over time."""
+    try:
+        summary = await position_analysis.analyze_open_positions()
+        logger.info("position analysis job: %s", summary)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("position analysis job failed: %s", e)
+
+
+async def _bar_archive_job():
+    """Daily after the close — roll every cached bar parquet forward.
+
+    yfinance only serves ~59d of 15m/30m/5m history, but the cache merges
+    fetches instead of replacing (backtest.data), so refreshing daily grows an
+    intraday archive past the provider cap — the only way to ever backtest
+    intraday strategies on >2 months of data without paid feeds."""
+    import asyncio
+    from datetime import timedelta
+
+    from ..backtest.data import BARS_DIR, _INTERVAL_LIMIT_DAYS, get_bars
+
+    refreshed = 0
+    for path in sorted(BARS_DIR.glob("*.parquet")):
+        try:
+            symbol, interval = path.stem.rsplit("_", 1)
+        except ValueError:
+            continue
+        limit = _INTERVAL_LIMIT_DAYS.get(interval)
+        if limit is None:
+            continue
+        start = datetime.now(timezone.utc) - timedelta(days=min(limit, 30))
+        try:
+            await asyncio.to_thread(get_bars, symbol, interval, start, None, True)
+            refreshed += 1
+        except Exception as e:  # noqa: BLE001
+            logger.warning("bar archive refresh %s %s failed: %s", symbol, interval, e)
+        await asyncio.sleep(2)  # stay under yfinance burst limits
+    logger.info("bar archive job: refreshed %d parquet(s)", refreshed)
 
 
 async def _opportunity_scan_job():
@@ -91,28 +134,37 @@ def start():
         replace_existing=True,
         max_instances=1,
     )
-    # Every 10 min during RTH + a 16:20 sweep so fills landing in the last
-    # bucket of the day still get logged.
     scheduler.add_job(
-        _trade_sync_job,
-        CronTrigger(day_of_week="mon-fri", hour="9-16", minute="*/10",
+        _position_analysis_job,
+        # 16:15 ET weekdays — just after the cash close, when marks are fresh.
+        CronTrigger(day_of_week="mon-fri", hour=16, minute=15,
                     timezone="US/Eastern"),
-        id="trade-sync",
+        id="position-analysis",
         replace_existing=True,
         max_instances=1,
     )
     scheduler.add_job(
-        _trade_sync_job,
-        CronTrigger(day_of_week="mon-fri", hour=16, minute=20,
+        _bar_archive_job,
+        # 18:00 ET daily (incl. weekends — catches missed weekday runs).
+        CronTrigger(hour=18, minute=0, timezone="US/Eastern"),
+        id="bar-archive",
+        replace_existing=True,
+        max_instances=1,
+    )
+    scheduler.add_job(
+        _forecast_scoring_job,
+        # 17:30 ET on weekdays — after the cash close so the day's bar is final.
+        CronTrigger(day_of_week="mon-fri", hour=17, minute=30,
                     timezone="US/Eastern"),
-        id="trade-sync-close",
+        id="forecast-scoring",
         replace_existing=True,
         max_instances=1,
     )
     scheduler.start()
     logger.info(
-        "scheduler started: exit-monitor (5min RTH), trade-sync (10min RTH), "
-        "opportunity-scan (09:30 ET), preflight (3rd Fri 09:05 ET)"
+        "scheduler started: exit-monitor (5min RTH), opportunity-scan (09:30 ET), "
+        "position-analysis (16:15 ET), forecast-scoring (17:30 ET), "
+        "preflight (3rd Fri 09:05 ET)"
     )
 
 

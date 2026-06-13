@@ -6,6 +6,7 @@ const MONITOR_TABS = [
   { href: "/monitor/exit",        label: "Exit" },
   { href: "/monitor/tracker",     label: "Tracker" },
   { href: "/monitor/performance", label: "Performance" },
+  { href: "/monitor/insights",    label: "Insights" },
   { href: "/monitor/journal",     label: "Journal" },
 ];
 

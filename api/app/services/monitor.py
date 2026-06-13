@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 from ..nautilus import ib_options
@@ -78,50 +78,17 @@ def _last_day_buffer_for(spread: OpenSpread) -> float:
 
 
 def _is_last_trade_day(expiry_yyyymmdd: str, today: Optional[date] = None) -> bool:
-    """True when today is the last day the spread can still be traded.
+    """True if today is the Thursday before this expiration Friday.
 
     European-style index options stop trading Thursday close; Friday opens
-    only to settle the cash value — so the canonical case is "the Thursday
-    before expiration Friday". We also fire on expiration day itself
-    (AM-settlement risk if the position somehow survived Thursday) and on a
-    Wednesday/any weekday when expiry is ≤ 1 day away — that covers
-    holiday-shifted weeks where Thursday is closed, instead of silently
-    never firing rule #2.
+    only to settle the cash value. So Thursday is when rule #2 fires.
     """
     try:
         exp = datetime.strptime(expiry_yyyymmdd, "%Y%m%d").date()
     except (ValueError, TypeError):
         return False
     today = today or date.today()
-    days_left = (exp - today).days
-    return 0 <= days_left <= 1 and today.weekday() < 5
-
-
-def _rule2_levels(
-    short_strike: float,
-    short_right: str,
-    buffer_pct: float,
-) -> tuple[float, float]:
-    """(trigger_price, soft_band_price) for exit-rule #2, side-aware.
-
-    Bull put (short P): danger is the underlying FALLING toward the strike —
-    trigger sits ``buffer_pct`` ABOVE the strike and fires when price ≤ it.
-    Bear call (short C): mirrored — trigger sits below, fires when price ≥ it.
-    The soft band (1.5× buffer) is the early-warning level on the same side.
-    """
-    if short_right == "C":
-        trigger = round(short_strike * (1 - buffer_pct / 100), 2)
-        soft = round(short_strike * (1 - 1.5 * buffer_pct / 100), 2)
-    else:
-        trigger = round(short_strike * (1 + buffer_pct / 100), 2)
-        soft = round(short_strike * (1 + 1.5 * buffer_pct / 100), 2)
-    return trigger, soft
-
-
-def _rule2_breached(underlying: float, level: float, short_right: str) -> bool:
-    """Has the underlying crossed a rule-#2 level? Puts breach downward
-    (price ≤ level), calls breach upward (price ≥ level)."""
-    return underlying >= level if short_right == "C" else underlying <= level
+    return (exp - today) == timedelta(days=1) and today.weekday() == 3  # Thu
 
 
 @dataclass
@@ -242,16 +209,14 @@ async def refresh() -> Dict[str, Any]:
             # ---------- Exit rule #2 (last trade day / buffer pct) ----------
             buf_pct = _last_day_buffer_for(sp)
             short_strike = float(sp.short_strike)
-            # Side-aware buffer level: bull puts fire as price falls toward
-            # the strike, bear calls as it rises. Mirrored math, same rule.
-            short_leg = next((leg for leg in sp.legs if leg.action == "SELL"), None)
-            short_right = (getattr(short_leg, "right", "") or "P").upper()
-            buf_price, soft_band = _rule2_levels(short_strike, short_right, buf_pct)
+            # Bull-put buffer level = strike × (1 + buffer/100). When price
+            # drops to this level (or below) on Thursday, close immediately.
+            buf_price = round(short_strike * (1 + buf_pct / 100), 2)
             is_last = _is_last_trade_day(sp.expiry)
             rule2_fired = (
                 is_last
                 and underlying_price is not None
-                and _rule2_breached(underlying_price, buf_price, short_right)
+                and underlying_price <= buf_price
             )
 
             status = _classify(short_delta, exit_d)
@@ -265,7 +230,8 @@ async def refresh() -> Dict[str, Any]:
             elif is_last and underlying_price is not None and status == "safe":
                 # On the last day even a "safe" delta is worth a warning when
                 # we're approaching the buffer (within 1.5× buffer of strike).
-                if _rule2_breached(underlying_price, soft_band, short_right):
+                soft_band = round(short_strike * (1 + 1.5 * buf_pct / 100), 2)
+                if underlying_price <= soft_band:
                     status = "warning"
                     note = (
                         f"Last trade day — underlying {underlying_price:.2f} "

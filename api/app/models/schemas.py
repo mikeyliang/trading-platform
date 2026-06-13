@@ -488,6 +488,9 @@ class OptionChain(BaseModel):
     ``strikes`` are populated (the lightweight discovery shape)."""
 
     symbol: str
+    underlying_price: Optional[float] = Field(
+        None, description="Spot price of the underlying at chain-build time."
+    )
     expirations: List[str] = Field(default_factory=list, description="Available YYYYMMDD expiries.")
     strikes: List[float] = Field(default_factory=list)
     calls: List[OptionContract] = Field(default_factory=list)

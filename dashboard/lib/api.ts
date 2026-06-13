@@ -1,20 +1,20 @@
 import type {
   WatchlistItem, Position, Trade, Order, AccountInfo,
-  StrategyInfo, BacktestRequest, BacktestResult, Bar, Quote,
+  StrategyInfo, BacktestRequest, BacktestResult, Bar, Quote, SubscriptionError,
 } from "@/types";
+import { resolveApiBase } from "./api-base";
 
-// Default to same-origin so the Next.js rewrite proxies everything through
-// port 3000. Override with NEXT_PUBLIC_API_URL only for direct-CORS setups.
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+// Resolve the API origin at call time (env override → Coder port-swap →
+// same-origin). See lib/api-base.ts. No Next.js proxy involved.
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { cache: "no-store" });
+  const res = await fetch(`${resolveApiBase()}${path}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
   return res.json();
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${resolveApiBase()}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -25,7 +25,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function put<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${resolveApiBase()}${path}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -36,7 +36,7 @@ async function put<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function del<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { method: "DELETE", cache: "no-store" });
+  const res = await fetch(`${resolveApiBase()}${path}`, { method: "DELETE", cache: "no-store" });
   if (!res.ok) throw new Error(`DELETE ${path} failed: ${res.status}`);
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -48,9 +48,14 @@ export const api = {
 
   // market
   bars: (symbol: string, timeframe = "15m", days = 30) =>
-    get<{ symbol: string; timeframe: string; bars: Bar[]; source: string }>(
-      `/api/market/bars/${symbol}?timeframe=${timeframe}&days=${days}`
-    ),
+    get<{
+      symbol: string;
+      timeframe: string;
+      bars: Bar[];
+      source: string;
+      proxy_used?: string;
+      subscription?: SubscriptionError;
+    }>(`/api/market/bars/${symbol}?timeframe=${timeframe}&days=${days}`),
   quote: (symbol: string) => get<Quote>(`/api/market/quote/${symbol}`),
   quotes: (symbols: string[]) =>
     get<Quote[]>(`/api/market/quotes?symbols=${symbols.join(",")}`),
@@ -97,6 +102,27 @@ export const api = {
   backtestResults: () => get<BacktestResult[]>("/api/backtest/results"),
   backtestResult: (id: string) => get<BacktestResult>(`/api/backtest/results/${id}`),
 
+  // simulation (NautilusTrader)
+  simPresets: () =>
+    get<{ presets: SimPreset[]; default_params: Record<string, number | boolean> }>("/api/sim/presets"),
+  simStart: (req: SimRunRequest) => post<SimRunSummary>("/api/sim/run", req),
+  simRuns: () => get<SimRunSummary[]>("/api/sim/runs"),
+  simRun: (id: string) => get<SimRunDetail>(`/api/sim/runs/${id}`),
+  simChart: (id: string, symbol: string) =>
+    get<SimChartPayload>(`/api/sim/runs/${id}/chart?symbol=${encodeURIComponent(symbol)}`),
+  simDelete: (id: string) => del<{ status: string }>(`/api/sim/runs/${id}`),
+  newsAnalyst: (symbol: string) =>
+    get<NewsAnalystRead>(`/api/news-analyst/${encodeURIComponent(symbol)}`),
+
+  // trading bot
+  botStatus: () => get<BotSnapshot>("/api/bot/status"),
+  botStart: (req: Partial<BotSnapshot["config"]> & { force?: boolean }) =>
+    post<BotSnapshot>("/api/bot/start", req),
+  botStop: () => post<BotSnapshot>("/api/bot/stop", {}),
+  botReset: () => post<BotSnapshot>("/api/bot/reset", {}),
+  botGate: (preset: string, timeframe: string) =>
+    get<BotGate>(`/api/bot/gate?preset=${encodeURIComponent(preset)}&timeframe=${encodeURIComponent(timeframe)}`),
+
   // market microstructure: depth (Level 2), tape (T&S), volume profile
   depthSnapshot: (symbol: string, rows = 10) =>
     get<DepthSnapshot>(`/api/depth/${symbol}?rows=${rows}`),
@@ -114,6 +140,10 @@ export const api = {
     const q = params.toString() ? `?${params.toString()}` : "";
     return get<OptionsChain>(`/api/options/chain/${symbol}${q}`);
   },
+  // Next earnings date via IBKR WSH. Returns source="unavailable" (not an
+  // error) when the account lacks the subscription or the symbol is an index.
+  optionsEarnings: (symbol: string) =>
+    get<EarningsInfo>(`/api/options/earnings/${symbol}`),
   spreadScan: (symbol = "RUT", side: "put" | "call" | "both" = "put", tradeTypes?: string[], maxPerType = 5) => {
     const params = new URLSearchParams({ symbol, side, max_per_type: String(maxPerType) });
     (tradeTypes || []).forEach(t => params.append("trade_types", t));
@@ -162,6 +192,32 @@ export const api = {
   // analyzer
   analyze: (symbol: string, timeframe = "1d", days = 60) =>
     get<AnalyzeResult>(`/api/analyze/${symbol}?timeframe=${timeframe}&days=${days}`),
+
+  // Insights — stored analysis over time.
+  // Cross-contract AI agent verdicts, newest first.
+  recentAgentRuns: (params: { symbol?: string; limit?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (params.symbol) q.set("symbol", params.symbol);
+    if (params.limit) q.set("limit", String(params.limit));
+    const s = q.toString();
+    return get<RecentAgentRun[]>(`/api/options/agent-runs/recent${s ? "?" + s : ""}`);
+  },
+  // Portfolio-wide forecast track record (per-model accuracy + per-symbol).
+  forecastTrackRecord: (horizon?: number) => {
+    const q = horizon ? `?horizon=${horizon}` : "";
+    return get<ForecastTrackRecord>(`/api/options/forecast/track-record${q}`);
+  },
+  forecastScoreNow: () =>
+    post<{ scored: number }>("/api/options/forecast/score-now", {}),
+  // Run the AI agent pipeline on every open option position now.
+  analyzePositions: (force = false) =>
+    post<{
+      open_options: number;
+      analysed: number;
+      skipped: number;
+      failed: number;
+      runs: { contract: string; run_id: number | null }[];
+    }>(`/api/options/analyze-positions${force ? "?force=true" : ""}`, {}),
 
   // fundamentals — IBKR-only build returns empty stubs; UI should handle null fields
   fundamentals: (symbol: string) => get<Fundamentals>(`/api/fundamentals/${symbol}`),
@@ -220,6 +276,10 @@ export const api = {
     agent_id?: string;
     start?: string;
     end?: string;
+    asset_class?: "option" | "stock" | "future";
+    account_id?: string;
+    transaction_type?: string;
+    has_note?: boolean;
     page?: number;
     page_size?: number;
   } = {}) => {
@@ -231,6 +291,10 @@ export const api = {
     if (params.agent_id) q.set("agent_id", params.agent_id);
     if (params.start) q.set("start", params.start);
     if (params.end) q.set("end", params.end);
+    if (params.asset_class) q.set("asset_class", params.asset_class);
+    if (params.account_id) q.set("account_id", params.account_id);
+    if (params.transaction_type) q.set("transaction_type", params.transaction_type);
+    if (params.has_note != null) q.set("has_note", String(params.has_note));
     if (params.page) q.set("page", String(params.page));
     if (params.page_size) q.set("page_size", String(params.page_size));
     const s = q.toString();
@@ -273,42 +337,50 @@ export const api = {
   tradeHistoryUpdate: (id: number, payload: TradeHistoryUpdatePayload) =>
     put<TradeHistoryRecord>(`/api/trade-history/${id}`, payload),
   tradeHistoryDelete: (id: number) => del<void>(`/api/trade-history/${id}`),
-  // Pull today's fills from the IBKR gateway into trade_history (deduped
-  // on execution id). Also runs on a 10-min RTH schedule server-side.
-  tradeHistorySyncIbkr: () =>
-    post<TradeSyncResult>("/api/trade-history/sync-ibkr", {}),
-  // Fills on a symbol shaped for chart markers.
-  tradeMarkers: (symbol: string, days = 90) =>
-    get<TradeMarkersResponse>(
-      `/api/trade-history/markers/${encodeURIComponent(symbol)}?days=${days}`
-    ),
+
+  // IBKR Flex backfill: pulls historical executions from IBKR's Flex Web
+  // Service (separate from the live socket). Status endpoint is cheap;
+  // the backfill endpoint runs N consecutive 365-day Flex requests.
+  tradeHistoryFlexStatus: () =>
+    get<FlexBackfillStatus>("/api/trade-history/backfill-flex/status"),
+  tradeHistoryFlexBackfill: (params: {
+    years_back?: number;
+    from_date?: string;
+    to_date?: string;
+    include_eae?: boolean;
+    refresh?: boolean;
+  } = {}) => {
+    const q = new URLSearchParams();
+    if (params.years_back) q.set("years_back", String(params.years_back));
+    if (params.from_date) q.set("from_date", params.from_date);
+    if (params.to_date) q.set("to_date", params.to_date);
+    if (params.include_eae != null) q.set("include_eae", String(params.include_eae));
+    if (params.refresh) q.set("refresh", "true");
+    const s = q.toString();
+    return post<FlexBackfillResult>(
+      `/api/trade-history/backfill-flex${s ? "?" + s : ""}`,
+      {},
+    );
+  },
+  // Background variant: returns immediately with a job id; poll
+  // tradeHistoryFlexJob(id) to get progress + result.
+  tradeHistoryFlexBackfillBackground: (params: {
+    years_back?: number;
+    refresh?: boolean;
+  } = {}) => {
+    const q = new URLSearchParams();
+    q.set("background", "true");
+    if (params.years_back) q.set("years_back", String(params.years_back));
+    if (params.refresh) q.set("refresh", "true");
+    return post<FlexJobHandle>(
+      `/api/trade-history/backfill-flex?${q.toString()}`,
+      {},
+    );
+  },
+  tradeHistoryFlexJob: (jobId: string) =>
+    get<FlexJobState>(`/api/trade-history/backfill-flex/jobs/${jobId}`),
 
 };
-
-export interface TradeSyncResult {
-  fetched: number;
-  inserted: number;
-  skipped: number;
-  error: string | null;
-}
-
-export interface TradeMarker {
-  time: number; // epoch seconds
-  side: TradeSide;
-  quantity: number | null;
-  price: number | null;
-  pnl: number | null;
-  strategy: string | null;
-  is_option: boolean;
-  strike: number | null;
-  right: string | null;
-  expiry: string | null;
-}
-
-export interface TradeMarkersResponse {
-  symbol: string;
-  trades: TradeMarker[];
-}
 
 export type TradeSide = "BUY" | "SELL";
 export type TradeStatus =
@@ -373,6 +445,65 @@ export interface TradeStats {
   total_pnl: number;
   avg_pnl: number;
   profit_factor: number;
+}
+
+export interface FlexBackfillAccount {
+  account_id: string;
+  rows: number;
+}
+
+export interface FlexBackfillStatus {
+  configured: boolean;
+  cooldown_sec: number;
+  query_id: string | null;
+  total_rows: number;
+  earliest: string | null;
+  latest: string | null;
+  accounts: FlexBackfillAccount[];
+}
+
+export interface FlexBackfillSliceLog {
+  from?: string | null;
+  to?: string | null;
+  trades?: number;
+  option_eae?: number;
+  error?: string;
+  code?: string | null;
+  info?: string;
+}
+
+export interface FlexBackfillResult {
+  fetched: number;
+  trades: number;
+  option_eae: number;
+  accounts: string[];
+  inserted: number;
+  updated: number;
+  skipped: number;
+  refresh: boolean;
+  slices: FlexBackfillSliceLog[];
+}
+
+export interface FlexJobHandle {
+  job_id: string;
+  status: "running" | "done" | "failed" | "cancelled";
+  slice_count: number;
+  years_back: number;
+  refresh: boolean;
+}
+
+export interface FlexJobState {
+  id: string;
+  status: "running" | "done" | "failed" | "cancelled";
+  started_at: string;
+  finished_at: string | null;
+  slice_count: number;
+  current_slice: number;
+  last_slice_info: FlexBackfillSliceLog | null;
+  result: FlexBackfillResult | null;
+  error: string | null;
+  refresh: boolean;
+  years_back: number;
 }
 
 export interface TradeAnalysisTrade {
@@ -550,12 +681,6 @@ export interface SpreadCandidate {
   kelly_pct: number;
   underlying_price: number;
   passes: Record<string, boolean>;
-  // Informational analytics (not entry gates): breakeven at expiry, 1σ
-  // expected move to expiry from the short leg's live IV, and how many σ
-  // of cushion the short strike has (distance ÷ expected move).
-  breakeven?: number | null;
-  expected_move_pct?: number | null;
-  cushion_sigma?: number | null;
 }
 
 export interface SpreadScanResult {
@@ -573,12 +698,6 @@ export interface SpreadScanResult {
     trade_type: string;
     candidate: SpreadCandidate;
     reason: string;
-    runner_up_type?: string | null;
-    span_pct?: number;
-    // Qualifying trades on OTHER underlyings (e.g. Space when the
-    // recommendation is a RUT-family trade) — independent books, can
-    // be placed alongside the primary pick.
-    also_qualifying?: string[];
   } | null;
 }
 
@@ -795,6 +914,12 @@ export interface OptionsChain {
   puts: OptionRow[];
 }
 
+export interface EarningsInfo {
+  symbol: string;
+  next_date: string | null; // YYYYMMDD
+  source: "wsh" | "unavailable" | string;
+}
+
 // ---- market microstructure types --------------------------------------------
 
 export interface DepthLevel {
@@ -975,6 +1100,10 @@ export interface OptionAnalyzeResult {
     score: number;
     label: string;
     notes: string[];
+    /** Concrete next step: ADD | HOLD | SPEC | TRIM | EXIT. */
+    action?: string | null;
+    /** Confidence in the verdict: low | medium | high. */
+    conviction?: string | null;
   };
   tradingagents_enabled: boolean;
 
@@ -1007,23 +1136,12 @@ export interface OptionAnalyzeResult {
     realized_vol_30d: number | null;
     realized_vol_90d: number | null;
     iv_to_rv_ratio: number | null;
-    // Real IV-regime context from IBKR's vol indices (52-week window).
-    iv_rank: number | null;
-    iv_percentile: number | null;
-    iv_52w_high: number | null;
-    iv_52w_low: number | null;
-    underlying_iv_now: number | null;
-    iv_history: { time: number; value: number }[];
-    hv_history: { time: number; value: number }[];
-  };
-  // ---- unrealized P&L vs entry for the analyzed position ----
-  position_pnl: {
-    cost_basis: number | null;
-    market_value: number | null;
-    unrealized_pnl: number | null;
-    unrealized_pnl_pct: number | null;
-    mark: number | null;
-    mark_source: string | null;
+    // iv = vol used to price every series (calibrated to the live mark when
+    // one exists); market_iv = IBKR's reported model IV; iv_source explains
+    // which path produced it.
+    iv?: number | null;
+    market_iv?: number | null;
+    iv_source?: "calibrated_to_mark" | "ibkr_model" | "realized_vol" | "default";
   };
   narrative: string;
 
@@ -1049,22 +1167,15 @@ export interface OptionAnalyzeResult {
     ema9: number[];
     ema21: number[];
   };
-  // ---- option-side chart: real IBKR option history when available,
-  //      synthetic BS-replay fallback. `synthetic_prices` carries the
-  //      active close series either way (back-compat name). ----
+  // ---- option-side chart: real IBKR option bars when available, else a
+  // modeled Black-Scholes replay. `source` says which; `prices`+`times` are
+  // canonical (synthetic_prices kept as a back-compat alias). ----
   option_chart: {
     timeframe: OptionAnalyzerTimeframe;
-    source: "ibkr" | "synthetic";
+    source: "ibkr" | "modeled";
+    bar_size: string;
     times: number[];
-    bars: {
-      time: number;
-      open: number;
-      high: number;
-      low: number;
-      close: number;
-      volume: number;
-    }[];
-    volume: number[];
+    prices: number[];
     synthetic_prices: number[];
     rsi: number[];
     macd: number[];
@@ -1129,8 +1240,253 @@ export interface OptionAnalyzeResult {
     } | null;
     iv: number;
     iv_rv_ratio: number | null;
-    iv_rank: number | null;
     dte: number;
     abs_delta: number | null;
   };
+}
+
+// ── Insights: stored analysis over time ──────────────────────────────
+export interface RecentAgentRun {
+  id: number;
+  ran_at: string;
+  symbol: string;
+  strike: number;
+  expiry: string;
+  right: "C" | "P";
+  quantity: number;
+  is_long: boolean;
+  spot_at_run: number | null;
+  mid_at_run: number | null;
+  duration_ms: number | null;
+  verdict: string | null;
+  rationale: string | null;
+  failed_agents: number;
+}
+
+export interface ForecastModelStat {
+  n: number;
+  mae_pct: number | null;
+  rmse_pct: number | null;
+  sign_hit_rate: number | null;
+}
+
+export interface ForecastTrackRecord {
+  available: boolean;
+  horizon: number | null;
+  horizons: number[];
+  counts: { logged: number; scored: number; pending: number };
+  models: Record<string, ForecastModelStat>;
+  per_symbol: { symbol: string; n: number; mae_pct: number | null; hit_rate: number | null }[];
+}
+
+// ── Simulation (NautilusTrader) ──────────────────────────────────────
+
+export interface SimPreset {
+  id: string;
+  name: string;
+  description: string;
+  params: Record<string, number | boolean>;
+}
+
+export interface SimRunRequest {
+  symbols: string[];
+  timeframe: string;
+  start_date: string;
+  end_date: string;
+  initial_capital: number;
+  preset: string;
+  params?: Record<string, number | boolean>;
+  label?: string;
+}
+
+export interface SimStats {
+  initial_capital: number;
+  final_capital: number;
+  total_return: number;
+  total_return_pct: number;
+  max_drawdown: number;
+  max_drawdown_pct: number;
+  sharpe_ratio: number;
+  sortino_ratio: number;
+  win_rate: number;
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  avg_win: number;
+  avg_loss: number;
+  profit_factor: number;
+  expectancy: number;
+  avg_trade_hours: number | null;
+  buy_hold_return_pct?: number;
+}
+
+export interface SimAggregate {
+  symbols_ok: number;
+  avg_return_pct: number;
+  avg_sharpe: number;
+  avg_max_drawdown_pct: number;
+  total_trades: number;
+  win_rate: number;
+  profit_factor: number;
+  best_symbol: { symbol: string; return_pct: number };
+  worst_symbol: { symbol: string; return_pct: number };
+}
+
+export interface SimRunSummary {
+  id: string;
+  label: string;
+  preset: string;
+  symbols: string[];
+  timeframe: string;
+  start_date: string;
+  end_date: string;
+  initial_capital: number;
+  params: Record<string, number | boolean>;
+  status: "running" | "completed" | "error";
+  progress: { done: number; total: number; current: string | null };
+  error: string | null;
+  created_at: string;
+  finished_at: string | null;
+  aggregate: SimAggregate | null;
+}
+
+export interface SimTrade {
+  entry_time: string;
+  exit_time: string | null;
+  side: "BUY" | "SELL";
+  entry_price: number;
+  exit_price: number | null;
+  quantity: number;
+  pnl: number | null;
+  pnl_pct: number | null;
+}
+
+export interface SimSymbolResult {
+  stats?: SimStats;
+  trades?: SimTrade[];
+  equity_curve?: { time: number; value: number }[];
+  markers?: SimMarker[];
+  error?: string;
+}
+
+export interface SimRunDetail extends SimRunSummary {
+  results: Record<string, SimSymbolResult>;
+}
+
+export interface SimMarker {
+  time: number;
+  type: "entry" | "exit";
+  side: "long" | "short";
+  price: number;
+  score?: number;
+  reasons?: string[];
+  stop?: number;
+  target?: number;
+  reason?: string;
+}
+
+export interface SimChartPayload {
+  stats: SimStats;
+  trades: SimTrade[];
+  equity_curve: { time: number; value: number }[];
+  chart: {
+    candles: { time: number; open: number; high: number; low: number; close: number; volume: number }[];
+    overlays: Record<"vwap" | "ema_fast" | "ema_slow" | "ema_trend", (number | null)[]>;
+    panes: Record<string, (number | null)[]>;
+    structure: {
+      choch: { time: number; dir: 1 | -1; price: number }[];
+      bos: { time: number; dir: 1 | -1; price: number }[];
+    };
+    volume_profile: { bins: number[]; volumes: number[]; poc: number; vah: number; val: number };
+    markers: SimMarker[];
+    params: Record<string, number | boolean>;
+  };
+}
+
+export interface NewsAnalystRead {
+  symbol: string;
+  verdict: "bullish" | "bearish" | "neutral" | "mixed";
+  confidence: number;
+  bias_score: number;
+  summary: string;
+  working_for: string[];
+  working_against: string[];
+  headlines: { title: string; source: string; published: string; link: string }[];
+  model: string;
+  as_of: string;
+  cached: boolean;
+}
+
+// ── Trading bot ──────────────────────────────────────────────────────
+
+export interface BotPosition {
+  qty: number;
+  entry_price: number;
+  entry_time: string;
+  stop: number;
+  target: number;
+  last_price: number;
+  entry_score: number;
+  entry_reasons: string[];
+  news_bias: number | null;
+  news_verdict: string;
+}
+
+export interface BotClosedTrade {
+  symbol: string;
+  entry_time: string;
+  exit_time: string;
+  entry_price: number;
+  exit_price: number;
+  qty: number;
+  pnl: number;
+  pnl_pct: number;
+  reason: string;
+  entry_score: number | null;
+  news_bias: number | null;
+}
+
+export interface BotDecision {
+  time: string;
+  kind: "entry" | "exit" | "blocked" | "news" | "data" | "error" | "lifecycle";
+  symbol: string;
+  message: string;
+  score?: number;
+  news_bias?: number | null;
+  pnl?: number;
+  qty?: number;
+}
+
+export interface BotSnapshot {
+  status: "running" | "stopped";
+  config: {
+    symbols: string[];
+    timeframe: string;
+    preset: string;
+    params: Record<string, number | boolean>;
+    initial_capital: number;
+    max_positions: number;
+    news_gate: boolean;
+    news_block_below: number;
+  };
+  validated_by: string | null;
+  started_at: string | null;
+  last_cycle_at: string | null;
+  last_error: string | null;
+  cash: number;
+  equity: number;
+  total_return_pct: number;
+  positions: Record<string, BotPosition>;
+  open_count: number;
+  closed_trades: BotClosedTrade[];
+  trade_count: number;
+  win_rate: number;
+  decisions: BotDecision[];
+  equity_history: { time: number; value: number }[];
+}
+
+export interface BotGate {
+  validated: boolean;
+  run: { id: string; label: string; aggregate: SimAggregate; finished_at: string } | null;
+  criteria: string;
 }

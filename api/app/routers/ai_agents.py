@@ -32,7 +32,6 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from ..config import settings
 from ..services import db
 from ..services.news import fetch_news
 
@@ -165,41 +164,6 @@ _PER_CALL_TIMEOUT_S = 35
 # get an answer in 75s, bail and surface "agent timed out" — the
 # pipeline progresses with the remaining agents.
 _PER_AGENT_TIMEOUT_S = 75
-
-
-# Claude model for agent calls — same env override as llm_read.
-_ANTHROPIC_MODEL = os.getenv("ANTHROPIC_ANALYSIS_MODEL", "claude-opus-4-8")
-
-
-async def _call_anthropic(prompt: str, system: str) -> tuple[str, str]:
-    """One Claude call via the direct Anthropic API. Returns
-    (output_text, model_used) — same contract as _call_openrouter."""
-    from anthropic import AsyncAnthropic
-
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-    msg = await client.messages.create(
-        model=_ANTHROPIC_MODEL,
-        max_tokens=2048,
-        thinking={"type": "adaptive"},
-        system=system,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
-    return text.strip(), _ANTHROPIC_MODEL
-
-
-async def _call_llm(prompt: str, system: str) -> tuple[str, str]:
-    """Provider-preference wrapper: direct Anthropic API when the key is
-    configured (better, more consistent agent reads), OpenRouter free-model
-    chain otherwise — and as the rescue path if the Claude call errors."""
-    if settings.anthropic_api_key:
-        try:
-            return await _call_anthropic(prompt, system)
-        except Exception as e:  # noqa: BLE001
-            logger.warning("anthropic agent call failed (%s) — falling back to OpenRouter", e)
-            if not os.getenv("OPENROUTER_API_KEY"):
-                raise HTTPException(502, f"Anthropic call failed: {e}")
-    return await _call_openrouter(prompt, system)
 
 
 async def _call_openrouter(prompt: str, system: str) -> tuple[str, str]:
@@ -547,17 +511,17 @@ async def _run_pipeline(r: AgentRunRequest) -> AsyncIterator[str]:
         # outer wait_for guards against everything afterward.
         items = await fetch_news(r.symbol)
         prompt = _news_prompt(items, r)
-        text, model = await _call_llm(prompt, _SYSTEM_BASE)
+        text, model = await _call_openrouter(prompt, _SYSTEM_BASE)
         return text, model, items
 
     async def underlying_task() -> tuple[str, str]:
-        return await _call_llm(_underlying_prompt(r), _SYSTEM_BASE)
+        return await _call_openrouter(_underlying_prompt(r), _SYSTEM_BASE)
 
     async def option_task() -> tuple[str, str]:
-        return await _call_llm(_option_prompt(r), _SYSTEM_BASE)
+        return await _call_openrouter(_option_prompt(r), _SYSTEM_BASE)
 
     async def decay_task() -> tuple[str, str]:
-        return await _call_llm(_decay_prompt(r), _SYSTEM_BASE)
+        return await _call_openrouter(_decay_prompt(r), _SYSTEM_BASE)
 
     results: Dict[str, Dict[str, Any]] = {}
 
@@ -621,7 +585,7 @@ async def _run_pipeline(r: AgentRunRequest) -> AsyncIterator[str]:
     yield _sse("agent.start", agent="synthesis")
     try:
         synthesis_text, syn_model = await asyncio.wait_for(
-            _call_llm(
+            _call_openrouter(
                 _synthesis_prompt(
                     r,
                     results.get("news", {}).get("output", "(news agent failed)"),
@@ -643,27 +607,98 @@ async def _run_pipeline(r: AgentRunRequest) -> AsyncIterator[str]:
     duration_ms = int((time.monotonic() - started_at) * 1000)
 
     # ── persist to postgres (best-effort; never fail the request) ─────
-    run_id = None
-    pool = db.pool()
-    if pool is not None:
-        try:
-            async with pool.acquire() as conn:
-                row = await conn.fetchrow(
-                    """
-                    INSERT INTO ai_runs
-                      (symbol, strike, expiry, right_, quantity, is_long,
-                       spot_at_run, mid_at_run, agents, duration_ms)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10)
-                    RETURNING id
-                    """,
-                    r.symbol, r.strike, r.expiry, r.right, r.quantity, r.is_long,
-                    r.spot, r.mid, json.dumps(results), duration_ms,
-                )
-                run_id = int(row["id"])
-        except Exception as e:  # noqa: BLE001
-            logger.warning("ai_runs insert failed: %s", e)
+    run_id = await _persist_run(r, results, duration_ms)
 
     yield _sse("run.complete", run_id=run_id, duration_ms=duration_ms)
+
+
+async def _persist_run(
+    r: "AgentRunRequest", results: Dict[str, Any], duration_ms: int
+) -> Optional[int]:
+    """Insert one multi-agent run into ``ai_runs``. Best-effort — never
+    raises, so a DB hiccup can't fail the analysis. Shared by the SSE
+    pipeline and the headless (scheduled) runner."""
+    pool = db.pool()
+    if pool is None:
+        return None
+    try:
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO ai_runs
+                  (symbol, strike, expiry, right_, quantity, is_long,
+                   spot_at_run, mid_at_run, agents, duration_ms)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10)
+                RETURNING id
+                """,
+                r.symbol, r.strike, r.expiry, r.right, r.quantity, r.is_long,
+                r.spot, r.mid, json.dumps(results), duration_ms,
+            )
+            return int(row["id"])
+    except Exception as e:  # noqa: BLE001
+        logger.warning("ai_runs insert failed: %s", e)
+        return None
+
+
+async def run_and_store(r: "AgentRunRequest") -> Optional[int]:
+    """Run the four analyst agents + synthesis headlessly (no SSE) and
+    persist the result. Used by the scheduled position-analysis job so the
+    Insights timeline fills itself without anyone clicking. Returns run_id.
+
+    Mirrors ``_run_pipeline`` but collects results instead of streaming
+    them. Each agent is independently guarded so one dead model can't sink
+    the whole run; the synthesis still proceeds with placeholders."""
+    started_at = time.monotonic()
+    results: Dict[str, Dict[str, Any]] = {}
+
+    async def guarded(name: str, coro):
+        try:
+            return name, await asyncio.wait_for(coro, timeout=_PER_AGENT_TIMEOUT_S)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("headless agent %s failed: %s", name, e)
+            return name, e
+
+    async def news_coro():
+        items = await fetch_news(r.symbol)
+        text, model = await _call_openrouter(_news_prompt(items, r), _SYSTEM_BASE)
+        return text, model, items
+
+    pairs = await asyncio.gather(
+        guarded("news", news_coro()),
+        guarded("underlying", _call_openrouter(_underlying_prompt(r), _SYSTEM_BASE)),
+        guarded("option", _call_openrouter(_option_prompt(r), _SYSTEM_BASE)),
+        guarded("decay", _call_openrouter(_decay_prompt(r), _SYSTEM_BASE)),
+    )
+    for name, res in pairs:
+        if isinstance(res, Exception):
+            results[name] = {"error": str(res)}
+        elif name == "news":
+            text, model, items = res
+            results["news"] = {"output": text, "model": model, "headlines": items}
+        else:
+            text, model = res
+            results[name] = {"output": text, "model": model}
+
+    try:
+        synthesis_text, syn_model = await asyncio.wait_for(
+            _call_openrouter(
+                _synthesis_prompt(
+                    r,
+                    results.get("news", {}).get("output", "(news agent failed)"),
+                    results.get("underlying", {}).get("output", "(underlying agent failed)"),
+                    results.get("option", {}).get("output", "(option agent failed)"),
+                    results.get("decay", {}).get("output", "(decay agent failed)"),
+                ),
+                _SYSTEM_BASE,
+            ),
+            timeout=_PER_AGENT_TIMEOUT_S,
+        )
+        results["synthesis"] = {"output": synthesis_text, "model": syn_model}
+    except Exception as e:  # noqa: BLE001
+        results["synthesis"] = {"error": str(e)}
+
+    duration_ms = int((time.monotonic() - started_at) * 1000)
+    return await _persist_run(r, results, duration_ms)
 
 
 @router.post("/agent-run")
@@ -737,5 +772,100 @@ async def list_runs(
             is_long=bool(row["is_long"]),
             duration_ms=row["duration_ms"],
             agents=json.loads(row["agents"]) if isinstance(row["agents"], str) else row["agents"],
+        ))
+    return out
+
+
+def _extract_verdict(agents: Dict[str, Any]) -> Dict[str, Optional[str]]:
+    """Pull a compact verdict + one-line rationale out of the synthesis
+    agent's markdown so the cross-contract timeline can render a glanceable
+    card without re-reading the whole run."""
+    syn = agents.get("synthesis") or {}
+    text = syn.get("output") or ""
+    verdict: Optional[str] = None
+    rationale: Optional[str] = None
+    if text:
+        import re
+
+        m = re.search(r"\*\*Verdict:\*\*\s*(.+?)(?:\n|$)", text)
+        if m:
+            line = m.group(1).strip()
+            # First sentence becomes the verdict label; the rest the rationale.
+            parts = re.split(r"(?<=[.!?])\s+", line, maxsplit=1)
+            verdict = parts[0].strip(" .—-")
+            rationale = parts[1].strip() if len(parts) > 1 else None
+        elif text.strip():
+            verdict = text.strip().split("\n", 1)[0][:80]
+    failed = sum(1 for v in agents.values() if isinstance(v, dict) and v.get("error"))
+    return {"verdict": verdict, "rationale": rationale, "failed_agents": failed}
+
+
+class RecentRunRow(BaseModel):
+    id: int
+    ran_at: str
+    symbol: str
+    strike: float
+    expiry: str
+    right: str
+    quantity: int
+    is_long: bool
+    spot_at_run: Optional[float] = None
+    mid_at_run: Optional[float] = None
+    duration_ms: Optional[int] = None
+    verdict: Optional[str] = None
+    rationale: Optional[str] = None
+    failed_agents: int = 0
+
+
+@router.get("/agent-runs/recent", response_model=List[RecentRunRow])
+async def recent_runs(
+    symbol: Optional[str] = None,
+    limit: int = 40,
+) -> List[RecentRunRow]:
+    """Recent AI analyzer runs across ALL contracts, newest first. Powers the
+    Insights timeline — a portfolio-wide log of "what the agents concluded,
+    and when", instead of the per-contract history. Optionally filter by
+    symbol."""
+    pool = db.pool()
+    if pool is None:
+        return []
+    limit = max(1, min(limit, 200))
+    where = ""
+    args: List[Any] = []
+    if symbol:
+        where = "WHERE symbol = $1"
+        args.append(symbol.upper())
+    args.append(limit)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            f"""
+            SELECT id, ran_at, symbol, strike, expiry, right_ AS right,
+                   quantity, is_long, spot_at_run, mid_at_run, duration_ms, agents
+            FROM ai_runs
+            {where}
+            ORDER BY ran_at DESC
+            LIMIT ${len(args)}
+            """,
+            *args,
+        )
+    out: List[RecentRunRow] = []
+    for row in rows:
+        agents = json.loads(row["agents"]) if isinstance(row["agents"], str) else (row["agents"] or {})
+        v = _extract_verdict(agents)
+        out.append(RecentRunRow(
+            id=int(row["id"]),
+            ran_at=row["ran_at"].isoformat(),
+            symbol=row["symbol"],
+            strike=float(row["strike"]),
+            expiry=row["expiry"],
+            right=row["right"],
+            quantity=int(row["quantity"]),
+            is_long=bool(row["is_long"]),
+            spot_at_run=float(row["spot_at_run"]) if row["spot_at_run"] is not None else None,
+            mid_at_run=float(row["mid_at_run"]) if row["mid_at_run"] is not None else None,
+            duration_ms=row["duration_ms"],
+            verdict=v["verdict"],
+            rationale=v["rationale"],
+            failed_agents=v["failed_agents"] or 0,
         ))
     return out

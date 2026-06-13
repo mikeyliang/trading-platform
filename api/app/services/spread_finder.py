@@ -32,7 +32,7 @@ import asyncio
 import logging
 import math
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
 from ..nautilus import ib_options
@@ -136,6 +136,11 @@ TRADE_SPECS: Dict[str, TradeSpec] = {
 MONTHLY_DTE_BUCKETS = [
     (24, 37),  # one bucket covering both near (27d) and far (34d) monthlies
 ]
+# Ideal monthly entry target (course: 27/34 DTE; mid ≈ 30) and a floor below
+# which a monthly is too short-dated to bother scanning. Used by the
+# nearest-monthly fallback when the strict bucket above is empty.
+MONTHLY_DTE_TARGET = 30
+MONTHLY_DTE_FLOOR = 12
 
 
 # ----------------------------------------------------------------------
@@ -157,18 +162,12 @@ class SpreadCandidate:
     max_risk: float           # per share
     wing_width: float
     distance_pct: float       # |spot - short_strike| / spot × 100
-    adj_distance_pct: float   # distance × sqrt(DTE/30) — time-normalized %OTM
+    adj_distance_pct: float   # distance minus 1σ expected move
     aroc_pct: float           # annualized return on capital
     win_prob_pct: float       # ≈ 1 - |short_delta|
     kelly_pct: float
     underlying_price: float
     passes: Dict[str, bool] = field(default_factory=dict)
-    # ---- Informational analytics (NOT entry gates — course rules above are
-    # the gates; these give live-IV context the adjusted-%OTM proxy lacks) ----
-    breakeven: Optional[float] = None        # short ∓ credit (puts/calls)
-    expected_move_pct: Optional[float] = None  # 1σ to expiry from short-leg IV, %
-    cushion_sigma: Optional[float] = None    # distance ÷ expected move — how many
-                                             # σ the short strike sits from spot
     # ---- Automation / sizing payload (per-contract dollars unless noted) ----
     # Capital pct of bankroll → min(Kelly%, Rule-One 33% cap). Multiply by
     # bankroll/max_loss_per_contract → max safe contracts.
@@ -343,53 +342,31 @@ def _recommend_trade(top_picks: Dict[str, Optional[Dict[str, Any]]]) -> Optional
           (the floor matters more than the extra AROC).
       (d) If only the conservative trade is below the fib → take that one.
 
-    The tree compares short strikes, so it only makes sense WITHIN one
-    underlying — RUT (~2,200) vs SPX (~6,000) strikes must never be mixed
-    into the same span/gap math. The RUT family (rut/mars/marsmax) gets the
-    decision tree; Space is an independent SPX trade that is recommended on
-    its own when nothing in the RUT family qualifies, and reported as
-    ``also_qualifying`` otherwise (you can place both — different books).
-
     We don't have live fib-floor data in the scanner, so we approximate
     "fib floor crossed" as "the next-aggressive pick is ≥ 1% closer to spot"
     — the typical RUT fib step in the transcript examples.
 
-    Returns ``{trade_type, candidate, reason, runner_up_type, span_pct,
-    also_qualifying}`` or ``None`` when nothing qualifies.
+    Returns ``{trade_type, candidate, reason, runner_up}`` or ``None`` when
+    nothing qualifies.
     """
     qualifying = [(t, p) for t, p in top_picks.items() if p is not None]
     if not qualifying:
         return None
 
-    rut_family = [(t, p) for t, p in qualifying
-                  if TRADE_SPECS.get(t) and TRADE_SPECS[t].underlying == "RUT"]
-    other = [(t, p) for t, p in qualifying if (t, p) not in rut_family]
-    also_qualifying = [t for t, _ in other] if rut_family else []
+    # Ordering by aggressiveness: RUT (safest) → Mars → MarsMax (most aggressive)
+    order = {"rut": 0, "mars": 1, "marsmax": 2, "space": 3}
+    qualifying.sort(key=lambda x: order.get(x[0], 99))
 
-    # No RUT-family pick — recommend the best standalone trade (Space).
-    if not rut_family:
-        chosen_type, chosen = qualifying[0]
-        return {
-            "trade_type": chosen_type, "candidate": chosen,
-            "reason": f"Only {chosen_type.upper()} qualifies — sole pick.",
-            "runner_up_type": None, "span_pct": 0.0,
-            "also_qualifying": [t for t, _ in qualifying[1:]],
-        }
-
-    # Ordering by aggressiveness within the RUT family: RUT → Mars → MarsMax.
-    order = {"rut": 0, "mars": 1, "marsmax": 2}
-    rut_family.sort(key=lambda x: order.get(x[0], 99))
-
-    strikes = [p["short_strike"] for _, p in rut_family]
+    strikes = [p["short_strike"] for _, p in qualifying]
     span_pct = (
         (max(strikes) - min(strikes)) / min(strikes) * 100
         if min(strikes) > 0 else 0.0
     )
 
     # --- Rule (b): clustered picks → take the most aggressive ---
-    if span_pct < 3.0 and len(rut_family) >= 2:
-        chosen_type, chosen = rut_family[-1]
-        runner_up_type, _ = rut_family[-2]
+    if span_pct < 3.0 and len(qualifying) >= 2:
+        chosen_type, chosen = qualifying[-1]
+        runner_up_type, _ = qualifying[-2]
         reason = (
             f"All qualifying picks cluster within {span_pct:.1f}% — taking "
             f"the most aggressive ({chosen_type.upper()}) since the safer "
@@ -399,19 +376,18 @@ def _recommend_trade(top_picks: Dict[str, Optional[Dict[str, Any]]]) -> Optional
             "trade_type": chosen_type, "candidate": chosen,
             "reason": reason, "runner_up_type": runner_up_type,
             "span_pct": round(span_pct, 2),
-            "also_qualifying": also_qualifying,
         }
 
     # --- Rule (c)/(d): meaningful separation → take the safest pick that's
     # actually below the proxy fib step (≥ 1% safer than the next-most-
     # aggressive). Walking from safest to most-aggressive, take the first
     # one that's a fib-step *safer* than its more-aggressive neighbour. ---
-    for i in range(len(rut_family) - 1):
-        type_safe, pick_safe = rut_family[i]
-        _, pick_agg = rut_family[i + 1]
+    for i in range(len(qualifying) - 1):
+        type_safe, pick_safe = qualifying[i]
+        _, pick_agg = qualifying[i + 1]
         gap = (pick_agg["short_strike"] - pick_safe["short_strike"]) / pick_safe["short_strike"] * 100
         if gap >= 1.0:
-            runner_up_type = rut_family[i + 1][0]
+            runner_up_type = qualifying[i + 1][0]
             reason = (
                 f"{type_safe.upper()} sits {gap:.1f}% below {runner_up_type.upper()} "
                 f"— take the safer trade for fib-floor cushion (Jamal: 'if Mars "
@@ -421,21 +397,15 @@ def _recommend_trade(top_picks: Dict[str, Optional[Dict[str, Any]]]) -> Optional
                 "trade_type": type_safe, "candidate": pick_safe,
                 "reason": reason, "runner_up_type": runner_up_type,
                 "span_pct": round(span_pct, 2),
-                "also_qualifying": also_qualifying,
             }
 
-    # --- Fallback: single RUT-family pick (or no fib-step separation). ---
-    chosen_type, chosen = rut_family[0]
-    reason = (
-        f"Only {chosen_type.upper()} qualifies — sole pick."
-        if len(rut_family) == 1
-        else f"{chosen_type.upper()} is the safest qualifying pick."
-    )
+    # --- Fallback: only one qualifying pick → return it. ---
+    chosen_type, chosen = qualifying[0]
+    reason = f"Only {chosen_type.upper()} qualifies — sole pick."
     return {
         "trade_type": chosen_type, "candidate": chosen,
         "reason": reason, "runner_up_type": None,
         "span_pct": round(span_pct, 2),
-        "also_qualifying": also_qualifying,
     }
 
 
@@ -540,21 +510,6 @@ def _build_candidate(
     win_prob = 1 - short_delta
     kelly_pct = _kelly(win_prob, credit, max_risk) * 100
 
-    # Live-IV context: 1σ expected move to expiry and how many σ of cushion
-    # the short strike has. Adjusted-%OTM is a fixed sqrt-time proxy; this is
-    # the same idea computed from the actual option-implied vol, so the user
-    # can see when a "passing" trade is only ~1σ away in a high-vol regime.
-    breakeven = (
-        short_opt["strike"] - credit if side == "put"
-        else short_opt["strike"] + credit
-    )
-    expected_move_pct: Optional[float] = None
-    cushion_sigma: Optional[float] = None
-    if short_iv and short_iv > 0 and dte > 0:
-        expected_move_pct = short_iv * math.sqrt(dte / 365.0) * 100
-        if expected_move_pct > 0:
-            cushion_sigma = distance_pct / expected_move_pct
-
     passes = {
         "delta_cap": short_delta * 100 <= spec.max_delta * 100,
         "aroc": aroc_pct >= spec.target_aroc_pct,
@@ -611,9 +566,6 @@ def _build_candidate(
         kelly_pct=round(kelly_pct, 1),
         underlying_price=spot,
         passes=passes,
-        breakeven=round(breakeven, 2),
-        expected_move_pct=round(expected_move_pct, 2) if expected_move_pct is not None else None,
-        cushion_sigma=round(cushion_sigma, 2) if cushion_sigma is not None else None,
         recommended_capital_pct=round(recommended_capital_pct, 2),
         max_loss_per_contract=max_loss_per_contract,
         credit_per_contract=credit_per_contract,
@@ -654,15 +606,51 @@ def _kelly(win_prob: float, win_amount: float, loss_amount: float) -> float:
     return max(0.0, f)
 
 
+def _is_third_friday(d: date) -> bool:
+    """Standard monthly OPEX = the third Friday (weekday 4, day 15-21)."""
+    return d.weekday() == 4 and 15 <= d.day <= 21
+
+
 def _pick_monthly_expirations(expirations: List[str]) -> List[str]:
-    """Filter to expirations whose DTE falls in any of MONTHLY_DTE_BUCKETS."""
+    """Expirations to scan for monthly credit spreads.
+
+    Primary: anything whose DTE lands in MONTHLY_DTE_BUCKETS (the course's
+    27/34-day sweet spot, widened ±3). But monthlies sit ~30 days apart, so for
+    ~13 days each month — once the front monthly decays to 10-23 DTE while the
+    next is still 38-58 DTE — *nothing* lands in that window. Erroring out then
+    ("no monthly expirations in 24-37 DTE window") read as a bug on the Rule
+    One cycle card even though the card was happily showing the front monthly.
+
+    Fallback: when the strict window is empty, scan the nearest standard
+    monthly (third Friday) to the ~30-DTE target, floored so we never pick a
+    nearly-expired front month. This re-aligns the scanner with the cycle
+    card, which already targets that same monthly.
+    """
     today = datetime.now(timezone.utc).date()
-    out = []
+    dated: List[tuple[str, int, bool]] = []
     for e in expirations:
         try:
-            dte = (datetime.strptime(e, "%Y%m%d").date() - today).days
+            d = datetime.strptime(e, "%Y%m%d").date()
         except ValueError:
             continue
-        if any(lo <= dte <= hi for lo, hi in MONTHLY_DTE_BUCKETS):
-            out.append(e)
-    return sorted(out)
+        dte = (d - today).days
+        if dte < 0:
+            continue
+        dated.append((e, dte, _is_third_friday(d)))
+
+    in_window = sorted(
+        e for e, dte, _ in dated
+        if any(lo <= dte <= hi for lo, hi in MONTHLY_DTE_BUCKETS)
+    )
+    if in_window:
+        return in_window
+
+    # Nearest 3rd-Friday monthly to the target, floored. Fall back to any
+    # non-trivial expiry if the provider doesn't surface clean monthlies.
+    monthlies = [(e, dte) for e, dte, is3f in dated if is3f and dte >= MONTHLY_DTE_FLOOR]
+    if not monthlies:
+        monthlies = [(e, dte) for e, dte, _ in dated if dte >= MONTHLY_DTE_FLOOR]
+    if not monthlies:
+        return []
+    best = min(monthlies, key=lambda t: abs(t[1] - MONTHLY_DTE_TARGET))
+    return [best[0]]

@@ -127,6 +127,14 @@ CREATE TABLE IF NOT EXISTS trade_history (
   is_deleted       BOOLEAN NOT NULL DEFAULT FALSE
 );
 
+-- External identifier for trades sourced from IBKR Flex / activity exports.
+-- Used to make re-pulls idempotent: source='ibkr_flex', external_id=ibExecID.
+ALTER TABLE trade_history ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE trade_history ADD COLUMN IF NOT EXISTS external_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS trade_history_external_id_uq
+  ON trade_history (source, external_id)
+  WHERE source IS NOT NULL AND external_id IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS trade_history_symbol_idx ON trade_history (symbol);
 CREATE INDEX IF NOT EXISTS trade_history_agent_id_idx ON trade_history (agent_id);
 CREATE INDEX IF NOT EXISTS trade_history_strategy_idx ON trade_history (strategy);

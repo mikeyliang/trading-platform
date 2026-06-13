@@ -32,10 +32,6 @@ export function VolContextPanel({ result }: { result: OptionAnalyzeResult }) {
   const rv30 = result.vol_context.realized_vol_30d;
   const rv90 = result.vol_context.realized_vol_90d;
   const ratio = result.vol_context.iv_to_rv_ratio;
-  const ivRank = result.vol_context.iv_rank;
-  const ivPctile = result.vol_context.iv_percentile;
-  const iv52Hi = result.vol_context.iv_52w_high;
-  const iv52Lo = result.vol_context.iv_52w_low;
   const verdict =
     ratio == null ? "—" :
     ratio >= 1.4 ? "rich" :
@@ -47,15 +43,9 @@ export function VolContextPanel({ result }: { result: OptionAnalyzeResult }) {
     verdict === "elevated" ? "warning" :
     verdict === "cheap" ? "up" :
     "muted";
-  // High IV rank favors sellers, hurts buyers — tone follows the position.
-  const rankTone =
-    ivRank == null ? undefined :
-    ivRank >= 70 ? (result.is_long ? "down" : "up") :
-    ivRank <= 20 ? (result.is_long ? "up" : "down") :
-    undefined;
   return (
-    <Panel title="Volatility · IV regime (IBKR vol indices)">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-2 px-3 py-2 text-[11px] tabular">
+    <Panel title="Volatility · IV vs realised">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-[11px] tabular">
         <Stat label="Implied vol" value={pctNum(iv)} />
         <Stat label="Realised 30d" value={pctNum(rv30)} />
         <Stat label="Realised 90d" value={pctNum(rv90)} />
@@ -69,104 +59,8 @@ export function VolContextPanel({ result }: { result: OptionAnalyzeResult }) {
             undefined
           }
         />
-        <Stat
-          label="IV rank · 52w"
-          value={ivRank != null ? ivRank.toFixed(0) : "—"}
-          tone={rankTone as any}
-          hint={ivRank != null ? "0 = at 52w IV low, 100 = at 52w high" : "needs IBKR vol history"}
-        />
-        <Stat
-          label="IV percentile"
-          value={ivPctile != null ? `${ivPctile.toFixed(0)}%` : "—"}
-          hint="% of days this year with lower IV"
-        />
-        <Stat
-          label="52w IV range"
-          value={iv52Lo != null && iv52Hi != null ? `${(iv52Lo * 100).toFixed(0)}–${(iv52Hi * 100).toFixed(0)}%` : "—"}
-        />
-        <Stat
-          label="IV index now"
-          value={pctNum(result.vol_context.underlying_iv_now)}
-          hint="~30d ATM IV of the underlying"
-        />
       </div>
-      {ivRank != null && (
-        <div className="px-3 pb-2">
-          {/* IV rank position bar — where today sits in the 52w IV range. */}
-          <div className="relative h-1.5 rounded-full overflow-hidden bg-gradient-to-r from-up/40 via-warning/40 to-down/40">
-            <div
-              className="absolute top-0 bottom-0 w-1 rounded-full bg-text-primary"
-              style={{ left: `${Math.max(0, Math.min(100, ivRank))}%`, transform: "translateX(-50%)" }}
-            />
-          </div>
-          <div className="flex justify-between text-[8px] tabular text-text-muted/70 mt-0.5">
-            <span>52w low</span>
-            <span>52w high</span>
-          </div>
-        </div>
-      )}
-      <IvHistoryChart
-        ivHistory={result.vol_context.iv_history ?? []}
-        hvHistory={result.vol_context.hv_history ?? []}
-        contractIv={iv}
-      />
     </Panel>
-  );
-}
-
-/** Daily IV-index vs HV history (IBKR), with the analyzed contract's own IV
- *  as a reference line. Lightweight inline SVG — no chart lib needed for a
- *  250-point context sparkline. */
-function IvHistoryChart({
-  ivHistory, hvHistory, contractIv,
-}: {
-  ivHistory: { time: number; value: number }[];
-  hvHistory: { time: number; value: number }[];
-  contractIv: number;
-}) {
-  if (ivHistory.length < 10) return null;
-  const W = 600, H = 110, PAD = 4;
-  const all = [...ivHistory.map((p) => p.value), ...hvHistory.map((p) => p.value), contractIv]
-    .filter((v) => Number.isFinite(v) && v > 0);
-  const lo = Math.min(...all), hi = Math.max(...all);
-  const span = hi - lo || 1;
-  const t0 = ivHistory[0].time;
-  const t1 = ivHistory[ivHistory.length - 1].time;
-  const tSpan = t1 - t0 || 1;
-  const x = (t: number) => PAD + ((t - t0) / tSpan) * (W - 2 * PAD);
-  const y = (v: number) => H - PAD - ((v - lo) / span) * (H - 2 * PAD);
-  const path = (pts: { time: number; value: number }[]) =>
-    pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(p.time).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
-  const ivY = y(contractIv);
-  const first = ivHistory[0]?.time;
-  const last = ivHistory[ivHistory.length - 1]?.time;
-  const fmtD = (t?: number) =>
-    t ? new Date(t * 1000).toLocaleDateString(undefined, { month: "short", year: "2-digit" }) : "";
-  return (
-    <div className="px-3 pb-3">
-      <div className="flex items-center gap-3 text-[9px] uppercase tracking-wider text-text-muted mb-1">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-0.5 inline-block bg-accent" /> IV index (daily)
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-0.5 inline-block bg-text-muted" /> HV 30d
-        </span>
-        <span className="flex items-center gap-1 text-warning">
-          <span className="w-2 h-px inline-block border-t border-dashed border-warning" /> this contract&apos;s IV
-        </span>
-        <span className="ml-auto tabular normal-case">{fmtD(first)} – {fmtD(last)}</span>
-      </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[110px]" preserveAspectRatio="none">
-        {hvHistory.length >= 2 && (
-          <path d={path(hvHistory)} fill="none" className="stroke-text-muted/60" strokeWidth={1} />
-        )}
-        <path d={path(ivHistory)} fill="none" className="stroke-accent" strokeWidth={1.5} />
-        {Number.isFinite(ivY) && (
-          <line x1={PAD} x2={W - PAD} y1={ivY} y2={ivY}
-            className="stroke-warning" strokeWidth={1} strokeDasharray="4 3" />
-        )}
-      </svg>
-    </div>
   );
 }
 

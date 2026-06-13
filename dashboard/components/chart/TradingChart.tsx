@@ -16,9 +16,9 @@ import {
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type RuleOneCycle, type RuleOneHistoryCycle } from "@/lib/api";
 import { ws } from "@/lib/ws";
-import type { Bar, Quote, Timeframe, WSMessage } from "@/types";
+import type { Bar, Quote, SubscriptionError, Timeframe, WSMessage } from "@/types";
 import { cn, fmt, fmtCompact } from "@/lib/utils";
-import { Activity, BarChart2, BarChart3, CalendarDays, Crosshair, Gauge, Loader2, Ruler, TrendingUp, Waves, Layers, Search } from "lucide-react";
+import { Activity, BarChart2, BarChart3, CalendarDays, Gauge, Loader2, Ruler, TrendingUp, Waves, Layers, Search } from "lucide-react";
 import { useSpreadOverlay, SUPPORTED_OVERLAY_SYMBOLS } from "./useSpreadOverlay";
 import { useSpreadFinderOverlay } from "./useSpreadFinderOverlay";
 import { usePinnedSpreadOverlay, type PinnedSpread } from "./usePinnedSpreadOverlay";
@@ -29,10 +29,11 @@ import { useMonthlyExpiryOverlay, MONTHLY_OPEX_SYMBOLS } from "./useMonthlyExpir
 import { useFibLevelsOverlay, type FibRange } from "./useFibLevelsOverlay";
 import { useCycleOverlay } from "./useCycleOverlay";
 import { useShortStrikeOverlay } from "./useShortStrikeOverlay";
-import { useTradeMarkersOverlay } from "./useTradeMarkersOverlay";
 import { useHistoricalStrikesOverlay } from "./useHistoricalStrikesOverlay";
+import { useTradeMarkers } from "./useTradeMarkers";
+import { TradeMarkerPopover } from "./TradeMarkerPopover";
+import type { TradeHistoryRecord } from "@/lib/api";
 import { OverlaysMenu, type OverlayGroup } from "./OverlaysMenu";
-import { StrategyGuideButton } from "@/components/ruleone/StrategyGuide";
 import { STRATEGIES, type StrategyId, type StrategySpec } from "@/lib/ruleone";
 import { RuleOneCycleCard } from "@/components/ruleone/RuleOneCycleCard";
 
@@ -109,10 +110,6 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   // Default the strategy overlay ON — it's a no-op when there are no spreads
   // or projection for the symbol, and the toggle is visible if anything renders.
   const [spreadsOn, setSpreadsOn] = useState(true);
-  // Own-trade markers (fills logged from IBKR) — ON by default: it's a no-op
-  // until trades exist for the symbol, and "where did I trade?" is the first
-  // thing the chart should answer about your own history.
-  const [tradesOn, setTradesOn] = useState(true);
   // Spread Finder overlay — calls the backend scanner and draws the top
   // candidate per trade type (RUT/Mars/MarsMax/Space). Off by default
   // because a fresh scan on the free Massive tier is rate-limited to
@@ -130,6 +127,17 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   const [fibOn, setFibOn] = useState(() => MONTHLY_OPEX_SYMBOLS.has(symbol));
   // Fib lookback window. 9m matches the middle of Jamal's 6-12mo zone.
   const [fibRange, setFibRange] = useState<FibRange>("9m");
+  // Trade markers — arrows on the candle series for executed trades on
+  // this symbol, click-to-journal. Default ON so the visual is there
+  // without users having to remember a toggle; cheap render when there
+  // are no trades.
+  const [tradesOn, setTradesOn] = useState(true);
+  // The popover for the currently-clicked marker bucket. Anchored in
+  // pixel coords inside the chart container.
+  const [activePopover, setActivePopover] = useState<{
+    trades: TradeHistoryRecord[];
+    anchor: { x: number; y: number };
+  } | null>(null);
   // Selected Rule One strategy — drives Fib target styling and the info card.
   // Defaults to the first applicable strategy for the symbol.
   const applicableStrategies = useMemo<StrategySpec[]>(() => {
@@ -152,6 +160,11 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     setStrategyId(applicableStrategies[0]?.id ?? null);
   }, [applicableStrategies]);
   const [barsState, setBarsState] = useState<Bar[] | null>(null);
+  // Why the chart is showing proxy/no data: missing IBKR entitlement +
+  // which proxy (if any) we swapped in. Drives the banner below the toolbar.
+  const [dataNotice, setDataNotice] = useState<
+    { proxy?: string; subscription?: SubscriptionError } | null
+  >(null);
   const [ohlcv, setOhlcv] = useState<{ o: number; h: number; l: number; c: number; v: number; chg: number; chgPct: number } | null>(null);
   // Bar under the crosshair. When set, the header shows hovered OHLCV; when
   // null (cursor outside the canvas), the header falls back to the latest bar.
@@ -161,6 +174,14 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     chg: number; chgPct: number;
   } | null>(null);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  // Trade marker(s) under the crosshair → compact read-only hover tooltip.
+  // Click still opens the full journal popover. Kept separate from the OHLCV
+  // `hover` state so both can render at once on a bar that has a fill.
+  const [hoverBucket, setHoverBucket] = useState<{
+    trades: TradeHistoryRecord[];
+    x: number;
+    y: number;
+  } | null>(null);
 
   const smiContainerRef = useRef<HTMLDivElement>(null);
   const rsiContainerRef = useRef<HTMLDivElement>(null);
@@ -180,12 +201,11 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
 
   usePinnedSpreadOverlay({ chart: chartRef, candleSeries: candleRef, pinned: pinnedSpread });
 
-  // Own fills as arrow markers on the candles (BUY ↑ / SELL ↓).
-  const { visibleCount: tradeMarkerCount } = useTradeMarkersOverlay({
+  const tradeMarkers = useTradeMarkers({
     candleSeries: candleRef,
     symbol,
-    bars: barsState,
     enabled: tradesOn,
+    bars: barsState,
   });
 
   // Daily bars: 10 years — enough for the 12-year Mars backtest reference and
@@ -335,7 +355,17 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       // for SMI/RSI/MACD compute before they can see prices.
       const barsResp = await barsPromise;
       const bars = barsResp.bars;
-      if (!bars.length) return;
+      // Surface entitlement / proxy state regardless of whether bars came
+      // back (unavailable → empty bars but still a subscription reason).
+      if (barsResp.proxy_used || barsResp.subscription) {
+        setDataNotice({ proxy: barsResp.proxy_used, subscription: barsResp.subscription });
+      } else {
+        setDataNotice(null);
+      }
+      if (!bars.length) {
+        setLoading(false);
+        return;
+      }
       if (disposedRef.current) return;
 
       setBarsState(bars);
@@ -534,6 +564,81 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     };
   }, [barsState]);
 
+  // Trade-marker click: map a chart click to the bucket of trades at
+  // that bar, open a popover for journaling. Lightweight-charts doesn't
+  // surface "did I click a marker" — we look up the bar time the click
+  // resolves to and check our bucket map.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    if (!tradesOn) {
+      setActivePopover(null);
+      return;
+    }
+    const clickHandler = (param: MouseEventParams) => {
+      if (param.time == null || !param.point) {
+        return;
+      }
+      const bucket = tradeMarkers.bucketAt(param.time);
+      if (!bucket) {
+        setActivePopover(null);
+        return;
+      }
+      setActivePopover({
+        trades: bucket.trades,
+        anchor: { x: param.point.x, y: param.point.y },
+      });
+    };
+    chart.subscribeClick(clickHandler);
+    return () => {
+      try {
+        chart.unsubscribeClick(clickHandler);
+      } catch {
+        // chart disposed — ignore.
+      }
+    };
+  }, [tradesOn, tradeMarkers]);
+
+  // Trade-marker hover: surface a compact read-only summary of the fill(s)
+  // on the hovered bar. Lightweight-charts has no per-marker hover event, so
+  // we reuse the crosshair-move time and look it up in the bucket map. The
+  // click handler (above) still opens the full journaling popover.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    if (!tradesOn) {
+      setHoverBucket(null);
+      return;
+    }
+    const handler = (param: MouseEventParams) => {
+      if (param.time == null || !param.point) {
+        setHoverBucket(null);
+        return;
+      }
+      const bucket = tradeMarkers.bucketAt(param.time);
+      if (!bucket) {
+        setHoverBucket(null);
+        return;
+      }
+      setHoverBucket({ trades: bucket.trades, x: param.point.x, y: param.point.y });
+    };
+    chart.subscribeCrosshairMove(handler);
+    return () => {
+      try {
+        chart.unsubscribeCrosshairMove(handler);
+      } catch {
+        // chart disposed — ignore.
+      }
+    };
+  }, [tradesOn, tradeMarkers.bucketAt]);
+
+  // Close the popover when the symbol changes — the trades it pointed at
+  // are no longer relevant.
+  useEffect(() => {
+    setActivePopover(null);
+    setHoverBucket(null);
+  }, [symbol]);
+
   // live tick updates
   useEffect(() => {
     ws.subscribe([symbol]);
@@ -611,7 +716,6 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           >
             Reset Zoom
           </button>
-          {cycleSupported && <StrategyGuideButton />}
           <OverlaysMenu groups={buildOverlayGroups({
             emaOn, setEmaOn, smiOn, setSmiOn, vwapOn, setVwapOn,
             rsiOn, setRsiOn, macdOn, setMacdOn, volumeOn, setVolumeOn,
@@ -620,8 +724,8 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
             applicableStrategies, currentStrategy, setStrategyId,
             spreadsOn, setSpreadsOn, openSpreads,
             scanOn, setScanOn, scanLoading, scanResult,
-            tradesOn, setTradesOn, tradeMarkerCount,
             projected, symbol,
+            tradesOn, setTradesOn, tradeCount: tradeMarkers.trades.length,
           })} />
 
           <span className="w-px h-4 bg-border/60" />
@@ -637,8 +741,56 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
               </ToolbarChip>
             ))}
           </div>
+
+          {/* Trade-marker visibility badge — zero-friction signal that
+              tells you (without dev tools) how many of your trades are
+              currently pinned on the chart. ?  on hover gives a quick
+              breakdown of trades found vs markers rendered. */}
+          {tradesOn && (
+            <span
+              className={cn(
+                "ml-2 inline-flex items-center gap-1 h-6 px-2 rounded-sm text-[10px] tabular border",
+                tradeMarkers.renderedCount > 0
+                  ? "border-up/30 bg-up/10 text-up"
+                  : tradeMarkers.trades.length > 0
+                  ? "border-warning/30 bg-warning/10 text-warning"
+                  : "border-border/40 bg-surface-2/40 text-text-muted",
+              )}
+              title={`Trades fetched for ${symbol}: ${tradeMarkers.trades.length}. Markers rendered: ${tradeMarkers.renderedCount}. If counts differ, marker times don't match any loaded bar — try a wider timeframe.`}
+            >
+              <Activity size={10} />
+              {tradeMarkers.renderedCount > 0
+                ? `${tradeMarkers.renderedCount} trades`
+                : tradeMarkers.trades.length > 0
+                ? `${tradeMarkers.trades.length} off-range`
+                : "no trades"}
+            </span>
+          )}
         </div>
       </div>
+
+      {/* market-data entitlement notice — names the missing IBKR
+          subscription when the index can't be charted live. */}
+      {dataNotice && (
+        <div className="flex items-start gap-2 px-3 md:px-4 py-1 border-b border-border/60 bg-amber-500/10 text-[11px] leading-tight text-amber-300/90 shrink-0">
+          <span className="font-medium shrink-0">
+            {dataNotice.proxy ? `Showing ${dataNotice.proxy} proxy` : "No live data"}
+          </span>
+          {dataNotice.subscription ? (
+            <span className="text-amber-200/70">
+              · {symbol} needs an IBKR market-data subscription
+              {dataNotice.subscription.hint ? (
+                <> — <span className="text-amber-100">{dataNotice.subscription.hint}</span></>
+              ) : null}
+              <span className="text-amber-200/40">
+                {" "}(IBKR err {dataNotice.subscription.code}: {dataNotice.subscription.message})
+              </span>
+            </span>
+          ) : (
+            <span className="text-amber-200/70">· {symbol} live index data isn&apos;t entitled on this IBKR account</span>
+          )}
+        </div>
+      )}
 
       {/* chart canvas */}
       <div ref={containerRef} className="relative flex-1 min-h-0">
@@ -668,6 +820,65 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
                 {hover.chg >= 0 ? '+' : ''}{hover.chg.toFixed(2)} ({hover.chgPct.toFixed(2)}%)
               </span>
             </div>
+          </div>
+        )}
+
+        {/* Trade-marker hover tooltip — compact, read-only. Click a marker
+            for the full detail + journal popover. */}
+        {hoverBucket && hoverBucket.trades.length > 0 && (
+          <div
+            className="absolute z-30 bg-gray-900/95 text-white rounded-md text-[11px] tabular shadow-xl pointer-events-none border border-white/10 overflow-hidden"
+            style={{ left: `${hoverBucket.x + 14}px`, top: `${hoverBucket.y + 14}px`, width: 232 }}
+          >
+            <div className="px-2.5 py-1 bg-white/[0.06] text-[9px] uppercase tracking-wider text-text-muted flex items-center justify-between">
+              <span>{hoverBucket.trades.length > 1 ? `${hoverBucket.trades.length} fills` : "Fill"}</span>
+              <span className="normal-case tracking-normal opacity-70">click to journal</span>
+            </div>
+            <div className="divide-y divide-white/[0.06]">
+              {hoverBucket.trades.slice(0, 4).map((t) => {
+                const m = (t.metadata ?? {}) as Record<string, unknown>;
+                const isBuy = (t.side || "").toString().toUpperCase().startsWith("B");
+                const strike = typeof m.option_strike === "number" ? m.option_strike : null;
+                const right = m.option_right === "C" || m.option_right === "P" ? m.option_right : null;
+                const expiry = typeof m.option_expiry === "string" ? m.option_expiry : null;
+                const txn = typeof m.transaction_type === "string" ? m.transaction_type : null;
+                const contract = strike != null && right
+                  ? `${fmt(strike, 0)}${right}${expiry ? ` ${expiry.slice(4, 6)}/${expiry.slice(6, 8)}` : ""}`
+                  : null;
+                const pnl = typeof t.pnl === "number" ? t.pnl : null;
+                return (
+                  <div key={t.id} className="px-2.5 py-1.5 flex flex-col gap-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={cn("inline-block px-1 rounded-sm text-[9px] font-semibold shrink-0", isBuy ? "text-up" : "text-down")}
+                          style={{ background: isBuy ? "rgba(38,166,154,0.15)" : "rgba(239,83,80,0.15)" }}
+                        >
+                          {isBuy ? "BUY" : "SELL"}
+                        </span>
+                        <span className="text-white/90 truncate">
+                          {fmt(t.quantity, 0)}{contract ? ` × ${contract}` : ` ${t.symbol}`}
+                        </span>
+                      </span>
+                      <span className="text-white/70 shrink-0">@{fmt(t.price)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-text-muted">
+                      <span className="truncate">{txn ?? t.order_type ?? ""}</span>
+                      {pnl != null && pnl !== 0 && (
+                        <span className={cn("shrink-0", pnl >= 0 ? "text-up" : "text-down")}>
+                          {pnl >= 0 ? "+" : ""}{fmt(pnl)} P&amp;L
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {hoverBucket.trades.length > 4 && (
+              <div className="px-2.5 py-1 text-[10px] text-text-muted bg-white/[0.03]">
+                +{hoverBucket.trades.length - 4} more — click to see all
+              </div>
+            )}
           </div>
         )}
 
@@ -786,6 +997,21 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           </div>
         )}
         <div className="chart-main absolute inset-0" />
+
+        {/* Trade-marker popover (journal + detail). Pixel-positioned over
+            the chart container; closes on chart-bg click or via the X button. */}
+        {activePopover && containerRef.current && (
+          <TradeMarkerPopover
+            trades={activePopover.trades}
+            anchor={activePopover.anchor}
+            container={{
+              width: containerRef.current.clientWidth,
+              height: containerRef.current.clientHeight,
+            }}
+            onClose={() => setActivePopover(null)}
+            onSaved={() => tradeMarkers.refresh()}
+          />
+        )}
       </div>
 
       {/* SMI subpane */}
@@ -1029,9 +1255,9 @@ function buildOverlayGroups(args: {
   scanOn: boolean; setScanOn: (fn: (v: boolean) => boolean) => void;
   scanLoading: boolean;
   scanResult: { trade_types?: Record<string, { passes: Record<string, boolean> }[]> } | null;
-  tradesOn: boolean; setTradesOn: (fn: (v: boolean) => boolean) => void;
-  tradeMarkerCount: number;
   projected: unknown; symbol: string;
+  tradesOn: boolean; setTradesOn: (fn: (v: boolean) => boolean) => void;
+  tradeCount: number;
 }): OverlayGroup[] {
   const groups: OverlayGroup[] = [];
 
@@ -1049,11 +1275,11 @@ function buildOverlayGroups(args: {
       {
         id: "trades",
         label: "My trades",
-        icon: Crosshair,
-        hint: args.tradeMarkerCount > 0 ? `${args.tradeMarkerCount} fills` : undefined,
+        icon: Activity,
+        hint: args.tradeCount > 0 ? `${args.tradeCount} on ${args.symbol}` : "none",
         active: args.tradesOn,
         onToggle: () => args.setTradesOn((v) => !v),
-        title: "Your IBKR fills as arrow markers — BUY ↑ below the bar, SELL ↓ above it",
+        title: "Mark executed trades on the timeline. Click a marker to journal.",
       },
     ],
     extra: args.fibOn ? (

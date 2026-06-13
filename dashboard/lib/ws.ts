@@ -1,24 +1,16 @@
 import type { WSMessage } from "@/types";
 
-/** Resolve the WS endpoint at connect time so we use whatever origin the
- * browser is already talking to. Handles three deployment shapes:
- *   1. localhost dev   → ws://localhost:8000/ws  (env override)
- *   2. Next.js + nginx → wss://<same-host>/ws    (relative)
- *   3. Coder / port-forwarded — dashboard at `3000--…` host, API at `8000--…`
- *      Same-origin WS doesn't work because Next dev server can't proxy WS
- *      upgrades, so we rewrite the port-prefix to hit the API directly. */
+/** Resolve the WS endpoint at connect time. Always same-origin: the custom
+ * Next server (server.js) relays the `/ws` upgrade to the API, so the browser
+ * never opens a cross-origin socket to the API's port — which Coder's per-port
+ * auth would block. Override with NEXT_PUBLIC_WS_URL for localhost dev against
+ * a separately-hosted API. */
 function resolveWsUrl(): string {
   const fromEnv = process.env.NEXT_PUBLIC_WS_URL;
   if (fromEnv) return fromEnv;
   if (typeof window === "undefined") return "ws://localhost:8000/ws";
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = window.location.host;
-  // Coder / Codespaces-style port prefix: `3000--<workspace>...` → `8000--<workspace>...`
-  const portPrefixed = host.match(/^(\d+)(--.*)$/);
-  if (portPrefixed) {
-    return `${proto}//8000${portPrefixed[2]}/ws`;
-  }
-  return `${proto}//${host}/ws`;
+  return `${proto}//${window.location.host}/ws`;
 }
 
 type Handler = (msg: WSMessage) => void;
