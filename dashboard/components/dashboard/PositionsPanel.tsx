@@ -70,8 +70,34 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
         .then(setSpreads)
         .catch(() => null)
         .finally(() => setLoaded((l) => (l.spreads ? l : { ...l, spreads: true })));
-      api.trades()
-        .then(setTrades)
+      // "Trades" = the logged trade history (same source as the chart
+      // markers), NOT /api/trades (live IBKR fills, which is empty outside
+      // an active session). Map the rich history rows down to the Trade
+      // shape this table renders, carrying option contract metadata.
+      api.tradeHistory({ page: 1, page_size: 500 })
+        .then((r) =>
+          setTrades(
+            r.trades.map((t) => {
+              const m = (t.metadata ?? {}) as Record<string, unknown>;
+              const isOption =
+                m.asset_category === "OPT" || m.asset_category === "FOP";
+              return {
+                id: String(t.id),
+                symbol: t.symbol,
+                side: String(t.side).toUpperCase().startsWith("S") ? "SELL" : "BUY",
+                quantity: t.quantity,
+                price: t.price,
+                pnl: t.pnl ?? undefined,
+                timestamp: t.timestamp,
+                strategy: t.strategy ?? undefined,
+                is_option: isOption,
+                strike: typeof m.option_strike === "number" ? m.option_strike : undefined,
+                right: m.option_right === "C" || m.option_right === "P" ? m.option_right : undefined,
+                expiry: typeof m.option_expiry === "string" ? m.option_expiry : undefined,
+              } as Trade;
+            })
+          )
+        )
         .catch(() => null)
         .finally(() => setLoaded((l) => (l.trades ? l : { ...l, trades: true })));
     };
@@ -714,7 +740,15 @@ function TradesTable({ trades }: { trades: Trade[] }) {
               key={t.id}
               className="group hover:bg-surface-2/80 hover:shadow-[inset_2px_0_0_0_#3b82f6] transition-[background,box-shadow] duration-100"
             >
-              <TableCell className="font-medium">{t.symbol}</TableCell>
+              <TableCell className="font-medium">
+                {t.symbol}
+                {t.is_option && t.strike != null && t.right && (
+                  <span className="ml-1.5 text-[10px] font-normal text-text-muted tabular">
+                    {Number(t.strike).toFixed(0)}{t.right}
+                    {t.expiry ? ` ${t.expiry.slice(4, 6)}/${t.expiry.slice(6, 8)}` : ""}
+                  </span>
+                )}
+              </TableCell>
               <TableCell>
                 <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
               </TableCell>

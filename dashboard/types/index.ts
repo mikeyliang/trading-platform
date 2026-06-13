@@ -75,6 +75,12 @@ export interface Trade {
   pnl?: number;
   timestamp: string;
   strategy?: string;
+  // Option fills carry the contract so the row reads "TSLA 457C 12/05"
+  // instead of a bare underlying repeated across every leg.
+  is_option?: boolean;
+  strike?: number;
+  right?: "C" | "P";
+  expiry?: string; // YYYYMMDD
 }
 
 export interface Order {

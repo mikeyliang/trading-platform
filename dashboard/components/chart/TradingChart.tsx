@@ -825,62 +825,58 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
 
         {/* Trade-marker hover tooltip — compact, read-only. Click a marker
             for the full detail + journal popover. */}
-        {hoverBucket && hoverBucket.trades.length > 0 && (
-          <div
-            className="absolute z-30 bg-gray-900/95 text-white rounded-md text-[11px] tabular shadow-xl pointer-events-none border border-white/10 overflow-hidden"
-            style={{ left: `${hoverBucket.x + 14}px`, top: `${hoverBucket.y + 14}px`, width: 232 }}
-          >
-            <div className="px-2.5 py-1 bg-white/[0.06] text-[9px] uppercase tracking-wider text-text-muted flex items-center justify-between">
-              <span>{hoverBucket.trades.length > 1 ? `${hoverBucket.trades.length} fills` : "Fill"}</span>
-              <span className="normal-case tracking-normal opacity-70">click to journal</span>
-            </div>
-            <div className="divide-y divide-white/[0.06]">
-              {hoverBucket.trades.slice(0, 4).map((t) => {
-                const m = (t.metadata ?? {}) as Record<string, unknown>;
-                const isBuy = (t.side || "").toString().toUpperCase().startsWith("B");
-                const strike = typeof m.option_strike === "number" ? m.option_strike : null;
-                const right = m.option_right === "C" || m.option_right === "P" ? m.option_right : null;
-                const expiry = typeof m.option_expiry === "string" ? m.option_expiry : null;
-                const txn = typeof m.transaction_type === "string" ? m.transaction_type : null;
-                const contract = strike != null && right
-                  ? `${fmt(strike, 0)}${right}${expiry ? ` ${expiry.slice(4, 6)}/${expiry.slice(6, 8)}` : ""}`
-                  : null;
-                const pnl = typeof t.pnl === "number" ? t.pnl : null;
-                return (
-                  <div key={t.id} className="px-2.5 py-1.5 flex flex-col gap-0.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="flex items-center gap-1.5 min-w-0">
-                        <span
-                          className={cn("inline-block px-1 rounded-sm text-[9px] font-semibold shrink-0", isBuy ? "text-up" : "text-down")}
-                          style={{ background: isBuy ? "rgba(38,166,154,0.15)" : "rgba(239,83,80,0.15)" }}
-                        >
-                          {isBuy ? "BUY" : "SELL"}
-                        </span>
-                        <span className="text-white/90 truncate">
-                          {fmt(t.quantity, 0)}{contract ? ` × ${contract}` : ` ${t.symbol}`}
-                        </span>
-                      </span>
-                      <span className="text-white/70 shrink-0">@{fmt(t.price)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-text-muted">
-                      <span className="truncate">{txn ?? t.order_type ?? ""}</span>
-                      {pnl != null && pnl !== 0 && (
-                        <span className={cn("shrink-0", pnl >= 0 ? "text-up" : "text-down")}>
-                          {pnl >= 0 ? "+" : ""}{fmt(pnl)} P&amp;L
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {hoverBucket.trades.length > 4 && (
-              <div className="px-2.5 py-1 text-[10px] text-text-muted bg-white/[0.03]">
-                +{hoverBucket.trades.length - 4} more — click to see all
+        {hoverBucket && hoverBucket.trades.length > 0 && (() => {
+          // Header date — render in UTC so Flex's midnight-UTC fills don't
+          // slip to the previous calendar day in western timezones.
+          const d0 = new Date(hoverBucket.trades[0].timestamp);
+          const dayLabel = Number.isNaN(d0.getTime())
+            ? "Trades"
+            : d0.toLocaleDateString(undefined, {
+                month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
+              });
+          const n = hoverBucket.trades.length;
+          return (
+            <div
+              className="absolute z-30 bg-gray-900/95 text-white rounded-md shadow-xl pointer-events-none border border-white/10 overflow-hidden"
+              style={{ left: `${hoverBucket.x + 16}px`, top: `${hoverBucket.y + 16}px`, width: 250 }}
+            >
+              <div className="px-3 py-1.5 bg-white/[0.07] flex items-center justify-between">
+                <span className="text-[11px] font-semibold">{dayLabel}</span>
+                <span className="text-[10px] text-text-muted">{n} {n === 1 ? "trade" : "trades"}</span>
               </div>
-            )}
-          </div>
-        )}
+              <div className="divide-y divide-white/[0.06]">
+                {hoverBucket.trades.slice(0, 5).map((t) => {
+                  const m = (t.metadata ?? {}) as Record<string, unknown>;
+                  const isBuy = (t.side || "").toString().toUpperCase().startsWith("B");
+                  const strike = typeof m.option_strike === "number" ? m.option_strike : null;
+                  const right = m.option_right === "C" || m.option_right === "P" ? m.option_right : null;
+                  const expiry = typeof m.option_expiry === "string" ? m.option_expiry : null;
+                  const rightWord = right === "C" ? "Call" : right === "P" ? "Put" : "";
+                  const detail = strike != null && right
+                    ? `${t.symbol} $${fmt(strike, 0)} ${rightWord}${expiry ? ` · exp ${expiry.slice(4, 6)}/${expiry.slice(6, 8)}` : ""}`
+                    : t.symbol;
+                  return (
+                    <div key={t.id} className="px-3 py-1.5">
+                      <div className="flex items-baseline justify-between gap-2 text-[11px]">
+                        <span className={cn("font-semibold shrink-0", isBuy ? "text-up" : "text-down")}>
+                          {isBuy ? "Bought" : "Sold"} {fmt(t.quantity, 0)}
+                        </span>
+                        <span className="text-white/75 shrink-0 tabular">@ ${fmt(t.price)}</span>
+                      </div>
+                      <div className="text-[10px] text-text-muted truncate mt-0.5">{detail}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              {n > 5 && (
+                <div className="px-3 py-1 text-[10px] text-text-muted bg-white/[0.03]">+{n - 5} more</div>
+              )}
+              <div className="px-3 py-1 text-[9px] text-text-muted/80 bg-white/[0.03] border-t border-white/[0.06]">
+                click marker for details &amp; journal
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Top-left overlay stack — cycle card on top, spread cards below. */}
         <div className="absolute top-4 left-4 z-20 flex flex-col gap-3 pointer-events-auto max-w-[300px]">
