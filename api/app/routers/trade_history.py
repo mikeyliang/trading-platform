@@ -142,6 +142,17 @@ async def trade_history_analysis(
     return TradeAnalysisResponse(**result)
 
 
+@router.post(
+    "/recompute-pnl",
+    summary="Recompute FIFO realized P&L for every trade and write the pnl column.",
+)
+async def recompute_pnl() -> dict:
+    """Backfilled trades carry no realized P&L (IBKR Flex doesn't provide it).
+    This FIFO-matches closes against opens per contract and fills in pnl so
+    the trades table, chart markers and stats show real gains/losses."""
+    return await trade_history_store.recompute_realized_pnl()
+
+
 # "" alias — same Next.js slash-normalization issue as the list route above.
 @router.post("", response_model=TradeHistoryResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post(

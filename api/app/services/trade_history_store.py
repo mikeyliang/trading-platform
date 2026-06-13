@@ -815,3 +815,98 @@ def _row_to_dict(row: Any) -> Dict[str, Any]:
         except (TypeError, ValueError):
             pass
     return d
+
+
+async def recompute_realized_pnl() -> Dict[str, int]:
+    """Compute FIFO realized P&L per contract and write it to the ``pnl``
+    column. IBKR Flex doesn't ship a realized-P&L field, so trades imported
+    via backfill all sit at 0 — this fills them in.
+
+    Method: group trades by (account, contract) — conId for options, symbol
+    for stocks — order by time, and FIFO-match closes against opens. The
+    closing trade books the gain/loss of the lots it closes; opening trades
+    book 0. Option multiplier and per-trade commissions are folded in.
+    Expirations are just closes at price 0, so a long that expires worthless
+    books its full debit as a loss and a short books the premium as a gain.
+    """
+    from collections import deque
+
+    pool = db.pool()
+    if pool is None:
+        return {"updated": 0, "trades": 0}
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, symbol, side, quantity, price, timestamp, metadata_ "
+            "FROM trade_history WHERE is_deleted = FALSE "
+            "ORDER BY timestamp ASC, id ASC"
+        )
+
+    # Bucket by account + contract so unrelated symbols / the two managed
+    # accounts never net against each other.
+    groups: Dict[tuple, list] = {}
+    for r in rows:
+        meta = r["metadata_"]
+        if isinstance(meta, str):
+            try:
+                meta = json.loads(meta)
+            except (TypeError, ValueError):
+                meta = {}
+        meta = meta or {}
+        conid = meta.get("conid")
+        contract = str(conid) if conid else (r["symbol"] or "?")
+        key = (meta.get("account_id") or "", contract)
+        groups.setdefault(key, []).append((r, meta))
+
+    pnl_by_id: Dict[int, float] = {}
+    for items in groups.values():
+        # lot = [signed_qty_remaining, price, commission_remaining, orig_qty]
+        lots: deque = deque()
+        for r, meta in items:
+            qty = float(r["quantity"] or 0)
+            if qty == 0:
+                pnl_by_id[r["id"]] = 0.0
+                continue
+            buy = str(r["side"] or "").upper().startswith("B")
+            signed = qty if buy else -qty
+            price = float(r["price"] or 0)
+            mult = float(meta.get("multiplier") or 1) or 1
+            comm = float(meta.get("commission") or 0)  # dollars, usually < 0
+            realized = 0.0
+
+            # Close against opposite-sign open lots, FIFO.
+            while lots and abs(signed) > 1e-9 and (lots[0][0] > 0) != (signed > 0):
+                lot = lots[0]
+                matched = min(abs(signed), abs(lot[0]))
+                if lot[0] > 0:           # long lot closed by a sell
+                    gross = (price - lot[1]) * matched * mult
+                else:                    # short lot closed by a buy
+                    gross = (lot[1] - price) * matched * mult
+                open_comm_alloc = (lot[2] * (matched / lot[3])) if lot[3] else 0.0
+                realized += gross + open_comm_alloc
+                lot[0] += -matched if lot[0] > 0 else matched
+                lot[2] -= open_comm_alloc
+                signed += matched if signed < 0 else -matched
+                if abs(lot[0]) < 1e-9:
+                    lots.popleft()
+
+            # This trade's own commission, for the portion that closed.
+            closed_qty = qty - abs(signed)
+            if qty:
+                realized += comm * (closed_qty / qty)
+                # Leftover opens a new lot, carrying its share of commission.
+                if abs(signed) > 1e-9:
+                    lots.append([signed, price, comm * (abs(signed) / qty), abs(signed)])
+
+            pnl_by_id[r["id"]] = round(realized, 2)
+
+    updated = 0
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            for tid, pnl in pnl_by_id.items():
+                await conn.execute(
+                    "UPDATE trade_history SET pnl = $1 WHERE id = $2", pnl, tid
+                )
+                updated += 1
+    logger.info("recompute_realized_pnl: updated %d / %d trades", updated, len(rows))
+    return {"updated": updated, "trades": len(rows)}

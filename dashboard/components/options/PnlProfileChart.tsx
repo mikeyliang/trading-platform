@@ -88,7 +88,25 @@ export function PnlProfileChart({
     isCall: right === "C", isLong, entryPrice, quantity,
   }), [spot, strike, dteYears, iv, right, isLong, entryPrice, quantity]);
 
-  const prices = useMemo(() => samplePriceAxis(spot, range, 161), [spot, range]);
+  // Price axis. Base window is ±range around spot, but ALWAYS widen so the
+  // strike and breakeven (with margin) are on-screen — otherwise a far-OTM/ITM
+  // contract renders as a flat mystery line with the payoff kink off-screen.
+  const prices = useMemo(() => {
+    const half = Math.max(0.01, range) * spot;
+    let lo = spot - half;
+    let hi = spot + half;
+    const key = [strike, breakeven].filter(
+      (v) => typeof v === "number" && Number.isFinite(v) && v > 0,
+    );
+    if (key.length) {
+      const margin = spot * 0.08;
+      lo = Math.min(lo, Math.min(...key) - margin);
+      hi = Math.max(hi, Math.max(...key) + margin);
+    }
+    lo = Math.max(0.01, lo);
+    const n = 161;
+    return Array.from({ length: n }, (_, i) => lo + ((hi - lo) * i) / (n - 1));
+  }, [spot, strike, breakeven, range]);
   const liveCurve = useMemo(
     () => pnlCurve(prices, daysFromNow, ivMult, inputs),
     [prices, daysFromNow, ivMult, inputs],
