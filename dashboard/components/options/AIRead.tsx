@@ -927,6 +927,8 @@ function buildRequestBody(result: OptionAnalyzeResult) {
     // rule-based scorer's existing read — the agents see what we
     // already concluded and can corroborate or contradict.
     advice_label: result.advice.label,
+    advice_action: result.advice.action,
+    advice_conviction: result.advice.conviction,
     advice_score: result.advice.score,
     advice_notes: result.advice.notes,
     narrative: result.narrative,

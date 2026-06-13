@@ -149,6 +149,8 @@ class AgentRunRequest(BaseModel):
 
     # ── advice + narrative the rule-based scorer already produced ────
     advice_label: Optional[str] = None
+    advice_action: Optional[str] = None       # ADD | HOLD | SPEC | TRIM | EXIT
+    advice_conviction: Optional[str] = None   # low | medium | high
     advice_score: Optional[float] = None
     advice_notes: List[str] = Field(default_factory=list)
     narrative: Optional[str] = None
@@ -354,7 +356,11 @@ def _payload_summary(r: AgentRunRequest) -> str:
             )
 
     lines.append(
-        f"ADVICE (rule-based): {r.advice_label or '?'} ({_fmt(r.advice_score, '+.0f')})"
+        f"ADVICE (rule-based): "
+        + (f"{r.advice_action} — " if r.advice_action else "")
+        + f"{r.advice_label or '?'} ({_fmt(r.advice_score, '+.0f')}"
+        + (f", {r.advice_conviction} conviction" if r.advice_conviction else "")
+        + ")"
     )
     if r.advice_notes:
         for note in r.advice_notes:
@@ -467,6 +473,11 @@ def _synthesis_prompt(
         "\n\nOPTION READ:\n" + option_text +
         "\n\nDECAY READ:\n" + decay_text +
         "\n\nBased on all FOUR reads above, give the FINAL POSITION CALL. "
+        "A deterministic rule-based scorer already called this position (the "
+        "ADVICE line above) and the trader sees that verdict on screen. "
+        "Reconcile with it: if the data backs it, corroborate it; if you "
+        "diverge, say so explicitly and justify why — never silently "
+        "contradict the on-screen verdict. "
         "Lead with the verdict, then justify it with the strongest one-or-two "
         "things working FOR the trade and the strongest one-or-two things "
         "working AGAINST it — weighted by what the data actually shows. If "
