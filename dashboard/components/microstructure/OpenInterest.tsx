@@ -34,8 +34,9 @@ export function OpenInterestByStrike({ symbol }: Props) {
     setExpirations([]);
     api.optionsChain(symbol).then((meta) => {
       if (cancelled) return;
-      setExpirations(meta.expirations);
-      if (meta.expirations[0]) setExpiry(meta.expirations[0]);
+      const exps = Array.isArray(meta?.expirations) ? meta.expirations : [];
+      setExpirations(exps);
+      if (exps[0]) setExpiry(exps[0]);
     }).catch(() => null);
     return () => { cancelled = true; };
   }, [symbol]);
@@ -97,8 +98,8 @@ export function OpenInterestByStrike({ symbol }: Props) {
         <Sigma size={10} className="text-accent" />
         <span>Open Interest · {symbol}</span>
         <Select value={expiry} onValueChange={setExpiry} disabled={expirations.length === 0}>
-          <SelectTrigger className="h-5 w-24 text-2xs tabular ml-auto">
-            <SelectValue placeholder="—" />
+          <SelectTrigger className="h-6 w-24 text-2xs tabular ml-auto">
+            <SelectValue placeholder="n/a" />
           </SelectTrigger>
           <SelectContent>
             {expirations.map((e) => (
@@ -173,9 +174,9 @@ export function OpenInterestByStrike({ symbol }: Props) {
           <span>P/C OI <span className={cn(
             "font-medium",
             pcr != null && pcr > 1.2 ? "text-down" : pcr != null && pcr < 0.7 ? "text-up" : "text-text-secondary"
-          )}>{pcr != null ? pcr.toFixed(2) : "—"}</span></span>
-          <span className="text-center">Max Pain <span className="text-warning font-medium">{maxPain ?? "—"}</span></span>
-          <span className="text-right">spot <span className="text-text-primary font-medium">{spot != null ? spot.toFixed(2) : "—"}</span></span>
+          )}>{pcr != null ? pcr.toFixed(2) : "n/a"}</span></span>
+          <span className="text-center">Max Pain <span className="text-warning font-medium">{maxPain ?? "n/a"}</span></span>
+          <span className="text-right">spot <span className="text-text-primary font-medium">{spot != null ? spot.toFixed(2) : "n/a"}</span></span>
         </div>
       )}
     </div>

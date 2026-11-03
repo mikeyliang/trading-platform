@@ -122,9 +122,9 @@ function MiniRow({ entry }: { entry: MonitorEntry }) {
         <span className="text-2xs text-text-muted hidden sm:inline">{entry.spread_type}</span>
       </div>
       <div className="flex items-baseline gap-x-3 text-xs tabular shrink-0">
-        <span className="text-text-muted">Δ <span className="text-text-primary">{entry.current_delta != null ? entry.current_delta.toFixed(1) : "—"}</span></span>
+        <span className="text-text-muted">Δ <span className="text-text-primary">{entry.current_delta != null ? entry.current_delta.toFixed(1) : "n/a"}</span></span>
         <span className="text-text-muted">exit <span className="text-text-secondary">{entry.exit_delta}</span></span>
-        <span className="text-text-muted">head <span className={cn(tone, "font-medium")}>{entry.headroom != null ? entry.headroom.toFixed(1) : "—"}</span></span>
+        <span className="text-text-muted">head <span className={cn(tone, "font-medium")}>{entry.headroom != null ? entry.headroom.toFixed(1) : "n/a"}</span></span>
       </div>
     </div>
   );

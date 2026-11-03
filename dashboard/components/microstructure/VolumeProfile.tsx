@@ -41,7 +41,7 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
 
   const maxVol = useMemo(() => {
     if (!data) return 1;
-    return Math.max(1, ...data.bins.map((b) => b.volume));
+    return Math.max(1, ...(data.bins ?? []).map((b) => b.volume));
   }, [data]);
 
   return (
@@ -50,7 +50,7 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
         <BarChart3 size={10} className="text-accent" />
         <span>Volume Profile · {symbol}</span>
         <Select value={tf} onValueChange={setTf}>
-          <SelectTrigger className="h-5 w-14 text-2xs tabular ml-auto">
+          <SelectTrigger className="h-6 w-[72px] text-2xs tabular ml-auto">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -60,7 +60,7 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
           </SelectContent>
         </Select>
         <Select value={String(days)} onValueChange={(v: string) => setDays(Number(v))}>
-          <SelectTrigger className="h-5 w-14 text-2xs tabular">
+          <SelectTrigger className="h-6 w-[72px] text-2xs tabular">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -75,7 +75,7 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
         <div className="flex-1 flex items-center justify-center">
           <Loader2 size={14} className="animate-spin text-text-muted" />
         </div>
-      ) : !data || data.bins.length === 0 ? (
+      ) : !data || !data.bins?.length ? (
         <EmptyState
           icon={BarChart3}
           title="No volume to profile"

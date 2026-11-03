@@ -177,7 +177,7 @@ function InsightCard({
         <div className="px-3 py-2.5 flex flex-col gap-1.5">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-sm font-medium text-text-primary tabular">
-              {trade.symbol ?? "—"}
+              {trade.symbol ?? "n/a"}
             </span>
             {trade.side && (
               <Badge variant={trade.side === "BUY" ? "up" : "down"}>{trade.side}</Badge>
@@ -190,7 +190,7 @@ function InsightCard({
                 trade.pnl != null ? pnlClass(trade.pnl) : "text-text-muted"
               )}
             >
-              {trade.pnl != null ? fmtCurrency(trade.pnl) : "—"}
+              {trade.pnl != null ? fmtCurrency(trade.pnl) : "n/a"}
             </span>
             {showPct && trade.pnl_percentage != null && (
               <span className={cn("text-xs tabular", pnlClass(trade.pnl_percentage))}>
@@ -247,12 +247,12 @@ function LoadingSkeleton() {
 
 function fmtRelative(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "n/a";
   return formatDistanceToNow(d, { addSuffix: true });
 }
 
 function fmtDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "—";
+  if (!Number.isFinite(seconds) || seconds < 0) return "n/a";
   if (seconds < 60) return `${Math.round(seconds)}s`;
   const m = seconds / 60;
   if (m < 60) return `${m.toFixed(m < 10 ? 1 : 0)}m`;

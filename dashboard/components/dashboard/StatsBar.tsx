@@ -111,7 +111,7 @@ export const StatsBar = memo(function StatsBar() {
         {account ? (
           <>
             <div className="flex items-baseline gap-2">
-              <Value>{trades > 0 ? `${winRate.toFixed(0)}%` : "—"}</Value>
+              <Value>{trades > 0 ? `${winRate.toFixed(0)}%` : "n/a"}</Value>
               <span className="text-2xs text-text-muted tabular">
                 {trades} {trades === 1 ? "trade" : "trades"}
               </span>
@@ -127,7 +127,7 @@ export const StatsBar = memo(function StatsBar() {
         {account ? (
           <>
             <Value muted>{fmtCurrency(account.buying_power ?? 0)}</Value>
-            <Hint>{account.mode ? `${account.mode.toUpperCase()} account` : "Available"}</Hint>
+            <Hint>{account.mode ? `${account.mode.toUpperCase() === "LIVE" ? "Live" : "Paper"} account` : "Available"}</Hint>
           </>
         ) : (
           <Empty />

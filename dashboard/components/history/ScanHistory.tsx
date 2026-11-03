@@ -140,12 +140,12 @@ function SummaryStrip({ stats }: { stats: Stats }) {
       />
       <Metric
         label="Best AROC"
-        value={stats.bestAroc != null ? `${stats.bestAroc.toFixed(0)}%` : "—"}
+        value={stats.bestAroc != null ? `${stats.bestAroc.toFixed(0)}%` : "n/a"}
         tone={stats.bestAroc != null ? "up" : undefined}
       />
       <Metric
         label="Most-picked"
-        value={topType ? topType[0].toUpperCase() : "—"}
+        value={topType ? topType[0].toUpperCase() : "n/a"}
         sub={topType ? `${topType[1]}×` : undefined}
         tone={topType ? "accent" : undefined}
       />
@@ -186,7 +186,7 @@ function Row({ scan }: { scan: ScanRecord }) {
   const ran = scan.ran_at ? new Date(scan.ran_at) : null;
   const dateStr = ran
     ? `${ran.toLocaleDateString(undefined, { month: "short", day: "numeric" })} · ${ran.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-    : "—";
+    : "n/a";
   const reco = scan.recommendation;
   const tone = reco ? (TRADE_TONE[reco] ?? "text-text-secondary") : "text-text-muted";
   const cand = scan.payload?.recommendation?.candidate;
@@ -194,25 +194,25 @@ function Row({ scan }: { scan: ScanRecord }) {
   return (
     <tr className="border-t border-border/30 hover:bg-surface-2/30 transition-colors">
       <td className="px-3 py-2.5 text-text-secondary tabular whitespace-nowrap">{dateStr}</td>
-      <td className="px-3 py-2.5 text-text-muted text-2xs whitespace-nowrap">{scan.scope ?? "—"}</td>
-      <td className="px-3 py-2.5 text-text-secondary">{scan.symbol ?? "—"}</td>
+      <td className="px-3 py-2.5 text-text-muted text-2xs whitespace-nowrap">{scan.scope ?? "n/a"}</td>
+      <td className="px-3 py-2.5 text-text-secondary">{scan.symbol ?? "n/a"}</td>
       <td className={cn("px-3 py-2.5 text-2xs", tone)}>
-        {reco ?? "—"}
+        {reco ?? "n/a"}
       </td>
       <td className="px-3 py-2.5 text-right font-mono text-text-primary">
-        {cand ? <>{cand.short_strike}<span className="text-text-muted">/</span>{cand.long_strike}</> : "—"}
+        {cand ? <>{cand.short_strike}<span className="text-text-muted">/</span>{cand.long_strike}</> : "n/a"}
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary whitespace-nowrap">
-        {cand ? <>{formatExpiry(cand.expiry)} <span className="text-text-muted">· {cand.dte}d</span></> : "—"}
+        {cand ? <>{formatExpiry(cand.expiry)} <span className="text-text-muted">· {cand.dte}d</span></> : "n/a"}
       </td>
       <td className={cn("px-3 py-2.5 text-right", cand ? "text-up" : "text-text-muted")}>
-        {cand ? `${cand.aroc_pct.toFixed(0)}%` : "—"}
+        {cand ? `${cand.aroc_pct.toFixed(0)}%` : "n/a"}
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary">
-        {cand ? cand.kelly_pct.toFixed(0) : "—"}
+        {cand ? cand.kelly_pct.toFixed(0) : "n/a"}
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary">
-        {cand ? (cand.short_delta * 100).toFixed(0) : "—"}
+        {cand ? (cand.short_delta * 100).toFixed(0) : "n/a"}
       </td>
     </tr>
   );

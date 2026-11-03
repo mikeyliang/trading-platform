@@ -95,9 +95,9 @@ function HeroStats({
   return (
     <div className="grid grid-cols-2 md:grid-cols-6 gap-x-4 gap-y-2 py-1">
       <Big label="Equity"
-           value={equity != null ? fmtCurrency(equity) : "—"} />
+           value={equity != null ? fmtCurrency(equity) : "n/a"} />
       <Big label="Buying power"
-           value={buyingPower != null ? fmtCurrency(buyingPower) : "—"}
+           value={buyingPower != null ? fmtCurrency(buyingPower) : "n/a"}
            muted />
       <Big label="Unrealized"
            value={unrealized !== 0 ? fmtCurrency(unrealized) : "$0"}
@@ -106,10 +106,10 @@ function HeroStats({
            value={realized != null ? fmtCurrency(realized) : "$0"}
            tone={(realized ?? 0) > 0 ? "up" : (realized ?? 0) < 0 ? "down" : undefined} />
       <Big label="Long exp"
-           value={longExp ? fmtCurrency(longExp) : "—"}
+           value={longExp ? fmtCurrency(longExp) : "n/a"}
            muted />
       <Big label="Short exp"
-           value={shortExp ? fmtCurrency(shortExp) : "—"}
+           value={shortExp ? fmtCurrency(shortExp) : "n/a"}
            muted />
     </div>
   );
@@ -188,10 +188,10 @@ function PositionsTable({ positions }: { positions: Position[] }) {
                   {(p.quantity ?? 0).toLocaleString()}
                 </td>
                 <td className="px-2 py-1.5 text-right text-text-secondary">
-                  ${p.avg_price?.toFixed(2) ?? "—"}
+                  ${p.avg_price?.toFixed(2) ?? "n/a"}
                 </td>
                 <td className="px-2 py-1.5 text-right text-text-primary">
-                  ${p.current_price?.toFixed(2) ?? "—"}
+                  ${p.current_price?.toFixed(2) ?? "n/a"}
                 </td>
                 <td className={cn("px-2 py-1.5 text-right", pnlClass(delta))}>
                   {delta >= 0 ? "+" : ""}{delta.toFixed(2)}
@@ -257,10 +257,10 @@ function FillsTable({ trades }: { trades: Trade[] }) {
                 <td className="px-2 py-1.5 text-right text-text-secondary">{t.quantity.toLocaleString()}</td>
                 <td className="px-2 py-1.5 text-right text-text-secondary">${t.price.toFixed(2)}</td>
                 <td className={cn("px-2 py-1.5 text-right", pnlClass(pnl))}>
-                  {t.pnl != null ? fmtCurrency(pnl) : "—"}
+                  {t.pnl != null ? fmtCurrency(pnl) : "n/a"}
                 </td>
                 <td className="px-2 py-1.5 text-text-muted text-2xs">
-                  {t.strategy ?? "—"}
+                  {t.strategy ?? "n/a"}
                 </td>
               </tr>
             );

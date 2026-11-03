@@ -120,8 +120,8 @@ export function OptionAnalysisCard({ result }: Props) {
               ) : (
                 <div>
                   No real IBKR bars for this contract, so prices are a{" "}
-                  <em>Black-Scholes replay</em> using the option&apos;s current IV
-                  — what it <em>would</em> have been worth as the underlying moved,
+                  <em>Black-Scholes replay</em> using the option&apos;s current IV,
+                  what it <em>would</em> have been worth as the underlying moved,
                   if IV stayed at today&apos;s level.
                 </div>
               )}

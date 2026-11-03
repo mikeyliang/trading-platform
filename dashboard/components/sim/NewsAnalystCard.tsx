@@ -74,7 +74,7 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
                 {read.verdict}
               </span>
               <span className="text-2xs tabular text-text-muted">{read.confidence}% conf</span>
-              {read.cached && <Badge variant="muted">cached</Badge>}
+              {read.cached && <Badge variant="muted">Cached</Badge>}
             </div>
 
             {/* bias bar: -1 .. +1 */}

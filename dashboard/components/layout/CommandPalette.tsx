@@ -23,18 +23,33 @@ import {
   CandlestickChart,
   Layers,
   ArrowRight,
+  Lightbulb,
+  Calculator,
+  FlaskConical,
+  Bot,
+  Clock,
+  Table2,
+  MessagesSquare,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { WatchlistItem } from "@/types";
 
 const PAGES = [
-  { label: "Dashboard",   href: "/",                    icon: LayoutDashboard, keywords: "home overview" },
+  { label: "Dashboard",   href: "/",                    icon: LayoutDashboard, keywords: "home overview board" },
   { label: "Exit",        href: "/monitor/exit",        icon: Activity,        keywords: "monitor open spreads delta trigger" },
   { label: "Tracker",     href: "/monitor/tracker",     icon: Notebook,        keywords: "okw log positions" },
   { label: "Performance", href: "/monitor/performance", icon: BarChart3,       keywords: "analytics equity curve sharpe drawdown" },
-  { label: "Journal",     href: "/monitor/journal",     icon: Notebook,        keywords: "notes reflection review" },
-  { label: "Screener",    href: "/screener",            icon: Filter,          keywords: "filter sector market cap pe dividend" },
-  { label: "Settings",    href: "/settings",            icon: Settings,        keywords: "configuration" },
+  { label: "Insights",    href: "/monitor/insights",    icon: Lightbulb,       keywords: "patterns review lessons" },
+  { label: "Journal",     href: "/monitor/journal",     icon: Notebook,        keywords: "notes reflection review mood" },
+  { label: "Analyzer",    href: "/monitor/analyzer",    icon: Calculator,      keywords: "options position spread payoff greeks" },
+  { label: "Agents",      href: "/agents",              icon: MessagesSquare,  keywords: "debate ai bull bear verdict" },
+  { label: "Screener",    href: "/screener",            icon: Filter,          keywords: "filter sector market cap pe dividend rule one" },
+  { label: "Depth",       href: "/microstructure",      icon: Layers,          keywords: "order book microstructure volume profile" },
+  { label: "Chain",       href: "/trade/chain",         icon: Table2,          keywords: "options chain strikes expiry" },
+  { label: "Simulate",    href: "/backtest",            icon: FlaskConical,    keywords: "backtest strategy presets runs" },
+  { label: "Bot",         href: "/bot",                 icon: Bot,             keywords: "automation paper trading decisions" },
+  { label: "History",     href: "/trade/history",       icon: Clock,           keywords: "trades fills flex backfill analysis" },
+  { label: "Settings",    href: "/settings",            icon: Settings,        keywords: "configuration theme account" },
 ];
 
 const SUGGESTED_SYMBOLS = ["SPY", "QQQ", "IWM", "RUT", "AAPL", "NVDA", "TSLA", "MSFT"];

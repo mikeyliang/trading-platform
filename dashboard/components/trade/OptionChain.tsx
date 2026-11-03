@@ -424,9 +424,9 @@ function SideCell({
       )}
     >
       {align === "left" ? (
-        <span className="inline-flex items-center gap-1">{star}{value ?? "—"}</span>
+        <span className="inline-flex items-center gap-1">{star}{value ?? "n/a"}</span>
       ) : (
-        <span className="inline-flex items-center gap-1 justify-end">{value ?? "—"}{star}</span>
+        <span className="inline-flex items-center gap-1 justify-end">{value ?? "n/a"}{star}</span>
       )}
     </td>
   );

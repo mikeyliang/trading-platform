@@ -270,11 +270,11 @@ export function BacktestPanel() {
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead>entry</TableHead>
-                      <TableHead>exit</TableHead>
-                      <TableHead className="text-right">entry $</TableHead>
-                      <TableHead className="text-right">exit $</TableHead>
-                      <TableHead className="text-right">qty</TableHead>
+                      <TableHead>Entry</TableHead>
+                      <TableHead>Exit</TableHead>
+                      <TableHead className="text-right">Entry $</TableHead>
+                      <TableHead className="text-right">Exit $</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
                       <TableHead className="text-right">P&amp;L</TableHead>
                       <TableHead className="text-right">P&amp;L %</TableHead>
                     </TableRow>
@@ -286,15 +286,15 @@ export function BacktestPanel() {
                           {new Date(t.entry_time).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-text-muted">
-                          {t.exit_time ? new Date(t.exit_time).toLocaleDateString() : "—"}
+                          {t.exit_time ? new Date(t.exit_time).toLocaleDateString() : "n/a"}
                         </TableCell>
                         <TableCell className="text-right tabular">{t.entry_price.toFixed(2)}</TableCell>
                         <TableCell className="text-right tabular">
-                          {t.exit_price?.toFixed(2) ?? "—"}
+                          {t.exit_price?.toFixed(2) ?? "n/a"}
                         </TableCell>
                         <TableCell className="text-right tabular">{t.quantity.toFixed(1)}</TableCell>
                         <TableCell className={cn("text-right tabular", pnlClass(t.pnl ?? 0))}>
-                          {t.pnl != null ? fmtCurrency(t.pnl) : "—"}
+                          {t.pnl != null ? fmtCurrency(t.pnl) : "n/a"}
                         </TableCell>
                         <TableCell className="text-right">
                           {t.pnl_pct != null ? (

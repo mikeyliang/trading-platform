@@ -173,7 +173,7 @@ export function WatchlistPanel() {
                         {item.symbol}
                       </span>
                       <span className="tabular text-2xs text-text-muted">
-                        {last != null ? fmt(last, 2) : "—"}
+                        {last != null ? fmt(last, 2) : "n/a"}
                       </span>
                     </div>
                     <WatchlistSparkline symbol={item.symbol} width={44} height={18} />
@@ -183,7 +183,7 @@ export function WatchlistPanel() {
                         dir === "up" ? "text-up" : dir === "down" ? "text-down" : "text-text-muted"
                       )}
                     >
-                      {changePct == null ? "—" : fmtPct(changePct)}
+                      {changePct == null ? "n/a" : fmtPct(changePct)}
                     </span>
                   </Link>
                   <button

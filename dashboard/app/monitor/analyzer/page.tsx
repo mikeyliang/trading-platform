@@ -419,10 +419,10 @@ function AnalysisBody({
     : action === "SPEC" ? "Speculative hold"
     : action === "TRIM" ? "Reduce"
     : action === "EXIT" ? "Close"
-    : (advice.label || "—");
+    : (advice.label || "n/a");
   const labelExplanation = (() => {
     const l = advice.label || "";
-    const dash = l.indexOf("—");
+    const dash = l.indexOf("n/a");
     const tail = dash >= 0 ? l.slice(dash + 1).trim() : l;
     return tail || l;
   })();
@@ -437,7 +437,7 @@ function AnalysisBody({
   // POP and expected move pulled up into the state strip so probability is
   // visible without scrolling, used to live in the right-hand side rail.
   const pop = result.probability.pop;
-  const popPct = pop != null ? `${(pop * 100).toFixed(0)}%` : "—";
+  const popPct = pop != null ? `${(pop * 100).toFixed(0)}%` : "n/a";
   const popTone = pop == null ? undefined : pop >= 0.6 ? "up" : pop >= 0.4 ? "warning" : "down";
   const emPct = result.sigma_ranges.expected_move_pct;
   const emAbs = result.sigma_ranges.expected_move_abs;
@@ -531,7 +531,7 @@ function AnalysisBody({
           <HeroMetric label="Spot" value={`$${result.spot.toFixed(2)}`}
             hint="Live underlying price." />
           <HeroMetric label="Mid"
-            value={result.option.mid != null ? `$${result.option.mid.toFixed(2)}` : "—"}
+            value={result.option.mid != null ? `$${result.option.mid.toFixed(2)}` : "n/a"}
             hint={result.option.bid != null && result.option.ask != null
               ? `bid ${result.option.bid.toFixed(2)} / ask ${result.option.ask.toFixed(2)}`
               : "Midpoint of bid/ask"} />
@@ -547,17 +547,17 @@ function AnalysisBody({
             tone={Math.abs(result.distance_pct) < 2 ? "warning" : undefined}
             hint={`${result.distance_pct >= 0 ? "above" : "below"} strike`} />
           <HeroMetric label="BE" value={`$${result.breakeven.toFixed(2)}`}
-            hint={`${result.spot ? (((result.breakeven - result.spot) / result.spot) * 100).toFixed(1) : "—"}% from spot`} />
+            hint={`${result.spot ? (((result.breakeven - result.spot) / result.spot) * 100).toFixed(1) : "n/a"}% from spot`} />
           <HeroMetric label="POP" value={popPct} tone={popTone}
-            hint={`P(ITM) ${result.probability.prob_itm != null ? (result.probability.prob_itm * 100).toFixed(0) + "%" : "—"}`} />
+            hint={`P(ITM) ${result.probability.prob_itm != null ? (result.probability.prob_itm * 100).toFixed(0) + "%" : "n/a"}`} />
           <HeroMetric label="±1σ"
-            value={emPct != null ? `±${emPct.toFixed(1)}%` : "—"}
+            value={emPct != null ? `±${emPct.toFixed(1)}%` : "n/a"}
             hint={emAbs != null ? `±$${emAbs.toFixed(2)} by expiry` : "Expected 1σ move"} />
           <HeroMetric label="Delta"
-            value={result.greeks.delta != null ? result.greeks.delta.toFixed(3) : "—"}
+            value={result.greeks.delta != null ? result.greeks.delta.toFixed(3) : "n/a"}
             hint="Delta, option move per $1 move in the underlying (per share)." />
           <HeroMetric label="Theta"
-            value={result.greeks.theta != null ? result.greeks.theta.toFixed(3) : "—"}
+            value={result.greeks.theta != null ? result.greeks.theta.toFixed(3) : "n/a"}
             tone={result.greeks.theta != null && (result.is_long ? result.greeks.theta < 0 : result.greeks.theta > 0) ? "down" : undefined}
             hint="Theta, daily time decay (per share)." />
           <HeroMetric label="Max profit"
@@ -857,7 +857,7 @@ function RiskCell({ label, value, tone }: {
 }
 
 function rrRatio(maxP: number | null, maxL: number | null): string {
-  if (maxP == null || maxL == null || !isFinite(maxP) || !isFinite(maxL) || maxL === 0) return "—";
+  if (maxP == null || maxL == null || !isFinite(maxP) || !isFinite(maxL) || maxL === 0) return "n/a";
   return `${(Math.abs(maxP) / Math.abs(maxL)).toFixed(2)} : 1`;
 }
 
@@ -978,11 +978,11 @@ function buildAIPrompt(r: OptionAnalyzeResult): string {
     `Should I keep / close my ${direction} ${side} on ${r.symbol}?`,
     "",
     `Position: ${r.quantity} × ${r.strike} ${r.right} exp ${fmtExp(r.expiry)} (${r.dte}d)`,
-    `Entry: $${r.option.entry_price.toFixed(2)}/share, current mid $${r.option.mid?.toFixed(2) ?? "—"}`,
+    `Entry: $${r.option.entry_price.toFixed(2)}/share, current mid $${r.option.mid?.toFixed(2) ?? "n/a"}`,
     `Spot: $${r.spot.toFixed(2)} (${r.distance_pct >= 0 ? "+" : ""}${r.distance_pct.toFixed(2)}% from strike)`,
-    `Greeks: Δ=${r.greeks.delta?.toFixed(3) ?? "—"} Γ=${r.greeks.gamma?.toFixed(4) ?? "—"} Θ=${r.greeks.theta?.toFixed(3) ?? "—"} ν=${r.greeks.vega?.toFixed(3) ?? "—"}`,
+    `Greeks: Δ=${r.greeks.delta?.toFixed(3) ?? "n/a"} Γ=${r.greeks.gamma?.toFixed(4) ?? "n/a"} Θ=${r.greeks.theta?.toFixed(3) ?? "n/a"} ν=${r.greeks.vega?.toFixed(3) ?? "n/a"}`,
     `IV: ${(r.option.iv * 100).toFixed(1)}%, breakeven $${r.breakeven.toFixed(2)}`,
-    `Underlying: EMA9 ${r.underlying.ema9?.toFixed(2) ?? "—"}, EMA21 ${r.underlying.ema21?.toFixed(2) ?? "—"}, EMA200 ${r.underlying.ema200?.toFixed(2) ?? "—"}, RSI ${r.underlying.rsi.toFixed(0)}, trend score ${r.underlying.trend_score}`,
+    `Underlying: EMA9 ${r.underlying.ema9?.toFixed(2) ?? "n/a"}, EMA21 ${r.underlying.ema21?.toFixed(2) ?? "n/a"}, EMA200 ${r.underlying.ema200?.toFixed(2) ?? "n/a"}, RSI ${r.underlying.rsi.toFixed(0)}, trend score ${r.underlying.trend_score}`,
     r.forecast
       ? `Model (Chronos 5d): median ${r.forecast.expected_return_pct >= 0 ? "+" : ""}${r.forecast.expected_return_pct.toFixed(1)}% (p10/p90 band ±${r.forecast.band_pct.toFixed(1)}%)`
       : `Model: unavailable`,

@@ -12,6 +12,7 @@ import {
   Filter,
   Bot,
   Layers,
+  Table2,
   FlaskConical,
   type LucideIcon,
 } from "lucide-react";
@@ -42,6 +43,7 @@ const groups: NavGroup[] = [
     name: "Market",
     items: [
       { href: "/screener",       icon: Filter, label: "Screener" },
+      { href: "/trade/chain",    icon: Table2, label: "Chain" },
       { href: "/microstructure", icon: Layers, label: "Depth" },
     ],
   },

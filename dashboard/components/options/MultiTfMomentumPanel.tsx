@@ -98,24 +98,24 @@ export function MultiTfMomentumPanel({ result }: Props) {
     name: "rsi" | "macd" | "smi" | "vwap" | "ema",
     s: MultiTfSnapshot
   ): string => {
-    if (!s.available) return "—";
-    if (name === "rsi") return s.rsi != null ? s.rsi.toFixed(0) : "—";
+    if (!s.available) return "n/a";
+    if (name === "rsi") return s.rsi != null ? s.rsi.toFixed(0) : "n/a";
     if (name === "macd") {
       const v = s.macd_hist;
-      if (v == null) return "—";
+      if (v == null) return "n/a";
       return `${v >= 0 ? "+" : ""}${v.toFixed(2)}`;
     }
-    if (name === "smi") return s.smi != null ? s.smi.toFixed(0) : "—";
+    if (name === "smi") return s.smi != null ? s.smi.toFixed(0) : "n/a";
     if (name === "vwap") {
       const d = s.vwap_diff_pct;
       if (d == null) return "n/a";
       return `${d >= 0 ? "+" : ""}${d.toFixed(2)}%`;
     }
     if (name === "ema") {
-      if (s.ema9 == null || s.ema21 == null) return "—";
+      if (s.ema9 == null || s.ema21 == null) return "n/a";
       return s.ema9 > s.ema21 ? "9>21" : s.ema9 < s.ema21 ? "9<21" : "9=21";
     }
-    return "—";
+    return "n/a";
   };
 
   const rows: { key: "rsi" | "macd" | "smi" | "vwap" | "ema"; label: string; hint: string }[] = [
@@ -136,7 +136,7 @@ export function MultiTfMomentumPanel({ result }: Props) {
       if (t === "bull") bull++;
       else if (t === "bear") bear++;
     }
-    if (total === 0) return { label: "—", tone: "neutral" as const };
+    if (total === 0) return { label: "n/a", tone: "neutral" as const };
     if (bull >= total * 0.6) return { label: `${bull}/${total} bull`, tone: "fires-for" as const };
     if (bear >= total * 0.6) return { label: `${bear}/${total} bear`, tone: "fires-against" as const };
     return { label: `${bull}↑ ${bear}↓ ${total - bull - bear}→`, tone: "warn" as const };
@@ -226,7 +226,7 @@ export function MultiTfMomentumPanel({ result }: Props) {
               {sortedTfs.map((tf) => {
                 const s = mt[tf];
                 const tone = toneFor("trend", s);
-                const tr = s?.trend ?? "—";
+                const tr = s?.trend ?? "n/a";
                 return (
                   <td key={`trend-${tf}`} className={cn("text-right px-3 py-1.5 font-medium text-2xs", toneClass(tone))}>
                     {tr}

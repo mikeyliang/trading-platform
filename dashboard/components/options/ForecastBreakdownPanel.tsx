@@ -81,7 +81,7 @@ export function ForecastBreakdownPanel({ result }: Props) {
             <tr className="text-text-muted text-2xs border-b border-border/40">
               <th></th>
               {horizons.flatMap((h) => [
-                <th key={`${h}-er`} className="text-right px-3 py-0.5 font-normal">ret</th>,
+                <th key={`${h}-er`} className="text-right px-3 py-0.5 font-normal">Ret</th>,
                 <th key={`${h}-band`} className="text-right px-3 py-0.5 font-normal text-text-muted/70">±band</th>,
               ])}
             </tr>

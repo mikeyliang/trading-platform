@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function fmt(n: number | null | undefined, decimals = 2): string {
-  if (n == null || !Number.isFinite(n)) return "—";
+  if (n == null || !Number.isFinite(n)) return "n/a";
   return n.toLocaleString("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -14,7 +14,7 @@ export function fmt(n: number | null | undefined, decimals = 2): string {
 }
 
 export function fmtCurrency(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return "—";
+  if (n == null || !Number.isFinite(n)) return "n/a";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -23,14 +23,14 @@ export function fmtCurrency(n: number | null | undefined): string {
 }
 
 export function fmtPct(n: number | null | undefined, showSign = true): string {
-  if (n == null || !Number.isFinite(n)) return "—";
+  if (n == null || !Number.isFinite(n)) return "n/a";
   const s = Math.abs(n).toFixed(2) + "%";
   if (!showSign) return s;
   return (n >= 0 ? "+" : "-") + s;
 }
 
 export function fmtCompact(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return "—";
+  if (n == null || !Number.isFinite(n)) return "n/a";
   if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
   if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(1) + "K";
   return n.toFixed(0);

@@ -216,7 +216,7 @@ export function ChatDrawer() {
             )}
           />
           <span className="text-2xs tabular text-text-muted">
-            {status?.model?.replace("claude-", "") ?? "—"}
+            {status?.model?.replace("claude-", "") ?? "n/a"}
           </span>
           <div className="ml-auto flex items-center gap-0.5">
             {messages.length > 0 && (

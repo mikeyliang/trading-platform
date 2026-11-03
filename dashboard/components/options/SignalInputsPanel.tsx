@@ -76,7 +76,7 @@ export function SignalInputsPanel({ result }: Props) {
     : macdHist > 0
       ? (bullishPos ? "fires-for" : "fires-against")
       : (bearishPos ? "fires-for" : "fires-against");
-  const macdLabel = macdHist == null ? "—" : macdHist > 0 ? "positive" : "negative";
+  const macdLabel = macdHist == null ? "n/a" : macdHist > 0 ? "positive" : "negative";
 
   const smi = s.chart_tf.smi;
   const smiSig = s.chart_tf.smi_signal;
@@ -88,7 +88,7 @@ export function SignalInputsPanel({ result }: Props) {
       ? (bullishPos ? "fires-for" : "warn")
       : "neutral";
   const smiLabel = smi == null
-    ? "—"
+    ? "n/a"
     : smi >= 40 ? "overbought"
     : smi <= -40 ? "oversold"
     : smiSig != null && smi > smiSig ? "above signal"
@@ -157,7 +157,7 @@ export function SignalInputsPanel({ result }: Props) {
     {
       name: "Chronos forecast",
       source: "5d model",
-      value: er == null ? "—" : `${er >= 0 ? "+" : ""}${er.toFixed(2)}% (±${band?.toFixed(1)}%)`,
+      value: er == null ? "n/a" : `${er >= 0 ? "+" : ""}${er.toFixed(2)}% (±${band?.toFixed(1)}%)`,
       label: er == null ? "unavailable"
         : er >= 3 ? "strong bullish"
         : er >= 0.5 ? "mild bullish"
@@ -170,14 +170,14 @@ export function SignalInputsPanel({ result }: Props) {
     {
       name: "MACD hist",
       source: tf,
-      value: macdHist == null ? "—" : `${macdHist >= 0 ? "+" : ""}${macdHist.toFixed(3)}`,
+      value: macdHist == null ? "n/a" : `${macdHist >= 0 ? "+" : ""}${macdHist.toFixed(3)}`,
       label: macdLabel,
       mood: macdMood,
     },
     {
       name: "SMI",
       source: tf,
-      value: smi == null ? "—" : `${smi.toFixed(1)}${smiSig != null ? ` / ${smiSig.toFixed(1)}` : ""}`,
+      value: smi == null ? "n/a" : `${smi.toFixed(1)}${smiSig != null ? ` / ${smiSig.toFixed(1)}` : ""}`,
       label: smiLabel,
       mood: smiMood,
     },
@@ -185,9 +185,9 @@ export function SignalInputsPanel({ result }: Props) {
       name: "VWAP",
       source: tf,
       value: !isIntradayTF ? "n/a daily" :
-        vwap && vwap > 0 ? `${vwap.toFixed(2)} (${vwapDiffPct! >= 0 ? "+" : ""}${vwapDiffPct!.toFixed(2)}%)` : "—",
+        vwap && vwap > 0 ? `${vwap.toFixed(2)} (${vwapDiffPct! >= 0 ? "+" : ""}${vwapDiffPct!.toFixed(2)}%)` : "n/a",
       label: !isIntradayTF ? "intraday only" :
-        vwapDiffPct == null ? "—" :
+        vwapDiffPct == null ? "n/a" :
         Math.abs(vwapDiffPct) < 0.3 ? "near vwap" :
         vwapDiffPct > 0 ? "above vwap" : "below vwap",
       mood: vwapMood,
@@ -195,15 +195,15 @@ export function SignalInputsPanel({ result }: Props) {
     {
       name: "EMA stack",
       source: "daily",
-      value: `9>${s.daily.ema9?.toFixed(2) ?? "—"} 21>${s.daily.ema21?.toFixed(2) ?? "—"} 200>${s.daily.ema200?.toFixed(2) ?? "—"}`,
+      value: `9>${s.daily.ema9?.toFixed(2) ?? "n/a"} 21>${s.daily.ema21?.toFixed(2) ?? "n/a"} 200>${s.daily.ema200?.toFixed(2) ?? "n/a"}`,
       label: emaAligned ? "aligned up" : emaInverse ? "inverted" : "mixed",
       mood: emaMood,
     },
     {
       name: "IV vs RV30",
       source: "vol context",
-      value: `${(s.iv * 100).toFixed(1)}% / ${ivRv != null ? `${ivRv.toFixed(2)}×` : "—"}`,
-      label: ivRv == null ? "—" :
+      value: `${(s.iv * 100).toFixed(1)}% / ${ivRv != null ? `${ivRv.toFixed(2)}×` : "n/a"}`,
+      label: ivRv == null ? "n/a" :
         ivRv >= 1.3 ? "rich" :
         ivRv <= 0.8 ? "cheap" : "fair",
       mood: ivMood,
@@ -218,8 +218,8 @@ export function SignalInputsPanel({ result }: Props) {
     {
       name: "|Δ|",
       source: "greeks",
-      value: absD == null ? "—" : absD.toFixed(3),
-      label: absD == null ? "—" :
+      value: absD == null ? "n/a" : absD.toFixed(3),
+      label: absD == null ? "n/a" :
         absD >= 0.65 ? "deep ITM" :
         absD >= 0.40 ? "near money" :
         absD >= 0.25 ? "OTM" : "far OTM",

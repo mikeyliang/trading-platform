@@ -338,18 +338,18 @@ function Row({ r }: { r: Fundamentals }) {
           </div>
         </Link>
       </td>
-      <td className="px-2 py-1 text-text-muted">{r.sector ?? "—"}</td>
+      <td className="px-2 py-1 text-text-muted">{r.sector ?? "n/a"}</td>
       <td className="px-2 py-1 text-right tabular">
-        {r.market_cap ? `$${fmtCompact(r.market_cap)}` : "—"}
+        {r.market_cap ? `$${fmtCompact(r.market_cap)}` : "n/a"}
       </td>
       <td className="px-2 py-1 text-right tabular">
-        {r.pe_trailing ? r.pe_trailing.toFixed(1) : "—"}
+        {r.pe_trailing ? r.pe_trailing.toFixed(1) : "n/a"}
       </td>
       <td className="px-2 py-1 text-right tabular">
-        {r.dividend_yield ? `${(r.dividend_yield * 100).toFixed(2)}%` : "—"}
+        {r.dividend_yield ? `${(r.dividend_yield * 100).toFixed(2)}%` : "n/a"}
       </td>
       <td className="px-2 py-1 text-right tabular">
-        {r.beta != null ? r.beta.toFixed(2) : "—"}
+        {r.beta != null ? r.beta.toFixed(2) : "n/a"}
       </td>
       <td className="px-2 py-1 text-right">
         {r.fifty_two_week_position != null ? (

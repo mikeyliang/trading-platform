@@ -71,7 +71,7 @@ export function SimPanel() {
   }, []);
 
   useEffect(() => {
-    api.simPresets().then((p) => setPresets(p.presets)).catch(() => {});
+    api.simPresets().then((p) => setPresets(Array.isArray(p?.presets) ? p.presets : [])).catch(() => {});
     refreshRuns().then((rs) => {
       if (rs.length && !selectedRunId) setSelectedRunId(rs[0].id);
     });
@@ -105,7 +105,8 @@ export function SimPanel() {
     try {
       const d = await api.simRun(id);
       setRunDetail(d);
-      const okSymbols = Object.keys(d.results).filter((s) => d.results[s]?.stats);
+      const results = d.results ?? {};
+      const okSymbols = Object.keys(results).filter((s) => results[s]?.stats);
       setActiveSymbol((cur) => (cur && okSymbols.includes(cur) ? cur : okSymbols[0] ?? null));
     } catch {
       setRunDetail(null);
@@ -515,10 +516,10 @@ export function SimPanel() {
                     <Table>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                          <TableHead>entry</TableHead>
-                          <TableHead>exit</TableHead>
-                          <TableHead className="text-right">px</TableHead>
-                          <TableHead className="text-right">qty</TableHead>
+                          <TableHead>Entry</TableHead>
+                          <TableHead>Exit</TableHead>
+                          <TableHead className="text-right">Px</TableHead>
+                          <TableHead className="text-right">Qty</TableHead>
                           <TableHead className="text-right">P&L</TableHead>
                           <TableHead className="text-right">%</TableHead>
                         </TableRow>
@@ -533,17 +534,17 @@ export function SimPanel() {
                             <TableCell className="text-text-muted whitespace-nowrap">
                               {t.exit_time
                                 ? new Date(t.exit_time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-                                : "—"}
+                                : "n/a"}
                             </TableCell>
                             <TableCell className="text-right tabular whitespace-nowrap">
                               {t.entry_price.toFixed(2)}<span className="text-text-muted">→</span>{t.exit_price?.toFixed(2) ?? "…"}
                             </TableCell>
                             <TableCell className="text-right tabular">{t.quantity.toFixed(0)}</TableCell>
                             <TableCell className={cn("text-right tabular", pnlClass(t.pnl ?? 0))}>
-                              {t.pnl != null ? fmtCurrency(t.pnl) : "—"}
+                              {t.pnl != null ? fmtCurrency(t.pnl) : "n/a"}
                             </TableCell>
                             <TableCell className={cn("text-right tabular", pnlClass(t.pnl_pct ?? 0))}>
-                              {t.pnl_pct != null ? fmtPct(t.pnl_pct) : "—"}
+                              {t.pnl_pct != null ? fmtPct(t.pnl_pct) : "n/a"}
                             </TableCell>
                           </TableRow>
                         ))}

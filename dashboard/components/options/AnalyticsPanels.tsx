@@ -19,7 +19,7 @@ export function ProbabilityPanel({ result }: { result: OptionAnalyzeResult }) {
         <Stat label="P(touch BE)" value={pct(prob_touch)} hint="rough Brownian estimate" />
         <Stat
           label="Expected 1σ move"
-          value={em != null && emPct != null ? `±$${em.toFixed(2)} (${emPct.toFixed(1)}%)` : "—"}
+          value={em != null && emPct != null ? `±$${em.toFixed(2)} (${emPct.toFixed(1)}%)` : "n/a"}
           hint="by expiry, per IV"
         />
       </div>
@@ -33,7 +33,7 @@ export function VolContextPanel({ result }: { result: OptionAnalyzeResult }) {
   const rv90 = result.vol_context.realized_vol_90d;
   const ratio = result.vol_context.iv_to_rv_ratio;
   const verdict =
-    ratio == null ? "—" :
+    ratio == null ? "n/a" :
     ratio >= 1.4 ? "rich" :
     ratio >= 1.1 ? "elevated" :
     ratio >= 0.9 ? "fair" :
@@ -51,7 +51,7 @@ export function VolContextPanel({ result }: { result: OptionAnalyzeResult }) {
         <Stat label="Realised 90d" value={pctNum(rv90)} />
         <Stat
           label="IV / RV ratio"
-          value={ratio != null ? `${ratio.toFixed(2)}× · ${verdict}` : "—"}
+          value={ratio != null ? `${ratio.toFixed(2)}× · ${verdict}` : "n/a"}
           tone={verdictTone as any}
           hint={
             verdict === "rich" ? "options pricing more vol than underlying produces" :
@@ -76,17 +76,17 @@ export function LiquidityPanel({ result }: { result: OptionAnalyzeResult }) {
       <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-xs tabular">
         <Stat
           label="Bid / Ask"
-          value={l.bid != null && l.ask != null ? `$${l.bid.toFixed(2)} / $${l.ask.toFixed(2)}` : "—"}
+          value={l.bid != null && l.ask != null ? `$${l.bid.toFixed(2)} / $${l.ask.toFixed(2)}` : "n/a"}
         />
         <Stat
           label="Spread"
-          value={l.spread != null && l.spread_pct != null ? `$${l.spread.toFixed(2)} (${l.spread_pct.toFixed(1)}%)` : "—"}
+          value={l.spread != null && l.spread_pct != null ? `$${l.spread.toFixed(2)} (${l.spread_pct.toFixed(1)}%)` : "n/a"}
           tone={gradeTone as any}
         />
         <Stat label="Volume (today)" value={fmtInt(l.volume)} />
         <Stat label="Open interest" value={fmtInt(l.open_interest)} />
         <Stat label="Grade" value={l.grade.toUpperCase()} tone={gradeTone as any} />
-        <Stat label="Last print" value={l.last != null ? `$${l.last.toFixed(2)}` : "—"} />
+        <Stat label="Last print" value={l.last != null ? `$${l.last.toFixed(2)}` : "n/a"} />
       </div>
     </Panel>
   );
@@ -202,15 +202,15 @@ function Stat({
 // ─── format helpers ─────────────────────────────────────────────────────────
 
 function pct(v: number | null): string {
-  if (v == null) return "—";
+  if (v == null) return "n/a";
   return `${(v * 100).toFixed(0)}%`;
 }
 function pctNum(v: number | null): string {
-  if (v == null) return "—";
+  if (v == null) return "n/a";
   return `${(v * 100).toFixed(1)}%`;
 }
 function fmtInt(v: number | null): string {
-  if (v == null) return "—";
+  if (v == null) return "n/a";
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
   return v.toFixed(0);

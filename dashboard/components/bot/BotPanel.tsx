@@ -34,6 +34,10 @@ type LogFilter = "all" | "trades" | "blocked" | "system";
 
 export function BotPanel() {
   const [snap, setSnap] = useState<BotSnapshot | null>(null);
+  // The API answers with an object carrying `config`; anything else (an
+  // empty body while the bot boots, a proxy error page) renders as "no bot".
+  const asSnap = (v: unknown): BotSnapshot | null =>
+    v && typeof v === "object" && !Array.isArray(v) && "config" in v ? (v as BotSnapshot) : null;
   const [gate, setGate] = useState<BotGate | null>(null);
   const [presets, setPresets] = useState<SimPreset[]>([]);
   const [busy, setBusy] = useState(false);
@@ -52,7 +56,7 @@ export function BotPanel() {
   const refresh = useCallback(async () => {
     try {
       const s = await api.botStatus();
-      setSnap(s);
+      setSnap(asSnap(s));
       if (!seededRef.current) {
         seededRef.current = true;
         setSymbols(s.config.symbols);
@@ -69,7 +73,7 @@ export function BotPanel() {
 
   useEffect(() => {
     refresh();
-    api.simPresets().then((p) => setPresets(p.presets)).catch(() => {});
+    api.simPresets().then((p) => setPresets(Array.isArray(p?.presets) ? p.presets : [])).catch(() => {});
     const id = setInterval(refresh, 5000);
     return () => clearInterval(id);
   }, [refresh]);
@@ -87,7 +91,7 @@ export function BotPanel() {
         symbols, timeframe, preset, initial_capital: capital,
         max_positions: maxPositions, news_gate: newsGate, force,
       });
-      setSnap(s);
+      setSnap(asSnap(s));
       toast.success("Bot started", { description: `paper trading · ${symbols.length} symbols · ${timeframe}` });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "failed";
@@ -106,7 +110,7 @@ export function BotPanel() {
   const stop = async () => {
     setBusy(true);
     try {
-      setSnap(await api.botStop());
+      setSnap(asSnap(await api.botStop()));
       toast("Bot stopped");
     } finally {
       setBusy(false);
@@ -115,7 +119,7 @@ export function BotPanel() {
 
   const reset = async () => {
     try {
-      setSnap(await api.botReset());
+      setSnap(asSnap(await api.botReset()));
       toast("Paper account reset");
     } catch {
       toast.error("Stop the bot before resetting");
@@ -128,7 +132,7 @@ export function BotPanel() {
     setSymbolInput("");
   };
 
-  const positions = snap ? Object.entries(snap.positions) : [];
+  const positions = snap ? Object.entries(snap.positions ?? {}) : [];
   const decisions = (snap?.decisions ?? [])
     .filter((d) => {
       if (logFilter === "all") return true;
@@ -148,7 +152,7 @@ export function BotPanel() {
             <CardTitle className="flex items-center gap-1.5">
               <BotIcon size={12} /> Paper bot
             </CardTitle>
-            <Badge variant={running ? "up" : "muted"}>{running ? "RUNNING" : "STOPPED"}</Badge>
+            <Badge variant={running ? "up" : "muted"}>{running ? "Running" : "Stopped"}</Badge>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {/* sim gate */}
@@ -204,7 +208,7 @@ export function BotPanel() {
               {!running && (
                 <Input
                   value={symbolInput}
-                  placeholder="add symbol ⏎"
+                  placeholder="Add symbol"
                   onChange={(e) => setSymbolInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addSymbol()}
                   onBlur={addSymbol}
@@ -243,30 +247,30 @@ export function BotPanel() {
                 )}
               >
                 News gate
-                <span className="tabular">{newsGate ? "ON" : "OFF"}</span>
+                <span className="tabular">{newsGate ? "On" : "Off"}</span>
               </button>
             </div>
 
             {running ? (
               <Button onClick={stop} disabled={busy} variant="destructive" size="lg">
                 {busy ? <Loader2 className="animate-spin" /> : <Square />}
-                stop bot
+                Stop bot
               </Button>
             ) : (
               <Button onClick={() => start(false)} disabled={busy || symbols.length === 0} size="lg">
                 {busy ? <Loader2 className="animate-spin" /> : <Play />}
-                start paper bot
+                Start paper bot
               </Button>
             )}
             <div className="flex items-center justify-between">
               {!running && !gate?.validated ? (
                 <button onClick={() => start(true)} className="text-2xs text-amber-400/80 hover:text-amber-400 underline underline-offset-2">
-                  start anyway
+                  Start anyway
                 </button>
               ) : <span />}
               {!running && snap && snap.trade_count > 0 && (
                 <button onClick={reset} className="text-2xs text-text-muted hover:text-down">
-                  reset paper account
+                  Reset paper account
                 </button>
               )}
             </div>
@@ -295,12 +299,12 @@ export function BotPanel() {
               { l: "Open", v: `${snap.open_count}/${snap.config.max_positions}` },
               { l: "Closed · Win", v: `${snap.trade_count} · ${snap.win_rate.toFixed(0)}%` },
               { l: "Strategy", v: `${snap.config.preset.replace("confluence-", "")} · ${snap.config.timeframe}` },
-              { l: "News gate", v: snap.config.news_gate ? "ON" : "OFF", c: snap.config.news_gate ? "text-accent" : "text-text-muted" },
+              { l: "News gate", v: snap.config.news_gate ? "On" : "Off", c: snap.config.news_gate ? "text-accent" : "text-text-muted" },
               {
                 l: "Last cycle",
                 v: snap.last_cycle_at
                   ? new Date(snap.last_cycle_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-                  : "—",
+                  : "n/a",
               },
             ].map((c) => (
               <div key={c.l} className="px-2 py-1.5 border-r border-b lg:border-b-0 border-border/50 last:border-r-0">
@@ -324,25 +328,25 @@ export function BotPanel() {
             <Card className="overflow-hidden shrink-0">
               <CardHeader>
                 <CardTitle>Open positions</CardTitle>
-                <Badge variant="muted">{positions.length}/{snap?.config.max_positions ?? "—"}</Badge>
+                <Badge variant="muted">{positions.length}/{snap?.config?.max_positions ?? "n/a"}</Badge>
               </CardHeader>
               {positions.length === 0 ? (
                 <p className="text-xs text-text-muted px-3 pb-2.5">
-                  flat, waiting for a confluence entry{snap?.config.news_gate ? " that clears the news gate" : ""}
+                  Flat, waiting for a confluence entry{snap?.config.news_gate ? " that clears the news gate" : ""}
                 </p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead>symbol</TableHead>
-                      <TableHead className="text-right">qty</TableHead>
-                      <TableHead className="text-right">entry</TableHead>
-                      <TableHead className="text-right">last</TableHead>
-                      <TableHead className="text-right">stop</TableHead>
-                      <TableHead className="text-right">target</TableHead>
-                      <TableHead className="text-right">uP&L</TableHead>
-                      <TableHead>score</TableHead>
-                      <TableHead>news</TableHead>
+                      <TableHead>Symbol</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Entry</TableHead>
+                      <TableHead className="text-right">Last</TableHead>
+                      <TableHead className="text-right">Stop</TableHead>
+                      <TableHead className="text-right">Target</TableHead>
+                      <TableHead className="text-right">Unr. P&L</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead>News</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -393,23 +397,23 @@ export function BotPanel() {
                 <Badge variant="muted">{snap?.trade_count ?? 0}</Badge>
               </CardHeader>
               {(snap?.closed_trades.length ?? 0) === 0 ? (
-                <p className="text-xs text-text-muted px-3 pb-2.5">none yet</p>
+                <p className="text-xs text-text-muted px-3 pb-2.5">None yet</p>
               ) : (
                 <div className="overflow-auto max-h-64">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        <TableHead>symbol</TableHead>
-                        <TableHead>exit</TableHead>
-                        <TableHead className="text-right">qty</TableHead>
-                        <TableHead className="text-right">entry</TableHead>
-                        <TableHead className="text-right">exit $</TableHead>
+                        <TableHead>Symbol</TableHead>
+                        <TableHead>Exit</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Entry</TableHead>
+                        <TableHead className="text-right">Exit $</TableHead>
                         <TableHead className="text-right">P&L</TableHead>
-                        <TableHead>reason</TableHead>
+                        <TableHead>Reason</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {snap!.closed_trades.slice().reverse().map((t, i) => (
+                      {(snap?.closed_trades ?? []).slice().reverse().map((t, i) => (
                         <TableRow key={i}>
                           <TableCell className="tabular">{t.symbol}</TableCell>
                           <TableCell className="text-text-muted whitespace-nowrap">
@@ -441,11 +445,11 @@ export function BotPanel() {
                     key={f}
                     onClick={() => setLogFilter(f)}
                     className={cn(
-                      "px-1.5 h-5 rounded text-2xs transition-colors",
+                      "px-1.5 h-5 text-2xs transition-colors",
                       logFilter === f ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
                     )}
                   >
-                    {f}
+                    {f[0].toUpperCase() + f.slice(1)}
                   </button>
                 ))}
               </div>
@@ -454,7 +458,7 @@ export function BotPanel() {
               {decisions.length === 0 && (
                 <p className="text-xs text-text-muted px-3 py-2">
                   {logFilter === "all"
-                    ? "no activity yet, every entry, exit, and news block lands here"
+                    ? "No activity yet. Every entry, exit and news block lands here."
                     : "nothing in this filter"}
                 </p>
               )}

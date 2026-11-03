@@ -107,27 +107,27 @@ function buildContextChips(name: AgentName, result: OptionAnalyzeResult): string
       ];
     case "underlying":
       return [
-        `RSI ${u?.rsi?.toFixed(0) ?? "—"}`,
+        `RSI ${u?.rsi?.toFixed(0) ?? "n/a"}`,
         `EMA 9/21/200 stack`,
-        `5d forecast ${result.forecast_ensemble?.ensemble.horizons["5"]?.expected_return_pct?.toFixed(1) ?? "—"}%`,
-        `${(result.forecast_ensemble?.agreement["5"] ?? 0) * 100 < 1 ? "—" : ((result.forecast_ensemble?.agreement["5"] ?? 0) * 100).toFixed(0) + "% agreement"}`,
-      ].filter((c) => !c.includes("—"));
+        `5d forecast ${result.forecast_ensemble?.ensemble.horizons["5"]?.expected_return_pct?.toFixed(1) ?? "n/a"}%`,
+        `${(result.forecast_ensemble?.agreement["5"] ?? 0) * 100 < 1 ? "n/a" : ((result.forecast_ensemble?.agreement["5"] ?? 0) * 100).toFixed(0) + "% agreement"}`,
+      ].filter((c) => !c.includes("n/a"));
     case "option":
       return [
         `IV ${(result.option.iv * 100).toFixed(1)}%`,
         result.vol_context?.iv_to_rv_ratio
           ? `IV/RV ${result.vol_context.iv_to_rv_ratio.toFixed(2)}×`
           : "",
-        `Δ ${g?.delta?.toFixed(3) ?? "—"}`,
+        `Δ ${g?.delta?.toFixed(3) ?? "n/a"}`,
         `${result.dte}d DTE`,
-        `liquidity ${result.liquidity?.grade ?? "—"}`,
-      ].filter((c) => c && !c.endsWith("—"));
+        `liquidity ${result.liquidity?.grade ?? "n/a"}`,
+      ].filter((c) => c && !c.endsWith("n/a"));
     case "decay":
       return [
         result.decay_profile
           ? `${result.decay_profile.length} P/L-over-time points`
           : "decay_profile unavailable",
-        `θ ${g?.theta?.toFixed(4) ?? "—"}/day`,
+        `θ ${g?.theta?.toFixed(4) ?? "n/a"}/day`,
         `${result.dte}d to expiry`,
         result.max_loss != null
           ? `max loss ${fmtCurrency(result.max_loss)}`
@@ -738,7 +738,7 @@ function parseSynthesisSections(raw: string): ParsedSynthesis | null {
   const verdictRaw = slices["verdict"] ?? "";
   // First word of the verdict body is the action keyword.
   const verdictMatch = verdictRaw.match(/^([A-Za-z]+)\b[\s:.,—-]*([\s\S]*)$/);
-  const verdictWord = (verdictMatch?.[1] ?? "").trim() || "—";
+  const verdictWord = (verdictMatch?.[1] ?? "").trim() || "n/a";
   const verdictRest = (verdictMatch?.[2] ?? "").trim();
 
   const working = splitBullets(slices["working for it"] ?? "");

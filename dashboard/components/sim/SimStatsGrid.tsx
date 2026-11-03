@@ -28,7 +28,7 @@ export function SimStatsGrid({ stats }: { stats: SimStats }) {
         ? stats.avg_trade_hours >= 48
           ? `${(stats.avg_trade_hours / 24).toFixed(1)}d`
           : `${stats.avg_trade_hours.toFixed(1)}h`
-        : "—",
+        : "n/a",
     },
   ];
   if (stats.buy_hold_return_pct != null) {

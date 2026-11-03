@@ -58,7 +58,7 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
     );
   }, [snap]);
 
-  if (unavailable || (snap && !snap.available && snap.bids.length === 0 && snap.asks.length === 0)) {
+  if (unavailable || (snap && !snap.available && (snap.bids ?? []).length === 0 && (snap.asks ?? []).length === 0)) {
     return (
       <EmptyState
         icon={Layers}
@@ -135,7 +135,7 @@ function BookSide({
             side === "bid" ? "justify-between" : "flex-row-reverse justify-between"
           )}>
             <span className={side === "bid" ? "text-up font-medium" : "text-down font-medium"}>
-              {lv ? lv.price.toFixed(2) : "—"}
+              {lv ? lv.price.toFixed(2) : "n/a"}
             </span>
             <span className="text-text-secondary">
               {lv ? fmtCompact(lv.size) : ""}

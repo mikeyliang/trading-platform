@@ -65,7 +65,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
       <div className="ml-auto flex items-center gap-2">
         <ConnectionPill />
         <Badge variant={mode === "LIVE" ? "warning" : "muted"} title={mode === "LIVE" ? "Real money" : "Paper account"}>
-          {mode}
+          {mode === "LIVE" ? "Live" : "Paper"}
         </Badge>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -125,7 +125,7 @@ function ActiveQuote({
       <span className="font-mono font-medium text-text-primary">{symbol}</span>
       {hasAnything ? (
         <>
-          <span className="text-text-primary font-medium">{last != null ? fmt(last, 2) : "—"}</span>
+          <span className="text-text-primary font-medium">{last != null ? fmt(last, 2) : "n/a"}</span>
           {(change != null || changePct != null) && (
             <span className={cn(pnlClass(change ?? changePct ?? 0))}>
               {change != null && (
@@ -138,7 +138,7 @@ function ActiveQuote({
             </span>
           )}
           <span className="hidden lg:inline text-text-muted">
-            {bid != null ? fmt(bid, 2) : "—"} × {ask != null ? fmt(ask, 2) : "—"}
+            {bid != null ? fmt(bid, 2) : "n/a"} × {ask != null ? fmt(ask, 2) : "n/a"}
           </span>
         </>
       ) : (

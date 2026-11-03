@@ -276,10 +276,10 @@ function ForecastTrackCard({
                     </div>
                     <div className="grid grid-cols-[3rem_3rem_1fr] gap-2 items-center text-xs tabular">
                       <span className="text-right text-text-secondary">
-                        {s.mae_pct != null ? `${fmt(s.mae_pct, 2)}%` : "—"}
+                        {s.mae_pct != null ? `${fmt(s.mae_pct, 2)}%` : "n/a"}
                       </span>
                       <span className="text-right text-text-secondary">
-                        {s.rmse_pct != null ? `${fmt(s.rmse_pct, 2)}%` : "—"}
+                        {s.rmse_pct != null ? `${fmt(s.rmse_pct, 2)}%` : "n/a"}
                       </span>
                       <HitRateBar value={hr} />
                     </div>
@@ -299,7 +299,7 @@ function ForecastTrackCard({
                     <div
                       key={p.symbol}
                       className="flex items-center gap-1.5 px-1.5 py-1 rounded bg-surface-2 border border-border/60"
-                      title={`${p.n} scored · MAE ${p.mae_pct ?? "—"}%`}
+                      title={`${p.n} scored · MAE ${p.mae_pct ?? "n/a"}%`}
                     >
                       <Logo symbol={p.symbol} size={14} />
                       <span className="text-2xs text-text-primary">{p.symbol}</span>
@@ -309,7 +309,7 @@ function ForecastTrackCard({
                           (p.hit_rate ?? 0) >= 0.5 ? "text-up" : "text-down"
                         )}
                       >
-                        {p.hit_rate != null ? `${Math.round(p.hit_rate * 100)}%` : "—"}
+                        {p.hit_rate != null ? `${Math.round(p.hit_rate * 100)}%` : "n/a"}
                       </span>
                     </div>
                   ))}
@@ -440,7 +440,7 @@ function VerdictRow({ run, nowMs }: { run: RecentAgentRun; nowMs: number }) {
           </div>
           {/* verdict */}
           <div className={cn("text-xs leading-snug line-clamp-2", TONE_TEXT[tone])}>
-            {run.verdict ?? "—"}
+            {run.verdict ?? "n/a"}
           </div>
           {run.rationale && (
             <div className="text-xs text-text-secondary leading-snug mt-0.5 line-clamp-2">

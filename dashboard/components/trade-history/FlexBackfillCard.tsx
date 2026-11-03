@@ -177,22 +177,22 @@ export function FlexBackfillCard() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2 px-3 py-2.5">
         <StatBlock
           label="Rows from Flex"
-          value={status ? status.total_rows.toLocaleString() : "—"}
+          value={status?.total_rows != null ? status.total_rows.toLocaleString() : "n/a"}
         />
         <StatBlock
           label="Earliest"
-          value={status?.earliest ? fmtIsoDate(status.earliest) : "—"}
+          value={status?.earliest ? fmtIsoDate(status.earliest) : "n/a"}
         />
         <StatBlock
           label="Latest"
-          value={status?.latest ? fmtIsoDate(status.latest) : "—"}
+          value={status?.latest ? fmtIsoDate(status.latest) : "n/a"}
         />
         <StatBlock
           label="Accounts"
           value={
-            status?.accounts.length
+            status?.accounts?.length
               ? status.accounts.map((a) => `${a.account_id} · ${a.rows}`).join(" · ")
-              : "—"
+              : "n/a"
           }
           mono
         />
@@ -228,7 +228,7 @@ export function FlexBackfillCard() {
             disabled={pulling}
             className="sr-only"
           />
-          <span className="tabular">Refresh existing</span>
+          <span>Refresh existing</span>
         </label>
 
         <button
@@ -313,7 +313,7 @@ function ConfiguredBadge({
       className="px-1.5 py-0.5 rounded-sm bg-up/10 text-up text-2xs tabular"
       title="IBKR Flex token + query id configured"
     >
-      query {queryId ?? "—"}
+      query {queryId ?? "n/a"}
     </span>
   );
 }
@@ -395,14 +395,14 @@ function BackfillResultStrip({ result }: { result: FlexBackfillResult }) {
       >
         <Icon size={11} />
         <span>
-          Fetched {result.fetched.toLocaleString()} ({result.trades} trades + {result.option_eae} EAE)
-          · inserted {result.inserted.toLocaleString()}
+          Fetched {(result.fetched ?? 0).toLocaleString()} ({result.trades} trades + {result.option_eae} EAE)
+          · inserted {(result.inserted ?? 0).toLocaleString()}
           {result.refresh && (
             <>
-              {" · "}updated {result.updated.toLocaleString()}
+              {" · "}updated {(result.updated ?? 0).toLocaleString()}
             </>
           )}
-          {" · "}skipped {result.skipped.toLocaleString()}
+          {" · "}skipped {(result.skipped ?? 0).toLocaleString()}
           {result.skipped > 0 && !result.refresh && (
             <span className="text-text-muted"> (dedup)</span>
           )}
@@ -410,7 +410,7 @@ function BackfillResultStrip({ result }: { result: FlexBackfillResult }) {
       </div>
       <details className="text-2xs text-text-muted">
         <summary className="cursor-pointer hover:text-text-secondary select-none">
-          slices · {result.slices.length}
+          slices · {result.slices?.length ?? 0}
         </summary>
         <ul className="mt-1 ml-2 space-y-0.5 tabular">
           {result.slices.map((s, i) => (

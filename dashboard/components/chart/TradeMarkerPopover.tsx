@@ -149,7 +149,7 @@ function TradeDetails({ trade: t }: { trade: TradeHistoryRecord }) {
         <Field label="Fill" value={fmt(t.price, 2)} />
         <Field
           label="P&L"
-          value={t.pnl != null ? fmtCurrency(t.pnl) : "—"}
+          value={t.pnl != null ? fmtCurrency(t.pnl) : "n/a"}
           valueClassName={t.pnl != null ? pnlClass(t.pnl) : "text-text-muted"}
         />
         {account && <Field label="Account" value={account} mono />}
@@ -159,7 +159,7 @@ function TradeDetails({ trade: t }: { trade: TradeHistoryRecord }) {
       </div>
 
       <a
-        href={`/trade-history?trade=${t.id}`}
+        href={`/trade/history?trade=${t.id}`}
         className="inline-flex items-center gap-1 text-2xs text-text-muted hover:text-accent transition-colors w-fit"
       >
         Open in history <ExternalLink size={9} />

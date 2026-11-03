@@ -119,8 +119,10 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
           }),
         ]);
         if (cancelled) return;
-        setTrades(list.trades);
-        setStats(agg);
+        setTrades(Array.isArray(list?.trades) ? list.trades : []);
+        // The stats endpoint answers with a bare object; treat a missing
+        // count as "no stats" rather than painting undefined into the strip.
+        setStats(agg && typeof agg.total_trades === "number" ? agg : null);
         setError(null);
       } catch (e) {
         if (cancelled) return;
@@ -572,19 +574,19 @@ function TradeHistoryTable({ trades }: { trades: TradeHistoryRecord[] }) {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <SortableTableHead sortKey="timestamp" sort={sort} onSort={toggleSort}>time</SortableTableHead>
-          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
-          <SortableTableHead sortKey="side" sort={sort} onSort={toggleSort}>side</SortableTableHead>
-          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
-          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">price</SortableTableHead>
+          <SortableTableHead sortKey="timestamp" sort={sort} onSort={toggleSort}>Time</SortableTableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>Symbol</SortableTableHead>
+          <SortableTableHead sortKey="side" sort={sort} onSort={toggleSort}>Side</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">Qty</SortableTableHead>
+          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">Price</SortableTableHead>
           <SortableTableHead sortKey="pnl" sort={sort} onSort={toggleSort} align="right">P&amp;L</SortableTableHead>
-          <SortableTableHead sortKey="strategy" sort={sort} onSort={toggleSort}>strategy</SortableTableHead>
-          <SortableTableHead sortKey="status" sort={sort} onSort={toggleSort}>status</SortableTableHead>
+          <SortableTableHead sortKey="strategy" sort={sort} onSort={toggleSort}>Strategy</SortableTableHead>
+          <SortableTableHead sortKey="status" sort={sort} onSort={toggleSort}>Status</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {sorted.length === 0 ? (
-          <TableEmpty colSpan={8}>no trades</TableEmpty>
+          <TableEmpty colSpan={8}>No trades</TableEmpty>
         ) : (
           sorted.map((t) => <TradeRow key={t.id} trade={t} />)
         )}
@@ -596,7 +598,7 @@ function TradeHistoryTable({ trades }: { trades: TradeHistoryRecord[] }) {
 function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
   const time = useMemo(() => {
     const d = new Date(t.timestamp);
-    if (Number.isNaN(d.getTime())) return { rel: "—", abs: t.timestamp };
+    if (Number.isNaN(d.getTime())) return { rel: "n/a", abs: t.timestamp };
     return {
       rel: formatDistanceToNow(d, { addSuffix: true }),
       abs: d.toLocaleString(),
@@ -634,10 +636,10 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
             )}
           </span>
         ) : (
-          "—"
+          "n/a"
         )}
       </TableCell>
-      <TableCell className="text-text-muted">{t.strategy ?? "—"}</TableCell>
+      <TableCell className="text-text-muted">{t.strategy ?? "n/a"}</TableCell>
       <TableCell>
         <StatusBadge status={t.status} />
       </TableCell>
@@ -882,7 +884,7 @@ function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
                 )}
                 title={`${g.wins} winning / ${g.losses} losing trades`}
               >
-                {g.netPnl === 0 ? "—" : fmtCurrency(g.netPnl)}
+                {g.netPnl === 0 ? "n/a" : fmtCurrency(g.netPnl)}
               </span>
               <span
                 className="text-2xs text-text-muted max-w-[160px] truncate hidden md:inline-block"

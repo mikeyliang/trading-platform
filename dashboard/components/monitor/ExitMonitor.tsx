@@ -181,7 +181,7 @@ function Row({ entry }: { entry: MonitorEntry }) {
           <span className="text-text-secondary">{entry.quantity}× contract{entry.quantity !== 1 ? "s" : ""}</span>
           <span className="text-text-muted">·</span>
           <span className="text-text-muted">
-            headroom <span className={cn(meta.tone, "font-medium")}>{entry.headroom != null ? entry.headroom.toFixed(1) : "—"}</span>
+            headroom <span className={cn(meta.tone, "font-medium")}>{entry.headroom != null ? entry.headroom.toFixed(1) : "n/a"}</span>
           </span>
         </div>
       </div>
@@ -205,7 +205,7 @@ function Footer({ jobs, lastRun }: { jobs: ScheduledJob[]; lastRun: string | nul
     <div className="border-t border-border/40 pt-4 flex items-baseline justify-between text-2xs text-text-muted">
       <span>Last checked {lastRun ? new Date(lastRun).toLocaleTimeString() : "never"}</span>
       <span className="text-xs text-text-secondary">
-        {(Array.isArray(jobs) ? jobs : []).map((j) => j.id).join(", ")} scheduled
+        {(Array.isArray(jobs) && jobs.length > 0) ? `Scheduled: ${jobs.map((j) => j.id).join(", ")}` : "No jobs scheduled"}
       </span>
     </div>
   );

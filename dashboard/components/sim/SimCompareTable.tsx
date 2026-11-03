@@ -33,16 +33,16 @@ export function SimCompareTable({ runs, selectedId, onSelect }: Props) {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>run</TableHead>
-          <TableHead>preset</TableHead>
-          <TableHead>tf</TableHead>
-          <TableHead className="text-right">return</TableHead>
+          <TableHead>Run</TableHead>
+          <TableHead>Preset</TableHead>
+          <TableHead>Tf</TableHead>
+          <TableHead className="text-right">Return</TableHead>
           <TableHead className="text-right">PF</TableHead>
           <TableHead className="text-right">Sharpe</TableHead>
-          <TableHead className="text-right">max DD</TableHead>
-          <TableHead className="text-right">trades</TableHead>
-          <TableHead className="text-right">win</TableHead>
-          <TableHead>best / worst</TableHead>
+          <TableHead className="text-right">Max DD</TableHead>
+          <TableHead className="text-right">Trades</TableHead>
+          <TableHead className="text-right">Win</TableHead>
+          <TableHead>Best / worst</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

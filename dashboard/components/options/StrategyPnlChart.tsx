@@ -388,7 +388,7 @@ export function StrategyPnlChart({
         <SummaryCell
           label={summary.bes.length === 1 ? "Breakeven" : "Breakevens"}
           value={summary.bes.length === 0
-            ? "—"
+            ? "n/a"
             : summary.bes.map((b) => `$${b.toFixed(2)}`).join(" · ")}
         />
       </div>

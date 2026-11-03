@@ -356,11 +356,11 @@ function PicksTable({
             <Th align="right">Spot</Th>
             <Th align="right">Strikes</Th>
             <Th align="right">Δ</Th>
-            <Th align="right">exit Δ</Th>
+            <Th align="right">Exit Δ</Th>
             <Th align="right">AROC</Th>
             <Th align="right">Kelly</Th>
-            <Th align="right">adj %</Th>
-            <Th align="right">size</Th>
+            <Th align="right">Adj %</Th>
+            <Th align="right">Size</Th>
             <Th align="center">Status</Th>
           </tr>
         </thead>
@@ -444,7 +444,7 @@ function PickRow({
         </Link>
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary">
-        {spot != null ? spot.toFixed(2) : "—"}
+        {spot != null ? spot.toFixed(2) : "n/a"}
       </td>
       <td className="px-3 py-2.5 text-right font-mono text-text-primary">
         {cand.short_strike}<span className="text-text-muted">/</span>{cand.long_strike}
@@ -453,7 +453,7 @@ function PickRow({
         {(cand.short_delta * 100).toFixed(0)}
       </td>
       <td className="px-3 py-2.5 text-right text-text-muted">
-        {spec ? Math.round(spec.delta_exit * 100) : "—"}
+        {spec ? Math.round(spec.delta_exit * 100) : "n/a"}
       </td>
       <td className={cn("px-3 py-2.5 text-right",
         cand.passes.aroc ? "text-up" : "text-down/80")}>
@@ -496,7 +496,7 @@ function AllCandidates({
             <Th align="right">Δ</Th>
             <Th align="right">AROC</Th>
             <Th align="right">Kelly</Th>
-            <Th align="right">adj %</Th>
+            <Th align="right">Adj %</Th>
             <Th align="center">Pass</Th>
           </tr>
         </thead>

@@ -156,7 +156,7 @@ function SpecTable() {
       hint: "Annualized return on capital: (credit / max risk) × (365 / DTE)." },
     { label: "Kelly min",    group: "entry", value: (s) => `≥ ${s.minKelly}`,
       hint: "Kelly fraction ×100, sizing gate. Trade must justify real size." },
-    { label: "Fib floors",   group: "entry", value: (s) => (s.floorRequired ? "2 below" : "—"),
+    { label: "Fib floors",   group: "entry", value: (s) => (s.floorRequired ? "2 below" : "n/a"),
       hint: "Traditional RUT requires the short strike ≥ 2 fib floors below the money." },
     { label: "Exit Δ (rule 1)", group: "exit", value: (s) => `${s.exitDelta}`,
       hint: "Close immediately when short-leg |Δ| reaches this. No waiting." },

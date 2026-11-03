@@ -97,14 +97,16 @@ export function OkwTracker() {
 }
 
 // ─── Summary strip ────────────────────────────────────────────────────────────
-function SummaryStrip({ s }: { s: OkwSummary }) {
+function SummaryStrip({ s: raw }: { s: OkwSummary }) {
+  const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+  const s = { total: n(raw.total), open: n(raw.open), closed: n(raw.closed), wins: n(raw.wins), realized_pnl: n(raw.realized_pnl) };
   const winRate = s.closed > 0 ? Math.round((s.wins / s.closed) * 100) : 0;
   return (
     <div className="grid grid-cols-2 md:grid-cols-6 gap-x-8 gap-y-4 py-2">
       <Stat label="Total"      value={String(s.total)} />
       <Stat label="Open"       value={String(s.open)} tone={s.open > 0 ? "accent" : undefined} />
       <Stat label="Closed"     value={String(s.closed)} />
-      <Stat label="Win rate"   value={s.closed > 0 ? `${winRate}%` : "—"}
+      <Stat label="Win rate"   value={s.closed > 0 ? `${winRate}%` : "n/a"}
             tone={winRate >= 70 ? "up" : winRate >= 50 ? undefined : winRate > 0 ? "down" : undefined} />
       <Stat label="Wins"       value={String(s.wins)}   tone={s.wins > 0 ? "up" : undefined} />
       <Stat label="Realized $" value={fmtCurrency(s.realized_pnl)}
@@ -322,16 +324,16 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
           {formatExpiry(t.expiry)} · {t.dte}d
         </td>
         <td className="px-3 py-2.5 text-right text-text-secondary">
-          {t.short_delta != null ? Math.round(t.short_delta * 100) : "—"}
+          {t.short_delta != null ? Math.round(t.short_delta * 100) : "n/a"}
         </td>
         <td className="px-3 py-2.5 text-right text-up">
-          {t.aroc_pct != null ? `${t.aroc_pct.toFixed(0)}%` : "—"}
+          {t.aroc_pct != null ? `${t.aroc_pct.toFixed(0)}%` : "n/a"}
         </td>
         <td className="px-3 py-2.5 text-right text-text-secondary">
-          {t.kelly_pct != null ? t.kelly_pct.toFixed(0) : "—"}
+          {t.kelly_pct != null ? t.kelly_pct.toFixed(0) : "n/a"}
         </td>
         <td className="px-3 py-2.5 text-right text-text-secondary">
-          {t.adj_distance_pct != null ? `${t.adj_distance_pct.toFixed(1)}%` : "—"}
+          {t.adj_distance_pct != null ? `${t.adj_distance_pct.toFixed(1)}%` : "n/a"}
         </td>
         <td className="px-3 py-2.5 text-right text-text-secondary">{t.contracts}</td>
         <td className="px-3 py-2.5 text-right text-up">${t.credit.toFixed(2)}</td>
@@ -339,7 +341,7 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
           "px-3 py-2.5 text-right",
           realized == null ? "text-text-muted" : realized > 0 ? "text-up" : realized < 0 ? "text-down" : "text-text-secondary"
         )}>
-          {realized != null ? fmtCurrency(realized) : "—"}
+          {realized != null ? fmtCurrency(realized) : "n/a"}
         </td>
         <td className="px-3 py-2.5">
           <span className={cn(

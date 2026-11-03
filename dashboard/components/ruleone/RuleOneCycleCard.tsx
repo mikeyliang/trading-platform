@@ -180,7 +180,7 @@ function Row({
     <>
       <span className="text-text-muted">{label}</span>
       <span className="text-text-primary">
-        {date ? formatShortDate(date) : "—"}
+        {date ? formatShortDate(date) : "n/a"}
       </span>
       <span className="text-right text-text-muted">{suffix ?? ""}</span>
     </>
@@ -191,8 +191,8 @@ function CandidateRow({ c }: { c: RuleOneCandidate }) {
   const strikeLabel =
     c.short_strike != null && c.long_strike != null
       ? `${Math.round(c.short_strike)} / ${Math.round(c.long_strike)} ${c.side === "put" ? "P" : "C"}`
-      : "—";
-  const creditLabel = c.credit != null ? `+${c.credit.toFixed(2)}` : "—";
+      : "n/a";
+  const creditLabel = c.credit != null ? `+${c.credit.toFixed(2)}` : "n/a";
   return (
     <li className="grid grid-cols-[42px_1fr_auto_14px] items-center gap-2 text-xs tabular">
       <span className="text-2xs font-mono text-text-secondary">

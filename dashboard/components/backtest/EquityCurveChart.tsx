@@ -197,7 +197,7 @@ export function EquityCurveChart({
             Drawdown
           </span>
           <span className="ml-auto text-2xs tabular text-down">
-            max {stats ? fmtPct(stats.maxDd) : "—"}
+            max {stats ? fmtPct(stats.maxDd) : "n/a"}
           </span>
         </div>
         <div ref={ddRef} style={{ height: ddHeight }} className="w-full" />

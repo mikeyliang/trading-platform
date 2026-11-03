@@ -521,7 +521,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
               <TableCell>
                 <KindPill kind={kind} />
               </TableCell>
-              <TableCell className="text-text-muted">{p.sector ?? "—"}</TableCell>
+              <TableCell className="text-text-muted">{p.sector ?? "n/a"}</TableCell>
 
               <TableCell className="text-right tabular">{p.quantity}</TableCell>
               <TableCell className="text-right tabular">{fmt(p.avg_price)}</TableCell>
@@ -757,7 +757,7 @@ function TradesTable({ trades }: { trades: Trade[] }) {
               <TableCell className={cn("text-right tabular", pnlClass(t.pnl))}>
                 {fmtCurrency(t.pnl)}
               </TableCell>
-              <TableCell className="text-text-muted">{t.strategy ?? "—"}</TableCell>
+              <TableCell className="text-text-muted">{t.strategy ?? "n/a"}</TableCell>
               <TableCell className="text-text-muted tabular">{new Date(t.timestamp).toLocaleString()}</TableCell>
             </TableRow>
           ))

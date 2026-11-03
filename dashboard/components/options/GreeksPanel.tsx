@@ -230,10 +230,10 @@ function GreekCell({
           )}
         </div>
         <div className="mt-2 text-base font-medium tabular-nums text-text-primary">
-          {raw != null ? rawFmt(raw) : "—"}
+          {raw != null ? rawFmt(raw) : "n/a"}
         </div>
         <div className="text-2xs tabular-nums text-text-secondary">
-          {positional != null ? posFmt(positional) : "—"}
+          {positional != null ? posFmt(positional) : "n/a"}
         </div>
         <div className="h-1 rounded-full bg-surface-2 mt-2 overflow-hidden">
           <div
@@ -447,7 +447,7 @@ function ScenarioSlider({
 }
 
 function getDeltaHint(delta: number | null, isLong: boolean): string {
-  if (delta == null) return "—";
+  if (delta == null) return "n/a";
   const abs = Math.abs(delta);
   if (abs >= 0.7) return `Deep ITM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
   if (abs >= 0.45) return `Near-ATM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
@@ -456,7 +456,7 @@ function getDeltaHint(delta: number | null, isLong: boolean): string {
 }
 
 function getGammaHint(gamma: number | null, isLong: boolean): string {
-  if (gamma == null) return "—";
+  if (gamma == null) return "n/a";
   const abs = Math.abs(gamma);
   if (abs > 0.05) return isLong ? "High gamma, Δ moves fast with spot" : "High gamma, short side, watch volatility";
   if (abs > 0.02) return "Moderate gamma, typical near-ATM behavior";
@@ -464,13 +464,13 @@ function getGammaHint(gamma: number | null, isLong: boolean): string {
 }
 
 function getThetaHint(theta: number | null, isLong: boolean): string {
-  if (theta == null) return "—";
+  if (theta == null) return "n/a";
   if (isLong) return theta < -0.05 ? "Heavy decay, time is against you" : "Mild decay, manageable";
   return theta > 0.05 ? "Strong decay collection, time is with you" : "Mild decay benefit";
 }
 
 function getVegaHint(vega: number | null, isLong: boolean): string {
-  if (vega == null) return "—";
+  if (vega == null) return "n/a";
   if (isLong) return vega > 0.2 ? "IV-sensitive, rising IV helps you" : "Low IV exposure";
   return vega > 0.2 ? "Rising IV hurts a short, watch earnings/events" : "Low IV exposure";
 }

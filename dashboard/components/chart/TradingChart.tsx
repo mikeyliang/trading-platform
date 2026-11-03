@@ -772,7 +772,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
                 ? `${tradeMarkers.renderedCount} trades`
                 : tradeMarkers.trades.length > 0
                 ? `${tradeMarkers.trades.length} off-range`
-                : "no trades"}
+                : "No trades"}
             </span>
           )}
         </div>
@@ -986,8 +986,8 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
             />
             <OverlayGrid
               rows={[
-                ["smi", smiSnap.smi != null ? smiSnap.smi.toFixed(2) : "—"],
-                ["signal", smiSnap.signal != null ? smiSnap.signal.toFixed(2) : "—"],
+                ["smi", smiSnap.smi != null ? smiSnap.smi.toFixed(2) : "n/a"],
+                ["signal", smiSnap.signal != null ? smiSnap.signal.toFixed(2) : "n/a"],
                 ...(smiSnap.lastSignal
                   ? [["last", smiSnap.lastSignal.type, smiSnap.lastSignal.type === "BUY" ? "up" : "down"] as const]
                   : []),

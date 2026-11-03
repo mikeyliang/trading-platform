@@ -19,7 +19,7 @@ export default function SettingsPage() {
     return () => obs.disconnect();
   }, []);
 
-  const mode = (health?.mode ?? "—").toUpperCase();
+  const mode = (health?.mode ?? "n/a").toUpperCase();
   const ibOk = !!health?.ib_connected;
 
   return (
@@ -42,12 +42,12 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle>Runtime</CardTitle>
             <span className="text-2xs tabular font-mono text-text-muted">
-              {lastCheckedAt ? new Date(lastCheckedAt).toLocaleTimeString() : "—"}
+              {lastCheckedAt ? new Date(lastCheckedAt).toLocaleTimeString() : "n/a"}
             </span>
           </CardHeader>
           <CardContent className="p-0">
             <Rows>
-              <Row label="Mode" value={mode} valueClass={mode === "LIVE" ? "text-warning" : "text-text-primary"} />
+              <Row label="Mode" value={mode === "LIVE" ? "Live" : "Paper"} valueClass={mode === "LIVE" ? "text-warning" : "text-text-primary"} />
               <Row label="IBKR Gateway" value={ibOk ? "Connected" : "Offline"} valueClass={ibOk ? "text-up" : "text-down"} />
               <Row label="Realtime stream" value={wsConnected ? "Live" : "Offline"} valueClass={wsConnected ? "text-up" : "text-down"} />
               <Row
@@ -69,18 +69,18 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="p-0">
             <Rows>
-              <Row label="Equity" value={account ? fmtCurrency(account.equity ?? 0) : "—"} mono />
-              <Row label="Buying power" value={account ? fmtCurrency(account.buying_power ?? 0) : "—"} mono />
-              <Row label="Balance" value={account ? fmtCurrency(account.balance ?? 0) : "—"} mono />
+              <Row label="Equity" value={account ? fmtCurrency(account.equity ?? 0) : "n/a"} mono />
+              <Row label="Buying power" value={account ? fmtCurrency(account.buying_power ?? 0) : "n/a"} mono />
+              <Row label="Balance" value={account ? fmtCurrency(account.balance ?? 0) : "n/a"} mono />
               <Row
                 label="Unrealized PnL"
-                value={account ? fmtCurrency(account.unrealized_pnl ?? 0) : "—"}
+                value={account ? fmtCurrency(account.unrealized_pnl ?? 0) : "n/a"}
                 valueClass={pnlColor(account?.unrealized_pnl ?? 0)}
                 mono
               />
               <Row
                 label="Realized PnL"
-                value={account ? fmtCurrency(account.realized_pnl ?? 0) : "—"}
+                value={account ? fmtCurrency(account.realized_pnl ?? 0) : "n/a"}
                 valueClass={pnlColor(account?.realized_pnl ?? 0)}
                 mono
               />
@@ -112,7 +112,7 @@ export default function SettingsPage() {
             <Rows>
               <Row label="Command palette" value="⌘K" mono />
               <Row label="AI co-pilot" value="⌘J" mono />
-              <Row label="Toggle chart" value="—" mono />
+              <Row label="Toggle chart" value="n/a" mono />
             </Rows>
           </CardContent>
         </Card>

@@ -40,7 +40,7 @@ function fibLevelsFrom(bars: Bar[]): number[] {
 }
 
 function describeFibPosition(strike: number, fibs: number[], spot: number): string {
-  if (!fibs.length) return "—";
+  if (!fibs.length) return "n/a";
   const sortedDesc = [...fibs].sort((a, b) => b - a);
   let moneyIdx = sortedDesc.findIndex((p) => p <= spot);
   if (moneyIdx === -1) moneyIdx = sortedDesc.length - 1;
@@ -460,7 +460,7 @@ function UnderlyingMap({
             {underlying}
           </div>
           <div className="text-xl font-semibold tabular">
-            {spot != null ? spot.toFixed(2) : "—"}
+            {spot != null ? spot.toFixed(2) : "n/a"}
           </div>
         </div>
         <div className="text-2xs text-text-muted">
@@ -690,7 +690,7 @@ function CandidateCard({
 
   const c = candidate;
   const allPass = Object.values(c.passes).every(Boolean);
-  const fibPos = spot != null ? describeFibPosition(c.short_strike, fibs, spot) : "—";
+  const fibPos = spot != null ? describeFibPosition(c.short_strike, fibs, spot) : "n/a";
   const sizing = computeSizing(c, bankroll);
   const chartHref =
     `/chart/${c.symbol}?pinShort=${c.short_strike}&pinLong=${c.long_strike}` +
