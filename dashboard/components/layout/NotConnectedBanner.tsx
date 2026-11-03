@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, RefreshCw, WifiOff } from "lucide-react";
+import { RiAlertFill as AlertTriangle, RiRefreshLine as RefreshCw, RiWifiOffFill as WifiOff } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
 import { useHealth } from "@/lib/health";
 import { cn } from "@/lib/utils";
@@ -57,32 +57,27 @@ function BannerImpl({
 
   return (
     <div className={cn(
-      "flex items-center gap-3 px-3 h-9 border-b text-xs shrink-0 animate-fade-in",
-      apiDown ? "bg-down/10 border-down/20" : "bg-warning/10 border-warning/20",
+      "flex items-center gap-3 px-3 h-9 rounded-2lg text-body-2-regular shrink-0 animate-fade-in",
+      apiDown ? "bg-status-rose-background" : "bg-status-yellow-background",
     )}>
-      <Icon size={13} className={cn("shrink-0", apiDown ? "text-down" : "text-warning")} />
+      <Icon size={16} className={cn("shrink-0", apiDown ? "text-status-rose-text" : "text-status-yellow-text")} />
       <div className="flex-1 flex items-center gap-2 min-w-0">
-        <span className={cn("font-semibold", apiDown ? "text-down" : "text-warning")}>
+        <span className={cn("text-body-2-medium", apiDown ? "text-status-rose-text" : "text-status-yellow-text")}>
           {label}
         </span>
         <span className="text-text-secondary truncate">{message}</span>
       </div>
       {lastCheckedAt && (
-        <span className="text-text-muted tabular hidden sm:inline">
+        <span className="text-text-tertiary tabular hidden sm:inline">
           checked {fmtAgo(now - lastCheckedAt)}
         </span>
       )}
       <Button
-        variant="outline"
+        variant="secondary"
         size="sm"
         onClick={retry}
         disabled={retrying}
-        className={cn(
-          "shrink-0",
-          apiDown
-            ? "border-down/30 text-down hover:bg-down/10 hover:text-down"
-            : "border-warning/30 text-warning hover:bg-warning/10 hover:text-warning",
-        )}
+        className="shrink-0"
       >
         <RefreshCw className={retrying ? "animate-spin" : ""} />
         Retry

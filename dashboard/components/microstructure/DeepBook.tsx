@@ -5,7 +5,7 @@ import { api, type DepthSnapshot, type DepthLevel } from "@/lib/api";
 import { StreamWebSocket } from "@/lib/ws-stream";
 import { cn, fmtCompact } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Layers } from "lucide-react";
+import { RiStackLine as Layers } from "@remixicon/react";
 
 interface Props {
   symbol: string;
@@ -69,18 +69,18 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
   }
 
   const imb = snap?.imbalance ?? null;
-  const imbColor = imb == null ? "text-text-muted" : imb > 0.15 ? "text-up" : imb < -0.15 ? "text-down" : "text-text-secondary";
+  const imbColor = imb == null ? "text-text-tertiary" : imb > 0.15 ? "text-status-lime-text" : imb < -0.15 ? "text-status-rose-text" : "text-text-secondary";
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between px-2 h-7 border-b border-border/60 text-2xs text-text-muted">
+      <div className="flex items-center justify-between px-2 h-7 border-b border-separator-border text-caption-2-regular text-text-tertiary">
         <span className="flex items-center gap-1.5">
-          <Layers size={10} className="text-accent" />
+          <Layers size={10} className="text-accent-500" />
           Depth · {symbol}
           <span
             className={cn(
               "ml-1 inline-block w-1 h-1 rounded-full",
-              streaming ? "bg-up" : "bg-text-muted"
+              streaming ? "bg-status-lime-text" : "bg-foreground-icon-quaternary"
             )}
           />
         </span>
@@ -91,15 +91,15 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
         )}
       </div>
 
-      <div className="grid grid-cols-2 text-2xs tabular">
+      <div className="grid grid-cols-2 text-caption-2-regular tabular">
         <BookSide side="bid" levels={snap?.bids ?? []} maxSize={maxSize} rows={rows} />
         <BookSide side="ask" levels={snap?.asks ?? []} maxSize={maxSize} rows={rows} />
       </div>
 
       {snap && (
-        <div className="grid grid-cols-2 px-2 h-6 items-center text-2xs tabular border-t border-border/60 text-text-muted">
-          <span>bid Σ <span className="text-up font-medium">{fmtCompact(snap.bid_size_total)}</span></span>
-          <span className="text-right">ask Σ <span className="text-down font-medium">{fmtCompact(snap.ask_size_total)}</span></span>
+        <div className="grid grid-cols-2 px-2 h-6 items-center text-caption-2-regular tabular border-t border-separator-border text-text-tertiary">
+          <span>bid Σ <span className="text-status-lime-text font-medium">{fmtCompact(snap.bid_size_total)}</span></span>
+          <span className="text-right">ask Σ <span className="text-status-rose-text font-medium">{fmtCompact(snap.ask_size_total)}</span></span>
         </div>
       )}
     </div>
@@ -115,7 +115,7 @@ function BookSide({
   while (padded.length < rows) padded.push(null);
 
   return (
-    <div className={cn("flex flex-col", side === "ask" && "border-l border-border/60")}>
+    <div className={cn("flex flex-col", side === "ask" && "border-l border-separator-border")}>
       {padded.slice(0, rows).map((lv, i) => (
         <div
           key={i}
@@ -125,7 +125,7 @@ function BookSide({
             <span
               className={cn(
                 "absolute inset-y-0",
-                side === "bid" ? "right-0 bg-up/12" : "left-0 bg-down/12"
+                side === "bid" ? "right-0 bg-status-lime-background" : "left-0 bg-status-rose-background"
               )}
               style={{ width: `${Math.max(2, (lv.size / maxSize) * 100)}%` }}
             />
@@ -134,7 +134,7 @@ function BookSide({
             "relative z-10 flex w-full",
             side === "bid" ? "justify-between" : "flex-row-reverse justify-between"
           )}>
-            <span className={side === "bid" ? "text-up font-medium" : "text-down font-medium"}>
+            <span className={side === "bid" ? "text-status-lime-text font-medium" : "text-status-rose-text font-medium"}>
               {lv ? lv.price.toFixed(2) : "n/a"}
             </span>
             <span className="text-text-secondary">

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Info } from "lucide-react";
+import { RiInformationLine as Info } from "@remixicon/react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,7 @@ export function InfoIcon({ hint, size = 9, side = "top", className }: InfoIconPr
         <button
           type="button"
           className={cn(
-            "inline-flex items-center text-text-muted/60 hover:text-text-secondary transition-colors align-baseline",
+            "inline-flex items-center text-text-tertiary/60 hover:text-text-secondary transition-colors align-baseline",
             className
           )}
           aria-label="More info"
@@ -39,7 +39,7 @@ export function InfoIcon({ hint, size = 9, side = "top", className }: InfoIconPr
           <Info size={size} />
         </button>
       </TooltipTrigger>
-      <TooltipContent side={side} className="max-w-[260px] text-2xs leading-relaxed">
+      <TooltipContent side={side} className="max-w-[260px] text-caption-2-regular leading-relaxed">
         {hint}
       </TooltipContent>
     </Tooltip>
@@ -69,7 +69,7 @@ export function HintLabel({
           {children}
         </span>
       </TooltipTrigger>
-      <TooltipContent side={side} className="max-w-[260px] text-2xs leading-relaxed">
+      <TooltipContent side={side} className="max-w-[260px] text-caption-2-regular leading-relaxed">
         {hint}
       </TooltipContent>
     </Tooltip>

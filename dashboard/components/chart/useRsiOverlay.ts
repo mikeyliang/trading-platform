@@ -71,7 +71,7 @@ export function useRsiOverlay({
         background: { type: ColorType.Solid, color: c.bg },
         textColor: c.axisText,
         fontSize: 10,
-        fontFamily: "var(--font-mono), ui-monospace, SFMono-Regular, monospace",
+        fontFamily: "var(--tabular), ui-monospace, SFMono-Regular, monospace",
       },
       grid: {
         vertLines: { color: c.grid },

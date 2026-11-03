@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, CheckCircle2, XCircle, Circle, Pencil } from "lucide-react";
+import { RiLoader4Line as Loader2, RiCheckboxCircleFill as CheckCircle2, RiCloseCircleFill as XCircle, RiCircleLine as Circle, RiPencilLine as Pencil } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 
 export type AgentStatus = "idle" | "thinking" | "responding" | "done" | "error";
@@ -21,40 +21,40 @@ const STATUS_META: Record<
   { tone: string; bg: string; ring: string; label: string }
 > = {
   idle: {
-    tone: "text-text-muted",
-    bg: "bg-surface",
-    ring: "border-border",
+    tone: "text-text-tertiary",
+    bg: "bg-background-primary-default",
+    ring: "border-separator-border",
     label: "Idle",
   },
   thinking: {
-    tone: "text-accent",
-    bg: "bg-accent/5",
-    ring: "border-accent/40",
+    tone: "text-accent-500",
+    bg: "bg-status-blue-background",
+    ring: "border-accent-500",
     label: "Thinking",
   },
   responding: {
-    tone: "text-warning",
-    bg: "bg-warning/5",
-    ring: "border-warning/40",
+    tone: "text-status-yellow-text",
+    bg: "bg-status-yellow-background",
+    ring: "border-status-yellow-text",
     label: "Responding",
   },
   done: {
-    tone: "text-up",
-    bg: "bg-up/5",
-    ring: "border-up/40",
+    tone: "text-status-lime-text",
+    bg: "bg-status-lime-background",
+    ring: "border-status-lime-text",
     label: "Done",
   },
   error: {
-    tone: "text-down",
-    bg: "bg-down/5",
-    ring: "border-down/40",
+    tone: "text-status-rose-text",
+    bg: "bg-status-rose-background",
+    ring: "border-status-rose-text",
     label: "Error",
   },
 };
 
 export function AgentStatusRail({ items }: Props) {
   return (
-    <section className="rounded-lg border border-border bg-surface p-3">
+    <section className="rounded-lg border border-separator-border bg-background-primary-default p-3">
       <div className="flex flex-wrap gap-2">
         {items.map((item) => {
           const meta = STATUS_META[item.status];
@@ -62,7 +62,7 @@ export function AgentStatusRail({ items }: Props) {
             <div
               key={item.key}
               className={cn(
-                "flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-xs transition-colors min-w-[150px]",
+                "flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-caption-1-regular transition-colors min-w-[150px]",
                 meta.bg,
                 meta.ring
               )}
@@ -73,7 +73,7 @@ export function AgentStatusRail({ items }: Props) {
                 <span className={cn("font-medium truncate", meta.tone)}>
                   {item.label}
                 </span>
-                <span className="text-2xs text-text-muted">
+                <span className="text-caption-2-regular text-text-tertiary">
                   {meta.label}
                   {item.status === "done" && item.durationMs != null && (
                     <span className="ml-1 tabular">
@@ -93,15 +93,15 @@ export function AgentStatusRail({ items }: Props) {
 function StatusIcon({ status }: { status: AgentStatus }) {
   switch (status) {
     case "thinking":
-      return <Loader2 size={13} className="animate-spin text-accent" />;
+      return <Loader2 size={13} className="animate-spin text-accent-500" />;
     case "responding":
-      return <Pencil size={13} className="text-warning animate-pulse" />;
+      return <Pencil size={13} className="text-status-yellow-text animate-pulse" />;
     case "done":
-      return <CheckCircle2 size={13} className="text-up" />;
+      return <CheckCircle2 size={13} className="text-status-lime-text" />;
     case "error":
-      return <XCircle size={13} className="text-down" />;
+      return <XCircle size={13} className="text-status-rose-text" />;
     case "idle":
     default:
-      return <Circle size={13} className="text-text-muted" />;
+      return <Circle size={13} className="text-text-tertiary" />;
   }
 }

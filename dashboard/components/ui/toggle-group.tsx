@@ -17,6 +17,8 @@ interface ToggleGroupProps<T extends string = string> {
   ariaLabel?: string;
 }
 
+// BoardUI segmented control (components/base/segmented-control): a tertiary
+// track with a raised primary thumb behind the selected segment.
 export function ToggleGroup<T extends string = string>({
   options,
   value,
@@ -25,31 +27,29 @@ export function ToggleGroup<T extends string = string>({
   size = "sm",
   ariaLabel,
 }: ToggleGroupProps<T>) {
-  const pad = size === "xs" ? "px-2 py-0.5 text-2xs" : "px-2.5 py-1 text-xs";
+  const seg = size === "xs" ? "h-5 px-2 text-caption-1-medium" : "h-6 px-2.5 text-body-2-medium";
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className={cn(
-        "inline-flex items-center gap-0.5 rounded-md border border-border bg-surface p-0.5",
-        className
-      )}
+      className={cn("inline-flex items-center gap-0.5 rounded-2lg bg-background-tertiary-default p-0.5", className)}
     >
       {options.map((opt) => {
         const active = opt.value === value;
         return (
           <button
             key={opt.value}
+            type="button"
             role="radio"
             aria-checked={active}
             title={opt.title}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "rounded-sm font-medium transition-colors",
-              pad,
+              "inline-flex items-center justify-center rounded-md transition-[background-color,color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring",
+              seg,
               active
-                ? "bg-surface-3 text-text-primary"
-                : "text-text-muted hover:text-text-secondary hover:bg-surface-2"
+                ? "bg-segmented-control-selected-background text-text-primary shadow-2xs"
+                : "text-text-secondary hover:text-text-primary"
             )}
           >
             {opt.label}

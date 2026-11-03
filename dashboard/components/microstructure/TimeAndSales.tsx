@@ -5,7 +5,7 @@ import { api, type TapePrint } from "@/lib/api";
 import { StreamWebSocket } from "@/lib/ws-stream";
 import { cn, fmtCompact } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Receipt } from "lucide-react";
+import { RiBillLine as Receipt } from "@remixicon/react";
 
 interface Props {
   symbol: string;
@@ -77,21 +77,21 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-2 h-7 border-b border-border/60 text-2xs text-text-muted">
+      <div className="flex items-center justify-between px-2 h-7 border-b border-separator-border text-caption-2-regular text-text-tertiary">
         <span className="flex items-center gap-1.5">
-          <Receipt size={10} className="text-accent" />
+          <Receipt size={10} className="text-accent-500" />
           Tape, {symbol}
           <span
             className={cn(
               "ml-1 inline-block w-1 h-1 rounded-full",
-              streaming ? "bg-up" : "bg-text-muted"
+              streaming ? "bg-status-lime-text" : "bg-foreground-icon-quaternary"
             )}
           />
         </span>
         {stats.ratio != null && (
           <span className={cn(
             "tabular",
-            stats.ratio > 0.1 ? "text-up" : stats.ratio < -0.1 ? "text-down" : "text-text-secondary"
+            stats.ratio > 0.1 ? "text-status-lime-text" : stats.ratio < -0.1 ? "text-status-rose-text" : "text-text-secondary"
           )}>
             buy {fmtCompact(stats.buy)} / sell {fmtCompact(stats.sell)} · {stats.ratio >= 0 ? "+" : ""}{(stats.ratio * 100).toFixed(0)}%
           </span>
@@ -99,7 +99,7 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[64px_1fr_72px] px-2 h-5 items-center text-2xs text-text-muted border-b border-border/40">
+      <div className="grid grid-cols-[64px_1fr_72px] px-2 h-5 items-center text-caption-2-regular text-text-tertiary border-b border-separator-border">
         <span>Time</span>
         <span>Price</span>
         <span className="text-right">Size</span>
@@ -107,27 +107,27 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
 
       <div className="flex-1 overflow-auto">
         {prints.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-2xs text-text-muted">
+          <div className="h-full flex items-center justify-center text-caption-2-regular text-text-tertiary">
             awaiting prints…
           </div>
         ) : (
           prints.map((p, i) => {
             const isLarge = p.size >= largePrintThreshold;
             const sideCol =
-              p.side === "buy" ? "text-up" :
-              p.side === "sell" ? "text-down" :
+              p.side === "buy" ? "text-status-lime-text" :
+              p.side === "sell" ? "text-status-rose-text" :
               "text-text-secondary";
             return (
               <div
                 key={`${p.ts}-${i}`}
                 className={cn(
-                  "grid grid-cols-[64px_1fr_72px] px-2 h-[18px] items-center text-2xs tabular border-b border-border/15",
-                  isLarge && "bg-warning/10"
+                  "grid grid-cols-[64px_1fr_72px] px-2 h-[18px] items-center text-caption-2-regular tabular border-b border-separator-border",
+                  isLarge && "bg-status-yellow-background"
                 )}
               >
-                <span className="text-text-muted">{fmtTime(p.ts)}</span>
+                <span className="text-text-tertiary">{fmtTime(p.ts)}</span>
                 <span className={cn("font-medium", sideCol)}>{p.price.toFixed(2)}</span>
-                <span className={cn("text-right", isLarge ? "text-warning font-semibold" : "text-text-secondary")}>
+                <span className={cn("text-right", isLarge ? "text-status-yellow-text font-semibold" : "text-text-secondary")}>
                   {fmtCompact(p.size)}
                 </span>
               </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, Check, type LucideIcon } from "lucide-react";
+import { RiArrowDownSLine as ChevronDown, RiCheckLine as Check, type RemixiconComponentType as LucideIcon } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 
 export interface OverlayToggle {
@@ -10,7 +10,7 @@ export interface OverlayToggle {
   active: boolean;
   onToggle: () => void;
   title?: string;
-  /** Optional inline icon (lucide). */
+  /** Optional inline icon (Remix). */
   icon?: LucideIcon;
   /** Optional secondary text shown muted on the right of the row. */
   hint?: string;
@@ -39,15 +39,15 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
         <button
           type="button"
           className={cn(
-            "h-6 px-2 text-xs tabular rounded-md transition-colors inline-flex items-center gap-1.5",
+            "h-6 px-2 text-caption-1-regular tabular rounded-md transition-colors inline-flex items-center gap-1.5",
             activeCount > 0
-              ? "text-text-primary bg-surface-2"
-              : "text-text-secondary hover:text-text-primary hover:bg-surface-2"
+              ? "text-text-primary bg-background-secondary-default"
+              : "text-text-secondary hover:text-text-primary hover:bg-background-secondary-hover"
           )}
         >
           <span>Overlays</span>
           {activeCount > 0 && (
-            <span className="px-1 rounded-full bg-surface-3 text-2xs tabular text-text-secondary leading-4">
+            <span className="px-1 rounded-full bg-background-tertiary-default text-caption-2-regular tabular text-text-secondary leading-4">
               {activeCount}
             </span>
           )}
@@ -58,14 +58,14 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
         <DropdownMenu.Content
           align="end"
           sideOffset={6}
-          className="z-50 w-[260px] rounded-lg bg-surface/95 backdrop-blur-md shadow-pop animate-fade-in overflow-hidden"
+          className="z-50 w-[260px] rounded-lg bg-background-primary-default backdrop-blur-md shadow-dropdown animate-fade-in overflow-hidden"
         >
           {groups.map((g, i) => (
             <div
               key={i}
               className={cn(
                 "py-2",
-                i > 0 && "border-t border-border/40"
+                i > 0 && "border-t border-separator-border"
               )}
             >
               {g.title && (
@@ -103,35 +103,35 @@ function OverlayRow({ toggle }: { toggle: OverlayToggle }) {
       className={cn(
         "relative flex items-center gap-2.5 px-3 h-8 cursor-pointer outline-none transition-colors group",
         toggle.active
-          ? "text-text-primary bg-surface-2/60"
-          : "text-text-secondary hover:bg-surface-2/40"
+          ? "text-text-primary bg-background-secondary-default"
+          : "text-text-secondary hover:bg-background-secondary-hover"
       )}
     >
       {toggle.active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-r-full bg-accent" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-r-full bg-accent-500" />
       )}
       {Icon ? (
         <Icon
           size={13}
           className={cn(
             "shrink-0",
-            toggle.active ? "text-accent" : "text-text-muted"
+            toggle.active ? "text-accent-500" : "text-text-tertiary"
           )}
         />
       ) : (
         <span
           className={cn(
             "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
-            toggle.active ? "bg-accent" : "bg-text-muted/40 group-hover:bg-text-muted"
+            toggle.active ? "bg-accent-500" : "bg-foreground-icon-quaternary/40 group-hover:bg-foreground-icon-quaternary"
           )}
         />
       )}
-      <span className="text-xs tabular flex-1">{toggle.label}</span>
+      <span className="text-caption-1-regular tabular flex-1">{toggle.label}</span>
       {toggle.hint && (
-        <span className="text-2xs tabular text-text-muted">{toggle.hint}</span>
+        <span className="text-caption-2-regular tabular text-text-tertiary">{toggle.hint}</span>
       )}
       {toggle.active && (
-        <Check size={11} className="text-accent-fg shrink-0" />
+        <Check size={11} className="text-accent-500-600 shrink-0" />
       )}
     </DropdownMenu.Item>
   );

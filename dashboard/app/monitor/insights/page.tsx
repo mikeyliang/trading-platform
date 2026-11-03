@@ -15,15 +15,7 @@ import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Logo } from "@/components/ui/logo";
 import { toast } from "@/components/ui/toaster";
 import { cn, fmt, fmtCurrency } from "@/lib/utils";
-import {
-  Sparkles,
-  RefreshCw,
-  Target,
-  Brain,
-  ArrowUpRight,
-  AlertTriangle,
-  Clock,
-} from "lucide-react";
+import { RiSparklingLine as Sparkles, RiRefreshLine as RefreshCw, RiFocus3Line as Target, RiBrainLine as Brain, RiArrowRightUpLine as ArrowUpRight, RiAlertFill as AlertTriangle, RiTimeLine as Clock } from "@remixicon/react";
 
 // ── helpers ──────────────────────────────────────────────────────────
 type Tone = "up" | "down" | "warning" | "muted";
@@ -71,9 +63,9 @@ function analyzerHref(r: RecentAgentRun): string {
 }
 
 const TONE_TEXT: Record<Tone, string> = {
-  up: "text-up",
-  down: "text-down",
-  warning: "text-warning",
+  up: "text-status-lime-text",
+  down: "text-status-rose-text",
+  warning: "text-status-yellow-text",
   muted: "text-text-secondary",
 };
 
@@ -216,25 +208,25 @@ function ForecastTrackCard({
 
   return (
     <Card className="shrink-0">
-      <div className="flex items-center justify-between px-3 h-7 border-b border-border/60">
+      <div className="flex items-center justify-between px-3 h-7 border-b border-separator-border">
         <div className="flex items-center gap-1.5">
-          <Target size={12} className="text-accent" />
-          <span className="text-2xs text-text-muted">
+          <Target size={12} className="text-accent-500" />
+          <span className="text-caption-2-regular text-text-tertiary">
             Forecast track record
           </span>
         </div>
         {c && (
-          <div className="flex items-center gap-2 text-2xs tabular text-text-muted">
+          <div className="flex items-center gap-2 text-caption-2-regular tabular text-text-tertiary">
             <span>
               <span className="text-text-secondary">{c.logged}</span> logged
             </span>
-            <span className="w-px h-3 bg-border" aria-hidden="true" />
+            <span className="w-px h-3 bg-separator-border" aria-hidden="true" />
             <span>
-              <span className="text-up">{c.scored}</span> scored
+              <span className="text-status-lime-text">{c.scored}</span> scored
             </span>
-            <span className="w-px h-3 bg-border" aria-hidden="true" />
+            <span className="w-px h-3 bg-separator-border" aria-hidden="true" />
             <span>
-              <span className="text-warning">{c.pending}</span> pending
+              <span className="text-status-yellow-text">{c.pending}</span> pending
             </span>
           </div>
         )}
@@ -243,8 +235,8 @@ function ForecastTrackCard({
         {loading && !track ? (
           <div className="h-20 skeleton rounded" />
         ) : !hasScored ? (
-          <div className="flex items-start gap-2.5 text-xs text-text-secondary">
-            <Clock size={14} className="text-warning mt-0.5 shrink-0" />
+          <div className="flex items-start gap-2.5 text-caption-1-regular text-text-secondary">
+            <Clock size={14} className="text-status-yellow-text mt-0.5 shrink-0" />
             <div className="leading-relaxed">
               <span className="text-text-primary">{c?.pending ?? 0} forecasts logged, accumulating.</span>{" "}
               Each prediction is scored against the realised close once its horizon elapses
@@ -257,7 +249,7 @@ function ForecastTrackCard({
           <div className="flex flex-col gap-3">
             {/* per-model accuracy */}
             <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 items-center">
-              <div className="contents text-2xs text-text-muted">
+              <div className="contents text-caption-2-regular text-text-tertiary">
                 <div>Model</div>
                 <div className="grid grid-cols-[3rem_3rem_1fr] gap-2">
                   <span className="text-right">MAE</span>
@@ -270,11 +262,11 @@ function ForecastTrackCard({
                 const hr = s.sign_hit_rate ?? 0;
                 return (
                   <div key={m} className="contents">
-                    <div className="text-xs text-text-primary flex items-center gap-1.5">
+                    <div className="text-caption-1-regular text-text-primary flex items-center gap-1.5">
                       {MODEL_LABEL[m] ?? m}
-                      <span className="text-2xs text-text-muted tabular">n={s.n}</span>
+                      <span className="text-caption-2-regular text-text-tertiary tabular">n={s.n}</span>
                     </div>
-                    <div className="grid grid-cols-[3rem_3rem_1fr] gap-2 items-center text-xs tabular">
+                    <div className="grid grid-cols-[3rem_3rem_1fr] gap-2 items-center text-caption-1-regular tabular">
                       <span className="text-right text-text-secondary">
                         {s.mae_pct != null ? `${fmt(s.mae_pct, 2)}%` : "n/a"}
                       </span>
@@ -290,23 +282,23 @@ function ForecastTrackCard({
 
             {/* per-symbol ensemble breakdown */}
             {track && track.per_symbol.length > 0 && (
-              <div className="border-t border-border/60 pt-2.5">
-                <div className="text-2xs text-text-muted mb-1.5">
+              <div className="border-t border-separator-border pt-2.5">
+                <div className="text-caption-2-regular text-text-tertiary mb-1.5">
                   Ensemble by symbol
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {track.per_symbol.map((p) => (
                     <div
                       key={p.symbol}
-                      className="flex items-center gap-1.5 px-1.5 py-1 rounded bg-surface-2 border border-border/60"
+                      className="flex items-center gap-1.5 px-1.5 py-1 rounded bg-background-secondary-default border border-separator-border"
                       title={`${p.n} scored · MAE ${p.mae_pct ?? "n/a"}%`}
                     >
                       <Logo symbol={p.symbol} size={14} />
-                      <span className="text-2xs text-text-primary">{p.symbol}</span>
+                      <span className="text-caption-2-regular text-text-primary">{p.symbol}</span>
                       <span
                         className={cn(
-                          "text-2xs tabular",
-                          (p.hit_rate ?? 0) >= 0.5 ? "text-up" : "text-down"
+                          "text-caption-2-regular tabular",
+                          (p.hit_rate ?? 0) >= 0.5 ? "text-status-lime-text" : "text-status-rose-text"
                         )}
                       >
                         {p.hit_rate != null ? `${Math.round(p.hit_rate * 100)}%` : "n/a"}
@@ -329,13 +321,13 @@ function HitRateBar({ value }: { value: number }) {
   const mid = value >= 0.45 && value < 0.55;
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 rounded-full bg-surface-3 overflow-hidden relative">
+      <div className="flex-1 h-1.5 rounded-full bg-background-tertiary-default overflow-hidden relative">
         {/* 50% reference marker */}
-        <div className="absolute inset-y-0 left-1/2 w-px bg-border z-10" />
+        <div className="absolute inset-y-0 left-1/2 w-px bg-separator-border z-10" />
         <div
           className={cn(
             "h-full rounded-full",
-            good ? "bg-up" : mid ? "bg-warning" : "bg-down"
+            good ? "bg-status-lime-text" : mid ? "bg-status-yellow-text" : "bg-status-rose-text"
           )}
           style={{ width: `${pct}%` }}
         />
@@ -343,7 +335,7 @@ function HitRateBar({ value }: { value: number }) {
       <span
         className={cn(
           "w-9 text-right tabular",
-          good ? "text-up" : mid ? "text-warning" : "text-down"
+          good ? "text-status-lime-text" : mid ? "text-status-yellow-text" : "text-status-rose-text"
         )}
       >
         {pct}%
@@ -384,11 +376,11 @@ function VerdictTimeline({
   return (
     <div className="flex flex-col gap-1.5 min-h-0">
       <div className="flex items-center gap-1.5 px-0.5">
-        <Sparkles size={12} className="text-accent" />
-        <span className="text-2xs text-text-muted">
+        <Sparkles size={12} className="text-accent-500" />
+        <span className="text-caption-2-regular text-text-tertiary">
           AI verdicts
         </span>
-        <span className="text-2xs tabular text-text-muted">· {runs.length}</span>
+        <span className="text-caption-2-regular tabular text-text-tertiary">· {runs.length}</span>
       </div>
       {runs.map((r) => (
         <VerdictRow key={r.id} run={r} nowMs={nowMs} />
@@ -404,28 +396,28 @@ function VerdictRow({ run, nowMs }: { run: RecentAgentRun; nowMs: number }) {
   return (
     <Link
       href={analyzerHref(run)}
-      className="group block rounded border border-border/60 bg-surface hover:bg-surface-2 hover:border-border transition-colors"
+      className="group block rounded border border-separator-border bg-background-primary-default hover:bg-background-secondary-hover hover:border-separator-border transition-colors"
     >
       <div className="flex items-stretch gap-3 p-2.5">
         {/* tone rail */}
         <div
           className={cn(
             "w-0.5 rounded-full shrink-0",
-            tone === "up" && "bg-up",
-            tone === "down" && "bg-down",
-            tone === "warning" && "bg-warning",
-            tone === "muted" && "bg-border"
+            tone === "up" && "bg-status-lime-text",
+            tone === "down" && "bg-status-rose-text",
+            tone === "warning" && "bg-status-yellow-text",
+            tone === "muted" && "bg-separator-border"
           )}
         />
         <div className="flex-1 min-w-0">
           {/* contract line */}
           <div className="flex items-center gap-2 mb-1">
             <Logo symbol={run.symbol} size={16} />
-            <span className="text-xs text-text-primary font-medium tabular">
+            <span className="text-caption-1-regular text-text-primary font-medium tabular">
               {run.symbol} {fmt(run.strike, 0)}
               {run.right}
             </span>
-            <span className="text-2xs tabular text-text-muted">
+            <span className="text-caption-2-regular tabular text-text-tertiary">
               ×{qty} · {dir} · {fmtExpiry(run.expiry)}
             </span>
             {run.failed_agents > 0 && (
@@ -434,25 +426,25 @@ function VerdictRow({ run, nowMs }: { run: RecentAgentRun; nowMs: number }) {
                 {run.failed_agents} failed
               </Badge>
             )}
-            <span className="ml-auto text-2xs tabular text-text-muted shrink-0">
+            <span className="ml-auto text-caption-2-regular tabular text-text-tertiary shrink-0">
               {timeAgo(run.ran_at, nowMs)}
             </span>
           </div>
           {/* verdict */}
-          <div className={cn("text-xs leading-snug line-clamp-2", TONE_TEXT[tone])}>
+          <div className={cn("text-caption-1-regular leading-snug line-clamp-2", TONE_TEXT[tone])}>
             {run.verdict ?? "n/a"}
           </div>
           {run.rationale && (
-            <div className="text-xs text-text-secondary leading-snug mt-0.5 line-clamp-2">
+            <div className="text-caption-1-regular text-text-secondary leading-snug mt-0.5 line-clamp-2">
               {run.rationale}
             </div>
           )}
           {/* context strip */}
-          <div className="flex items-center gap-2.5 mt-1.5 text-2xs tabular text-text-muted">
+          <div className="flex items-center gap-2.5 mt-1.5 text-caption-2-regular tabular text-text-tertiary">
             {run.spot_at_run != null && <span>spot {fmt(run.spot_at_run, 2)}</span>}
             {run.mid_at_run != null && <span>mid {fmtCurrency(run.mid_at_run)}</span>}
             {run.duration_ms != null && <span>{(run.duration_ms / 1000).toFixed(1)}s</span>}
-            <span className="ml-auto flex items-center gap-0.5 text-accent opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="ml-auto flex items-center gap-0.5 text-accent-500 opacity-0 group-hover:opacity-100 transition-opacity">
               Open analyzer <ArrowUpRight size={11} />
             </span>
           </div>

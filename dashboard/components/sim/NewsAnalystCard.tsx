@@ -5,13 +5,13 @@ import { api, type NewsAnalystRead } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw } from "lucide-react";
+import { RiLoader4Line as Loader2, RiRefreshLine as RefreshCw } from "@remixicon/react";
 
 const VERDICT_STYLE: Record<string, string> = {
-  bullish: "text-up bg-up/10 border-up/30",
-  bearish: "text-down bg-down/10 border-down/30",
-  mixed: "text-amber-400 bg-amber-400/10 border-amber-400/30",
-  neutral: "text-text-secondary bg-surface-2 border-border",
+  bullish: "text-status-lime-text bg-status-lime-background border-status-lime-text",
+  bearish: "text-status-rose-text bg-status-rose-background border-status-rose-text",
+  mixed: "text-status-orange-text-400 bg-status-orange-background-400/10 border-amber-400/30",
+  neutral: "text-text-secondary bg-background-secondary-default border-separator-border",
 };
 
 /** Compact AI news read for one symbol, verdict chip, bias bar, for/against. */
@@ -42,11 +42,11 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
       <CardHeader>
         <CardTitle>AI news read</CardTitle>
         <div className="ml-auto flex items-center gap-1.5">
-          {read && <span className="text-2xs text-text-muted truncate max-w-28">{read.model.split("/").pop()}</span>}
+          {read && <span className="text-caption-2-regular text-text-tertiary truncate max-w-28">{read.model.split("/").pop()}</span>}
           <button
             onClick={() => load(symbol)}
             disabled={loading}
-            className="text-text-muted hover:text-text-secondary transition-colors"
+            className="text-text-tertiary hover:text-text-secondary transition-colors"
             title="refresh"
           >
             <RefreshCw size={10} className={cn(loading && "animate-spin")} />
@@ -55,33 +55,33 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {loading && !read && (
-          <div className="flex items-center gap-2 text-xs text-text-muted py-2">
+          <div className="flex items-center gap-2 text-caption-1-regular text-text-tertiary py-2">
             <Loader2 size={12} className="animate-spin" /> reading headlines…
           </div>
         )}
         {error && !loading && (
-          <p className="text-2xs text-down">{error.includes("503") ? "OPENROUTER_API_KEY not configured" : error}</p>
+          <p className="text-caption-2-regular text-status-rose-text">{error.includes("503") ? "OPENROUTER_API_KEY not configured" : error}</p>
         )}
         {read && (
           <>
             <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  "h-5 px-2 rounded border text-2xs flex items-center",
+                  "h-5 px-2 rounded border text-caption-2-regular flex items-center",
                   VERDICT_STYLE[read.verdict] ?? VERDICT_STYLE.neutral
                 )}
               >
                 {read.verdict}
               </span>
-              <span className="text-2xs tabular text-text-muted">{read.confidence}% conf</span>
+              <span className="text-caption-2-regular tabular text-text-tertiary">{read.confidence}% conf</span>
               {read.cached && <Badge variant="muted">Cached</Badge>}
             </div>
 
             {/* bias bar: -1 .. +1 */}
-            <div className="relative h-1.5 rounded bg-surface-2 overflow-hidden">
-              <div className="absolute inset-y-0 left-1/2 w-px bg-border" />
+            <div className="relative h-1.5 rounded bg-background-secondary-default overflow-hidden">
+              <div className="absolute inset-y-0 left-1/2 w-px bg-separator-border" />
               <div
-                className={cn("absolute inset-y-0 rounded", read.bias_score >= 0 ? "bg-up/70" : "bg-down/70")}
+                className={cn("absolute inset-y-0 rounded", read.bias_score >= 0 ? "bg-status-lime-background" : "bg-status-rose-background")}
                 style={{
                   left: read.bias_score >= 0 ? "50%" : `${50 + read.bias_score * 50}%`,
                   width: `${Math.abs(read.bias_score) * 50}%`,
@@ -89,28 +89,28 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
               />
             </div>
 
-            <p className="text-xs leading-relaxed text-text-secondary">{read.summary}</p>
+            <p className="text-caption-1-regular leading-relaxed text-text-secondary">{read.summary}</p>
 
             {read.working_for.length > 0 && (
               <div>
-                <div className="text-2xs text-up/80 mb-0.5">Working for</div>
+                <div className="text-caption-2-regular text-status-lime-text/80 mb-0.5">Working for</div>
                 {read.working_for.map((x, i) => (
-                  <p key={i} className="text-2xs text-text-muted leading-snug pl-2 border-l border-up/30 mb-0.5">{x}</p>
+                  <p key={i} className="text-caption-2-regular text-text-tertiary leading-snug pl-2 border-l border-status-lime-text mb-0.5">{x}</p>
                 ))}
               </div>
             )}
             {read.working_against.length > 0 && (
               <div>
-                <div className="text-2xs text-down/80 mb-0.5">Working against</div>
+                <div className="text-caption-2-regular text-status-rose-text/80 mb-0.5">Working against</div>
                 {read.working_against.map((x, i) => (
-                  <p key={i} className="text-2xs text-text-muted leading-snug pl-2 border-l border-down/30 mb-0.5">{x}</p>
+                  <p key={i} className="text-caption-2-regular text-text-tertiary leading-snug pl-2 border-l border-status-rose-text mb-0.5">{x}</p>
                 ))}
               </div>
             )}
 
             {read.headlines.length > 0 && (
               <details className="group">
-                <summary className="text-2xs text-text-muted cursor-pointer hover:text-text-secondary list-none">
+                <summary className="text-caption-2-regular text-text-tertiary cursor-pointer hover:text-text-secondary list-none">
                   {read.headlines.length} headlines ▸
                 </summary>
                 <div className="mt-1 flex flex-col gap-1 max-h-40 overflow-y-auto">
@@ -120,7 +120,7 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
                       href={h.link}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-2xs leading-snug text-text-muted hover:text-accent transition-colors"
+                      className="text-caption-2-regular leading-snug text-text-tertiary hover:text-accent-500 transition-colors"
                     >
                       {h.title}
                     </a>

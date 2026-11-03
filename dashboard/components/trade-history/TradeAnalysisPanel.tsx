@@ -2,15 +2,7 @@
 
 import { memo, useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import {
-  Activity,
-  Award,
-  Clock,
-  DollarSign,
-  TrendingDown,
-  TrendingUp,
-  type LucideIcon,
-} from "lucide-react";
+import { RiPulseLine as Activity, RiAwardLine as Award, RiTimeLine as Clock, RiMoneyDollarCircleLine as DollarSign, RiArrowRightDownLine as TrendingDown, RiStockLine as TrendingUp, type RemixiconComponentType as LucideIcon } from "@remixicon/react";
 import {
   api,
   type TradeAnalysisResponse,
@@ -135,18 +127,18 @@ function CardShell({
   children: React.ReactNode;
 }) {
   const iconCls =
-    tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-muted";
+    tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text" : "text-text-tertiary";
   return (
-    <div className="rounded-md border border-border bg-surface overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-3 h-7 border-b border-border/60">
+    <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-3 h-7 border-b border-separator-border">
         <div className="flex items-center gap-1.5">
           <Icon size={11} className={iconCls} />
-          <span className="text-2xs text-text-muted">
+          <span className="text-caption-2-regular text-text-tertiary">
             {title}
           </span>
         </div>
         {subtitle && (
-          <span className="text-2xs text-text-muted/70">
+          <span className="text-caption-2-regular text-text-tertiary/70">
             {subtitle}
           </span>
         )}
@@ -176,7 +168,7 @@ function InsightCard({
       {trade ? (
         <div className="px-3 py-2.5 flex flex-col gap-1.5">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-sm font-medium text-text-primary tabular">
+            <span className="text-body-2-regular font-medium text-text-primary tabular">
               {trade.symbol ?? "n/a"}
             </span>
             {trade.side && (
@@ -186,27 +178,27 @@ function InsightCard({
           <div className="flex items-baseline gap-2">
             <span
               className={cn(
-                "text-base font-semibold tabular tabular-nums",
-                trade.pnl != null ? pnlClass(trade.pnl) : "text-text-muted"
+                "text-headline-regular font-semibold tabular tabular-nums",
+                trade.pnl != null ? pnlClass(trade.pnl) : "text-text-tertiary"
               )}
             >
               {trade.pnl != null ? fmtCurrency(trade.pnl) : "n/a"}
             </span>
             {showPct && trade.pnl_percentage != null && (
-              <span className={cn("text-xs tabular", pnlClass(trade.pnl_percentage))}>
+              <span className={cn("text-caption-1-regular tabular", pnlClass(trade.pnl_percentage))}>
                 {fmtPct(trade.pnl_percentage)}
               </span>
             )}
           </div>
           <div
-            className="text-2xs text-text-muted tabular"
+            className="text-caption-2-regular text-text-tertiary tabular"
             title={new Date(trade.timestamp).toLocaleString()}
           >
             {fmtRelative(trade.timestamp)}
           </div>
         </div>
       ) : (
-        <div className="px-3 py-4 text-xs text-text-muted text-center">
+        <div className="px-3 py-4 text-caption-1-regular text-text-tertiary text-center">
           no qualifying trade
         </div>
       )}
@@ -219,13 +211,13 @@ function HoldTimeCard({ seconds }: { seconds: number | null }) {
     <CardShell title="Avg hold time" icon={Clock} tone="neutral">
       <div className="px-3 py-2.5 flex flex-col gap-1">
         {seconds == null ? (
-          <span className="text-sm font-medium text-text-muted">n/a</span>
+          <span className="text-body-2-regular font-medium text-text-tertiary">n/a</span>
         ) : (
           <>
-            <span className="text-base font-semibold text-text-primary tabular tabular-nums">
+            <span className="text-headline-regular font-semibold text-text-primary tabular tabular-nums">
               {fmtDuration(seconds)}
             </span>
-            <span className="text-2xs text-text-muted">
+            <span className="text-caption-2-regular text-text-tertiary">
               average BUY → SELL gap per symbol
             </span>
           </>

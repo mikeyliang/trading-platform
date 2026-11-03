@@ -16,19 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Logo } from "@/components/ui/logo";
 import { cn, fmtCurrency } from "@/lib/utils";
-import {
-  ArrowRight,
-  Brain,
-  ChevronLeft,
-  ChevronRight,
-  Clipboard,
-  ClipboardCheck,
-  Loader2,
-  Search,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { RiArrowRightLine as ArrowRight, RiBrainLine as Brain, RiArrowLeftSLine as ChevronLeft, RiArrowRightSLine as ChevronRight, RiClipboardLine as Clipboard, RiFileListLine as ClipboardCheck, RiLoader4Line as Loader2, RiSearchLine as Search, RiSparklingLine as Sparkles, RiArrowRightDownLine as TrendingDown, RiStockLine as TrendingUp } from "@remixicon/react";
 import { PnlProfileChart } from "@/components/options/PnlProfileChart";
 import { PnlDecayChart } from "@/components/options/PnlDecayChart";
 import { GreeksPanel } from "@/components/options/GreeksPanel";
@@ -232,7 +220,7 @@ function AnalyzerContent() {
       {/* ── Contract command bar ─────────────────────────────────────────
           One dense terminal row: symbol → live spot/IV → expiry → strike →
           side → qty → entry → actions, segmented by hairline dividers. */}
-      <div className="rounded-md border border-border bg-surface flex flex-wrap items-stretch overflow-hidden divide-x divide-border/60 shrink-0">
+      <div className="rounded-md border border-separator-border bg-background-primary-default flex flex-wrap items-stretch overflow-hidden divide-x divide-separator-border shrink-0">
         {/* Symbol */}
         <div className="flex items-center gap-2 px-3 py-1.5">
           <Logo symbol={symbol} size={22} />
@@ -249,7 +237,7 @@ function AnalyzerContent() {
             <Input
               value={pendingSym}
               onChange={(e) => setPendingSym(e.target.value.toUpperCase())}
-              className="h-7 w-[68px] font-bold tabular text-sm px-2"
+              className="h-7 w-[68px] font-bold tabular text-body-2-regular px-2"
               aria-label="Symbol"
             />
           </form>
@@ -257,13 +245,13 @@ function AnalyzerContent() {
 
         {/* Live readout: spot + IV */}
         {(spot != null || result) && (
-          <div className="flex items-center gap-3 px-3 text-xs tabular">
+          <div className="flex items-center gap-3 px-3 text-caption-1-regular tabular">
             {spot != null && (
-              <span><span className="text-text-muted">spot </span>
+              <span><span className="text-text-tertiary">spot </span>
                 <span className="text-text-primary font-semibold">${spot.toFixed(2)}</span></span>
             )}
             {result && (
-              <span className="hidden sm:inline"><span className="text-text-muted">IV </span>
+              <span className="hidden sm:inline"><span className="text-text-tertiary">IV </span>
                 <span className="text-text-primary font-semibold">{(result.option.iv * 100).toFixed(1)}%</span></span>
             )}
           </div>
@@ -272,10 +260,10 @@ function AnalyzerContent() {
         {/* Expiry */}
         <BarSeg label="Exp">
           <Select value={expiry} onValueChange={setExpiry} disabled={!chain || chain.expirations.length === 0}>
-            <SelectTrigger className="h-7 w-[112px] tabular text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+            <SelectTrigger className="h-7 w-[112px] tabular text-caption-1-regular"><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>
               {(chain?.expirations || []).map((e) => (
-                <SelectItem key={e} value={e} className="tabular text-xs">{fmtExp(e)}</SelectItem>
+                <SelectItem key={e} value={e} className="tabular text-caption-1-regular">{fmtExp(e)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -291,16 +279,16 @@ function AnalyzerContent() {
                 if (idx > 0) setStrike(strikes[idx - 1]);
               }}
               disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) <= 0}
-              className="px-1.5 border border-border rounded-l-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs tabular"
+              className="px-1.5 border border-separator-border rounded-l-md text-text-tertiary hover:bg-background-secondary-hover disabled:opacity-30 disabled:cursor-not-allowed text-caption-1-regular tabular"
               title="Lower strike"
             ><ChevronLeft size={12} aria-hidden="true" /></button>
             <Select value={strike != null ? String(strike) : ""} onValueChange={(v: string) => setStrike(Number(v))} disabled={strikes.length === 0}>
-              <SelectTrigger className="h-7 w-[88px] tabular text-xs border-l-0 border-r-0 rounded-none"><SelectValue placeholder="Select" /></SelectTrigger>
+              <SelectTrigger className="h-7 w-[88px] tabular text-caption-1-regular border-l-0 border-r-0 rounded-none"><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent>
                 {strikes.map((s) => {
                   const atm = spot != null && Math.abs(s - spot) === Math.min(...strikes.map((k) => Math.abs(k - spot!)));
                   return (
-                    <SelectItem key={s} value={String(s)} className="tabular text-xs">{s}{atm ? " · ATM" : ""}</SelectItem>
+                    <SelectItem key={s} value={String(s)} className="tabular text-caption-1-regular">{s}{atm ? " · ATM" : ""}</SelectItem>
                   );
                 })}
               </SelectContent>
@@ -312,7 +300,7 @@ function AnalyzerContent() {
                 if (idx >= 0 && idx < strikes.length - 1) setStrike(strikes[idx + 1]);
               }}
               disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) >= strikes.length - 1}
-              className="px-1.5 border border-border rounded-r-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs tabular"
+              className="px-1.5 border border-separator-border rounded-r-md text-text-tertiary hover:bg-background-secondary-hover disabled:opacity-30 disabled:cursor-not-allowed text-caption-1-regular tabular"
               title="Higher strike"
             ><ChevronRight size={12} aria-hidden="true" /></button>
           </div>
@@ -320,29 +308,29 @@ function AnalyzerContent() {
 
         {/* Side */}
         <BarSeg label="Side">
-          <div className="flex h-7 rounded-md border border-border overflow-hidden">
+          <div className="flex h-7 rounded-md border border-separator-border overflow-hidden">
             <button onClick={() => setRight("C")}
-              className={cn("px-2.5 text-xs font-medium transition-colors", right === "C" ? "bg-up/15 text-up" : "text-text-muted hover:bg-surface-2")}>Call</button>
+              className={cn("px-2.5 text-caption-1-regular font-medium transition-colors", right === "C" ? "bg-status-lime-background text-status-lime-text" : "text-text-tertiary hover:bg-background-secondary-hover")}>Call</button>
             <button onClick={() => setRight("P")}
-              className={cn("px-2.5 text-xs font-medium border-l border-border transition-colors", right === "P" ? "bg-down/15 text-down" : "text-text-muted hover:bg-surface-2")}>Put</button>
+              className={cn("px-2.5 text-caption-1-regular font-medium border-l border-separator-border transition-colors", right === "P" ? "bg-status-rose-background text-status-rose-text" : "text-text-tertiary hover:bg-background-secondary-hover")}>Put</button>
           </div>
         </BarSeg>
 
         {/* Qty */}
         <BarSeg label="Qty">
           <Input type="number" value={qty} onChange={(e) => setQty(Number(e.target.value || 0))}
-            className="h-7 w-16 tabular text-xs px-2" title="± = long / short" />
+            className="h-7 w-16 tabular text-caption-1-regular px-2" title="± = long / short" />
         </BarSeg>
 
         {/* Entry */}
         <BarSeg label="Entry">
           <Input type="number" step="0.01" value={entry} onChange={(e) => setEntry(e.target.value)}
-            placeholder="mid" className="h-7 w-[72px] tabular text-xs px-2" />
+            placeholder="mid" className="h-7 w-[72px] tabular text-caption-1-regular px-2" />
         </BarSeg>
 
         {/* Actions */}
         <div className="ml-auto flex items-center gap-2 px-3 py-1.5 empty:hidden">
-          {loading && <Loader2 size={14} className="animate-spin text-text-muted" />}
+          {loading && <Loader2 size={14} className="animate-spin text-text-tertiary" />}
           {result && (
             <Button variant="outline" size="sm" onClick={copyAISnapshot} title="Copy LLM-ready position snapshot">
               {copied ? <ClipboardCheck /> : <Clipboard />}
@@ -453,14 +441,14 @@ function AnalysisBody({
           `shrink-0` keeps the band from collapsing under flex pressure
           when the page is tall, that was the root cause of "the section
           above P/L profile has small height". */}
-      <div className="relative rounded-md border border-border bg-surface overflow-hidden shrink-0">
+      <div className="relative rounded-md border border-separator-border bg-background-primary-default overflow-hidden shrink-0">
         {/* Side rule, tone color, full-height. */}
         <div className={cn(
           "absolute left-0 top-0 bottom-0 w-1",
-          tone === "up" && "bg-up",
-          tone === "down" && "bg-down",
-          tone === "warning" && "bg-warning",
-          tone === "muted" && "bg-border",
+          tone === "up" && "bg-status-lime-text",
+          tone === "down" && "bg-status-rose-text",
+          tone === "warning" && "bg-status-yellow-text",
+          tone === "muted" && "bg-separator-border",
         )} />
 
         {/* Verdict row: score + label + scale on the left, narrative right. */}
@@ -470,16 +458,16 @@ function AnalysisBody({
             <div className="flex items-center gap-2 flex-wrap">
               <span className={cn(
                 "text-[20px] leading-none font-bold",
-                tone === "up" && "text-up",
-                tone === "down" && "text-down",
-                tone === "warning" && "text-warning",
+                tone === "up" && "text-status-lime-text",
+                tone === "down" && "text-status-rose-text",
+                tone === "warning" && "text-status-yellow-text",
                 tone === "muted" && "text-text-secondary",
               )}>
                 {actionPhrase}
               </span>
               {advice.conviction && (
                 <span
-                  className="px-1.5 py-0.5 rounded-sm text-2xs font-semibold bg-surface-2 text-text-muted"
+                  className="px-1.5 py-0.5 rounded-sm text-caption-2-regular font-semibold bg-background-secondary-default text-text-tertiary"
                   title="How much to trust this call, from signal strength + model agreement."
                 >
                   {advice.conviction} conviction
@@ -488,46 +476,46 @@ function AnalysisBody({
             </div>
 
             {/* Reasoning, full sentence, never clipped. */}
-            <p className="text-xs leading-snug text-text-secondary">{labelExplanation}</p>
+            <p className="text-caption-1-regular leading-snug text-text-secondary">{labelExplanation}</p>
 
             {/* Signal meter, the score made legible: where it sits between
                 "close it" and "keep it", with the number spelled out. */}
             <div
-              className="relative w-full h-1 bg-surface-2 rounded-full overflow-hidden mt-0.5"
+              className="relative w-full h-1 bg-background-secondary-default rounded-full overflow-hidden mt-0.5"
               title={
                 "Verdict signal, −100 (close) → +100 (keep):\n" +
                 "  ≤ −40 strong close · −40…−15 lean close\n" +
                 "  −15…+15 neutral · +15…+40 lean keep · ≥ +40 strong keep"
               }
             >
-              <div className="absolute top-0 bottom-0 left-1/2 w-px bg-text-muted/40" />
+              <div className="absolute top-0 bottom-0 left-1/2 w-px bg-foreground-icon-quaternary/40" />
               <div
                 className={cn(
                   "absolute top-0 bottom-0 w-1 rounded-full",
-                  tone === "up" && "bg-up",
-                  tone === "down" && "bg-down",
-                  tone === "warning" && "bg-warning",
+                  tone === "up" && "bg-status-lime-text",
+                  tone === "down" && "bg-status-rose-text",
+                  tone === "warning" && "bg-status-yellow-text",
                   tone === "muted" && "bg-text-secondary",
                 )}
                 style={{ left: `${Math.max(0, Math.min(100, ((advice.score + 100) / 200) * 100))}%`, transform: "translateX(-50%)" }}
               />
             </div>
-            <div className="flex justify-between items-baseline text-2xs text-text-muted/60 leading-none">
+            <div className="flex justify-between items-baseline text-caption-2-regular text-text-tertiary/60 leading-none">
               <span>close</span>
-              <span className="text-text-muted normal-case tracking-normal tabular">
+              <span className="text-text-tertiary normal-case tracking-normal tabular">
                 signal {advice.score > 0 ? "+" : ""}{advice.score} · {scoreWord}
               </span>
               <span>keep</span>
             </div>
           </div>
 
-          <p className="text-xs leading-relaxed text-text-secondary flex-1 min-w-0 self-center">
+          <p className="text-caption-1-regular leading-relaxed text-text-secondary flex-1 min-w-0 self-center">
             {result.narrative}
           </p>
         </div>
 
         {/* Headline metrics, one divided terminal strip; scrolls on narrow. */}
-        <div className="flex divide-x divide-border/60 border-t border-border/40 overflow-x-auto">
+        <div className="flex divide-x divide-separator-border border-t border-separator-border overflow-x-auto">
           <HeroMetric label="Spot" value={`$${result.spot.toFixed(2)}`}
             hint="Live underlying price." />
           <HeroMetric label="Mid"
@@ -573,9 +561,9 @@ function AnalysisBody({
           Was three full-width stacked sections (a long scroll). Now one
           switcher: each tab keeps its chart + interpretation rail side by
           side, but the page only renders one at a time. */}
-      <div className="rounded-md border border-border bg-surface overflow-hidden shrink-0">
+      <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden shrink-0">
         <Tabs defaultValue="pnl">
-          <TabsList className="!flex w-full overflow-x-auto rounded-none border-b border-border/60">
+          <TabsList className="!flex w-full overflow-x-auto rounded-none border-b border-separator-border">
             <TabsTrigger value="pnl">P/L Profile</TabsTrigger>
             <TabsTrigger value="underlying">Underlying ({timeframe})</TabsTrigger>
             <TabsTrigger value="option">Option</TabsTrigger>
@@ -613,7 +601,7 @@ function AnalysisBody({
                   probItm={result.probability.prob_itm}
                   height={440}
                 />
-                <div className="grid grid-cols-3 mt-3 pt-2 border-t border-border/40 text-2xs tabular">
+                <div className="grid grid-cols-3 mt-3 pt-2 border-t border-separator-border text-caption-2-regular tabular">
                   <RiskCell label="Max profit"
                     value={result.max_profit != null && isFinite(result.max_profit) ? fmtCurrency(result.max_profit) : "∞"}
                     tone="up" />
@@ -626,33 +614,33 @@ function AnalysisBody({
 
               {/* interpretation rail */}
               <div className="flex flex-col gap-3 min-w-0">
-                <div className="rounded-md border border-border bg-surface overflow-hidden">
+                <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden">
                   <PnlInsights result={result} />
                 </div>
                 <SignalInputsPanel result={result} />
-                <div className="rounded-md border border-border bg-surface flex-1">
-                  <div className="flex items-baseline gap-2 px-3 h-7 border-b border-border/60">
-                    <span className="text-2xs text-text-muted">Rationale</span>
-                    <span className="ml-auto text-2xs tabular text-text-muted">
+                <div className="rounded-md border border-separator-border bg-background-primary-default flex-1">
+                  <div className="flex items-baseline gap-2 px-3 h-7 border-b border-separator-border">
+                    <span className="text-caption-2-regular text-text-tertiary">Rationale</span>
+                    <span className="ml-auto text-caption-2-regular tabular text-text-tertiary">
                       {advice.notes.length} {advice.notes.length === 1 ? "note" : "notes"}
                     </span>
                   </div>
                   <div className="p-3">
                     <ul className="space-y-1.5">
                       {advice.notes.map((n, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs text-text-secondary leading-snug">
+                        <li key={i} className="flex items-start gap-2 text-caption-1-regular text-text-secondary leading-snug">
                           <ArrowRight size={11} className={cn(
                             "shrink-0 mt-0.5",
-                            tone === "up" && "text-up",
-                            tone === "down" && "text-down",
-                            tone === "warning" && "text-warning",
-                            tone === "muted" && "text-text-muted",
+                            tone === "up" && "text-status-lime-text",
+                            tone === "down" && "text-status-rose-text",
+                            tone === "warning" && "text-status-yellow-text",
+                            tone === "muted" && "text-text-tertiary",
                           )} />
                           <span>{n}</span>
                         </li>
                       ))}
                       {advice.notes.length === 0 && (
-                        <li className="text-xs text-text-muted">No specific concerns flagged.</li>
+                        <li className="text-caption-1-regular text-text-tertiary">No specific concerns flagged.</li>
                       )}
                     </ul>
                   </div>
@@ -670,7 +658,7 @@ function AnalysisBody({
                 onTimeframeChange={onTimeframeChange}
                 loading={loading}
               />
-              <div className="rounded-md border border-border bg-surface overflow-hidden">
+              <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden">
                 <UnderlyingInsights result={result} />
               </div>
             </div>
@@ -680,7 +668,7 @@ function AnalysisBody({
           <TabsContent value="option" className="p-3">
             <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-3">
               <OptionAnalysisCard result={result} />
-              <div className="rounded-md border border-border bg-surface overflow-hidden">
+              <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden">
                 <OptionInsights result={result} />
               </div>
             </div>
@@ -709,7 +697,7 @@ function AnalysisBody({
             {result.decay_profile && result.decay_profile.length > 0 ? (
               <PnlDecayChart data={result.decay_profile} height={260} />
             ) : (
-              <div className="h-[210px] flex items-center justify-center text-xs text-text-muted">
+              <div className="h-[210px] flex items-center justify-center text-caption-1-regular text-text-tertiary">
                 No decay profile
               </div>
             )}
@@ -741,9 +729,9 @@ function AnalysisBody({
 // on floating dividers between them.
 function CardBar({ title, hint }: { title: string; hint?: React.ReactNode }) {
   return (
-    <div className="flex items-baseline gap-2 px-3 h-8 border-b border-border/60">
-      <span className="text-xs text-text-primary font-semibold">{title}</span>
-      {hint && <span className="text-2xs text-text-muted">{hint}</span>}
+    <div className="flex items-baseline gap-2 px-3 h-8 border-b border-separator-border">
+      <span className="text-caption-1-regular text-text-primary font-semibold">{title}</span>
+      {hint && <span className="text-caption-2-regular text-text-tertiary">{hint}</span>}
     </div>
   );
 }
@@ -762,14 +750,14 @@ function HeroMetric({
 }) {
   return (
     <div className="flex flex-col gap-1 min-w-[82px] flex-1 px-3 py-1.5" title={hint}>
-      <span className="text-2xs text-text-muted leading-none">
+      <span className="text-caption-2-regular text-text-tertiary leading-none">
         {label}
       </span>
       <span className={cn(
         "text-[14px] font-semibold tabular leading-tight truncate",
-        tone === "up" && "text-up",
-        tone === "down" && "text-down",
-        tone === "warning" && "text-warning",
+        tone === "up" && "text-status-lime-text",
+        tone === "down" && "text-status-rose-text",
+        tone === "warning" && "text-status-yellow-text",
         !tone && "text-text-primary",
       )}>
         {value}
@@ -789,7 +777,7 @@ function AnalyticsTabs({ result }: { result: OptionAnalyzeResult }) {
   // hiding triggers behind the right edge. `shrink-0` so the card doesn't
   // collapse when PageShell's flex column is under height pressure.
   return (
-    <div className="rounded-md border border-border bg-surface overflow-hidden shrink-0">
+    <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden shrink-0">
       <Tabs defaultValue="ai">
         <TabsList className="!flex w-full overflow-x-auto rounded-none">
           <TabsTrigger value="ai">AI Read</TabsTrigger>
@@ -809,7 +797,7 @@ function AnalyticsTabs({ result }: { result: OptionAnalyzeResult }) {
           {result.decay_profile && result.decay_profile.length > 0 ? (
             <PnlDecayChart data={result.decay_profile} height={260} />
           ) : (
-            <div className="h-[210px] flex items-center justify-center text-xs text-text-muted">
+            <div className="h-[210px] flex items-center justify-center text-caption-1-regular text-text-tertiary">
               No decay profile
             </div>
           )}
@@ -845,11 +833,11 @@ function RiskCell({ label, value, tone }: {
 }) {
   return (
     <div className="flex items-baseline justify-center gap-2 min-w-0">
-      <span className="text-2xs text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       <span className={cn(
-        "text-xs font-semibold tabular",
-        tone === "up" && "text-up",
-        tone === "down" && "text-down",
+        "text-caption-1-regular font-semibold tabular",
+        tone === "up" && "text-status-lime-text",
+        tone === "down" && "text-status-rose-text",
         !tone && "text-text-primary"
       )}>{value}</span>
     </div>
@@ -870,7 +858,7 @@ function AnalysisSkeleton() {
   return (
     <div className="flex flex-col gap-3">
       {/* Hero verdict + narrative */}
-      <div className="rounded-md border border-border bg-surface px-4 py-3 flex items-start gap-3">
+      <div className="rounded-md border border-separator-border bg-background-primary-default px-4 py-3 flex items-start gap-3">
         <div className="skeleton h-5 w-32 shrink-0" />
         <div className="flex-1 flex flex-col gap-1.5">
           <div className="skeleton h-3 w-full" />
@@ -880,7 +868,7 @@ function AnalysisSkeleton() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-3 md:grid-cols-6 rounded-md border border-border bg-surface divide-x divide-border">
+      <div className="grid grid-cols-3 md:grid-cols-6 rounded-md border border-separator-border bg-background-primary-default divide-x divide-separator-border">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="px-3 py-2 flex flex-col gap-1">
             <div className="skeleton h-2 w-12" />
@@ -892,16 +880,16 @@ function AnalysisSkeleton() {
 
       {/* Chart hero + side rail */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_240px] gap-3">
-        <div className="rounded-md border border-border bg-surface overflow-hidden">
-          <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60">
+        <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden">
+          <div className="flex items-center gap-2 px-3 h-8 border-b border-separator-border">
             <div className="skeleton h-2 w-20" />
           </div>
           <div className="p-3"><div className="skeleton h-[440px] w-full" /></div>
         </div>
         <div className="flex flex-col gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-md border border-border bg-surface">
-              <div className="px-3 py-1.5 border-b border-border/60">
+            <div key={i} className="rounded-md border border-separator-border bg-background-primary-default">
+              <div className="px-3 py-1.5 border-b border-separator-border">
                 <div className="skeleton h-2 w-20" />
               </div>
               <div className="px-3 py-2 flex flex-col gap-2">
@@ -918,13 +906,13 @@ function AnalysisSkeleton() {
       </div>
 
       {/* Greeks strip */}
-      <div className="rounded-md border border-border bg-surface">
-        <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60">
+      <div className="rounded-md border border-separator-border bg-background-primary-default">
+        <div className="flex items-center gap-2 px-3 h-8 border-b border-separator-border">
           <div className="skeleton h-2 w-12" />
         </div>
         <div className="p-3 grid grid-cols-4 gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded border border-border p-3 flex flex-col gap-2">
+            <div key={i} className="rounded border border-separator-border p-3 flex flex-col gap-2">
               <div className="skeleton h-5 w-8" />
               <div className="skeleton h-3 w-16" />
               <div className="skeleton h-2 w-20" />
@@ -936,8 +924,8 @@ function AnalysisSkeleton() {
       {/* Analytics row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-md border border-border bg-surface">
-            <div className="px-3 h-7 border-b border-border/60 flex items-center">
+          <div key={i} className="rounded-md border border-separator-border bg-background-primary-default">
+            <div className="px-3 h-7 border-b border-separator-border flex items-center">
               <div className="skeleton h-2 w-24" />
             </div>
             <div className="p-3 grid grid-cols-2 gap-3">
@@ -960,7 +948,7 @@ function AnalysisSkeleton() {
 function BarSeg({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5">
-      <span className="text-2xs text-text-muted shrink-0">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary shrink-0">{label}</span>
       {children}
     </div>
   );

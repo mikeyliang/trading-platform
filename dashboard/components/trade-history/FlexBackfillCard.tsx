@@ -11,7 +11,7 @@
 // once the response lands.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Database, Loader2, RefreshCw } from "lucide-react";
+import { RiErrorWarningFill as AlertCircle, RiCheckboxCircleFill as CheckCircle2, RiDatabase2Line as Database, RiLoader4Line as Loader2, RiRefreshLine as RefreshCw } from "@remixicon/react";
 import {
   api,
   type FlexBackfillResult,
@@ -154,10 +154,10 @@ export function FlexBackfillCard() {
   }, [status?.cooldown_sec, tick]);
 
   return (
-    <div className="border border-border/60 bg-surface rounded-md">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40">
-        <Database size={13} className="text-text-muted" />
-        <span className="text-xs text-text-secondary font-medium">
+    <div className="border border-separator-border bg-background-primary-default rounded-md">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-separator-border">
+        <Database size={13} className="text-text-tertiary" />
+        <span className="text-caption-1-regular text-text-secondary font-medium">
           IBKR Flex backfill
         </span>
         {status && (
@@ -167,7 +167,7 @@ export function FlexBackfillCard() {
           type="button"
           onClick={refreshStatus}
           disabled={statusLoading}
-          className="ml-auto inline-flex items-center justify-center h-5 w-5 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-2 transition-colors"
+          className="ml-auto inline-flex items-center justify-center h-5 w-5 rounded-sm text-text-tertiary hover:text-text-primary hover:bg-background-secondary-hover transition-colors"
           title="Refresh status"
         >
           <RefreshCw size={11} className={statusLoading ? "animate-spin" : ""} />
@@ -206,17 +206,17 @@ export function FlexBackfillCard() {
         />
       )}
 
-      <div className="flex items-center gap-2 flex-wrap px-3 py-2 border-t border-border/40 bg-surface-2/20">
-        <span className="text-2xs text-text-muted">Pull</span>
+      <div className="flex items-center gap-2 flex-wrap px-3 py-2 border-t border-separator-border bg-background-secondary-default">
+        <span className="text-caption-2-regular text-text-tertiary">Pull</span>
         <YearsToggle value={years} onChange={setYears} disabled={pulling} />
-        <span className="text-2xs text-text-muted">365-day slice{years > 1 ? "s" : ""}</span>
+        <span className="text-caption-2-regular text-text-tertiary">365-day slice{years > 1 ? "s" : ""}</span>
 
         <label
           className={cn(
-            "inline-flex items-center gap-1 h-6 px-2 rounded-sm border text-2xs cursor-pointer select-none transition-colors",
+            "inline-flex items-center gap-1 h-6 px-2 rounded-sm border text-caption-2-regular cursor-pointer select-none transition-colors",
             refresh
-              ? "border-accent/50 bg-accent/10 text-accent"
-              : "border-border bg-surface-2/40 text-text-secondary hover:bg-surface-2",
+              ? "border-accent-500 bg-status-blue-background text-accent-500"
+              : "border-separator-border bg-background-secondary-default text-text-secondary hover:bg-background-secondary-hover",
             pulling && "cursor-not-allowed opacity-60",
           )}
           title="Overwrite existing rows on (source, external_id) conflict, useful to refresh timestamps after parser changes"
@@ -236,10 +236,10 @@ export function FlexBackfillCard() {
           onClick={onBackfill}
           disabled={pulling || cooldownLive > 0 || !status?.configured}
           className={cn(
-            "ml-auto inline-flex items-center gap-1.5 h-6 px-3 rounded-sm text-xs transition-colors",
+            "ml-auto inline-flex items-center gap-1.5 h-6 px-3 rounded-sm text-caption-1-regular transition-colors",
             pulling || cooldownLive > 0 || !status?.configured
-              ? "bg-surface-2 text-text-muted cursor-not-allowed"
-              : "bg-accent/15 text-accent hover:bg-accent/25",
+              ? "bg-background-secondary-default text-text-tertiary cursor-not-allowed"
+              : "bg-status-blue-background text-accent-500 hover:bg-status-blue-background",
           )}
         >
           {pulling ? (
@@ -259,7 +259,7 @@ export function FlexBackfillCard() {
 
       {/* Progress / result strip, visible during and after a backfill. */}
       {(job?.status === "running" || lastResult || pullError) && (
-        <div className="px-3 py-2 border-t border-border/40 text-xs tabular">
+        <div className="px-3 py-2 border-t border-separator-border text-caption-1-regular tabular">
           {pullError && (
             <NoteRow
               tone="error"
@@ -284,11 +284,11 @@ function StatBlock({
 }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex flex-col gap-0.5 min-w-0">
-      <span className="text-2xs text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       <span
         className={cn(
-          "text-xs text-text-primary truncate",
-          mono ? "tabular text-xs" : "tabular font-medium",
+          "text-caption-1-regular text-text-primary truncate",
+          mono ? "tabular text-caption-1-regular" : "tabular font-medium",
         )}
         title={value}
       >
@@ -303,14 +303,14 @@ function ConfiguredBadge({
 }: { configured: boolean; queryId: string | null }) {
   if (!configured) {
     return (
-      <span className="px-1.5 py-0.5 rounded-sm bg-warning/15 text-warning text-2xs">
+      <span className="px-1.5 py-0.5 rounded-sm bg-status-yellow-background text-status-yellow-text text-caption-2-regular">
         not configured
       </span>
     );
   }
   return (
     <span
-      className="px-1.5 py-0.5 rounded-sm bg-up/10 text-up text-2xs tabular"
+      className="px-1.5 py-0.5 rounded-sm bg-status-lime-background text-status-lime-text text-caption-2-regular tabular"
       title="IBKR Flex token + query id configured"
     >
       query {queryId ?? "n/a"}
@@ -322,7 +322,7 @@ function YearsToggle({
   value, onChange, disabled,
 }: { value: number; onChange: (n: number) => void; disabled: boolean }) {
   return (
-    <div className="flex h-6 rounded-sm border border-border overflow-hidden">
+    <div className="flex h-6 rounded-sm border border-separator-border overflow-hidden">
       {YEARS_OPTIONS.map((n, i) => (
         <button
           key={n}
@@ -330,11 +330,11 @@ function YearsToggle({
           onClick={() => onChange(n)}
           disabled={disabled}
           className={cn(
-            "px-2 text-2xs tabular transition-colors",
-            i > 0 && "border-l border-border",
+            "px-2 text-caption-2-regular tabular transition-colors",
+            i > 0 && "border-l border-separator-border",
             value === n
-              ? "bg-accent/15 text-accent font-medium"
-              : "text-text-secondary hover:bg-surface-2 hover:text-text-primary",
+              ? "bg-status-blue-background text-accent-500 font-medium"
+              : "text-text-secondary hover:bg-background-secondary-hover hover:text-text-primary",
             disabled && "cursor-not-allowed opacity-60",
           )}
         >
@@ -355,21 +355,21 @@ function JobProgress({ job }: { job: FlexJobState }) {
   const lastInfo = job.last_slice_info;
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-2 text-xs text-text-secondary">
-        <Loader2 size={11} className="animate-spin text-accent" />
+      <div className="flex items-center gap-2 text-caption-1-regular text-text-secondary">
+        <Loader2 size={11} className="animate-spin text-accent-500" />
         <span>
           Slice <span className="text-text-primary tabular">{done}</span> / {total}
         </span>
         {lastInfo?.from && lastInfo?.to && (
-          <span className="text-text-muted text-2xs">
+          <span className="text-text-tertiary text-caption-2-regular">
             {fmtCompactDate(lastInfo.from)} → {fmtCompactDate(lastInfo.to)}
           </span>
         )}
-        <span className="text-text-muted text-2xs ml-auto">job {job.id}</span>
+        <span className="text-text-tertiary text-caption-2-regular ml-auto">job {job.id}</span>
       </div>
-      <div className="relative h-1 w-full rounded-sm bg-surface-2 overflow-hidden">
+      <div className="relative h-1 w-full rounded-sm bg-background-secondary-default overflow-hidden">
         <div
-          className="absolute inset-y-0 left-0 bg-accent/70 duration-500"
+          className="absolute inset-y-0 left-0 bg-status-blue-background duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -387,10 +387,10 @@ function BackfillResultStrip({ result }: { result: FlexBackfillResult }) {
     <div className="flex flex-col gap-1">
       <div
         className={cn(
-          "inline-flex items-center gap-1.5 text-xs flex-wrap",
-          tone === "good" && "text-up",
+          "inline-flex items-center gap-1.5 text-caption-1-regular flex-wrap",
+          tone === "good" && "text-status-lime-text",
           tone === "info" && "text-text-secondary",
-          tone === "warn" && "text-warning",
+          tone === "warn" && "text-status-yellow-text",
         )}
       >
         <Icon size={11} />
@@ -404,11 +404,11 @@ function BackfillResultStrip({ result }: { result: FlexBackfillResult }) {
           )}
           {" · "}skipped {(result.skipped ?? 0).toLocaleString()}
           {result.skipped > 0 && !result.refresh && (
-            <span className="text-text-muted"> (dedup)</span>
+            <span className="text-text-tertiary"> (dedup)</span>
           )}
         </span>
       </div>
-      <details className="text-2xs text-text-muted">
+      <details className="text-caption-2-regular text-text-tertiary">
         <summary className="cursor-pointer hover:text-text-secondary select-none">
           slices · {result.slices?.length ?? 0}
         </summary>
@@ -423,9 +423,9 @@ function BackfillResultStrip({ result }: { result: FlexBackfillResult }) {
                 <span className="text-text-secondary italic">{s.info}</span>
               ) : null}
               {s.error ? (
-                <span className="text-warning">{s.error}</span>
+                <span className="text-status-yellow-text">{s.error}</span>
               ) : s.trades != null ? (
-                <span className="text-up">+{s.trades} trades{s.option_eae ? ` · +${s.option_eae} EAE` : ""}</span>
+                <span className="text-status-lime-text">+{s.trades} trades{s.option_eae ? ` · +${s.option_eae} EAE` : ""}</span>
               ) : null}
             </li>
           ))}
@@ -441,10 +441,10 @@ function NoteRow({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 w-full",
-        tone === "info" && "text-text-secondary bg-surface-2/30",
-        tone === "warn" && "text-warning bg-warning/5",
-        tone === "error" && "text-down bg-down/5",
+        "inline-flex items-center gap-1.5 text-caption-1-regular px-3 py-1.5 w-full",
+        tone === "info" && "text-text-secondary bg-background-secondary-default",
+        tone === "warn" && "text-status-yellow-text bg-status-yellow-background",
+        tone === "error" && "text-status-rose-text bg-status-rose-background",
       )}
     >
       {icon}

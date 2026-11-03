@@ -47,7 +47,7 @@ export default function StockDetailPage({ params }: { params: { symbol: string }
             bottom={<PositionsPanel symbolFilter={symbol} />}
           />
         </div>
-        <div className="w-56 bg-bg shrink-0 border-l border-border">
+        <div className="w-56 bg-background-full shrink-0 border-l border-separator-border">
           <WatchlistPanel />
         </div>
       </div>

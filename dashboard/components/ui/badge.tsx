@@ -2,21 +2,21 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-// Status chip. Semantic variants (up / down / warning) are reserved for data
-// and connection state; `accent` marks the interactive or selected thing;
-// `muted` is for neutral metadata such as account mode.
+// BoardUI Chip, caption variant (components/base/badges/chip.tsx), under the
+// desk's semantic names. up / down / warning are for data and connection
+// state, accent marks the selected or live thing, muted is neutral metadata.
 const badgeVariants = cva(
-  "inline-flex items-center gap-1.5 px-2 h-5 text-2xs font-medium whitespace-nowrap transition-colors [&>span]:cap",
+  "inline-flex items-center justify-center gap-1 rounded-md px-1.5 h-5 text-caption-1-medium whitespace-nowrap",
   {
     variants: {
       variant: {
-        default: "bg-surface-2 text-text-primary",
-        outline: "bg-transparent text-text-secondary shadow-[inset_0_0_0_1px_rgb(var(--c-border))]",
-        up: "bg-up/12 text-up",
-        down: "bg-down/12 text-down",
-        warning: "bg-warning/15 text-warning",
-        accent: "bg-accent/12 text-accent-fg",
-        muted: "bg-surface-2 text-text-muted",
+        default: "bg-background-secondary-default text-text-primary",
+        outline: "bg-transparent text-text-secondary shadow-[inset_0_0_0_1px_var(--color-border-button-default)]",
+        up: "bg-status-lime-background text-status-lime-text",
+        down: "bg-status-rose-background text-status-rose-text",
+        warning: "bg-status-yellow-background text-status-yellow-text",
+        accent: "bg-status-blue-background text-status-blue-text",
+        muted: "bg-background-tertiary-default text-text-secondary",
       },
     },
     defaultVariants: {
@@ -25,10 +25,14 @@ const badgeVariants = cva(
   }
 );
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, children, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props}><span className="cap">{children}</span></div>;
+  return (
+    <span className={cn(badgeVariants({ variant }), className)} {...props}>
+      {children}
+    </span>
+  );
 }
 
 export { Badge, badgeVariants };

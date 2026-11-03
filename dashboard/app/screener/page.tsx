@@ -19,7 +19,7 @@ import { Logo } from "@/components/ui/logo";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { cn, fmtCompact } from "@/lib/utils";
-import { ArrowUpDown, Target } from "lucide-react";
+import { RiArrowUpDownLine as ArrowUpDown, RiFocus3Line as Target } from "@remixicon/react";
 
 // Curated universe, same anchor list as the logo map, expanded slightly
 const UNIVERSE = [
@@ -220,9 +220,9 @@ export default function ScreenerPage() {
       {/* table */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-caption-1-regular">
             <thead>
-              <tr className="text-text-muted border-b border-border/40 text-2xs">
+              <tr className="text-text-tertiary border-b border-separator-border text-caption-2-regular">
                 <Th onClick={() => onSort("symbol")} active={sortKey === "symbol"} dir={sortDir}>
                   Symbol
                 </Th>
@@ -253,7 +253,7 @@ export default function ScreenerPage() {
             <tbody>
               {loading
                 ? Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i} className="border-b border-border/30">
+                    <tr key={i} className="border-b border-separator-border">
                       {Array.from({ length: 8 }).map((__, j) => (
                         <td key={j} className="px-2 py-1">
                           <Skeleton className="h-3 w-16" />
@@ -264,7 +264,7 @@ export default function ScreenerPage() {
                 : filtered.map((r) => <Row key={r.symbol} r={r} />)}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-text-muted text-xs">
+                  <td colSpan={8} className="text-center py-10 text-text-tertiary text-caption-1-regular">
                     No matches. Try removing filters.
                   </td>
                 </tr>
@@ -280,7 +280,7 @@ export default function ScreenerPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-2xs text-text-muted">{label}</label>
+      <label className="text-caption-2-regular text-text-tertiary">{label}</label>
       {children}
     </div>
   );
@@ -315,7 +315,7 @@ function Th({
             size={9}
             className={cn(
               "transition-colors",
-              active ? "text-accent" : "text-text-muted/50"
+              active ? "text-accent-500" : "text-text-tertiary/50"
             )}
           />
         )}
@@ -326,19 +326,19 @@ function Th({
 
 function Row({ r }: { r: Fundamentals }) {
   return (
-    <tr className="group border-b border-border/30 hover:bg-surface-2 transition-colors">
+    <tr className="group border-b border-separator-border hover:bg-background-secondary-hover transition-colors">
       <td className="px-2 py-1">
         <Link href={`/chart/${r.symbol}`} className="flex items-center gap-2 min-w-0">
           <Logo symbol={r.symbol} size={18} />
           <div className="flex flex-col min-w-0">
             <span className="font-medium text-text-primary">{r.symbol}</span>
             {r.name && (
-              <span className="text-2xs text-text-muted truncate max-w-[180px]">{r.name}</span>
+              <span className="text-caption-2-regular text-text-tertiary truncate max-w-[180px]">{r.name}</span>
             )}
           </div>
         </Link>
       </td>
-      <td className="px-2 py-1 text-text-muted">{r.sector ?? "n/a"}</td>
+      <td className="px-2 py-1 text-text-tertiary">{r.sector ?? "n/a"}</td>
       <td className="px-2 py-1 text-right tabular">
         {r.market_cap ? `$${fmtCompact(r.market_cap)}` : "n/a"}
       </td>
@@ -355,7 +355,7 @@ function Row({ r }: { r: Fundamentals }) {
         {r.fifty_two_week_position != null ? (
           <Bar value={r.fifty_two_week_position} />
         ) : (
-          <span className="text-text-muted">n/a</span>
+          <span className="text-text-tertiary">n/a</span>
         )}
       </td>
       <td className="px-2 py-1 text-right">
@@ -380,16 +380,16 @@ function Bar({ value }: { value: number }) {
   const tone = v >= 0.85 ? "down" : v <= 0.15 ? "up" : "neutral";
   return (
     <div className="inline-flex items-center gap-1.5">
-      <div className="relative w-16 h-1.5 rounded-full bg-surface-2 overflow-hidden">
+      <div className="relative w-16 h-1.5 rounded-full bg-background-secondary-default overflow-hidden">
         <div
           className={cn(
             "absolute top-0 left-0 h-full",
-            tone === "up" ? "bg-up/70" : tone === "down" ? "bg-down/70" : "bg-text-secondary/70"
+            tone === "up" ? "bg-status-lime-background" : tone === "down" ? "bg-status-rose-background" : "bg-text-secondary/70"
           )}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="tabular text-2xs text-text-muted w-8 text-right">{pct}%</span>
+      <span className="tabular text-caption-2-regular text-text-tertiary w-8 text-right">{pct}%</span>
     </div>
   );
 }

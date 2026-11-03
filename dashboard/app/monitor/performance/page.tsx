@@ -8,7 +8,7 @@ import type { Position, Trade } from "@/types";
 import { cn, fmtCurrency, fmtPct, pnlClass } from "@/lib/utils";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Logo } from "@/components/ui/logo";
-import { Link as LinkIcon } from "lucide-react";
+import { RiLinkM as LinkIcon } from "@remixicon/react";
 
 export default function PerformancePage() {
   const { account } = useHealth();
@@ -118,10 +118,10 @@ function HeroStats({
 function Big({ label, value, tone, muted }: { label: string; value: string; tone?: "up" | "down"; muted?: boolean }) {
   return (
     <div>
-      <div className="text-2xs text-text-muted mb-1.5">{label}</div>
+      <div className="text-caption-2-regular text-text-tertiary mb-1.5">{label}</div>
       <div className={cn(
-        "text-base md:text-lg font-semibold tabular",
-        tone === "up" ? "text-up" : tone === "down" ? "text-down" : muted ? "text-text-secondary" : "text-text-primary"
+        "text-headline-regular md:text-title-3-regular font-semibold tabular",
+        tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text" : muted ? "text-text-secondary" : "text-text-primary"
       )}>
         {value}
       </div>
@@ -133,9 +133,9 @@ function Big({ label, value, tone, muted }: { label: string; value: string; tone
 function Section({ title, trail, children }: { title: string; trail?: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between border-b border-border/40 pb-1.5">
-        <h2 className="text-xs text-text-secondary">{title}</h2>
-        {trail && <span className="text-2xs text-text-muted tabular">{trail}</span>}
+      <div className="flex items-baseline justify-between border-b border-separator-border pb-1.5">
+        <h2 className="text-caption-1-regular text-text-secondary">{title}</h2>
+        {trail && <span className="text-caption-2-regular text-text-tertiary tabular">{trail}</span>}
       </div>
       {children}
     </section>
@@ -143,15 +143,15 @@ function Section({ title, trail, children }: { title: string; trail?: string; ch
 }
 
 function Empty({ hint }: { hint: string }) {
-  return <div className="py-3 text-xs text-text-muted">{hint}</div>;
+  return <div className="py-3 text-caption-1-regular text-text-tertiary">{hint}</div>;
 }
 
 // ─── Positions table ──────────────────────────────────────────────────────────
 function PositionsTable({ positions }: { positions: Position[] }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-xs tabular">
-        <thead className="text-2xs text-text-muted">
+      <table className="w-full text-caption-1-regular tabular">
+        <thead className="text-caption-2-regular text-text-tertiary">
           <tr>
             <th className="px-2 py-1 text-left font-medium">Symbol</th>
             <th className="px-2 py-1 text-right font-medium">Qty</th>
@@ -169,7 +169,7 @@ function PositionsTable({ positions }: { positions: Position[] }) {
             const mkt = (p.current_price ?? 0) * (p.quantity ?? 0);
             const delta = (p.current_price ?? 0) - (p.avg_price ?? 0);
             return (
-              <tr key={p.symbol} className="border-t border-border/30 hover:bg-surface-2/30 transition-colors">
+              <tr key={p.symbol} className="border-t border-separator-border hover:bg-background-secondary-hover transition-colors">
                 <td className="px-2 py-1.5">
                   <div className="flex items-center gap-2">
                     <Logo symbol={p.symbol} size={16} />
@@ -183,7 +183,7 @@ function PositionsTable({ positions }: { positions: Position[] }) {
                 </td>
                 <td className={cn(
                   "px-2 py-1.5 text-right",
-                  (p.quantity ?? 0) >= 0 ? "text-text-secondary" : "text-down"
+                  (p.quantity ?? 0) >= 0 ? "text-text-secondary" : "text-status-rose-text"
                 )}>
                   {(p.quantity ?? 0).toLocaleString()}
                 </td>
@@ -206,7 +206,7 @@ function PositionsTable({ positions }: { positions: Position[] }) {
                   {fmtPct(p.unrealized_pnl_pct ?? 0)}
                 </td>
                 <td className="px-2 py-1.5 text-right">
-                  <a href={`/chart/${p.symbol}`} className="text-text-muted hover:text-accent inline-flex" title="Open chart">
+                  <a href={`/chart/${p.symbol}`} className="text-text-tertiary hover:text-accent-500 inline-flex" title="Open chart">
                     <LinkIcon size={12} />
                   </a>
                 </td>
@@ -223,8 +223,8 @@ function PositionsTable({ positions }: { positions: Position[] }) {
 function FillsTable({ trades }: { trades: Trade[] }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-xs tabular">
-        <thead className="text-2xs text-text-muted">
+      <table className="w-full text-caption-1-regular tabular">
+        <thead className="text-caption-2-regular text-text-tertiary">
           <tr>
             <th className="px-2 py-1 text-left font-medium">When</th>
             <th className="px-2 py-1 text-left font-medium">Symbol</th>
@@ -240,26 +240,26 @@ function FillsTable({ trades }: { trades: Trade[] }) {
             const d = new Date(t.timestamp);
             const pnl = t.pnl ?? 0;
             return (
-              <tr key={`${t.timestamp}-${t.symbol}`} className="border-t border-border/30 hover:bg-surface-2/30">
+              <tr key={`${t.timestamp}-${t.symbol}`} className="border-t border-separator-border hover:bg-background-secondary-hover">
                 <td className="px-2 py-1.5 text-text-secondary whitespace-nowrap">
                   {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                   {" "}
-                  <span className="text-text-muted">
+                  <span className="text-text-tertiary">
                     {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </td>
                 <td className="px-2 py-1.5">
                   <a href={`/chart/${t.symbol}`} className="font-medium text-text-primary hover:underline">{t.symbol}</a>
                 </td>
-                <td className={cn("px-2 py-1.5 text-2xs",
-                  t.side === "BUY" ? "text-up" : "text-down"
+                <td className={cn("px-2 py-1.5 text-caption-2-regular",
+                  t.side === "BUY" ? "text-status-lime-text" : "text-status-rose-text"
                 )}>{t.side}</td>
                 <td className="px-2 py-1.5 text-right text-text-secondary">{t.quantity.toLocaleString()}</td>
                 <td className="px-2 py-1.5 text-right text-text-secondary">${t.price.toFixed(2)}</td>
                 <td className={cn("px-2 py-1.5 text-right", pnlClass(pnl))}>
                   {t.pnl != null ? fmtCurrency(pnl) : "n/a"}
                 </td>
-                <td className="px-2 py-1.5 text-text-muted text-2xs">
+                <td className="px-2 py-1.5 text-text-tertiary text-caption-2-regular">
                   {t.strategy ?? "n/a"}
                 </td>
               </tr>

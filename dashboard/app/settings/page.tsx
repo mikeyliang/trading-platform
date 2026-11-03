@@ -30,7 +30,7 @@ export default function SettingsPage() {
         actions={
           <button
             onClick={() => refetch()}
-            className="h-6 px-2 text-xs rounded-sm bg-surface-2 hover:bg-surface-3 text-text-secondary border border-border/60"
+            className="h-6 px-2 text-caption-1-regular rounded-sm bg-background-secondary-default hover:bg-background-tertiary-hover text-text-secondary border border-separator-border"
           >
             Refresh
           </button>
@@ -41,19 +41,19 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Runtime</CardTitle>
-            <span className="text-2xs tabular font-mono text-text-muted">
+            <span className="text-caption-2-regular tabular tabular text-text-tertiary">
               {lastCheckedAt ? new Date(lastCheckedAt).toLocaleTimeString() : "n/a"}
             </span>
           </CardHeader>
           <CardContent className="p-0">
             <Rows>
-              <Row label="Mode" value={mode === "LIVE" ? "Live" : "Paper"} valueClass={mode === "LIVE" ? "text-warning" : "text-text-primary"} />
-              <Row label="IBKR Gateway" value={ibOk ? "Connected" : "Offline"} valueClass={ibOk ? "text-up" : "text-down"} />
-              <Row label="Realtime stream" value={wsConnected ? "Live" : "Offline"} valueClass={wsConnected ? "text-up" : "text-down"} />
+              <Row label="Mode" value={mode === "LIVE" ? "Live" : "Paper"} valueClass={mode === "LIVE" ? "text-status-yellow-text" : "text-text-primary"} />
+              <Row label="IBKR Gateway" value={ibOk ? "Connected" : "Offline"} valueClass={ibOk ? "text-status-lime-text" : "text-status-rose-text"} />
+              <Row label="Realtime stream" value={wsConnected ? "Live" : "Offline"} valueClass={wsConnected ? "text-status-lime-text" : "text-status-rose-text"} />
               <Row
                 label="API"
                 value={apiReachable === false ? "Unreachable" : "OK"}
-                valueClass={apiReachable === false ? "text-down" : "text-up"}
+                valueClass={apiReachable === false ? "text-status-rose-text" : "text-status-lime-text"}
               />
               <Row label="Mock data" value={health?.mock_mode ? "On" : "Off"} />
             </Rows>
@@ -63,7 +63,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Account</CardTitle>
-            <span className={cn("text-2xs tabular font-mono", account ? "text-text-secondary" : "text-text-muted")}>
+            <span className={cn("text-caption-2-regular tabular tabular", account ? "text-text-secondary" : "text-text-tertiary")}>
               {account ? "live" : "no binding"}
             </span>
           </CardHeader>
@@ -118,7 +118,7 @@ export default function SettingsPage() {
         </Card>
       </div>
 
-      <p className="text-2xs text-text-muted">
+      <p className="text-caption-2-regular text-text-tertiary">
         Persistent preferences (theme switching, custom layouts, API endpoint overrides) are not yet wired;
         runtime values shown here are read-only.
       </p>
@@ -127,7 +127,7 @@ export default function SettingsPage() {
 }
 
 function Rows({ children }: { children: React.ReactNode }) {
-  return <div className="divide-y divide-border/40">{children}</div>;
+  return <div className="divide-y divide-separator-border">{children}</div>;
 }
 
 function Row({
@@ -143,11 +143,11 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between px-3 h-7">
-      <span className="text-xs text-text-muted">{label}</span>
+      <span className="text-caption-1-regular text-text-tertiary">{label}</span>
       <span
         className={cn(
-          "text-xs",
-          mono && "tabular font-mono",
+          "text-caption-1-regular",
+          mono && "tabular tabular",
           valueClass ?? "text-text-primary"
         )}
       >
@@ -158,7 +158,7 @@ function Row({
 }
 
 function pnlColor(n: number): string {
-  if (n > 0) return "text-up";
-  if (n < 0) return "text-down";
+  if (n > 0) return "text-status-lime-text";
+  if (n < 0) return "text-status-rose-text";
   return "text-text-primary";
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings2, RotateCcw } from "lucide-react";
+import { RiEqualizerLine as Settings2, RiArrowGoBackLine as RotateCcw } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,32 +93,32 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
   const focusedCount = Object.values(config.focused).filter(Boolean).length;
 
   return (
-    <section className="rounded-lg border border-border bg-surface overflow-hidden">
+    <section className="rounded-lg border border-separator-border bg-background-primary-default overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-2/40 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-background-secondary-hover transition-colors"
       >
         <div className="flex items-center gap-2">
           <Settings2 size={14} className="text-text-secondary" />
           <div className="text-left">
-            <div className="text-sm font-medium text-text-secondary">
+            <div className="text-body-2-regular font-medium text-text-secondary">
               Agent configuration
             </div>
-            <div className="text-xs text-text-muted">
+            <div className="text-caption-1-regular text-text-tertiary">
               {focusedCount} of {Object.keys(AGENT_LABELS).length} agents focused · speed{" "}
               {config.streamingSpeedMs}ms
             </div>
           </div>
         </div>
-        <span className="text-xs text-text-muted">{open ? "Hide" : "Show"}</span>
+        <span className="text-caption-1-regular text-text-tertiary">{open ? "Hide" : "Show"}</span>
       </button>
 
       {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-border space-y-3">
+        <div className="px-4 pb-4 pt-1 border-t border-separator-border space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="flex flex-col gap-1">
-              <span className="text-2xs text-text-muted">
+              <span className="text-caption-2-regular text-text-tertiary">
                 Default ticker
               </span>
               <Input
@@ -130,7 +130,7 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-2xs text-text-muted">
+              <span className="text-caption-2-regular text-text-tertiary">
                 Streaming speed (ms per agent)
               </span>
               <Input
@@ -148,7 +148,7 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
           </div>
 
           <div className="flex flex-col gap-2">
-            <span className="text-2xs text-text-muted">
+            <span className="text-caption-2-regular text-text-tertiary">
               Focused agents
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -160,10 +160,10 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
                     type="button"
                     onClick={() => toggleAgent(key)}
                     className={cn(
-                      "px-2 py-1 rounded border text-xs transition-colors",
+                      "px-2 py-1 rounded border text-caption-1-regular transition-colors",
                       on
-                        ? "border-accent/40 bg-accent/10 text-accent"
-                        : "border-border bg-surface-2 text-text-muted hover:text-text-secondary"
+                        ? "border-accent-500 bg-status-blue-background text-accent-500"
+                        : "border-separator-border bg-background-secondary-default text-text-tertiary hover:text-text-secondary"
                     )}
                   >
                     {AGENT_LABELS[key]}
@@ -173,7 +173,7 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 text-xs">
+          <div className="flex flex-wrap gap-4 text-caption-1-regular">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -194,7 +194,7 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
             </label>
           </div>
 
-          <div className="pt-2 border-t border-border/50">
+          <div className="pt-2 border-t border-separator-border">
             <Button
               size="sm"
               variant="ghost"

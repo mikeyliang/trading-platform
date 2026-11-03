@@ -3,20 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import {
-  Brain,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  Sparkles,
-  TrendingUp,
-  Newspaper,
-  Calculator,
-  MessageSquare,
-  ShieldAlert,
-  Gavel,
-} from "lucide-react";
+import { RiBrainLine as Brain, RiRefreshLine as RefreshCw, RiErrorWarningFill as AlertCircle, RiCheckboxCircleFill as CheckCircle2, RiCloseCircleFill as XCircle, RiSparklingLine as Sparkles, RiStockLine as TrendingUp, RiNewspaperLine as Newspaper, RiCalculatorLine as Calculator, RiChat1Line as MessageSquare, RiShieldFlashLine as ShieldAlert, RiAuctionLine as Gavel } from "@remixicon/react";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,7 +80,7 @@ const SECTION_META: Record<
   trader_investment_plan: {
     label: "Trader Plan",
     icon: Brain,
-    color: "text-accent",
+    color: "text-accent-500",
     description: "Position sizing + entry/exit rationale",
   },
   risk_debate_state: {
@@ -105,7 +92,7 @@ const SECTION_META: Record<
   final_trade_decision: {
     label: "Portfolio Manager Decision",
     icon: Gavel,
-    color: "text-up",
+    color: "text-status-lime-text",
     description: "Final approve / reject + rationale",
   },
 };
@@ -365,23 +352,23 @@ export function AgentDebate() {
       )}
 
       {result?.cached && (
-        <div className="text-xs text-text-muted">
+        <div className="text-caption-1-regular text-text-tertiary">
           Cached (1hr TTL), re-runs are free.
         </div>
       )}
 
       {error && (
-        <div className="flex items-start gap-2 p-2 rounded border border-down/30 bg-down/5 text-xs">
-          <AlertCircle size={12} className="text-down shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 p-2 rounded border border-status-rose-text bg-status-rose-background text-caption-1-regular">
+          <AlertCircle size={12} className="text-status-rose-text shrink-0 mt-0.5" />
           <div>
-            <div className="font-medium text-down">Run failed</div>
-            <div className="text-text-secondary mt-0.5 font-mono text-xs">{error}</div>
+            <div className="font-medium text-status-rose-text">Run failed</div>
+            <div className="text-text-secondary mt-0.5 tabular text-caption-1-regular">{error}</div>
           </div>
         </div>
       )}
 
       {loading && (
-        <div className="p-3 rounded border border-border bg-surface text-xs text-text-muted text-center">
+        <div className="p-3 rounded border border-separator-border bg-background-primary-default text-caption-1-regular text-text-tertiary text-center">
           Running multi-agent debate. This takes 30 to 90 seconds depending on model and
           rounds. Each analyst makes one or two LLM calls, then bull/bear debate runs
           for up to max_debate_rounds.
@@ -436,7 +423,7 @@ function initStreamingStatus(): Record<
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-2xs text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       {children}
     </label>
   );
@@ -451,19 +438,19 @@ function StatusBanner({
 }) {
   if (!status) {
     return (
-      <div className="p-3 rounded border border-border bg-surface-2 text-sm text-text-muted">
+      <div className="p-3 rounded border border-separator-border bg-background-secondary-default text-body-2-regular text-text-tertiary">
         Checking TradingAgents availability…
       </div>
     );
   }
   if (!status.installed) {
     return (
-      <div className="p-3 rounded border border-down/30 bg-down/5 text-sm flex items-start gap-2">
-        <XCircle size={16} className="text-down shrink-0 mt-0.5" />
+      <div className="p-3 rounded border border-status-rose-text bg-status-rose-background text-body-2-regular flex items-start gap-2">
+        <XCircle size={16} className="text-status-rose-text shrink-0 mt-0.5" />
         <div>
-          <div className="font-medium text-down">TradingAgents not installed</div>
+          <div className="font-medium text-status-rose-text">TradingAgents not installed</div>
           <div className="text-text-secondary mt-0.5">
-            Run <code className="text-xs">pip install -e ../tradingagents</code>{" "}
+            Run <code className="text-caption-1-regular">pip install -e ../tradingagents</code>{" "}
             in the api service to enable.
           </div>
         </div>
@@ -472,22 +459,22 @@ function StatusBanner({
   }
   if (!hasAnyLLMKey) {
     return (
-      <div className="p-3 rounded border border-warning/30 bg-warning/5 text-sm flex items-start gap-2">
-        <AlertCircle size={16} className="text-warning shrink-0 mt-0.5" />
+      <div className="p-3 rounded border border-status-yellow-text bg-status-yellow-background text-body-2-regular flex items-start gap-2">
+        <AlertCircle size={16} className="text-status-yellow-text shrink-0 mt-0.5" />
         <div>
-          <div className="font-medium text-warning">No LLM API key configured</div>
+          <div className="font-medium text-status-yellow-text">No LLM API key configured</div>
           <div className="text-text-secondary mt-0.5">
-            Set <code className="text-xs">OPENAI_API_KEY</code>,{" "}
-            <code className="text-xs">ANTHROPIC_API_KEY</code>, or{" "}
-            <code className="text-xs">GOOGLE_API_KEY</code> in{" "}
-            <code className="text-xs">services/api/.env</code> and restart the API.
+            Set <code className="text-caption-1-regular">OPENAI_API_KEY</code>,{" "}
+            <code className="text-caption-1-regular">ANTHROPIC_API_KEY</code>, or{" "}
+            <code className="text-caption-1-regular">GOOGLE_API_KEY</code> in{" "}
+            <code className="text-caption-1-regular">services/api/.env</code> and restart the API.
           </div>
         </div>
       </div>
     );
   }
   return (
-    <div className="flex flex-wrap gap-2 text-xs">
+    <div className="flex flex-wrap gap-2 text-caption-1-regular">
       <KeyChip label="OpenAI" present={status.has_openai_key} />
       <KeyChip label="Anthropic" present={status.has_anthropic_key} />
       <KeyChip label="Google" present={status.has_google_key} />
@@ -499,10 +486,10 @@ function KeyChip({ label, present }: { label: string; present: boolean }) {
   return (
     <span
       className={cn(
-        "flex items-center gap-1 px-2 py-1 rounded border text-xs",
+        "flex items-center gap-1 px-2 py-1 rounded border text-caption-1-regular",
         present
-          ? "border-up/30 bg-up/5 text-up"
-          : "border-border bg-surface-2 text-text-muted"
+          ? "border-status-lime-text bg-status-lime-background text-status-lime-text"
+          : "border-separator-border bg-background-secondary-default text-text-tertiary"
       )}
     >
       {present ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
@@ -523,24 +510,24 @@ function DecisionBanner({ result }: { result: AnalyzeResult }) {
   return (
     <div
       className={cn(
-        "p-5 rounded-lg border-2",
+        "p-5 rounded-lg border",
         tone === "up"
-          ? "border-up/40 bg-up/5"
+          ? "border-status-lime-text bg-status-lime-background"
           : tone === "down"
-          ? "border-down/40 bg-down/5"
-          : "border-border bg-surface"
+          ? "border-status-rose-text bg-status-rose-background"
+          : "border-separator-border bg-background-primary-default"
       )}
     >
-      <div className="text-xs text-text-muted mb-1">
+      <div className="text-caption-1-regular text-text-tertiary mb-1">
         Final decision · {result.symbol} · {result.trade_date}
       </div>
       <div
         className={cn(
-          "text-2xl font-semibold",
+          "text-title-1-regular font-semibold",
           tone === "up"
-            ? "text-up"
+            ? "text-status-lime-text"
             : tone === "down"
-            ? "text-down"
+            ? "text-status-rose-text"
             : "text-text-primary"
         )}
       >
@@ -582,30 +569,30 @@ function ReportSection({
   return (
     <section
       className={cn(
-        "rounded-lg border border-border bg-surface overflow-hidden transition-colors",
+        "rounded-lg border border-separator-border bg-background-primary-default overflow-hidden transition-colors",
         visible ? "opacity-100 translate-y-0" : "opacity-40 translate-y-1"
       )}
     >
       <button
         onClick={() => setUserExpanded(!expanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-surface-2/40"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-background-secondary-hover"
       >
         <div className="flex items-center gap-3">
           <Icon size={18} className={accent} />
           <div className="text-left">
             <div className={cn("font-medium", accent)}>{label}</div>
             {meta?.description && (
-              <div className="text-xs text-text-muted">{meta.description}</div>
+              <div className="text-caption-1-regular text-text-tertiary">{meta.description}</div>
             )}
           </div>
         </div>
-        <span className="text-xs text-text-muted">
+        <span className="text-caption-1-regular text-text-tertiary">
           {expanded ? "Hide" : "Show"}
         </span>
       </button>
       {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-border">
-          <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans leading-relaxed">
+        <div className="px-4 pb-4 pt-1 border-t border-separator-border">
+          <pre className="text-body-2-regular text-text-secondary whitespace-pre-wrap font-sans leading-relaxed">
             {text}
           </pre>
         </div>

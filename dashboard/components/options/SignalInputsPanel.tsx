@@ -25,13 +25,13 @@ export function SignalInputsPanel({ result }: Props) {
   // instead of crashing the whole audit column.
   if (!s || !s.chart_tf) {
     return (
-      <div className="rounded-md border border-border bg-surface">
-        <div className="flex items-baseline gap-2 px-3 h-7 border-b border-border/60">
-          <span className="text-2xs text-text-muted">
+      <div className="rounded-md border border-separator-border bg-background-primary-default">
+        <div className="flex items-baseline gap-2 px-3 h-7 border-b border-separator-border">
+          <span className="text-caption-2-regular text-text-tertiary">
             Signals
           </span>
         </div>
-        <div className="p-3 text-xs text-text-muted">
+        <div className="p-3 text-caption-1-regular text-text-tertiary">
           Signal inputs unavailable. Try refreshing the analyzer.
         </div>
       </div>
@@ -48,12 +48,12 @@ export function SignalInputsPanel({ result }: Props) {
   // Helpers for tagging signal disposition.
   const dot = (mood: "fires-for" | "fires-against" | "neutral" | "warn") =>
     mood === "fires-for"
-      ? <span className="text-up">●</span>
+      ? <span className="text-status-lime-text">●</span>
       : mood === "fires-against"
-      ? <span className="text-down">●</span>
+      ? <span className="text-status-rose-text">●</span>
       : mood === "warn"
-      ? <span className="text-warning">●</span>
-      : <span className="text-text-muted">○</span>;
+      ? <span className="text-status-yellow-text">●</span>
+      : <span className="text-text-tertiary">○</span>;
 
   // Per-row interpretation logic mirrors the backend's scoring rules.
   const rsiDaily = s.daily.rsi;
@@ -229,8 +229,8 @@ export function SignalInputsPanel({ result }: Props) {
 
   return (
     <Card>
-      <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60">
-        <span className="text-2xs text-text-muted">
+      <div className="flex items-center gap-2 px-3 h-8 border-b border-separator-border">
+        <span className="text-caption-2-regular text-text-tertiary">
           Inputs to verdict
         </span>
         <InfoIcon
@@ -238,18 +238,18 @@ export function SignalInputsPanel({ result }: Props) {
           hint={
             <div className="flex flex-col gap-1">
               <div className="font-medium mb-0.5">Signal disposition</div>
-              <div><span className="text-up">●</span> aligned, pushes score toward keep/hold</div>
-              <div><span className="text-down">●</span> against, pushes score toward close</div>
-              <div><span className="text-warning">●</span> caution, flags a risk but doesn't change direction</div>
-              <div><span className="text-text-muted">○</span> neutral, no scoring effect right now</div>
+              <div><span className="text-status-lime-text">●</span> aligned, pushes score toward keep/hold</div>
+              <div><span className="text-status-rose-text">●</span> against, pushes score toward close</div>
+              <div><span className="text-status-yellow-text">●</span> caution, flags a risk but doesn't change direction</div>
+              <div><span className="text-text-tertiary">○</span> neutral, no scoring effect right now</div>
             </div>
           }
         />
       </div>
       <CardContent className="p-0">
-        <table className="w-full border-collapse text-xs tabular">
+        <table className="w-full border-collapse text-caption-1-regular tabular">
           <thead>
-            <tr className="text-text-muted text-2xs">
+            <tr className="text-text-tertiary text-caption-2-regular">
               <th className="text-left px-3 py-1 font-medium w-4">·</th>
               <th className="text-left px-3 py-1 font-medium">Signal</th>
               <th className="text-left px-3 py-1 font-medium">Source</th>
@@ -262,21 +262,21 @@ export function SignalInputsPanel({ result }: Props) {
               <tr
                 key={r.name}
                 className={cn(
-                  "border-t border-border/40",
-                  i % 2 === 1 && "bg-surface-2/30"
+                  "border-t border-separator-border",
+                  i % 2 === 1 && "bg-background-secondary-default"
                 )}
               >
                 <td className="px-3 py-1.5">{dot(r.mood)}</td>
                 <td className="px-3 py-1.5 text-text-primary">{r.name}</td>
-                <td className="px-3 py-1.5 text-text-muted text-2xs">{r.source}</td>
+                <td className="px-3 py-1.5 text-text-tertiary text-caption-2-regular">{r.source}</td>
                 <td className="px-3 py-1.5 text-right text-text-primary">{r.value}</td>
                 <td
                   className={cn(
-                    "px-3 py-1.5 text-2xs",
-                    r.mood === "fires-for" && "text-up",
-                    r.mood === "fires-against" && "text-down",
-                    r.mood === "warn" && "text-warning",
-                    r.mood === "neutral" && "text-text-muted"
+                    "px-3 py-1.5 text-caption-2-regular",
+                    r.mood === "fires-for" && "text-status-lime-text",
+                    r.mood === "fires-against" && "text-status-rose-text",
+                    r.mood === "warn" && "text-status-yellow-text",
+                    r.mood === "neutral" && "text-text-tertiary"
                   )}
                 >
                   {r.label}

@@ -199,9 +199,9 @@ function GreekCell({
   const accentClasses: Record<typeof accent, { bar: string; text: string; bg: string }> = {
     sky: { bar: "bg-sky-400", text: "text-sky-400", bg: "bg-sky-400/10" },
     violet: { bar: "bg-violet-400", text: "text-violet-400", bg: "bg-violet-400/10" },
-    green: { bar: "bg-up", text: "text-up", bg: "bg-up/10" },
-    red: { bar: "bg-down", text: "text-down", bg: "bg-down/10" },
-    amber: { bar: "bg-amber-400", text: "text-amber-400", bg: "bg-amber-400/10" },
+    green: { bar: "bg-status-lime-text", text: "text-status-lime-text", bg: "bg-status-lime-background" },
+    red: { bar: "bg-status-rose-text", text: "text-status-rose-text", bg: "bg-status-rose-background" },
+    amber: { bar: "bg-status-orange-background-400", text: "text-status-orange-text-400", bg: "bg-status-orange-background-400/10" },
   };
   const c = accentClasses[accent];
   // ΔΔ, how much the Greek moved under the current scenario sliders.
@@ -211,17 +211,17 @@ function GreekCell({
   const shiftIsMeaningful = shift != null && Math.abs(shift) > Math.max(1e-4, Math.abs(baseline ?? 0) * 0.005);
 
   return (
-    <div className="rounded-md border border-border bg-surface p-3 flex flex-col gap-2 relative overflow-hidden">
+    <div className="rounded-md border border-separator-border bg-background-primary-default p-3 flex flex-col gap-2 relative overflow-hidden">
       <div className={cn("absolute inset-0 opacity-50", c.bg)} style={{ maskImage: "linear-gradient(to bottom, black 0%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 100%)" }} />
       <div className="relative">
         <div className="flex items-baseline gap-2">
-          <span className={cn("text-2xl font-semibold leading-none", c.text)}>{symbol}</span>
-          <span className="text-2xs text-text-muted">{name}</span>
+          <span className={cn("text-title-1-regular font-semibold leading-none", c.text)}>{symbol}</span>
+          <span className="text-caption-2-regular text-text-tertiary">{name}</span>
           {shiftIsMeaningful && (
             <span
               className={cn(
-                "ml-auto text-2xs tabular px-1 py-0.5 rounded leading-none",
-                shift! >= 0 ? "text-up bg-up/10" : "text-down bg-down/10",
+                "ml-auto text-caption-2-regular tabular px-1 py-0.5 rounded leading-none",
+                shift! >= 0 ? "text-status-lime-text bg-status-lime-background" : "text-status-rose-text bg-status-rose-background",
               )}
               title={`From baseline ${rawFmt(baseline!)}`}
             >
@@ -229,19 +229,19 @@ function GreekCell({
             </span>
           )}
         </div>
-        <div className="mt-2 text-base font-medium tabular-nums text-text-primary">
+        <div className="mt-2 text-headline-regular font-medium tabular-nums text-text-primary">
           {raw != null ? rawFmt(raw) : "n/a"}
         </div>
-        <div className="text-2xs tabular-nums text-text-secondary">
+        <div className="text-caption-2-regular tabular-nums text-text-secondary">
           {positional != null ? posFmt(positional) : "n/a"}
         </div>
-        <div className="h-1 rounded-full bg-surface-2 mt-2 overflow-hidden">
+        <div className="h-1 rounded-full bg-background-secondary-default mt-2 overflow-hidden">
           <div
             className={cn("h-full rounded-full transition-colors duration-500", c.bar)}
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-2xs text-text-muted leading-snug mt-1.5">{hint}</p>
+        <p className="text-caption-2-regular text-text-tertiary leading-snug mt-1.5">{hint}</p>
       </div>
     </div>
   );
@@ -274,27 +274,27 @@ function ScenarioControls({
   const tRemDays = Math.max(0, dteDays - daysFwd);
 
   return (
-    <div className="rounded-md border border-border bg-surface">
+    <div className="rounded-md border border-separator-border bg-background-primary-default">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center gap-2 px-3 h-7 border-b border-border/60 text-left hover:bg-surface-2/40 transition-colors"
+        className="w-full flex items-center gap-2 px-3 h-7 border-b border-separator-border text-left hover:bg-background-secondary-hover transition-colors"
       >
-        <span className="text-2xs text-text-muted">
+        <span className="text-caption-2-regular text-text-tertiary">
           What-if scenario
         </span>
-        <span className="text-2xs tabular text-text-muted">
+        <span className="text-caption-2-regular tabular text-text-tertiary">
           sliders drive Greeks via BS · default = baseline
         </span>
         {active && whatIf && (
           <span className={cn(
-            "ml-auto text-2xs tabular font-medium",
-            whatIf.pnl >= 0 ? "text-up" : "text-down",
+            "ml-auto text-caption-2-regular tabular font-medium",
+            whatIf.pnl >= 0 ? "text-status-lime-text" : "text-status-rose-text",
           )}>
             P/L {whatIf.pnl >= 0 ? "+" : ""}${whatIf.pnl.toFixed(0)}
           </span>
         )}
-        <span className={cn("text-2xs text-text-muted transition-transform", active && "ml-2", open && "rotate-180")}>
+        <span className={cn("text-caption-2-regular text-text-tertiary transition-transform", active && "ml-2", open && "rotate-180")}>
           ▾
         </span>
       </button>
@@ -353,18 +353,18 @@ function ScenarioControls({
           />
 
           {active && (
-            <div className="md:col-span-3 mt-1 pt-2 border-t border-border/40 flex items-baseline justify-between gap-3 flex-wrap">
-              <span className="text-2xs text-text-muted">
+            <div className="md:col-span-3 mt-1 pt-2 border-t border-separator-border flex items-baseline justify-between gap-3 flex-wrap">
+              <span className="text-caption-2-regular text-text-tertiary">
                 Reading the scenario
               </span>
-              <span className="text-xs text-text-secondary flex-1 min-w-0">
+              <span className="text-caption-1-regular text-text-secondary flex-1 min-w-0">
                 Greek values above swap to what they'd be at <b>${newSpot.toFixed(2)}</b>,
                 IV <b>{(newIv * 100).toFixed(1)}%</b>, in <b>{daysFwd}d</b>.
                 ΔΔ chip = shift from baseline.
               </span>
               <button
                 type="button" onClick={onReset}
-                className="text-2xs text-text-muted hover:text-text-secondary"
+                className="text-caption-2-regular text-text-tertiary hover:text-text-secondary"
               >
                 reset all
               </button>
@@ -397,21 +397,21 @@ function ScenarioSlider({
   return (
     <div className="flex flex-col gap-1.5 min-w-0">
       <div className="flex items-baseline gap-2">
-        <span className="text-2xs text-text-muted">{label}</span>
-        <span className="text-sm tabular font-semibold leading-none" style={{ color: accent }}>
+        <span className="text-caption-2-regular text-text-tertiary">{label}</span>
+        <span className="text-body-2-regular tabular font-semibold leading-none" style={{ color: accent }}>
           {valueText}
         </span>
         {!isDefault && (
           <button
             type="button" onClick={onReset}
-            className="ml-auto text-2xs text-text-muted hover:text-text-secondary"
+            className="ml-auto text-caption-2-regular text-text-tertiary hover:text-text-secondary"
             title="Reset"
           >
             reset
           </button>
         )}
       </div>
-      <span className="text-2xs tabular text-text-muted leading-none">{subText}</span>
+      <span className="text-caption-2-regular tabular text-text-tertiary leading-none">{subText}</span>
       <input
         type="range"
         min={min} max={max} step={step} value={value}
@@ -430,10 +430,10 @@ function ScenarioSlider({
               type="button"
               onClick={() => onChange(p.value)}
               className={cn(
-                "px-2 py-0.5 rounded text-2xs tabular border transition-colors",
+                "px-2 py-0.5 rounded text-caption-2-regular tabular border transition-colors",
                 active
-                  ? "border-transparent text-bg font-semibold"
-                  : "border-border text-text-muted hover:text-text-secondary hover:border-text-muted/50",
+                  ? "border-transparent text-background-full font-semibold"
+                  : "border-separator-border text-text-tertiary hover:text-text-secondary hover:border-foreground-icon-quaternary/50",
               )}
               style={active ? { backgroundColor: accent } : undefined}
             >

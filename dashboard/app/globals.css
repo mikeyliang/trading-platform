@@ -1,195 +1,187 @@
-/* Hallmark · shape: app screen · genre: modern-minimal · theme: Wayfind (deal 2/3, seed rule-one-options-trading-6e90·b41c3488·2026-11-03·r0) · redesign: full
- * nav: kept, the 64px labeled rail · signature: the net liquidation plate, one amber figure on a field of ink at the head of the board · states: loading, empty, full · wayfind: platform (light), night (.dark, default)
- * axes: light/mono/cool · posture: committed · contrast: pass · modes: light+dark · scope: app · v2.0.0 */
-/* Hallmark · pre-emit critique: P4 H4 E3 S4 R4 V4 · weakest: E, cobalt only on the live tab, the selected row and the one primary button; the plate carries the whole emphasis budget */
-@import url("./tokens.css");
-@import url("./base.css");
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: BoardUI (by request) · redesign: full
+ * nav: BoardUI floating sidebar on the page ground, 56px top bar, 28px status strip · signature: the book of spreads, one table with each short leg's delta against its exit trigger · states: loading, empty, error, full · modes: light+dark
+ * axes: light/grotesk-sans/cool · posture: restrained · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V4 · weakest: R, the chart card and the positions card both wanted toolbars; the chart keeps one, the positions table takes a tab row */
+@import "../styles/globals.css";
+@plugin "tailwindcss-animate";
 
 /* ───────────────────────────────────────────────────────────────────────────
-   Layout: a one-screen trading desk. Fixed shell (rail, header, footer),
-   scrolling panels inside. The page is a departure board for a book of
-   spreads: square, bordered, mono, read at a glance.
+   The desk's own tokens, every one a BoardUI semantic token under another
+   name, so the trading components keep their class vocabulary while the
+   whole surface rides BoardUI's light and dark palettes.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --c-accent-fg: var(--color-accent-600);
+  --c-up: var(--color-status-lime-text);
+  --c-up-soft: var(--color-status-lime-background);
+  --c-down: var(--color-status-rose-text);
+  --c-down-soft: var(--color-status-rose-background);
+  --c-warning: var(--color-status-yellow-text);
+  --c-warning-soft: var(--color-status-yellow-background);
+  --c-amber: var(--color-status-orange-text);
+
+  /* Chart chrome, read by lib/chartTheme.ts at chart creation. */
+  --chart-bg: var(--color-background-primary-default);
+  --chart-grid: color-mix(in srgb, var(--color-text-primary) 6%, var(--color-background-primary-default));
+  --chart-axis: color-mix(in srgb, var(--color-text-primary) 12%, var(--color-background-primary-default));
+  --chart-crosshair: var(--color-text-tertiary);
+  --chart-axis-text: var(--color-text-tertiary);
+  --chart-text: var(--color-text-primary);
+}
+.dark {
+  --c-accent-fg: var(--color-accent-400);
+}
+
+@theme inline {
+  --color-bg: var(--color-background-full);
+  --color-surface: var(--color-background-primary-default);
+  --color-surface-2: var(--color-background-secondary-default);
+  --color-surface-3: var(--color-background-tertiary-default);
+  --color-border: var(--color-border-button-default);
+  --color-border-strong: var(--color-separator-border-strong);
+  --color-text-muted: var(--color-text-tertiary);
+  --color-accent: var(--color-accent-500);
+  --color-accent-fg: var(--c-accent-fg);
+  --color-up: var(--c-up);
+  --color-up-soft: var(--c-up-soft);
+  --color-down: var(--c-down);
+  --color-down-soft: var(--c-down-soft);
+  --color-warning: var(--c-warning);
+  --color-warning-soft: var(--c-warning-soft);
+  --color-amber: var(--c-amber);
+  --color-on-fill: var(--color-text-white);
+  --color-ink: var(--color-text-primary);
+
+  --shadow-pop: var(--shadow-dropdown);
+  --shadow-ring: 0 0 0 1px var(--color-border-button-default);
+  --shadow-bar: inset 0 0 0 2px var(--color-separator-border-strong);
+  --shadow-thumb: var(--shadow-2xs);
+}
+
+@theme {
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
+  /* Series palette for the price and indicator charts. Tuned to read on
+     both BoardUI surfaces; chrome (grid, axis, text) comes from tokens. */
+  --color-chart-candle-up: #26a69a;
+  --color-chart-candle-down: #ef5350;
+  --color-chart-ema-fast: #3392ff;
+  --color-chart-ema-slow: #a78bfa;
+  --color-chart-vwap: #facc15;
+  --color-chart-rsi: #22d3ee;
+  --color-chart-macd-line: #3392ff;
+  --color-chart-macd-signal: #f59e0b;
+  --color-chart-smi-line: #3392ff;
+  --color-chart-smi-signal: #f59e0b;
+  --color-chart-forecast-cone: #38bdf8;
+  --color-chart-forecast-chronos: #38bdf8;
+  --color-chart-forecast-momentum: #fb923c;
+  --color-chart-forecast-meanrev: #34d399;
+  --color-chart-forecast-martingale: #94a3b8;
+  --color-chart-ref-strike: #fbbf24;
+  --color-chart-ref-be: #38bdf8;
+  --color-chart-ref-sigma: #38bdf8;
+  --color-chart-pnl-today: #7dd3fc;
+  --color-chart-pnl-halfway: #38bdf8;
+  --color-chart-pnl-expiry: #0ea5e9;
+  --color-chart-pnl-profit: #10b981;
+  --color-chart-pnl-loss: #f43f5e;
+  --color-chart-pnl-target: #d946ef;
+
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-slide-up: slide-up 180ms ease-out;
+  --animate-accordion-down: accordion-down 200ms ease-out;
+  --animate-accordion-up: accordion-up 200ms ease-out;
+  @keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes slide-up { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+  @keyframes accordion-down { from { height: 0 } to { height: var(--radix-accordion-content-height) } }
+  @keyframes accordion-up { from { height: var(--radix-accordion-content-height) } to { height: 0 } }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Layout: a one-screen trading desk. Fixed shell (sidebar, top bar, status
+   strip), scrolling panels inside.
    ─────────────────────────────────────────────────────────────────────────── */
 html,
 body {
-  font-size: 13px;
-  line-height: 1.4;
   height: 100%;
   overflow: hidden;
+  overflow-x: clip;
+}
+body {
+  font-variant-numeric: tabular-nums;
 }
 
-/* Scrollbars: thin, themed. */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgb(var(--c-border));
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--c-border-strong));
-}
-
-/* Figures: every number sits in the mono face on a fixed cell. */
+/* Figures: tabular Inter, so a column of prices lines up. */
 .tabular,
 .figure {
-  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
+  font-feature-settings: "tnum", "ss01";
 }
 
-/* The plate: a raised field holding the one amber figure. */
-.plate {
-  background: rgb(var(--c-plate));
-  color: rgb(var(--c-plate-fg));
-}
-.plate .figure {
-  color: rgb(var(--c-amber));
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-/* Labels inside a pill, a button or a chip center on their cap height, not
-   their line box, so they no longer sit 2px low. */
+/* Labels inside a pill or chip centre on their cap height. */
 .cap {
   line-height: 1;
   text-box: trim-both cap alphabetic;
 }
 
-/* One icon set, one stroke weight, one optical color. */
-svg.lucide {
-  stroke-width: 1.75;
+/* Section label: a step smaller, sentence case. */
+.caption {
+  font-size: var(--text-caption-1-medium);
+  line-height: var(--text-caption-1-medium--line-height);
+  font-weight: 500;
+  color: var(--color-text-secondary);
 }
 
-/* Section label: body face, a step smaller, sentence case, untracked. */
-.caption {
-  font-size: 11px;
-  line-height: 14px;
-  font-weight: 500;
-  color: rgb(var(--c-text-3));
-}
+/* Scrollbars: thin, themed. */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-background-tertiary-default); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-background-quaternary-default); background-clip: padding-box; }
+::selection { background: color-mix(in srgb, var(--color-accent-500) 25%, transparent); }
 
 /* chat markdown styling */
-.prose-chat {
-  font-size: 12px;
-  line-height: 1.55;
-  color: rgb(var(--c-text-2));
-}
+.prose-chat { font-size: 13px; line-height: 1.55; color: var(--color-text-secondary); }
 .prose-chat p { margin: 0 0 0.5em 0; }
 .prose-chat p:last-child { margin-bottom: 0; }
-.prose-chat strong { color: rgb(var(--c-text)); font-weight: 800; }
-.prose-chat em { color: rgb(var(--c-text-2)); }
-.prose-chat code {
-  background: rgb(var(--c-surface-2));
-  border: 1px solid rgb(var(--c-border));
-  padding: 0 var(--space-2xs);
-  font-size: 11px;
-  color: rgb(var(--c-text));
-}
-.prose-chat pre {
-  background: rgb(var(--c-bg));
-  border: 1px solid rgb(var(--c-border));
-  padding: var(--space-xs);
-  margin: 0.5em 0;
-  overflow-x: auto;
-}
-.prose-chat pre code {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  font-size: 11px;
-}
-.prose-chat ul, .prose-chat ol {
-  margin: 0.25em 0 0.5em 0;
-  padding-left: 1.25em;
-}
+.prose-chat strong { color: var(--color-text-primary); font-weight: 600; }
+.prose-chat em { color: var(--color-text-secondary); }
+.prose-chat code { background: var(--color-background-secondary-default); border: 1px solid var(--color-border-button-default); border-radius: 4px; padding: 0 4px; font-size: 12px; font-family: var(--font-mono); color: var(--color-text-primary); }
+.prose-chat pre { background: var(--color-background-secondary-default); border: 1px solid var(--color-border-button-default); border-radius: 10px; padding: 8px 12px; margin: 0.5em 0; overflow-x: auto; }
+.prose-chat pre code { background: transparent; border: 0; padding: 0; font-size: 12px; }
+.prose-chat ul, .prose-chat ol { margin: 0.25em 0 0.5em 0; padding-left: 1.25em; }
 .prose-chat li { margin: 0.15em 0; }
-.prose-chat a { color: rgb(var(--c-accent-fg)); text-decoration: underline; }
-.prose-chat h1, .prose-chat h2, .prose-chat h3 {
-  color: rgb(var(--c-text));
-  font-weight: 800;
-  margin: 0.5em 0 0.25em 0;
-  font-size: 12px;
-}
-.prose-chat hr {
-  border: 0;
-  border-top: 1px solid rgb(var(--c-border));
-  margin: 0.75em 0;
-}
-.prose-chat blockquote {
-  border-left: 2px solid rgb(var(--c-border-strong));
-  padding-left: 0.75em;
-  margin: 0.5em 0;
-  color: rgb(var(--c-text-2));
-}
+.prose-chat a { color: var(--color-accent-fg); text-decoration: underline; }
+.prose-chat h1, .prose-chat h2, .prose-chat h3 { color: var(--color-text-primary); font-weight: 600; margin: 0.5em 0 0.25em 0; font-size: 13px; }
+.prose-chat hr { border: 0; border-top: 1px solid var(--color-separator-border); margin: 0.75em 0; }
+.prose-chat blockquote { border-left: 2px solid var(--color-border-button-hover); padding-left: 0.75em; margin: 0.5em 0; color: var(--color-text-secondary); }
 
 /* Range slider. Track color is set inline via the `background` style on the
    input (so the filled portion picks up the per-slider accent). */
-input[type="range"].slider-range {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  outline: none;
-  cursor: pointer;
-}
-input[type="range"].slider-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
-  background: rgb(var(--c-text));
-  border: 2px solid rgb(var(--c-surface));
-  cursor: grab;
-}
-input[type="range"].slider-range::-webkit-slider-thumb:active {
-  cursor: grabbing;
-}
-input[type="range"].slider-range::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 0;
-  background: rgb(var(--c-text));
-  border: 2px solid rgb(var(--c-surface));
-  cursor: grab;
-}
+input[type="range"].slider-range { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 999px; outline: none; cursor: pointer; }
+input[type="range"].slider-range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 999px; background: var(--color-background-primary-default); border: 1px solid var(--color-border-button-hover); box-shadow: var(--shadow-xs); cursor: grab; }
+input[type="range"].slider-range::-webkit-slider-thumb:active { cursor: grabbing; }
+input[type="range"].slider-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 999px; background: var(--color-background-primary-default); border: 1px solid var(--color-border-button-hover); cursor: grab; }
 
 /* Scenario sliders (P&L profile): a transparent native range layered over a
    custom-drawn track + thumb. */
-input[type="range"].pnl-scrub {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  outline: none;
-  cursor: grab;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-}
+input[type="range"].pnl-scrub { -webkit-appearance: none; appearance: none; background: transparent; outline: none; cursor: grab; width: 100%; height: 100%; margin: 0; }
 input[type="range"].pnl-scrub:active { cursor: grabbing; }
-input[type="range"].pnl-scrub::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 22px;
-  height: 22px;
-  background: transparent;
-  border: none;
-  cursor: grab;
-}
+input[type="range"].pnl-scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; background: transparent; border: none; cursor: grab; }
 input[type="range"].pnl-scrub::-webkit-slider-thumb:active { cursor: grabbing; }
-input[type="range"].pnl-scrub::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border: none;
-  background: transparent;
-  cursor: grab;
-}
+input[type="range"].pnl-scrub::-moz-range-thumb { width: 22px; height: 22px; border: none; background: transparent; cursor: grab; }
 input[type="range"].pnl-scrub::-moz-range-track { background: transparent; }
 
-/* Loading skeleton: a flat paper-2 block. Wayfind keeps still, so no sweep. */
-.skeleton {
-  background-color: rgb(var(--c-surface-2));
+/* Loading skeleton: a flat secondary block. */
+.skeleton { background-color: var(--color-background-secondary-default); border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+/* Tailwind v4 defaults borders to currentColor; the desk's hairlines are
+   always the separator token unless a class says otherwise. */
+@layer base {
+  *, ::before, ::after { border-color: var(--color-separator-border); }
 }

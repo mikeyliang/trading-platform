@@ -118,29 +118,57 @@ export function chartChrome() {
       accent: CHART.accent,
     };
   }
-  const css = getComputedStyle(document.documentElement);
-  const read = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
-  // `--c-*` hold space-separated RGB triplets (see app/tokens.css).
-  const rgb = (name: string, fallback: string, alpha = 1) => {
-    const t = css.getPropertyValue(name).trim();
-    if (!t) return fallback;
-    const [r, g, b] = t.split(/\s+/);
-    // lightweight-charts parses the comma form only.
-    return alpha < 1 ? `rgba(${r},${g},${b},${alpha})` : `rgb(${r},${g},${b})`;
+  // Tokens resolve through var() chains to oklch and color-mix(), which
+  // lightweight-charts cannot parse. A canvas context normalises any CSS
+  // colour the browser understands to #rrggbb.
+  // Paint one pixel and read it back: the only way to turn an oklch or
+  // color-mix() value into the rgb() string lightweight-charts accepts.
+  const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = 1;
+  const probe = canvas.getContext("2d", { willReadFrequently: true });
+  const resolve = (value: string, fallback: string): string => {
+    if (!value || !probe) return fallback;
+    probe.clearRect(0, 0, 1, 1);
+    probe.fillStyle = "#000";
+    probe.fillStyle = value;
+    probe.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = probe.getImageData(0, 0, 1, 1).data;
+    if (a === 0) return fallback;
+    const hex = (n: number) => n.toString(16).padStart(2, "0");
+    return `#${hex(r)}${hex(g)}${hex(b)}`;
   };
-  return {
+  const el = document.createElement("span");
+  el.style.position = "absolute";
+  el.style.visibility = "hidden";
+  document.body.appendChild(el);
+  const read = (name: string, fallback: string) => {
+    el.style.color = `var(${name})`;
+    const c = getComputedStyle(el).color;
+    return resolve(c, fallback);
+  };
+  const withAlpha = (hex: string, alpha: number) => {
+    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(hex);
+    if (!m) return hex;
+    return `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${alpha})`;
+  };
+  const out = {
     bg: read("--chart-bg", CHART.bg),
     grid: read("--chart-grid", CHART.grid),
     axis: read("--chart-axis", CHART.axis),
     crosshair: read("--chart-crosshair", CHART.crosshair),
     axisText: read("--chart-axis-text", CHART.axisText),
     text: read("--chart-text", CHART.text),
-    up: rgb("--c-up", CHART.candle.up),
-    down: rgb("--c-down", CHART.candle.down),
-    upSoft: rgb("--c-up", CHART.candle.up, 0.35),
-    downSoft: rgb("--c-down", CHART.candle.down, 0.35),
-    accent: rgb("--c-accent", CHART.accent),
+    up: read("--c-up", CHART.candle.up),
+    down: read("--c-down", CHART.candle.down),
+    upSoft: "",
+    downSoft: "",
+    accent: read("--color-accent-500", CHART.accent),
   };
+  out.upSoft = withAlpha(out.up, 0.35);
+  out.downSoft = withAlpha(out.down, 0.35);
+  el.remove();
+  return out;
 }
 
 export const baseChartOptions = () => {
@@ -150,7 +178,7 @@ export const baseChartOptions = () => {
       background: { type: ColorType.Solid, color: c.bg },
       textColor: c.axisText,
       fontSize: 11,
-      fontFamily: "var(--font-mono), ui-monospace, SFMono-Regular, monospace",
+      fontFamily: "var(--font-inter), Inter, system-ui, sans-serif",
     },
     grid: {
       vertLines: { color: c.grid },

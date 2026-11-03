@@ -251,49 +251,49 @@ export function PnlProfileChart({
       {/* ── Headline: P/L at the cursor price, for the chosen date ─────── */}
       <div className="flex items-end gap-5 px-1 mb-2.5 flex-wrap">
         <div className="flex flex-col gap-0.5">
-          <span className="text-2xs text-text-muted">
+          <span className="text-caption-2-regular text-text-tertiary">
             P/L at ${cur.price.toFixed(2)}
-            <span className="ml-1 text-text-muted/70">
+            <span className="ml-1 text-text-tertiary/70">
               ({cur.movePct >= 0 ? "+" : ""}{cur.movePct.toFixed(1)}%)
             </span>
-            <span className="ml-1.5 px-1 rounded bg-surface-2 text-text-secondary">{dateLabel}</span>
+            <span className="ml-1.5 px-1 rounded bg-background-secondary-default text-text-secondary">{dateLabel}</span>
           </span>
           <div className="flex items-baseline gap-2">
-            <span className={cn("text-[26px] tabular font-bold leading-none", cur.live >= 0 ? "text-up" : "text-down")}>
+            <span className={cn("text-[26px] tabular font-bold leading-none", cur.live >= 0 ? "text-status-lime-text" : "text-status-rose-text")}>
               {fmtPnl(cur.live)}
             </span>
             {cur.retPct != null && (
-              <span className={cn("text-xs tabular font-semibold", cur.live >= 0 ? "text-up" : "text-down")}>
+              <span className={cn("text-caption-1-regular tabular font-semibold", cur.live >= 0 ? "text-status-lime-text" : "text-status-rose-text")}>
                 {cur.retPct >= 0 ? "+" : ""}{cur.retPct.toFixed(0)}%
               </span>
             )}
           </div>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-2xs text-text-muted">at expiry</span>
-          <span className={cn("text-[15px] tabular font-semibold leading-tight", cur.exp >= 0 ? "text-up" : "text-down")}>
+          <span className="text-caption-2-regular text-text-tertiary">at expiry</span>
+          <span className={cn("text-[15px] tabular font-semibold leading-tight", cur.exp >= 0 ? "text-status-lime-text" : "text-status-rose-text")}>
             {fmtPnl(cur.exp)}
           </span>
         </div>
         <div className="ml-auto flex items-center gap-3">
           {(pop != null || probItm != null) && (
-            <div className="flex items-center gap-2 text-2xs tabular">
+            <div className="flex items-center gap-2 text-caption-2-regular tabular">
               {pop != null && (
-                <span><span className="text-text-muted">POP </span>
-                  <span className={cn("font-semibold", pop >= 0.6 ? "text-up" : pop >= 0.4 ? "text-warning" : "text-down")}>
+                <span><span className="text-text-tertiary">POP </span>
+                  <span className={cn("font-semibold", pop >= 0.6 ? "text-status-lime-text" : pop >= 0.4 ? "text-status-yellow-text" : "text-status-rose-text")}>
                     {(pop * 100).toFixed(0)}%</span></span>
               )}
               {probItm != null && (
-                <span><span className="text-text-muted">P(ITM) </span>
+                <span><span className="text-text-tertiary">P(ITM) </span>
                   <span className="text-text-primary font-semibold">{(probItm * 100).toFixed(0)}%</span></span>
               )}
             </div>
           )}
           {scenarioActive && (
             <button type="button" onClick={resetAll}
-              className="flex items-center gap-1.5 text-2xs text-warning hover:text-text-primary transition-colors"
+              className="flex items-center gap-1.5 text-caption-2-regular text-status-yellow-text hover:text-text-primary transition-colors"
               title="Reset date + IV to now">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning" />
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-status-yellow-text" />
               reset
             </button>
           )}
@@ -428,12 +428,12 @@ export function PnlProfileChart({
           </g>
         )}
       </svg>
-      <p className="text-2xs text-text-muted text-center -mt-1 mb-1">
+      <p className="text-caption-2-regular text-text-tertiary text-center -mt-1 mb-1">
         drag anywhere on the chart to read P/L at any price
       </p>
 
       {/* ── Scenario controls, Date is the hero, IV + Range secondary ── */}
-      <div className="mt-2 pt-3 border-t border-border/40 flex flex-col gap-3.5 px-1">
+      <div className="mt-2 pt-3 border-t border-separator-border flex flex-col gap-3.5 px-1">
         <ScenarioSlider
           label="Date" accent={CHART.pnl.today}
           valueText={dateLabel} subText={`${tRemainingDays}d to expiry`}
@@ -502,15 +502,15 @@ function ScenarioSlider({
     <div className="flex flex-col gap-1">
       {/* header line */}
       <div className="flex items-baseline gap-2">
-        <span className="w-10 shrink-0 text-2xs text-text-muted">{label}</span>
-        <span className="text-sm tabular font-semibold leading-none" style={{ color: accent }}>{valueText}</span>
-        {subText && <span className="text-2xs tabular text-text-muted leading-none">{subText}</span>}
+        <span className="w-10 shrink-0 text-caption-2-regular text-text-tertiary">{label}</span>
+        <span className="text-body-2-regular tabular font-semibold leading-none" style={{ color: accent }}>{valueText}</span>
+        {subText && <span className="text-caption-2-regular tabular text-text-tertiary leading-none">{subText}</span>}
         <button
           type="button" onClick={onReset}
           tabIndex={isDefault ? -1 : 0} aria-hidden={isDefault}
           className={cn(
-            "ml-auto text-2xs transition-colors",
-            isDefault ? "invisible pointer-events-none" : "text-text-muted hover:text-text-primary",
+            "ml-auto text-caption-2-regular transition-colors",
+            isDefault ? "invisible pointer-events-none" : "text-text-tertiary hover:text-text-primary",
           )}
         >
           reset
@@ -537,7 +537,7 @@ function ScenarioSlider({
         {/* visible thumb + value bubble */}
         <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none"
           style={{ left: `${clamp(pct)}%` }}>
-          <div className="w-[15px] h-[15px] rounded-full border-2"
+          <div className="w-[15px] h-[15px] rounded-full border"
             style={{ background: CHART.bg, borderColor: accent, boxShadow: `0 0 0 3px ${accent}22` }} />
         </div>
         {/* transparent native range on top for interaction */}
@@ -561,9 +561,9 @@ function ScenarioSlider({
               <button
                 key={`lbl-${p.label}`} type="button" onClick={() => onChange(p.value)}
                 className={cn(
-                  "absolute top-0 text-2xs tabular leading-none transition-colors",
+                  "absolute top-0 text-caption-2-regular tabular leading-none transition-colors",
                   anchor,
-                  active ? "font-semibold" : "text-text-muted hover:text-text-secondary",
+                  active ? "font-semibold" : "text-text-tertiary hover:text-text-secondary",
                 )}
                 style={{ left: anchor === "-translate-x-1/2" ? `${tpct}%` : undefined, color: active ? accent : undefined }}
               >

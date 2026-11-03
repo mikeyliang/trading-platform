@@ -279,15 +279,15 @@ export function BacktestChart({ result }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3 px-1">
-        <div className="text-2xs text-text-muted">
+        <div className="text-caption-2-regular text-text-tertiary">
           {result.symbol} · {result.timeframe} · {result.start_date} → {result.end_date}
         </div>
-        <div className="ml-auto flex items-center gap-2 text-2xs">
+        <div className="ml-auto flex items-center gap-2 text-caption-2-regular">
           <button
             onClick={() => setShowEma((v) => !v)}
             className={cn(
               "px-1.5 h-5 rounded transition-colors",
-              showEma ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
+              showEma ? "bg-background-tertiary-default text-text-primary" : "text-text-tertiary hover:text-text-secondary"
             )}
           >
             EMA
@@ -296,7 +296,7 @@ export function BacktestChart({ result }: Props) {
             onClick={() => setShowSmi((v) => !v)}
             className={cn(
               "px-1.5 h-5 rounded transition-colors",
-              showSmi ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
+              showSmi ? "bg-background-tertiary-default text-text-primary" : "text-text-tertiary hover:text-text-secondary"
             )}
           >
             SMI
@@ -304,13 +304,13 @@ export function BacktestChart({ result }: Props) {
         </div>
       </div>
 
-      <div ref={priceRef} className="w-full h-72 bg-bg border border-border rounded-md overflow-hidden" />
+      <div ref={priceRef} className="w-full h-72 bg-background-full border border-separator-border rounded-md overflow-hidden" />
 
       {showSmi && (
-        <div className="border border-border rounded-md overflow-hidden bg-bg">
-          <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-            <span className="text-2xs text-text-muted">SMI</span>
-            <div className="ml-auto flex items-center gap-3 text-2xs tabular text-text-muted">
+        <div className="border border-separator-border rounded-md overflow-hidden bg-background-full">
+          <div className="flex items-center gap-3 px-3 h-6 border-b border-separator-border">
+            <span className="text-caption-2-regular text-text-tertiary">SMI</span>
+            <div className="ml-auto flex items-center gap-3 text-caption-2-regular tabular text-text-tertiary">
               <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-chart-ema-fast" /> smi</span>
               <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-chart-macd-signal" /> signal</span>
             </div>
@@ -319,17 +319,17 @@ export function BacktestChart({ result }: Props) {
         </div>
       )}
 
-      <div className="border border-border rounded-md overflow-hidden bg-bg">
-        <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-          <span className="text-2xs text-text-muted">Equity</span>
-          <span className="ml-auto text-2xs tabular text-text-muted">
+      <div className="border border-separator-border rounded-md overflow-hidden bg-background-full">
+        <div className="flex items-center gap-3 px-3 h-6 border-b border-separator-border">
+          <span className="text-caption-2-regular text-text-tertiary">Equity</span>
+          <span className="ml-auto text-caption-2-regular tabular text-text-tertiary">
             ${result.initial_capital.toLocaleString()} → ${result.final_capital.toLocaleString()}
           </span>
         </div>
         <div ref={eqRef} className="w-full h-28" />
       </div>
 
-      {loading && <div className="text-2xs text-text-muted text-center">loading bars…</div>}
+      {loading && <div className="text-caption-2-regular text-text-tertiary text-center">loading bars…</div>}
     </div>
   );
 }

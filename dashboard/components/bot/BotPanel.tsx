@@ -14,20 +14,20 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toaster";
-import { Bot as BotIcon, Loader2, Play, ShieldAlert, ShieldCheck, Square, X } from "lucide-react";
+import { RiRobot2Line as BotIcon, RiLoader4Line as Loader2, RiPlayFill as Play, RiShieldFlashLine as ShieldAlert, RiShieldCheckLine as ShieldCheck, RiStopFill as Square, RiCloseLine as X } from "@remixicon/react";
 import { NewsAnalystCard } from "@/components/sim/NewsAnalystCard";
 import { EquityCurveChart } from "@/components/backtest/EquityCurveChart";
 
 const TIMEFRAMES = ["15m", "30m", "1h", "4h", "1d"];
 
 const KIND_STYLE: Record<string, { text: string; chip: string }> = {
-  entry:     { text: "text-up",          chip: "bg-up/10 text-up" },
-  exit:      { text: "text-text-primary", chip: "bg-surface-3 text-text-primary" },
-  blocked:   { text: "text-amber-400",   chip: "bg-amber-400/10 text-amber-400" },
-  news:      { text: "text-text-muted",  chip: "bg-surface-2 text-text-muted" },
-  data:      { text: "text-text-muted",  chip: "bg-surface-2 text-text-muted" },
-  error:     { text: "text-down",        chip: "bg-down/10 text-down" },
-  lifecycle: { text: "text-accent",      chip: "bg-accent/10 text-accent" },
+  entry:     { text: "text-status-lime-text",          chip: "bg-status-lime-background text-status-lime-text" },
+  exit:      { text: "text-text-primary", chip: "bg-background-tertiary-default text-text-primary" },
+  blocked:   { text: "text-status-orange-text-400",   chip: "bg-status-orange-background-400/10 text-status-orange-text-400" },
+  news:      { text: "text-text-tertiary",  chip: "bg-background-secondary-default text-text-tertiary" },
+  data:      { text: "text-text-tertiary",  chip: "bg-background-secondary-default text-text-tertiary" },
+  error:     { text: "text-status-rose-text",        chip: "bg-status-rose-background text-status-rose-text" },
+  lifecycle: { text: "text-accent-500",      chip: "bg-status-blue-background text-accent-500" },
 };
 
 type LogFilter = "all" | "trades" | "blocked" | "system";
@@ -144,7 +144,7 @@ export function BotPanel() {
     .reverse();
 
   return (
-    <div className="flex h-full min-h-0 gap-4 p-4 bg-bg overflow-hidden">
+    <div className="flex h-full min-h-0 gap-4 p-4 bg-background-full overflow-hidden">
       {/* ════ left rail: control ════ */}
       <div className="w-72 shrink-0 flex flex-col gap-3 min-h-0 overflow-y-auto">
         <Card>
@@ -158,10 +158,10 @@ export function BotPanel() {
             {/* sim gate */}
             <div
               className={cn(
-                "rounded border px-2 py-1.5 flex items-start gap-1.5 text-2xs leading-relaxed",
+                "rounded border px-2 py-1.5 flex items-start gap-1.5 text-caption-2-regular leading-relaxed",
                 gate?.validated
-                  ? "border-up/30 bg-up/5 text-up"
-                  : "border-amber-400/30 bg-amber-400/5 text-amber-400"
+                  ? "border-status-lime-text bg-status-lime-background text-status-lime-text"
+                  : "border-amber-400/30 bg-status-orange-background-400/5 text-status-orange-text-400"
               )}
             >
               {gate?.validated
@@ -195,10 +195,10 @@ export function BotPanel() {
             <Field label={`Symbols (${symbols.length}/12)`}>
               <div className="flex flex-wrap gap-1">
                 {symbols.map((s) => (
-                  <span key={s} className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded bg-surface-2 text-2xs tabular">
+                  <span key={s} className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded bg-background-secondary-default text-caption-2-regular tabular">
                     {s}
                     {!running && (
-                      <button onClick={() => setSymbols(symbols.filter((x) => x !== s))} className="text-text-muted hover:text-down">
+                      <button onClick={() => setSymbols(symbols.filter((x) => x !== s))} className="text-text-tertiary hover:text-status-rose-text">
                         <X size={9} />
                       </button>
                     )}
@@ -241,8 +241,8 @@ export function BotPanel() {
                 type="button"
                 onClick={() => !running && setNewsGate((v) => !v)}
                 className={cn(
-                  "flex items-center justify-between h-7 px-2 rounded border text-2xs transition-colors",
-                  newsGate ? "border-accent/40 bg-accent/5 text-accent" : "border-border text-text-muted",
+                  "flex items-center justify-between h-7 px-2 rounded border text-caption-2-regular transition-colors",
+                  newsGate ? "border-accent-500 bg-status-blue-background text-accent-500" : "border-separator-border text-text-tertiary",
                   running && "opacity-60 cursor-default"
                 )}
               >
@@ -264,12 +264,12 @@ export function BotPanel() {
             )}
             <div className="flex items-center justify-between">
               {!running && !gate?.validated ? (
-                <button onClick={() => start(true)} className="text-2xs text-amber-400/80 hover:text-amber-400 underline underline-offset-2">
+                <button onClick={() => start(true)} className="text-caption-2-regular text-status-orange-text-400/80 hover:text-status-orange-text-400 underline underline-offset-2">
                   Start anyway
                 </button>
               ) : <span />}
               {!running && snap && snap.trade_count > 0 && (
-                <button onClick={reset} className="text-2xs text-text-muted hover:text-down">
+                <button onClick={reset} className="text-caption-2-regular text-text-tertiary hover:text-status-rose-text">
                   Reset paper account
                 </button>
               )}
@@ -277,7 +277,7 @@ export function BotPanel() {
           </CardContent>
         </Card>
 
-        <p className="text-2xs leading-relaxed text-text-muted px-1">
+        <p className="text-caption-2-regular leading-relaxed text-text-tertiary px-1">
           Paper execution only. Fills are simulated at bar close with slippage, on the
           same signal engine the simulator validates. Live order routing stays off
           until paper results earn it.
@@ -291,7 +291,7 @@ export function BotPanel() {
       <div className="flex-1 min-w-0 flex flex-col gap-3 min-h-0 overflow-hidden">
         {/* status strip: account + config at a glance */}
         {snap && (
-          <div className="shrink-0 grid grid-cols-4 lg:grid-cols-8 border border-border rounded-md overflow-hidden bg-surface-1">
+          <div className="shrink-0 grid grid-cols-4 lg:grid-cols-8 border border-separator-border rounded-md overflow-hidden bg-background-primary-default-1">
             {[
               { l: "Equity", v: fmtCurrency(snap.equity) },
               { l: "Return", v: `${snap.total_return_pct >= 0 ? "+" : ""}${snap.total_return_pct.toFixed(2)}%`, c: pnlClass(snap.total_return_pct) },
@@ -299,7 +299,7 @@ export function BotPanel() {
               { l: "Open", v: `${snap.open_count}/${snap.config.max_positions}` },
               { l: "Closed · Win", v: `${snap.trade_count} · ${snap.win_rate.toFixed(0)}%` },
               { l: "Strategy", v: `${snap.config.preset.replace("confluence-", "")} · ${snap.config.timeframe}` },
-              { l: "News gate", v: snap.config.news_gate ? "On" : "Off", c: snap.config.news_gate ? "text-accent" : "text-text-muted" },
+              { l: "News gate", v: snap.config.news_gate ? "On" : "Off", c: snap.config.news_gate ? "text-accent-500" : "text-text-tertiary" },
               {
                 l: "Last cycle",
                 v: snap.last_cycle_at
@@ -307,16 +307,16 @@ export function BotPanel() {
                   : "n/a",
               },
             ].map((c) => (
-              <div key={c.l} className="px-2 py-1.5 border-r border-b lg:border-b-0 border-border/50 last:border-r-0">
-                <div className="text-2xs text-text-muted leading-tight whitespace-nowrap">{c.l}</div>
-                <div className={cn("text-xs tabular leading-tight mt-0.5 whitespace-nowrap", c.c ?? "text-text-primary")}>{c.v}</div>
+              <div key={c.l} className="px-2 py-1.5 border-r border-b lg:border-b-0 border-separator-border last:border-r-0">
+                <div className="text-caption-2-regular text-text-tertiary leading-tight whitespace-nowrap">{c.l}</div>
+                <div className={cn("text-caption-1-regular tabular leading-tight mt-0.5 whitespace-nowrap", c.c ?? "text-text-primary")}>{c.v}</div>
               </div>
             ))}
           </div>
         )}
 
         {snap?.last_error && (
-          <p className="shrink-0 text-xs text-down bg-down/10 border border-down/20 rounded px-2 py-1.5">
+          <p className="shrink-0 text-caption-1-regular text-status-rose-text bg-status-rose-background border border-status-rose-text rounded px-2 py-1.5">
             last cycle error: {snap.last_error}
           </p>
         )}
@@ -331,7 +331,7 @@ export function BotPanel() {
                 <Badge variant="muted">{positions.length}/{snap?.config?.max_positions ?? "n/a"}</Badge>
               </CardHeader>
               {positions.length === 0 ? (
-                <p className="text-xs text-text-muted px-3 pb-2.5">
+                <p className="text-caption-1-regular text-text-tertiary px-3 pb-2.5">
                   Flat, waiting for a confluence entry{snap?.config.news_gate ? " that clears the news gate" : ""}
                 </p>
               ) : (
@@ -358,13 +358,13 @@ export function BotPanel() {
                           <TableCell className="text-right tabular">{p.qty}</TableCell>
                           <TableCell className="text-right tabular">{p.entry_price.toFixed(2)}</TableCell>
                           <TableCell className="text-right tabular">{p.last_price.toFixed(2)}</TableCell>
-                          <TableCell className="text-right tabular text-down/80">{p.stop.toFixed(2)}</TableCell>
-                          <TableCell className="text-right tabular text-up/80">{p.target.toFixed(2)}</TableCell>
+                          <TableCell className="text-right tabular text-status-rose-text/80">{p.stop.toFixed(2)}</TableCell>
+                          <TableCell className="text-right tabular text-status-lime-text/80">{p.target.toFixed(2)}</TableCell>
                           <TableCell className={cn("text-right tabular", pnlClass(upnl))}>{fmtCurrency(upnl)}</TableCell>
                           <TableCell className="tabular">{p.entry_score}/7</TableCell>
                           <TableCell>
-                            <span className={cn("text-2xs",
-                              p.news_verdict === "bullish" ? "text-up" : p.news_verdict === "bearish" ? "text-down" : "text-text-muted")}>
+                            <span className={cn("text-caption-2-regular",
+                              p.news_verdict === "bullish" ? "text-status-lime-text" : p.news_verdict === "bearish" ? "text-status-rose-text" : "text-text-tertiary")}>
                               {p.news_verdict}
                               {p.news_bias != null ? ` ${p.news_bias >= 0 ? "+" : ""}${p.news_bias.toFixed(2)}` : ""}
                             </span>
@@ -381,7 +381,7 @@ export function BotPanel() {
               <Card className="shrink-0">
                 <CardHeader>
                   <CardTitle>Paper equity</CardTitle>
-                  <span className="ml-auto text-2xs tabular text-text-muted">
+                  <span className="ml-auto text-caption-2-regular tabular text-text-tertiary">
                     {fmtCurrency(snap.config.initial_capital)} → {fmtCurrency(snap.equity)}
                   </span>
                 </CardHeader>
@@ -397,7 +397,7 @@ export function BotPanel() {
                 <Badge variant="muted">{snap?.trade_count ?? 0}</Badge>
               </CardHeader>
               {(snap?.closed_trades.length ?? 0) === 0 ? (
-                <p className="text-xs text-text-muted px-3 pb-2.5">None yet</p>
+                <p className="text-caption-1-regular text-text-tertiary px-3 pb-2.5">None yet</p>
               ) : (
                 <div className="overflow-auto max-h-64">
                   <Table>
@@ -416,16 +416,16 @@ export function BotPanel() {
                       {(snap?.closed_trades ?? []).slice().reverse().map((t, i) => (
                         <TableRow key={i}>
                           <TableCell className="tabular">{t.symbol}</TableCell>
-                          <TableCell className="text-text-muted whitespace-nowrap">
+                          <TableCell className="text-text-tertiary whitespace-nowrap">
                             {new Date(t.exit_time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                           </TableCell>
                           <TableCell className="text-right tabular">{t.qty}</TableCell>
                           <TableCell className="text-right tabular">{t.entry_price.toFixed(2)}</TableCell>
                           <TableCell className="text-right tabular">{t.exit_price.toFixed(2)}</TableCell>
                           <TableCell className={cn("text-right tabular", pnlClass(t.pnl))}>
-                            {fmtCurrency(t.pnl)} <span className="text-2xs">({fmtPct(t.pnl_pct)})</span>
+                            {fmtCurrency(t.pnl)} <span className="text-caption-2-regular">({fmtPct(t.pnl_pct)})</span>
                           </TableCell>
-                          <TableCell className="text-text-muted">{t.reason}</TableCell>
+                          <TableCell className="text-text-tertiary">{t.reason}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -445,8 +445,8 @@ export function BotPanel() {
                     key={f}
                     onClick={() => setLogFilter(f)}
                     className={cn(
-                      "px-1.5 h-5 text-2xs transition-colors",
-                      logFilter === f ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
+                      "px-1.5 h-5 text-caption-2-regular transition-colors",
+                      logFilter === f ? "bg-background-tertiary-default text-text-primary" : "text-text-tertiary hover:text-text-secondary"
                     )}
                   >
                     {f[0].toUpperCase() + f.slice(1)}
@@ -456,24 +456,24 @@ export function BotPanel() {
             </CardHeader>
             <div className="flex-1 overflow-y-auto">
               {decisions.length === 0 && (
-                <p className="text-xs text-text-muted px-3 py-2">
+                <p className="text-caption-1-regular text-text-tertiary px-3 py-2">
                   {logFilter === "all"
                     ? "No activity yet. Every entry, exit and news block lands here."
                     : "nothing in this filter"}
                 </p>
               )}
               {decisions.map((d, i) => (
-                <div key={i} className="px-3 py-1.5 border-b border-border/30">
+                <div key={i} className="px-3 py-1.5 border-b border-separator-border">
                   <div className="flex items-center gap-1.5">
-                    <span className={cn("px-1 rounded text-2xs", (KIND_STYLE[d.kind] ?? KIND_STYLE.news).chip)}>
+                    <span className={cn("px-1 rounded text-caption-2-regular", (KIND_STYLE[d.kind] ?? KIND_STYLE.news).chip)}>
                       {d.kind}
                     </span>
-                    {d.symbol !== "*" && <span className="text-2xs tabular font-medium">{d.symbol}</span>}
-                    <span className="ml-auto text-2xs tabular text-text-muted whitespace-nowrap">
+                    {d.symbol !== "*" && <span className="text-caption-2-regular tabular font-medium">{d.symbol}</span>}
+                    <span className="ml-auto text-caption-2-regular tabular text-text-tertiary whitespace-nowrap">
                       {new Date(d.time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
-                  <p className="text-2xs leading-snug text-text-secondary mt-0.5">{d.message}</p>
+                  <p className="text-caption-2-regular leading-snug text-text-secondary mt-0.5">{d.message}</p>
                 </div>
               ))}
             </div>
@@ -487,7 +487,7 @@ export function BotPanel() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-2xs text-text-muted">{label}</label>
+      <label className="text-caption-2-regular text-text-tertiary">{label}</label>
       {children}
     </div>
   );

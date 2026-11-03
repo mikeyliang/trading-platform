@@ -32,12 +32,12 @@ export function Logo({ symbol, size = 24, className }: LogoProps) {
       style={{
         width: size,
         height: size,
-        background: showImg ? "rgb(var(--c-on-fill))" : hashedColor(symbol),
+        background: showImg ? "var(--color-on-fill)" : hashedColor(symbol),
       }}
     >
       {!showImg && (
         <span
-          className="font-semibold text-on-fill"
+          className="font-semibold text-text-white"
           style={{ fontSize: Math.max(9, size * 0.42) }}
         >
           {symbol.slice(0, 2)}

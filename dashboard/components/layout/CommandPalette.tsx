@@ -12,25 +12,7 @@ import {
   CommandShortcut,
   CommandSeparator,
 } from "@/components/ui/command";
-import {
-  LayoutDashboard,
-  Settings,
-  BarChart3,
-  Notebook,
-  Activity,
-  Filter,
-  LineChart,
-  CandlestickChart,
-  Layers,
-  ArrowRight,
-  Lightbulb,
-  Calculator,
-  FlaskConical,
-  Bot,
-  Clock,
-  Table2,
-  MessagesSquare,
-} from "lucide-react";
+import { RiDashboardLine as LayoutDashboard, RiSettings4Line as Settings, RiBarChartBoxLine as BarChart3, RiBookletLine as Notebook, RiPulseLine as Activity, RiFilter3Line as Filter, RiLineChartLine as LineChart, RiStockLine as CandlestickChart, RiStackLine as Layers, RiArrowRightLine as ArrowRight, RiLightbulbLine as Lightbulb, RiCalculatorLine as Calculator, RiFlaskLine as FlaskConical, RiRobot2Line as Bot, RiTimeLine as Clock, RiLayoutColumnLine as Table2, RiChat3Line as MessagesSquare } from "@remixicon/react";
 import { api } from "@/lib/api";
 import type { WatchlistItem } from "@/types";
 
@@ -103,7 +85,7 @@ export function CommandPalette() {
         value={query}
         onValueChange={setQuery}
         placeholder="Search symbols or jump to a page…"
-        className="text-sm"
+        className="text-body-2-regular"
       />
       <CommandList className="max-h-[400px] overflow-y-auto">
         <CommandEmpty>No results. Press Enter to open as a chart.</CommandEmpty>
@@ -119,18 +101,18 @@ export function CommandPalette() {
               value={`${typedSymbol} ${query} open chart symbol`}
               onSelect={() => go(`/chart/${typedSymbol}`)}
             >
-              <ArrowRight size={12} className="mr-2 text-accent" />
+              <ArrowRight size={12} className="mr-2 text-accent-500" />
               <span className="font-medium mr-2">{typedSymbol}</span>
-              <span className="text-text-muted truncate">chart</span>
+              <span className="text-text-tertiary truncate">chart</span>
               <CommandShortcut>↵</CommandShortcut>
             </CommandItem>
             <CommandItem
               value={`${typedSymbol} ${query} open chain options`}
               onSelect={() => go(`/options/${typedSymbol}`)}
             >
-              <Layers size={12} className="mr-2 text-text-muted" />
+              <Layers size={12} className="mr-2 text-text-tertiary" />
               <span className="font-medium mr-2">{typedSymbol}</span>
-              <span className="text-text-muted truncate">options chain</span>
+              <span className="text-text-tertiary truncate">options chain</span>
             </CommandItem>
           </CommandGroup>
         )}
@@ -142,7 +124,7 @@ export function CommandPalette() {
               value={`${p.label} ${p.keywords}`}
               onSelect={() => go(p.href)}
             >
-              <p.icon size={12} className="mr-2 text-text-muted" />
+              <p.icon size={12} className="mr-2 text-text-tertiary" />
               {p.label}
             </CommandItem>
           ))}
@@ -158,9 +140,9 @@ export function CommandPalette() {
                   value={`${w.symbol} ${w.name} chart`}
                   onSelect={() => go(`/chart/${w.symbol}`)}
                 >
-                  <CandlestickChart size={12} className="mr-2 text-text-muted" />
+                  <CandlestickChart size={12} className="mr-2 text-text-tertiary" />
                   <span className="font-medium mr-2">{w.symbol}</span>
-                  <span className="text-text-muted truncate">{w.name}</span>
+                  <span className="text-text-tertiary truncate">{w.name}</span>
                   <CommandShortcut>chart</CommandShortcut>
                 </CommandItem>
               ))}
@@ -176,7 +158,7 @@ export function CommandPalette() {
               value={`${s} chart quick`}
               onSelect={() => go(`/chart/${s}`)}
             >
-              <LineChart size={12} className="mr-2 text-text-muted" />
+              <LineChart size={12} className="mr-2 text-text-tertiary" />
               <span className="font-medium">{s}</span>
               <CommandShortcut>chart</CommandShortcut>
             </CommandItem>
@@ -191,7 +173,7 @@ export function CommandPalette() {
               value={`${s} options chain`}
               onSelect={() => go(`/options/${s}`)}
             >
-              <Layers size={12} className="mr-2 text-text-muted" />
+              <Layers size={12} className="mr-2 text-text-tertiary" />
               {s} chain
             </CommandItem>
           ))}

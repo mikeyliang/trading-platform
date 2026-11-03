@@ -10,14 +10,14 @@ export function Toaster() {
       toastOptions={{
         classNames: {
           toast:
-            "!bg-surface-2 !border-border !text-text-primary !shadow-[0_0_0_1px_rgb(var(--c-border)),0_12px_32px_-8px_rgb(0_0_0/0.35)] !rounded-none !text-xs",
-          title: "!text-text-primary !text-xs !font-medium",
-          description: "!text-text-secondary !text-xs",
-          success: "[&_svg]:!text-up",
-          error: "[&_svg]:!text-down",
-          warning: "[&_svg]:!text-warning",
-          actionButton: "!bg-accent !text-on-fill !text-xs",
-          cancelButton: "!bg-surface-2 !text-text-secondary !text-xs",
+            "!bg-background-primary-default !border-separator-border-button-default !text-text-primary !shadow-dropdown !rounded-2lg !text-body-2-regular",
+          title: "!text-text-primary !text-body-2-medium",
+          description: "!text-text-secondary !text-caption-1-regular",
+          success: "[&_svg]:!text-status-lime-text",
+          error: "[&_svg]:!text-status-rose-text",
+          warning: "[&_svg]:!text-status-yellow-text",
+          actionButton: "!bg-button-primary !text-text-white !text-caption-1-semibold !rounded-md",
+          cancelButton: "!bg-background-secondary-default !text-text-secondary !text-caption-1-semibold !rounded-md",
         },
       }}
     />

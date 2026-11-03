@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PayoffChart } from "./PayoffChart";
 import { cn, fmt, fmtCurrency } from "@/lib/utils";
-import { Check, X, Rocket, Info } from "lucide-react";
+import { RiCheckLine as Check, RiCloseLine as X, RiRocketLine as Rocket, RiInformationLine as Info } from "@remixicon/react";
 
 export interface PrefillInputs {
   spot?: number;
@@ -78,8 +78,8 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Rocket size={14} className="text-accent" />
-          <span className="text-xs font-medium text-text-primary">Rule One Screener</span>
+          <Rocket size={14} className="text-accent-500" />
+          <span className="text-caption-1-regular font-medium text-text-primary">Rule One Screener</span>
           <Badge variant="accent" className="normal-case tracking-normal">{underlying}</Badge>
         </div>
         <Badge variant={passing.length > 0 ? "up" : "muted"}>
@@ -126,7 +126,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
           <Card>
             <CardContent className="p-3 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-2xs text-text-muted">
+                <span className="text-caption-2-regular text-text-tertiary">
                   Position sizing
                 </span>
                 <Badge variant="muted">{fmtCurrency(bankroll)} bankroll</Badge>
@@ -140,7 +140,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
                   tone={m.recommendedContracts > 0 ? "up" : undefined}
                 />
               </div>
-              <p className="text-2xs text-text-muted leading-relaxed">
+              <p className="text-caption-2-regular text-text-tertiary leading-relaxed">
                 Sizing is the lesser of Kelly% × bankroll and Rule One's 33% bankroll cap, divided
                 by max loss per contract. Break-even at expiration:{" "}
                 <span className="text-text-secondary tabular">{fmt(m.breakeven, 2)}</span>.
@@ -151,7 +151,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
           {/* payoff diagram */}
           <Card>
             <CardContent className="p-3 flex flex-col gap-1">
-              <span className="text-2xs text-text-muted">
+              <span className="text-caption-2-regular text-text-tertiary">
                 Payoff at expiration · {m.recommendedContracts || 1} ct
               </span>
               <PayoffChart
@@ -166,7 +166,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
         </>
       ) : (
         <Card>
-          <CardContent className="p-3 text-xs text-text-muted flex items-center gap-2">
+          <CardContent className="p-3 text-caption-1-regular text-text-tertiary flex items-center gap-2">
             <Info size={12} />
             Enter spot, both strikes (short &gt; long), credit, and short delta to evaluate.
           </CardContent>
@@ -188,26 +188,26 @@ function StrategyResultCard({
       className={cn(
         "transition-colors",
         !result.applicable
-          ? "opacity-50 border-border"
+          ? "opacity-50 border-separator-border"
           : result.passes
-            ? "border-up/40 bg-up/5"
-            : "border-down/30 bg-down/5",
+            ? "border-status-lime-text bg-status-lime-background"
+            : "border-status-rose-text bg-status-rose-background",
       )}
     >
       <CardContent className="p-3 flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium">{spec.name}</span>
+          <span className="text-caption-1-regular font-medium">{spec.name}</span>
           <Badge variant={!result.applicable ? "muted" : result.passes ? "up" : "down"}>
             {!result.applicable ? "n/a" : result.passes ? "pass" : "fail"}
           </Badge>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-2xs">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-caption-2-regular">
           <CheckRow label={result.checks.delta.label} ok={result.checks.delta.pass} value={result.checks.delta.value} suffix="" applicable={result.applicable} />
           <CheckRow label={result.checks.adjOTM.label} ok={result.checks.adjOTM.pass} value={result.checks.adjOTM.value} suffix="%" applicable={result.applicable} />
           <CheckRow label={result.checks.aroc.label} ok={result.checks.aroc.pass} value={result.checks.aroc.value} suffix="%" applicable={result.applicable} />
           <CheckRow label={result.checks.kelly.label} ok={result.checks.kelly.pass} value={result.checks.kelly.value} suffix="" applicable={result.applicable} />
         </div>
-        <p className="text-2xs text-text-muted leading-snug border-t border-border/60 pt-1.5">
+        <p className="text-caption-2-regular text-text-tertiary leading-snug border-t border-separator-border pt-1.5">
           Exit at Δ {spec.exitDelta}. {spec.notes}
         </p>
       </CardContent>
@@ -230,12 +230,12 @@ function CheckRow({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-text-muted">{label}</span>
+      <span className="text-text-tertiary">{label}</span>
       <span className="flex items-center gap-1">
-        <span className={cn("tabular", applicable ? (ok ? "text-up" : "text-down") : "text-text-muted")}>
+        <span className={cn("tabular", applicable ? (ok ? "text-status-lime-text" : "text-status-rose-text") : "text-text-tertiary")}>
           {fmt(value, value > 99 ? 0 : 1)}{suffix}
         </span>
-        {applicable && (ok ? <Check size={10} className="text-up" /> : <X size={10} className="text-down" />)}
+        {applicable && (ok ? <Check size={10} className="text-status-lime-text" /> : <X size={10} className="text-status-rose-text" />)}
       </span>
     </div>
   );
@@ -260,9 +260,9 @@ function NumField({
 }) {
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <label className="text-2xs text-text-muted flex items-center gap-1">
+      <label className="text-caption-2-regular text-text-tertiary flex items-center gap-1">
         {label}
-        {hint && <span className="lowercase tracking-normal text-text-muted/70 normal-case">· {hint}</span>}
+        {hint && <span className="lowercase tracking-normal text-text-tertiary/70 normal-case">· {hint}</span>}
       </label>
       <Input
         type="number"
@@ -289,11 +289,11 @@ function Metric({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-2xs text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       <span
         className={cn(
-          "tabular text-sm font-semibold",
-          tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-primary",
+          "tabular text-body-2-regular font-semibold",
+          tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text" : "text-text-primary",
         )}
       >
         {value}

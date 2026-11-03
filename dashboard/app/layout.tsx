@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Chivo_Mono, Inter } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { WSProvider } from "@/components/layout/WSProvider";
@@ -10,21 +10,18 @@ import { ChatDrawer } from "@/components/chat/ChatDrawer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
+import { DirectionProvider } from "@/components/foundations/direction/direction";
 
-// Two faces. Inter carries labels and copy; Chivo Mono carries every figure
-// and the display heads, so a board of numbers lines up on a fixed cell.
-// Loaded at build time by next/font (self-hosted, no runtime request); if a
-// download is unavailable at build, Next falls back to the system stack.
+// BoardUI's type scale is set in Inter with the optical-size axis; figures
+// use its tabular numerals. JetBrains Mono is for code only.
 const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-sans",
   display: "swap",
 });
-const chivoMono = Chivo_Mono({
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono-source",
   subsets: ["latin"],
-  weight: ["400", "500", "800"],
-  variable: "--font-mono",
   display: "swap",
 });
 
@@ -34,33 +31,36 @@ export const metadata: Metadata = {
 };
 
 // Runs before first paint so the page never flashes the wrong theme. Dark is
-// the default; an explicit "light" choice in localStorage wins.
+// the default; an explicit "light" choice wins. The key is shared with the
+// BoardUI theme toggle in the sidebar.
 const themeScript = `
 try {
-  var t = localStorage.getItem("theme");
+  var t = localStorage.getItem("boardui:theme");
   if (t !== "light") document.documentElement.classList.add("dark");
 } catch (e) { document.documentElement.classList.add("dark"); }
 `;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${chivoMono.variable}`} suppressHydrationWarning>
+    <html lang="en-US" dir="ltr" className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="flex h-screen overflow-hidden bg-bg text-text-primary font-sans">
-        <TooltipProvider delayDuration={200}>
-          <HealthProvider>
-            <WSProvider>
-              <AppShell>{children}</AppShell>
-              <CommandPalette />
-              <ChatDrawer />
-              <ConnectionToasts />
-              <Toaster />
-              <ErrorBoundary />
-            </WSProvider>
-          </HealthProvider>
-        </TooltipProvider>
+      <body className="flex h-screen overflow-hidden bg-background-full text-text-primary font-sans">
+        <DirectionProvider locale="en-US">
+          <TooltipProvider delayDuration={200}>
+            <HealthProvider>
+              <WSProvider>
+                <AppShell>{children}</AppShell>
+                <CommandPalette />
+                <ChatDrawer />
+                <ConnectionToasts />
+                <Toaster />
+                <ErrorBoundary />
+              </WSProvider>
+            </HealthProvider>
+          </TooltipProvider>
+        </DirectionProvider>
       </body>
     </html>
   );

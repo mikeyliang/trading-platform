@@ -5,7 +5,7 @@ import { api, type StrategySchema } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import { fmtCurrency, fmtPct, pnlClass, cn } from "@/lib/utils";
 import type { BacktestRequest, BacktestResult } from "@/types";
-import { Play, Loader2, ChevronDown } from "lucide-react";
+import { RiPlayFill as Play, RiLoader4Line as Loader2, RiArrowDownSLine as ChevronDown } from "@remixicon/react";
 import dynamic from "next/dynamic";
 import { SchemaForm } from "@/components/ui/schema-form";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -102,7 +102,7 @@ export function BacktestPanel() {
   };
 
   return (
-    <div className="flex h-full min-h-0 gap-4 p-4 bg-bg overflow-hidden">
+    <div className="flex h-full min-h-0 gap-4 p-4 bg-background-full overflow-hidden">
       {/* config panel */}
       <Card className="w-72 shrink-0 flex flex-col">
         <CardHeader>
@@ -181,7 +181,7 @@ export function BacktestPanel() {
           <button
             type="button"
             onClick={() => setShowAdvanced((v) => !v)}
-            className="flex items-center gap-1.5 text-2xs text-text-muted hover:text-text-secondary transition-colors mt-1"
+            className="flex items-center gap-1.5 text-caption-2-regular text-text-tertiary hover:text-text-secondary transition-colors mt-1"
           >
             <ChevronDown
               size={11}
@@ -189,12 +189,12 @@ export function BacktestPanel() {
             />
             Parameters
             {paramCount > 0 && (
-              <span className="ml-auto text-2xs text-accent">{paramCount} overridden</span>
+              <span className="ml-auto text-caption-2-regular text-accent-500">{paramCount} overridden</span>
             )}
           </button>
 
           {showAdvanced && (
-            <div className="pl-3 border-l border-border/60">
+            <div className="pl-3 border-l border-separator-border">
               <SchemaForm
                 schema={schema}
                 value={form.params ?? {}}
@@ -204,7 +204,7 @@ export function BacktestPanel() {
           )}
 
           {error && (
-            <p className="text-xs text-down bg-down/10 border border-down/20 rounded px-2 py-1.5">{error}</p>
+            <p className="text-caption-1-regular text-status-rose-text bg-status-rose-background border border-status-rose-text rounded px-2 py-1.5">{error}</p>
           )}
 
           <Button onClick={run} disabled={running} variant="default" size="lg" className="mt-2">
@@ -218,13 +218,13 @@ export function BacktestPanel() {
       <div className="flex-1 overflow-y-auto flex flex-col gap-4">
         {!result && !running && (
           <Card className="flex-1 flex items-center justify-center">
-            <p className="text-text-muted text-sm">configure and run a backtest to see results</p>
+            <p className="text-text-tertiary text-body-2-regular">configure and run a backtest to see results</p>
           </Card>
         )}
 
         {running && (
           <Card className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-2 text-text-muted text-sm">
+            <div className="flex flex-col items-center gap-2 text-text-tertiary text-body-2-regular">
               <Loader2 size={18} className="animate-spin" />
               <span>running backtest…</span>
             </div>
@@ -282,10 +282,10 @@ export function BacktestPanel() {
                   <TableBody>
                     {result.trades.map((t, i) => (
                       <TableRow key={i}>
-                        <TableCell className="text-text-muted">
+                        <TableCell className="text-text-tertiary">
                           {new Date(t.entry_time).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="text-text-muted">
+                        <TableCell className="text-text-tertiary">
                           {t.exit_time ? new Date(t.exit_time).toLocaleDateString() : "n/a"}
                         </TableCell>
                         <TableCell className="text-right tabular">{t.entry_price.toFixed(2)}</TableCell>
@@ -302,7 +302,7 @@ export function BacktestPanel() {
                               {fmtPct(t.pnl_pct)}
                             </Badge>
                           ) : (
-                            <span className="text-text-muted">n/a</span>
+                            <span className="text-text-tertiary">n/a</span>
                           )}
                         </TableCell>
                       </TableRow>
@@ -321,7 +321,7 @@ export function BacktestPanel() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-2xs text-text-muted">{label}</label>
+      <label className="text-caption-2-regular text-text-tertiary">{label}</label>
       {children}
     </div>
   );

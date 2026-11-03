@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, type VolumeProfile as VPData } from "@/lib/api";
 import { cn, fmtCompact } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
-import { BarChart3, Loader2 } from "lucide-react";
+import { RiBarChartBoxLine as BarChart3, RiLoader4Line as Loader2 } from "@remixicon/react";
 import {
   Select,
   SelectTrigger,
@@ -46,26 +46,26 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-2 h-7 border-b border-border/60 text-2xs text-text-muted">
-        <BarChart3 size={10} className="text-accent" />
+      <div className="flex items-center gap-2 px-2 h-7 border-b border-separator-border text-caption-2-regular text-text-tertiary">
+        <BarChart3 size={10} className="text-accent-500" />
         <span>Volume Profile · {symbol}</span>
         <Select value={tf} onValueChange={setTf}>
-          <SelectTrigger className="h-6 w-[72px] text-2xs tabular ml-auto">
+          <SelectTrigger className="h-6 w-[72px] text-caption-2-regular tabular ml-auto">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {["5m", "15m", "30m", "1h", "1d"].map((t) => (
-              <SelectItem key={t} value={t} className="text-2xs tabular">{t}</SelectItem>
+              <SelectItem key={t} value={t} className="text-caption-2-regular tabular">{t}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={String(days)} onValueChange={(v: string) => setDays(Number(v))}>
-          <SelectTrigger className="h-6 w-[72px] text-2xs tabular">
+          <SelectTrigger className="h-6 w-[72px] text-caption-2-regular tabular">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {[5, 10, 20, 60].map((d) => (
-              <SelectItem key={d} value={String(d)} className="text-2xs tabular">{d}d</SelectItem>
+              <SelectItem key={d} value={String(d)} className="text-caption-2-regular tabular">{d}d</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -73,7 +73,7 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
 
       {loading && !data ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 size={14} className="animate-spin text-text-muted" />
+          <Loader2 size={14} className="animate-spin text-text-tertiary" />
         </div>
       ) : !data || !data.bins?.length ? (
         <EmptyState
@@ -93,9 +93,9 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
               <div
                 key={i}
                 className={cn(
-                  "relative grid grid-cols-[60px_1fr_64px] items-center h-[14px] px-2 text-2xs tabular border-b border-border/15",
-                  inVA && !isPoc && "bg-accent/5",
-                  isPoc && "bg-accent/15"
+                  "relative grid grid-cols-[60px_1fr_64px] items-center h-[14px] px-2 text-caption-2-regular tabular border-b border-separator-border",
+                  inVA && !isPoc && "bg-status-blue-background",
+                  isPoc && "bg-status-blue-background"
                 )}
               >
                 <span className="text-text-secondary">{b.price_mid.toFixed(2)}</span>
@@ -103,12 +103,12 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
                   <span
                     className={cn(
                       "h-[10px] rounded-sm",
-                      isPoc ? "bg-accent" : inVA ? "bg-accent/60" : "bg-text-muted/40"
+                      isPoc ? "bg-accent-500" : inVA ? "bg-status-blue-background" : "bg-foreground-icon-quaternary/40"
                     )}
                     style={{ width: `${Math.max(2, w)}%` }}
                   />
                 </div>
-                <span className="text-right text-text-muted">{fmtCompact(b.volume)}</span>
+                <span className="text-right text-text-tertiary">{fmtCompact(b.volume)}</span>
               </div>
             );
           })}
@@ -116,8 +116,8 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
       )}
 
       {data && data.poc != null && (
-        <div className="flex items-center justify-between px-2 h-6 border-t border-border/60 text-2xs tabular text-text-muted">
-          <span>POC <span className="text-accent font-medium">{data.poc.toFixed(2)}</span></span>
+        <div className="flex items-center justify-between px-2 h-6 border-t border-separator-border text-caption-2-regular tabular text-text-tertiary">
+          <span>POC <span className="text-accent-500 font-medium">{data.poc.toFixed(2)}</span></span>
           {data.value_area_low != null && data.value_area_high != null && (
             <span>VA <span className="text-text-secondary font-medium">
               {data.value_area_low.toFixed(2)} to {data.value_area_high.toFixed(2)}

@@ -11,7 +11,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Info, RotateCcw } from "lucide-react";
+import { RiInformationLine as Info, RiArrowGoBackLine as RotateCcw } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
 
 export interface JsonSchema {
@@ -47,7 +47,7 @@ interface Props {
 export function SchemaForm({ schema, value, onChange, className, showReset = true }: Props) {
   if (!schema || !schema.properties) {
     return (
-      <div className="text-xs text-text-muted py-4 text-center">
+      <div className="text-caption-1-regular text-text-tertiary py-4 text-center">
         No tunable parameters for this strategy.
       </div>
     );
@@ -64,7 +64,7 @@ export function SchemaForm({ schema, value, onChange, className, showReset = tru
     <div className={cn("flex flex-col gap-4", className)}>
       {showReset && (
         <div className="flex items-center justify-between">
-          <span className="text-2xs text-text-muted">
+          <span className="text-caption-2-regular text-text-tertiary">
             Parameters
           </span>
           <Button
@@ -72,7 +72,7 @@ export function SchemaForm({ schema, value, onChange, className, showReset = tru
             size="sm"
             onClick={reset}
             disabled={!dirty}
-            className="h-6 text-2xs"
+            className="h-6 text-caption-2-regular"
           >
             <RotateCcw />
             Reset
@@ -82,7 +82,7 @@ export function SchemaForm({ schema, value, onChange, className, showReset = tru
 
       {groups.map(([group, fields]) => (
         <div key={group} className="flex flex-col gap-2">
-          <div className="text-2xs text-text-muted border-b border-border/60 pb-1">
+          <div className="text-caption-2-regular text-text-tertiary border-b border-separator-border pb-1">
             {group}
           </div>
           <div className="flex flex-col gap-2">
@@ -121,11 +121,11 @@ function FieldRow({
   return (
     <div className="flex items-center justify-between gap-3 min-h-[26px]">
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className="text-xs text-text-secondary truncate">{label}</span>
+        <span className="text-caption-1-regular text-text-secondary truncate">{label}</span>
         {field.description && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Info size={11} className="text-text-muted shrink-0 cursor-help" />
+              <Info size={11} className="text-text-tertiary shrink-0 cursor-help" />
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-xs">
               {field.description}
@@ -137,7 +137,7 @@ function FieldRow({
       <div className="shrink-0">
         {enumValues ? (
           <Select value={String(value ?? "")} onValueChange={onChange}>
-            <SelectTrigger className="h-7 w-28 text-xs">
+            <SelectTrigger className="h-7 w-28 text-caption-1-regular">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -156,13 +156,13 @@ function FieldRow({
             max={field.maximum}
             value={(value ?? "") as number | string}
             onChange={(e) => onChange(e.target.value === "" ? "" : +e.target.value)}
-            className="h-7 w-20 text-right tabular text-xs"
+            className="h-7 w-20 text-right tabular text-caption-1-regular"
           />
         ) : (
           <Input
             value={(value ?? "") as string}
             onChange={(e) => onChange(e.target.value)}
-            className="h-7 w-28 text-xs"
+            className="h-7 w-28 text-caption-1-regular"
           />
         )}
       </div>

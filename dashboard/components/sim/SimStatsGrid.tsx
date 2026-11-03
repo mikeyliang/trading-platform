@@ -40,15 +40,15 @@ export function SimStatsGrid({ stats }: { stats: SimStats }) {
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(86px,1fr))] border border-border rounded-md overflow-hidden bg-surface-1">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(86px,1fr))] border border-separator-border rounded-md overflow-hidden bg-background-primary-default-1">
       {cells.map((c) => (
-        <div key={c.label} className="px-2 py-1.5 border-r border-b border-border/50 last:border-r-0">
-          <div className="text-2xs text-text-muted leading-tight">{c.label}</div>
+        <div key={c.label} className="px-2 py-1.5 border-r border-b border-separator-border last:border-r-0">
+          <div className="text-caption-2-regular text-text-tertiary leading-tight">{c.label}</div>
           <div
             className={cn(
-              "text-xs tabular leading-tight mt-0.5",
-              c.tone === "up" && "text-up",
-              c.tone === "down" && "text-down",
+              "text-caption-1-regular tabular leading-tight mt-0.5",
+              c.tone === "up" && "text-status-lime-text",
+              c.tone === "down" && "text-status-rose-text",
               c.tone === "muted" && "text-text-secondary",
               !c.tone && "text-text-primary"
             )}

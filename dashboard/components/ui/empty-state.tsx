@@ -1,9 +1,10 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { type LucideIcon } from "lucide-react";
+
+type IconComponent = React.ComponentType<{ size?: number | string; className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
 
 interface EmptyStateProps {
-  icon?: LucideIcon;
+  icon?: IconComponent;
   title: string;
   description?: string;
   action?: React.ReactNode;
@@ -12,14 +13,9 @@ interface EmptyStateProps {
   size?: "default" | "sm";
 }
 
-export function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  action,
-  className,
-  size = "default",
-}: EmptyStateProps) {
+// Icon tile, one-line title, a sentence of help, one action. Centred in the
+// region it describes so the empty state reads as part of that region.
+export function EmptyState({ icon: Icon, title, description, action, className, size = "default" }: EmptyStateProps) {
   const compact = size === "sm";
   return (
     <div
@@ -33,28 +29,16 @@ export function EmptyState({
       {Icon && (
         <div
           className={cn(
-            "rounded-md bg-surface-2 border border-border flex items-center justify-center mb-1",
-            compact ? "w-7 h-7" : "w-9 h-9"
+            "rounded-2lg bg-background-secondary-default flex items-center justify-center mb-1 text-foreground-icon-secondary",
+            compact ? "size-8" : "size-10"
           )}
         >
-          <Icon
-            size={compact ? 13 : 15}
-            className="text-text-muted"
-            strokeWidth={1.75}
-            aria-hidden="true"
-          />
+          <Icon size={compact ? 16 : 20} aria-hidden="true" />
         </div>
       )}
-      <p className={cn("font-medium text-text-primary", compact ? "text-xs" : "text-sm")}>
-        {title}
-      </p>
+      <p className={cn("text-text-primary", compact ? "text-body-2-medium" : "text-body-medium")}>{title}</p>
       {description && (
-        <p
-          className={cn(
-            "text-text-muted leading-relaxed",
-            compact ? "text-2xs max-w-[200px]" : "text-xs max-w-xs"
-          )}
-        >
+        <p className={cn("text-text-tertiary", compact ? "text-caption-1-regular max-w-[220px]" : "text-body-2-regular max-w-xs")}>
           {description}
         </p>
       )}

@@ -10,7 +10,7 @@
 // aren't blown away by the update.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, ExternalLink, Save, Loader2 } from "lucide-react";
+import { RiCloseLine as X, RiExternalLinkLine as ExternalLink, RiSaveLine as Save, RiLoader4Line as Loader2 } from "@remixicon/react";
 import { api, type TradeHistoryRecord } from "@/lib/api";
 import { cn, fmt, fmtCurrency, pnlClass } from "@/lib/utils";
 
@@ -54,13 +54,13 @@ export function TradeMarkerPopover({
 
   return (
     <div
-      className="absolute z-30 rounded-md border border-border/70 bg-surface shadow-xl"
+      className="absolute z-30 rounded-md border border-separator-border bg-background-primary-default shadow-xl"
       style={{ left: pos.left, top: pos.top, width: W }}
       onMouseDown={(e) => e.stopPropagation()}
       role="dialog"
     >
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-surface-2/30">
-        <span className="text-2xs text-text-muted">Trade</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-separator-border bg-background-secondary-default">
+        <span className="text-caption-2-regular text-text-tertiary">Trade</span>
         {trades.length > 1 && (
           <div className="flex items-center gap-0.5">
             {trades.map((_t, i) => (
@@ -69,23 +69,23 @@ export function TradeMarkerPopover({
                 type="button"
                 onClick={() => setActiveIdx(i)}
                 className={cn(
-                  "h-4 min-w-[16px] px-1 rounded-sm text-2xs tabular transition-colors",
+                  "h-4 min-w-[16px] px-1 rounded-sm text-caption-2-regular tabular transition-colors",
                   i === activeIdx
-                    ? "bg-accent/20 text-accent"
-                    : "bg-surface-2 text-text-muted hover:text-text-secondary",
+                    ? "bg-status-blue-background text-accent-500"
+                    : "bg-background-secondary-default text-text-tertiary hover:text-text-secondary",
                 )}
               >
                 {i + 1}
               </button>
             ))}
-            <span className="text-2xs text-text-muted ml-1">/ {trades.length}</span>
+            <span className="text-caption-2-regular text-text-tertiary ml-1">/ {trades.length}</span>
           </div>
         )}
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="ml-auto inline-flex items-center justify-center h-5 w-5 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-2"
+          className="ml-auto inline-flex items-center justify-center h-5 w-5 rounded-sm text-text-tertiary hover:text-text-primary hover:bg-background-secondary-hover"
         >
           <X size={11} />
         </button>
@@ -120,37 +120,37 @@ function TradeDetails({ trade: t }: { trade: TradeHistoryRecord }) {
   }, [t.timestamp]);
 
   return (
-    <div className="px-3 py-2 flex flex-col gap-2 text-xs">
+    <div className="px-3 py-2 flex flex-col gap-2 text-caption-1-regular">
       <div className="flex items-baseline gap-2">
         <span
           className={cn(
-            "px-1.5 py-0.5 rounded-sm text-2xs font-medium tabular",
-            isBuy ? "bg-up/15 text-up" : "bg-down/15 text-down",
+            "px-1.5 py-0.5 rounded-sm text-caption-2-regular font-medium tabular",
+            isBuy ? "bg-status-lime-background text-status-lime-text" : "bg-status-rose-background text-status-rose-text",
           )}
         >
           {isBuy ? "BUY" : "SELL"}
         </span>
         <span className="text-text-primary font-medium tabular">{t.symbol}</span>
         {isOption && strike != null && right && (
-          <span className="text-text-secondary tabular text-xs">
+          <span className="text-text-secondary tabular text-caption-1-regular">
             {formatStrike(strike)}{right}
           </span>
         )}
         {isOption && expiry && (
-          <span className="text-text-muted text-2xs tabular">
+          <span className="text-text-tertiary text-caption-2-regular tabular">
             {fmtOptionExpiry(expiry)}
           </span>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-2xs tabular">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-caption-2-regular tabular">
         <Field label="Time" value={tsLabel} />
         <Field label="Qty" value={fmt(t.quantity, 0)} />
         <Field label="Fill" value={fmt(t.price, 2)} />
         <Field
           label="P&L"
           value={t.pnl != null ? fmtCurrency(t.pnl) : "n/a"}
-          valueClassName={t.pnl != null ? pnlClass(t.pnl) : "text-text-muted"}
+          valueClassName={t.pnl != null ? pnlClass(t.pnl) : "text-text-tertiary"}
         />
         {account && <Field label="Account" value={account} mono />}
         {commission != null && <Field label="Comm" value={fmtCurrency(commission)} />}
@@ -160,7 +160,7 @@ function TradeDetails({ trade: t }: { trade: TradeHistoryRecord }) {
 
       <a
         href={`/trade/history?trade=${t.id}`}
-        className="inline-flex items-center gap-1 text-2xs text-text-muted hover:text-accent transition-colors w-fit"
+        className="inline-flex items-center gap-1 text-caption-2-regular text-text-tertiary hover:text-accent-500 transition-colors w-fit"
       >
         Open in history <ExternalLink size={9} />
       </a>
@@ -173,11 +173,11 @@ function Field({
 }: { label: string; value: string; valueClassName?: string; mono?: boolean }) {
   return (
     <div className="flex flex-col">
-      <span className="text-2xs text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       <span
         className={cn(
           "text-text-primary tabular",
-          mono && "text-2xs",
+          mono && "text-caption-2-regular",
           valueClassName,
         )}
         title={value}
@@ -231,13 +231,13 @@ function JournalEditor({
   };
 
   return (
-    <div className="px-3 pb-2 pt-1 border-t border-border/40 flex flex-col gap-1.5">
+    <div className="px-3 pb-2 pt-1 border-t border-separator-border flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-2xs text-text-muted">Journal</span>
+        <span className="text-caption-2-regular text-text-tertiary">Journal</span>
         {savedAt && !dirty && !saving && (
-          <span className="text-2xs text-up">saved</span>
+          <span className="text-caption-2-regular text-status-lime-text">saved</span>
         )}
-        {err && <span className="text-2xs text-down" title={err}>save failed</span>}
+        {err && <span className="text-caption-2-regular text-status-rose-text" title={err}>save failed</span>}
       </div>
       <textarea
         ref={inputRef}
@@ -247,22 +247,22 @@ function JournalEditor({
         placeholder="Why this trade? What did you see? How did it work out?"
         rows={3}
         className={cn(
-          "w-full resize-y rounded-sm border border-border bg-surface-2/30",
-          "px-2 py-1 text-xs text-text-primary placeholder:text-text-muted/60",
-          "outline-none focus:border-accent/50 transition-colors tabular",
+          "w-full resize-y rounded-sm border border-separator-border bg-background-secondary-default",
+          "px-2 py-1 text-caption-1-regular text-text-primary placeholder:text-text-tertiary/60",
+          "outline-none focus:border-accent-500 transition-colors tabular",
         )}
       />
       <div className="flex items-center gap-2">
-        <span className="text-2xs text-text-muted">⌘/Ctrl-Enter to save</span>
+        <span className="text-caption-2-regular text-text-tertiary">⌘/Ctrl-Enter to save</span>
         <button
           type="button"
           onClick={onSave}
           disabled={!dirty || saving}
           className={cn(
-            "ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-sm text-2xs transition-colors",
+            "ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-sm text-caption-2-regular transition-colors",
             !dirty || saving
-              ? "bg-surface-2 text-text-muted cursor-not-allowed"
-              : "bg-accent/15 text-accent hover:bg-accent/25",
+              ? "bg-background-secondary-default text-text-tertiary cursor-not-allowed"
+              : "bg-status-blue-background text-accent-500 hover:bg-status-blue-background",
           )}
         >
           {saving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}

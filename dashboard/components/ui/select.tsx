@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
-import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { RiCheckLine as Check, RiArrowDownSLine as ChevronDown, RiArrowUpSLine as ChevronUp } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 
 const Select = SelectPrimitive.Root;
@@ -16,14 +16,14 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-8 w-full items-center justify-between rounded-md border border-border bg-surface-2 px-2.5 py-1 text-xs text-text-primary outline-none transition-colors hover:border-surface-3 focus:border-accent disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-8 w-full items-center justify-between gap-2 rounded-2lg bg-background-tertiary-default px-2.5 text-body-2-regular text-text-primary outline-none ring-2 ring-inset ring-transparent transition-[background-color,box-shadow] hover:bg-background-tertiary-hover focus-visible:ring-border-button-default-focus-ring data-[state=open]:bg-background-primary-default data-[state=open]:ring-border-button-default-focus-ring disabled:cursor-not-allowed disabled:text-text-tertiary [&>span]:line-clamp-1",
       className
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown size={12} className="ml-2 text-text-muted shrink-0" />
+      <ChevronDown size={16} className="text-foreground-icon-tertiary shrink-0" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -38,7 +38,7 @@ const SelectContent = React.forwardRef<
       ref={ref}
       position={position}
       className={cn(
-        "relative z-50 max-h-72 min-w-[8rem] overflow-hidden rounded-md border border-border bg-surface shadow-lg",
+        "relative z-50 max-h-72 min-w-[8rem] overflow-hidden rounded-2lg border border-separator-border-button-default bg-background-primary-default shadow-dropdown",
         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
         "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
         position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",
@@ -46,7 +46,7 @@ const SelectContent = React.forwardRef<
       )}
       {...props}
     >
-      <SelectPrimitive.ScrollUpButton className="flex h-6 items-center justify-center text-text-muted">
+      <SelectPrimitive.ScrollUpButton className="flex h-6 items-center justify-center text-foreground-icon-tertiary">
         <ChevronUp size={12} />
       </SelectPrimitive.ScrollUpButton>
       <SelectPrimitive.Viewport
@@ -57,7 +57,7 @@ const SelectContent = React.forwardRef<
       >
         {children}
       </SelectPrimitive.Viewport>
-      <SelectPrimitive.ScrollDownButton className="flex h-6 items-center justify-center text-text-muted">
+      <SelectPrimitive.ScrollDownButton className="flex h-6 items-center justify-center text-foreground-icon-tertiary">
         <ChevronDown size={12} />
       </SelectPrimitive.ScrollDownButton>
     </SelectPrimitive.Content>
@@ -72,14 +72,14 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-7 pr-2 text-xs text-text-secondary outline-none focus:bg-surface-2 focus:text-text-primary data-[state=checked]:text-text-primary data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-pointer select-none items-center rounded-md h-8 pl-7 pr-2 text-body-2-regular text-text-primary outline-none focus:bg-background-secondary-hover data-[state=checked]:text-body-2-medium data-[disabled]:pointer-events-none data-[disabled]:text-text-tertiary",
       className
     )}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check size={11} className="text-accent" />
+        <Check size={14} className="text-accent-500-600" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

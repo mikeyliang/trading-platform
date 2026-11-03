@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { History, Search, Trash2, ArrowUpRight } from "lucide-react";
+import { RiHistoryLine as History, RiSearchLine as Search, RiDeleteBinLine as Trash2, RiArrowRightUpLine as ArrowUpRight } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -84,8 +84,8 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
 
   if (history.length === 0) {
     return (
-      <section className="rounded-lg border border-border bg-surface p-4">
-        <div className="flex items-center gap-2 text-text-muted text-xs">
+      <section className="rounded-lg border border-separator-border bg-background-primary-default p-4">
+        <div className="flex items-center gap-2 text-text-tertiary text-caption-1-regular">
           <History size={12} />
           <span>No prior debates yet. Runs save here automatically.</span>
         </div>
@@ -94,13 +94,13 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
   }
 
   return (
-    <section className="rounded-lg border border-border bg-surface overflow-hidden">
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border">
+    <section className="rounded-lg border border-separator-border bg-background-primary-default overflow-hidden">
+      <header className="flex items-center gap-2 px-4 py-3 border-b border-separator-border">
         <History size={14} className="text-text-secondary" />
-        <div className="text-sm font-medium text-text-secondary">
+        <div className="text-body-2-regular font-medium text-text-secondary">
           Conversation history
         </div>
-        <span className="text-xs text-text-muted">
+        <span className="text-caption-1-regular text-text-tertiary">
           {filtered.length}
           {query ? ` of ${history.length}` : ""} runs
         </span>
@@ -108,13 +108,13 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
           <div className="relative">
             <Search
               size={11}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+              className="absolute left-2 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"
             />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search symbol, decision, text…"
-              className="h-7 w-56 pl-6 text-xs"
+              className="h-7 w-56 pl-6 text-caption-1-regular"
             />
           </div>
           <Button size="sm" variant="ghost" onClick={onClear} title="Clear history">
@@ -123,15 +123,15 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
         </div>
       </header>
 
-      <ul className="divide-y divide-border max-h-72 overflow-y-auto">
+      <ul className="divide-y divide-separator-border max-h-72 overflow-y-auto">
         {filtered.map((row) => {
           const isCurrent = row.id === currentId;
           const decision = (row.decision || "").trim();
           const decisionLower = decision.toLowerCase();
           const tone = decisionLower.includes("buy")
-            ? "text-up"
+            ? "text-status-lime-text"
             : decisionLower.includes("sell")
-            ? "text-down"
+            ? "text-status-rose-text"
             : "text-text-secondary";
           return (
             <li key={row.id}>
@@ -139,30 +139,30 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
                 type="button"
                 onClick={() => onSelect(row)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-2 text-left text-xs tabular hover:bg-surface-2/60 transition-colors",
-                  isCurrent && "bg-surface-2"
+                  "w-full flex items-center gap-3 px-4 py-2 text-left text-caption-1-regular tabular hover:bg-background-secondary-hover transition-colors",
+                  isCurrent && "bg-background-secondary-default"
                 )}
               >
                 <span className="font-medium text-text-primary w-16 truncate">
                   {row.symbol}
                 </span>
-                <span className="text-text-muted w-24">{row.trade_date}</span>
+                <span className="text-text-tertiary w-24">{row.trade_date}</span>
                 <span className={cn("font-medium truncate flex-1", tone)}>
                   {decision || "(no decision)"}
                 </span>
-                <span className="text-text-muted">
+                <span className="text-text-tertiary">
                   {(row.duration_ms / 1000).toFixed(1)}s
                 </span>
-                <span className="text-text-muted/70">
+                <span className="text-text-tertiary/70">
                   {formatRelative(row.ran_at)}
                 </span>
-                <ArrowUpRight size={11} className="text-text-muted" />
+                <ArrowUpRight size={11} className="text-text-tertiary" />
               </button>
             </li>
           );
         })}
         {filtered.length === 0 && (
-          <li className="px-4 py-3 text-xs text-text-muted">
+          <li className="px-4 py-3 text-caption-1-regular text-text-tertiary">
             No matches for &ldquo;{query}&rdquo;.
           </li>
         )}

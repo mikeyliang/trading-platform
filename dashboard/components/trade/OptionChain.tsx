@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api, type EarningsInfo, type OptionRow, type OptionsChain } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { AlertTriangle } from "lucide-react";
+import { RiAlertFill as AlertTriangle } from "@remixicon/react";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { TableSkeletonRows } from "@/components/ui/skeleton";
@@ -138,7 +138,7 @@ export function OptionChain() {
         actions={
           <div className="flex items-end gap-2 flex-wrap">
             <label className="flex flex-col gap-1">
-              <span className="text-2xs text-text-muted">Symbol</span>
+              <span className="text-caption-2-regular text-text-tertiary">Symbol</span>
               <Input
                 value={pendingSymbol}
                 onChange={(e) => setPendingSymbol(e.target.value.toUpperCase())}
@@ -160,13 +160,13 @@ export function OptionChain() {
 
       {/* Context badges: LTCG eligibility for this expiry + next earnings. */}
       {chain && expiry && (
-        <div className="flex items-center gap-2 flex-wrap text-2xs">
+        <div className="flex items-center gap-2 flex-wrap text-caption-2-regular">
           {ranking.ltcgEligible ? (
-            <span className="px-2 py-0.5 rounded-sm bg-up/10 text-up">
+            <span className="px-2 py-0.5 rounded-sm bg-status-lime-background text-status-lime-text">
               LTCG-eligible, {ranking.dte}d to expiry
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded-sm bg-surface-2 text-text-muted">
+            <span className="px-2 py-0.5 rounded-sm bg-background-secondary-default text-text-tertiary">
               {ranking.dte}d to expiry ({ranking.dte > 0 ? `${(ranking.dte / 365).toFixed(1)}y` : "0y"}); LTCG needs a hold over 1y
             </span>
           )}
@@ -174,7 +174,7 @@ export function OptionChain() {
             <span
               className={cn(
                 "px-2 py-0.5 rounded-sm",
-                earningsInfo.beforeExpiry ? "bg-warning/10 text-warning" : "bg-surface-2 text-text-secondary"
+                earningsInfo.beforeExpiry ? "bg-status-yellow-background text-status-yellow-text" : "bg-background-secondary-default text-text-secondary"
               )}
               title={earningsInfo.beforeExpiry ? "Earnings falls before this expiry. Expect an IV and price gap" : "Next earnings"}
             >
@@ -184,7 +184,7 @@ export function OptionChain() {
           <button
             type="button"
             onClick={() => setShowPicks((v) => !v)}
-            className="ml-auto px-2 py-0.5 rounded-sm text-text-muted hover:text-text-secondary hover:bg-surface-2 transition-colors"
+            className="ml-auto px-2 py-0.5 rounded-sm text-text-tertiary hover:text-text-secondary hover:bg-background-secondary-hover transition-colors"
           >
             {showPicks ? "Hide best picks" : "Show best picks"}
           </button>
@@ -218,7 +218,7 @@ export function OptionChain() {
 
       {loading && !chain && (
         <div className="overflow-x-auto -mx-1">
-          <table className="w-full text-xs tabular">
+          <table className="w-full text-caption-1-regular tabular">
             <tbody>
               <TableSkeletonRows rows={12} cols={13} />
             </tbody>
@@ -227,7 +227,7 @@ export function OptionChain() {
       )}
 
       {!loading && (!chain || windowed.length === 0) && (
-        <div className="py-16 text-center text-sm text-text-secondary">
+        <div className="py-16 text-center text-body-2-regular text-text-secondary">
           No strikes loaded for this expiry yet. The chain may still be hydrating from IBKR.
         </div>
       )}
@@ -275,14 +275,14 @@ function ExpiryTabs({
             type="button"
             onClick={() => onChoose(e)}
             className={cn(
-              "shrink-0 h-7 px-3 text-xs tabular rounded-sm transition-colors flex items-baseline gap-1.5",
+              "shrink-0 h-7 px-3 text-caption-1-regular tabular rounded-sm transition-colors flex items-baseline gap-1.5",
               isActive
-                ? "text-text-primary bg-surface-2"
-                : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
+                ? "text-text-primary bg-background-secondary-default"
+                : "text-text-tertiary hover:text-text-secondary hover:bg-background-secondary-hover"
             )}
           >
             <span>{formatExp(e)}</span>
-            {dte != null && <span className="text-2xs text-text-muted">{dte}d</span>}
+            {dte != null && <span className="text-caption-2-regular text-text-tertiary">{dte}d</span>}
           </button>
         );
       })}
@@ -314,9 +314,9 @@ function ChainTable({
 }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-xs tabular">
+      <table className="w-full text-caption-1-regular tabular">
         <thead>
-          <tr className="text-2xs text-text-muted">
+          <tr className="text-caption-2-regular text-text-tertiary">
             <Th align="right" tone="call">Δ</Th>
             <Th align="right" tone="call">IV</Th>
             <Th align="right" tone="call">Bid</Th>
@@ -345,11 +345,11 @@ function ChainTable({
               <tr
                 key={r.strike}
                 className={cn(
-                  "border-t border-border/30 group transition-colors",
+                  "border-t border-separator-border group transition-colors",
                   isAtm
-                    ? "bg-accent/[0.06] hover:bg-accent/[0.10]"
-                    : "hover:bg-surface-2/40",
-                  i % 2 === 0 && !isAtm && "bg-surface-2/15"
+                    ? "bg-accent-500/[0.06] hover:bg-accent-500/[0.10]"
+                    : "hover:bg-background-secondary-hover",
+                  i % 2 === 0 && !isAtm && "bg-background-secondary-default"
                 )}
               >
                 <SideCell row={r.call} field="delta" tone="call" itm={callItm} align="right" />
@@ -389,7 +389,7 @@ function Th({
       className={cn(
         "px-2 py-2 font-medium",
         align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center",
-        tone === "call" ? "text-text-muted" : "text-text-muted",
+        tone === "call" ? "text-text-tertiary" : "text-text-tertiary",
       )}
     >
       {children}
@@ -410,15 +410,15 @@ function SideCell({
 }) {
   const value = useCellValue(row, field);
   const textAlign = align === "left" ? "text-left" : "text-right";
-  const star = mark ? <span className="text-accent" title="Top pick">★</span> : null;
+  const star = mark ? <span className="text-accent-500" title="Top pick">★</span> : null;
   return (
     <td
       className={cn(
         "px-2 py-1.5",
         textAlign,
-        itm ? "bg-surface-2/40" : "",
-        mark && "bg-accent/10 text-text-primary font-medium",
-        value == null ? "text-text-muted/40" : "text-text-secondary",
+        itm ? "bg-background-secondary-default" : "",
+        mark && "bg-status-blue-background text-text-primary font-medium",
+        value == null ? "text-text-tertiary/40" : "text-text-secondary",
         tone === "call" && itm && "text-text-primary",
         tone === "put"  && itm && "text-text-primary",
       )}
@@ -439,17 +439,17 @@ function RankCell({
 }: { score: number | undefined; align: "left" | "right"; isBest: boolean }) {
   const textAlign = align === "left" ? "text-left" : "text-right";
   if (score == null) {
-    return <td className={cn("px-2 py-1.5 text-text-muted/40", textAlign)}>n/a</td>;
+    return <td className={cn("px-2 py-1.5 text-text-tertiary/40", textAlign)}>n/a</td>;
   }
   const tone = scoreTone(score);
   return (
     <td className={cn("px-2 py-1.5", textAlign)}>
       <span
         className={cn(
-          "inline-block min-w-[22px] px-1.5 py-[1px] rounded-sm text-2xs tabular text-center",
+          "inline-block min-w-[22px] px-1.5 py-[1px] rounded-sm text-caption-2-regular tabular text-center",
           tone.bg,
           tone.text,
-          isBest && "ring-1 ring-accent/60",
+          isBest && "ring-1 ring-border-focus-ring",
         )}
         title={`Rating ${score} / 100`}
       >
@@ -481,7 +481,7 @@ function PickColumn({
 }) {
   if (!best) {
     return (
-      <div className="rounded-md border border-border/40 bg-surface p-3 text-xs text-text-muted">
+      <div className="rounded-md border border-separator-border bg-background-primary-default p-3 text-caption-1-regular text-text-tertiary">
         <div className="text-text-secondary font-medium mb-1">{heading}</div>
         No suitable contract in the loaded strikes.
       </div>
@@ -530,18 +530,18 @@ function PickCard({
   const neutrals = pick.reasons.filter((r) => r.sign === 0);
 
   return (
-    <div className="rounded-md border border-border/40 bg-surface p-3 flex flex-col gap-2.5">
+    <div className="rounded-md border border-separator-border bg-background-primary-default p-3 flex flex-col gap-2.5">
       {/* Heading + score */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-xs text-text-secondary font-medium leading-tight">{heading}</div>
-          <div className="text-2xs text-text-muted leading-tight">{sub}</div>
+          <div className="text-caption-1-regular text-text-secondary font-medium leading-tight">{heading}</div>
+          <div className="text-caption-2-regular text-text-tertiary leading-tight">{sub}</div>
         </div>
         <div className="flex flex-col items-end gap-0.5 shrink-0">
-          <span className={cn("px-2 py-0.5 rounded-sm text-xs tabular font-medium", tone.bg, tone.text)}>
+          <span className={cn("px-2 py-0.5 rounded-sm text-caption-1-regular tabular font-medium", tone.bg, tone.text)}>
             {pick.score}
           </span>
-          <span className="text-2xs text-text-muted">/ 100</span>
+          <span className="text-caption-2-regular text-text-tertiary">/ 100</span>
         </div>
       </div>
 
@@ -554,13 +554,13 @@ function PickCard({
       {/* Action chip + contract identity. */}
       <div className="flex items-baseline gap-2 tabular flex-wrap">
         <ActionChip lens={pick.lens} />
-        <span className="text-text-primary text-sm font-medium">
+        <span className="text-text-primary text-body-2-regular font-medium">
           {pick.row.strike}{right}
         </span>
-        <span className="text-xs text-text-secondary">
+        <span className="text-caption-1-regular text-text-secondary">
           @ {pick.mid.toFixed(2)}
         </span>
-        <span className="text-2xs text-text-muted">
+        <span className="text-caption-2-regular text-text-tertiary">
           BE {pick.breakeven.toFixed(2)}
         </span>
       </div>
@@ -577,7 +577,7 @@ function PickCard({
       />
 
       {/* Numeric stat strip, IBKR-style tabular row. */}
-      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-2xs text-text-muted tabular">
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-caption-2-regular text-text-tertiary tabular">
         <span>Δ {pick.absDelta.toFixed(2)}</span>
         {pick.row.iv != null && <span>IV {(pick.row.iv * 100).toFixed(0)}%</span>}
         {pick.extrinsicPct != null && <span>{pick.extrinsicPct.toFixed(0)}% time val</span>}
@@ -603,7 +603,7 @@ function PickCard({
 
       <Link
         href={analyzeHref}
-        className="mt-auto inline-flex items-center justify-center h-7 rounded-sm bg-surface-2 hover:bg-surface-3 text-xs text-text-primary transition-colors"
+        className="mt-auto inline-flex items-center justify-center h-7 rounded-sm bg-background-secondary-default hover:bg-background-tertiary-hover text-caption-1-regular text-text-primary transition-colors"
       >
         Open full analysis
       </Link>
@@ -618,8 +618,8 @@ function ActionChip({ lens }: { lens: "buy" | "sell" }) {
   return (
     <span
       className={cn(
-        "px-1.5 py-0.5 rounded-sm text-2xs font-medium tabular",
-        isBuy ? "bg-up/15 text-up" : "bg-down/15 text-down",
+        "px-1.5 py-0.5 rounded-sm text-caption-2-regular font-medium tabular",
+        isBuy ? "bg-status-lime-background text-status-lime-text" : "bg-status-rose-background text-status-rose-text",
       )}
     >
       {isBuy ? "BUY" : "SELL"}
@@ -632,13 +632,13 @@ function ScoreMeter({
 }: { score: number; tone: { bar: string } }) {
   const pct = Math.max(0, Math.min(100, score));
   return (
-    <div className="relative h-1 w-full rounded-sm bg-surface-2 overflow-hidden">
+    <div className="relative h-1 w-full rounded-sm bg-background-secondary-default overflow-hidden">
       <div
         className={cn("absolute inset-y-0 left-0", tone.bar)}
         style={{ width: `${pct}%` }}
       />
       {/* 50-baseline tick, shows whether the score is above/below "neutral". */}
-      <div className="absolute inset-y-0 left-1/2 w-px bg-border/70" />
+      <div className="absolute inset-y-0 left-1/2 w-px bg-separator-border" />
     </div>
   );
 }
@@ -658,9 +658,9 @@ function BreakdownStrip({ breakdown }: { breakdown: Record<BreakdownKey, number>
       {BREAKDOWN_KEYS.map((k) => {
         const v = breakdown[k] ?? 0;
         const tone =
-          v > 0 ? "bg-up/10 text-up"
-          : v < 0 ? "bg-down/10 text-down"
-          : "bg-surface-2 text-text-muted";
+          v > 0 ? "bg-status-lime-background text-status-lime-text"
+          : v < 0 ? "bg-status-rose-background text-status-rose-text"
+          : "bg-background-secondary-default text-text-tertiary";
         const sign = v > 0 ? "+" : "";
         return (
           <div
@@ -671,8 +671,8 @@ function BreakdownStrip({ breakdown }: { breakdown: Record<BreakdownKey, number>
             )}
             title={`${labels[k]} contribution`}
           >
-            <span className="text-2xs opacity-70">{labels[k]}</span>
-            <span className="text-2xs font-medium leading-none">
+            <span className="text-caption-2-regular opacity-70">{labels[k]}</span>
+            <span className="text-caption-2-regular font-medium leading-none">
               {v === 0 ? "0" : `${sign}${v}`}
             </span>
           </div>
@@ -684,14 +684,14 @@ function BreakdownStrip({ breakdown }: { breakdown: Record<BreakdownKey, number>
 
 function ReasonChip({ sign, text }: { sign: ReasonSignType; text: string }) {
   const cls =
-    sign === 1 ? "bg-up/10 text-up border-up/20"
-    : sign === -1 ? "bg-down/10 text-down border-down/20"
-    : "bg-surface-2 text-text-secondary border-border/40";
+    sign === 1 ? "bg-status-lime-background text-status-lime-text border-status-lime-text"
+    : sign === -1 ? "bg-status-rose-background text-status-rose-text border-status-rose-text"
+    : "bg-background-secondary-default text-text-secondary border-separator-border";
   const glyph = sign === 1 ? "+" : sign === -1 ? "−" : "·";
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-2xs tabular",
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-caption-2-regular tabular",
         cls,
       )}
     >
@@ -709,8 +709,8 @@ function Alternates({
   picks, symbol, expiry,
 }: { picks: RankedContract[]; symbol: string; expiry: string }) {
   return (
-    <div className="rounded-md border border-border/40 bg-surface px-2 py-1.5">
-      <div className="text-2xs text-text-muted px-1 pb-1">
+    <div className="rounded-md border border-separator-border bg-background-primary-default px-2 py-1.5">
+      <div className="text-caption-2-regular text-text-tertiary px-1 pb-1">
         Alternates
       </div>
       <ul className="flex flex-col">
@@ -735,11 +735,11 @@ function AlternateRow({
   return (
     <Link
       href={analyzeHref}
-      className="flex items-center gap-2 px-1 py-1 rounded-sm text-xs tabular hover:bg-surface-2/60 transition-colors"
+      className="flex items-center gap-2 px-1 py-1 rounded-sm text-caption-1-regular tabular hover:bg-background-secondary-hover transition-colors"
     >
       <span
         className={cn(
-          "min-w-[26px] text-center px-1 py-[1px] rounded-sm text-2xs font-medium",
+          "min-w-[26px] text-center px-1 py-[1px] rounded-sm text-caption-2-regular font-medium",
           tone.bg, tone.text,
         )}
       >
@@ -749,10 +749,10 @@ function AlternateRow({
         {pick.row.strike}{right}
       </span>
       <span className="text-text-secondary">@ {pick.mid.toFixed(2)}</span>
-      <span className="text-text-muted text-2xs ml-auto">
+      <span className="text-text-tertiary text-caption-2-regular ml-auto">
         BE {pick.breakeven.toFixed(2)}
       </span>
-      <span className="text-text-muted text-2xs">
+      <span className="text-text-tertiary text-caption-2-regular">
         Δ {pick.absDelta.toFixed(2)}
       </span>
     </Link>
@@ -761,9 +761,9 @@ function AlternateRow({
 
 // Shared tone mapping for any score-bearing element (badges, meter, pills).
 function scoreTone(score: number): { bg: string; text: string; bar: string } {
-  if (score >= 70) return { bg: "bg-up/15", text: "text-up", bar: "bg-up" };
-  if (score >= 45) return { bg: "bg-accent/15", text: "text-accent", bar: "bg-accent" };
-  return { bg: "bg-warning/15", text: "text-warning", bar: "bg-warning" };
+  if (score >= 70) return { bg: "bg-status-lime-background", text: "text-status-lime-text", bar: "bg-status-lime-text" };
+  if (score >= 45) return { bg: "bg-status-blue-background", text: "text-accent-500", bar: "bg-accent-500" };
+  return { bg: "bg-status-yellow-background", text: "text-status-yellow-text", bar: "bg-status-yellow-text" };
 }
 
 function useCellValue(
@@ -799,10 +799,10 @@ function StrikeButton({
     <Link
       href={pinHref}
       className={cn(
-        "inline-flex items-center justify-center min-w-[60px] h-6 px-2 rounded-sm tabular text-xs font-medium transition-colors",
+        "inline-flex items-center justify-center min-w-[60px] h-6 px-2 rounded-sm tabular text-caption-1-regular font-medium transition-colors",
         isAtm
-          ? "text-accent bg-accent/10 hover:bg-accent/20"
-          : "text-text-primary hover:bg-surface-2"
+          ? "text-accent-500 bg-status-blue-background hover:bg-status-blue-background"
+          : "text-text-primary hover:bg-background-secondary-hover"
       )}
       title={`Pin ${strike}/${strike - 5}P on chart`}
     >

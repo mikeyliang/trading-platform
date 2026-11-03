@@ -25,7 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
 
 import { TableSkeletonRows } from "@/components/ui/skeleton";
-import { Briefcase, Layers, Activity, Target, Search, X } from "lucide-react";
+import { RiBriefcaseLine as Briefcase, RiStackLine as Layers, RiPulseLine as Activity, RiFocus3Line as Target, RiSearchLine as Search, RiCloseLine as X } from "@remixicon/react";
 
 type Tab = "positions" | "spreads" | "trades";
 type SideFilter = "all" | "long" | "short";
@@ -146,11 +146,11 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
     <Tabs
       value={tab}
       onValueChange={(v) => setTab(v as Tab)}
-      className="flex flex-col h-full bg-surface"
+      className="flex flex-col h-full bg-background-primary-default"
     >
       {/* One toolbar: tabs on the left, filters on the right. Wraps to two
           rows on narrow screens. */}
-      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 pr-2 border-b border-border bg-surface shrink-0">
+      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 pl-2 pr-3 border-b border-separator-border bg-background-primary-default shrink-0">
         <TabsList className="shrink-0 border-0 bg-transparent">
           <TabTriggerWithCount value="positions" label="Positions" count={filteredPositions.length} total={positions.length} />
           <TabTriggerWithCount value="spreads" label="Spreads" count={filteredSpreads.length} total={spreads.length} />
@@ -160,23 +160,23 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
         <div className="ml-auto flex items-center flex-wrap gap-x-3 gap-y-1 py-1">
         {/* Symbol search, magnifier + input + inline clear */}
         <div className={cn(
-          "flex items-center gap-1.5 h-6 px-2 rounded-md border bg-surface-2/60 transition-colors",
-          symbolQ ? "border-accent/60" : "border-border/60 hover:border-border"
+          "flex items-center gap-1.5 h-6 px-2 rounded-md border bg-background-secondary-default transition-colors",
+          symbolQ ? "border-accent-500" : "border-separator-border hover:border-separator-border"
         )}>
-          <Search size={11} className="text-text-muted shrink-0" aria-hidden />
+          <Search size={11} className="text-text-tertiary shrink-0" aria-hidden />
           <input
             id="positions-symbol-filter"
             value={symbolQ}
             onChange={(e) => setSymbolQ(e.target.value.toUpperCase())}
             placeholder="Symbol"
             aria-label="Filter by symbol"
-            className="w-16 bg-transparent text-xs font-mono leading-normal text-text-primary placeholder:text-text-muted outline-none"
+            className="w-16 bg-transparent text-caption-1-regular tabular leading-normal text-text-primary placeholder:text-text-tertiary outline-none"
           />
           {symbolQ && (
             <button
               type="button"
               onClick={() => setSymbolQ("")}
-              className="text-text-muted hover:text-text-primary"
+              className="text-text-tertiary hover:text-text-primary"
               aria-label="Clear symbol filter"
             >
               <X size={10} />
@@ -211,7 +211,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           <button
             type="button"
             onClick={clearAll}
-            className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-2xs text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
+            className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-caption-2-regular text-text-secondary hover:text-text-primary hover:bg-background-secondary-hover transition-colors"
           >
             <X size={10} />
             Clear {activeFilterCount}
@@ -251,7 +251,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
             action={
               <Link
                 href="/chart/RUT"
-                className="inline-flex items-center gap-1.5 px-3 h-7 rounded-md bg-accent hover:bg-accent/90 text-on-fill text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3 h-7 rounded-md bg-accent-500 hover:bg-status-blue-background text-text-white text-caption-1-regular font-medium"
               >
                 View RUT cycle
               </Link>
@@ -303,8 +303,8 @@ function FilterGroup<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-2" role="group" aria-label={label}>
-      <span className="text-2xs text-text-muted">{label}</span>
-      <div className="flex h-7 p-0.5 bg-surface-2">
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
+      <div className="flex h-7 p-0.5 bg-background-secondary-default">
         {options.map((o) => (
           <button
             key={o.v}
@@ -312,9 +312,9 @@ function FilterGroup<T extends string>({
             aria-pressed={value === o.v}
             onClick={() => onChange(o.v)}
             className={cn(
-              "px-2.5 text-2xs font-medium transition-colors whitespace-nowrap leading-none",
+              "px-2.5 text-caption-2-regular font-medium transition-colors whitespace-nowrap leading-none",
               value === o.v
-                ? "bg-surface text-text-primary shadow-thumb"
+                ? "bg-background-primary-default text-text-primary shadow-thumb"
                 : "text-text-secondary hover:text-text-primary"
             )}
           >
@@ -329,15 +329,15 @@ function FilterGroup<T extends string>({
 function FilterEmpty({ label, onClear }: { label: string; onClear?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-3 py-10 text-center animate-fade-in">
-      <div className="w-7 h-7 rounded-md bg-surface-2 border border-border flex items-center justify-center">
-        <Search size={13} className="text-text-muted" strokeWidth={1.75} aria-hidden="true" />
+      <div className="w-7 h-7 rounded-md bg-background-secondary-default border border-separator-border flex items-center justify-center">
+        <Search size={13} className="text-text-tertiary" aria-hidden="true" />
       </div>
-      <p className="text-xs text-text-secondary max-w-xs">{label}</p>
+      <p className="text-caption-1-regular text-text-secondary max-w-xs">{label}</p>
       {onClear && (
         <button
           type="button"
           onClick={onClear}
-          className="mt-0.5 inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border bg-surface-2/60 hover:bg-surface-2 text-2xs text-text-secondary hover:text-text-primary transition-colors"
+          className="mt-0.5 inline-flex items-center gap-1 h-6 px-2 rounded-md border border-separator-border bg-background-secondary-default hover:bg-background-secondary-hover text-caption-2-regular text-text-secondary hover:text-text-primary transition-colors"
         >
           <X size={9} />
           Clear filters
@@ -366,7 +366,7 @@ function TableSkeleton({ cols, headers, rows = 6 }: { cols: number; headers: rea
             <th
               key={h}
               className={cn(
-                "h-8 px-3 align-middle font-medium text-2xs text-text-muted",
+                "h-8 px-3 align-middle font-medium text-caption-2-regular text-text-tertiary",
                 i >= cols - 2 ? "text-right" : "text-left"
               )}
             >
@@ -395,7 +395,7 @@ function TabTriggerWithCount({
     <TabsTrigger value={value}>
       {label}
       {(count > 0 || showTotal) && (
-        <span className="px-1.5 rounded-full bg-surface-3 text-2xs text-text-secondary tabular leading-4">
+        <span className="px-1.5 rounded-full bg-background-tertiary-default text-caption-2-regular text-text-secondary tabular leading-4">
           {showTotal ? `${count}/${total}` : count}
         </span>
       )}
@@ -489,8 +489,8 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                 // Subtle left accent on hover, signals "row is the click target"
                 // without shifting layout. Uses box-shadow inset so the row stays
                 // the same height.
-                "hover:shadow-[inset_2px_0_0_0_rgb(var(--c-accent))]",
-                "hover:bg-surface-2/80 transition-[background,box-shadow] duration-100"
+                "hover:shadow-[inset_2px_0_0_0_var(--color-accent)]",
+                "hover:bg-background-secondary-hover transition-[background,box-shadow] duration-100"
               )}
               title={p.is_option ? "Open in option analyzer" : "Analyze position"}
             >
@@ -499,19 +499,19 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                   <Logo symbol={p.symbol} size={18} />
                   <div className="flex flex-col leading-4">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="group-hover:text-accent-fg transition-colors">{p.symbol}</span>
+                      <span className="group-hover:text-accent-500-600 transition-colors">{p.symbol}</span>
                       {p.is_option && (
                         <span className={cn(
-                          "text-2xs font-medium leading-4",
-                          p.right === "C" ? "text-up" : "text-down",
+                          "text-caption-2-regular font-medium leading-4",
+                          p.right === "C" ? "text-status-lime-text" : "text-status-rose-text",
                         )}>
                           {p.right === "C" ? "Call" : "Put"}
                         </span>
                       )}
-                      <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-fg transition-opacity" />
+                      <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-500-600 transition-opacity" />
                     </span>
                     {p.is_option && (
-                      <span className="text-2xs text-text-muted tabular">
+                      <span className="text-caption-2-regular text-text-tertiary tabular">
                         {formatExpiry(p.expiry)} {Number(p.strike ?? 0).toFixed(0)}{p.right}
                       </span>
                     )}
@@ -521,7 +521,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
               <TableCell>
                 <KindPill kind={kind} />
               </TableCell>
-              <TableCell className="text-text-muted">{p.sector ?? "n/a"}</TableCell>
+              <TableCell className="text-text-tertiary">{p.sector ?? "n/a"}</TableCell>
 
               <TableCell className="text-right tabular">{p.quantity}</TableCell>
               <TableCell className="text-right tabular">{fmt(p.avg_price)}</TableCell>
@@ -533,10 +533,10 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                         ? "Modeled mark, Black-Scholes theoretical; no live quote available"
                         : "Stale mark, last good quote; this refresh missed"}
                       className={cn(
-                        "inline-flex items-center h-4 px-1.5 text-2xs font-medium cap",
+                        "inline-flex items-center h-4 px-1.5 text-caption-2-regular font-medium cap",
                         p.mark_source === "modeled"
-                          ? "bg-warning/15 text-warning"
-                          : "bg-surface-2 text-text-muted",
+                          ? "bg-status-yellow-background text-status-yellow-text"
+                          : "bg-background-secondary-default text-text-tertiary",
                       )}
                     >
                       {p.mark_source === "modeled" ? "model" : "stale"}
@@ -551,7 +551,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
               <TableCell className="text-right">
 
                 {p.unrealized_pnl_pct == null || !Number.isFinite(p.unrealized_pnl_pct) ? (
-                  <span className="tabular text-text-muted">n/a</span>
+                  <span className="tabular text-text-tertiary">n/a</span>
                 ) : (
                   <span className={cn("tabular", pnlClass(p.unrealized_pnl_pct))}>
                     {fmtPct(p.unrealized_pnl_pct)}
@@ -577,7 +577,7 @@ function KindPill({ kind }: { kind: PositionKind }) {
   return (
     <span
       className={cn(
-        "text-2xs px-2 h-5 inline-flex items-center bg-surface-2 cap",
+        "text-caption-2-regular px-2 h-5 inline-flex items-center bg-background-secondary-default cap",
         styles[kind],
       )}
     >
@@ -650,16 +650,16 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
               onClick={() => router.push(`/chart/${s.symbol}`)}
               className={cn(
                 "cursor-pointer group relative",
-                "hover:shadow-[inset_2px_0_0_0_rgb(var(--c-accent))]",
-                "hover:bg-surface-2/80 transition-[background,box-shadow] duration-100"
+                "hover:shadow-[inset_2px_0_0_0_var(--color-accent)]",
+                "hover:bg-background-secondary-hover transition-[background,box-shadow] duration-100"
               )}
               title="Open chart with cycle overlay"
             >
               <TableCell className="font-medium">
                 <span className="inline-flex items-center gap-2">
                   <Logo symbol={s.symbol} size={16} />
-                  <span className="group-hover:text-accent-fg transition-colors">{s.symbol}</span>
-                  <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-fg transition-opacity" />
+                  <span className="group-hover:text-accent-500-600 transition-colors">{s.symbol}</span>
+                  <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-500-600 transition-opacity" />
                 </span>
               </TableCell>
               <TableCell>
@@ -667,15 +667,15 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
               </TableCell>
               <TableCell className="tabular text-text-secondary">{formatExpiry(s.expiry)}</TableCell>
               <TableCell className="tabular">
-                <span className="text-down">{s.long_strike}</span>
-                <span className="text-text-muted mx-1">/</span>
-                <span className="text-up">{s.short_strike}</span>
+                <span className="text-status-rose-text">{s.long_strike}</span>
+                <span className="text-text-tertiary mx-1">/</span>
+                <span className="text-status-lime-text">{s.short_strike}</span>
               </TableCell>
               <TableCell className="text-right tabular">{s.quantity}</TableCell>
 
-              <TableCell className="text-right tabular text-up">{fmt(s.credit_received)}</TableCell>
-              <TableCell className="text-right tabular text-up">{fmtCurrency(s.max_profit)}</TableCell>
-              <TableCell className="text-right tabular text-down">
+              <TableCell className="text-right tabular text-status-lime-text">{fmt(s.credit_received)}</TableCell>
+              <TableCell className="text-right tabular text-status-lime-text">{fmtCurrency(s.max_profit)}</TableCell>
+              <TableCell className="text-right tabular text-status-rose-text">
                 {fmtCurrency(-Math.abs(s.max_loss))}
               </TableCell>
             </TableRow>
@@ -737,12 +737,12 @@ function TradesTable({ trades }: { trades: Trade[] }) {
           sorted.map((t) => (
             <TableRow
               key={t.id}
-              className="group hover:bg-surface-2/80 hover:shadow-[inset_2px_0_0_0_rgb(var(--c-accent))] transition-[background,box-shadow] duration-100"
+              className="group hover:bg-background-secondary-hover hover:shadow-[inset_2px_0_0_0_var(--color-accent)] transition-[background,box-shadow] duration-100"
             >
               <TableCell className="font-medium">
                 {t.symbol}
                 {t.is_option && t.strike != null && t.right && (
-                  <span className="ml-1.5 text-2xs font-normal text-text-muted tabular">
+                  <span className="ml-1.5 text-caption-2-regular font-normal text-text-tertiary tabular">
                     {Number(t.strike).toFixed(0)}{t.right}
                     {t.expiry ? ` ${t.expiry.slice(4, 6)}/${t.expiry.slice(6, 8)}` : ""}
                   </span>
@@ -757,8 +757,8 @@ function TradesTable({ trades }: { trades: Trade[] }) {
               <TableCell className={cn("text-right tabular", pnlClass(t.pnl))}>
                 {fmtCurrency(t.pnl)}
               </TableCell>
-              <TableCell className="text-text-muted">{t.strategy ?? "n/a"}</TableCell>
-              <TableCell className="text-text-muted tabular">{new Date(t.timestamp).toLocaleString()}</TableCell>
+              <TableCell className="text-text-tertiary">{t.strategy ?? "n/a"}</TableCell>
+              <TableCell className="text-text-tertiary tabular">{new Date(t.timestamp).toLocaleString()}</TableCell>
             </TableRow>
           ))
         )}

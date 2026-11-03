@@ -233,21 +233,21 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
         )}
       </svg>
 
-      <div className="absolute top-1 right-3 flex items-center gap-2 text-2xs tabular bg-surface/85 backdrop-blur rounded-md px-2 py-1 border border-border/40">
+      <div className="absolute top-1 right-3 flex items-center gap-2 text-caption-2-regular tabular bg-background-primary-default backdrop-blur rounded-md px-2 py-1 border border-separator-border">
         {hover ? (
           <>
-            <span className="text-text-muted">
+            <span className="text-text-tertiary">
               {hover.days_remaining === 0 ? "expiry" : `${xMax - hover.days_remaining}d from now`}
             </span>
-            <span><span className="text-text-muted">flat</span> <span className={pnlClass(hover.pnl_flat)}>{fmtPnl(hover.pnl_flat)}</span></span>
-            <span><span className="text-up">+1σ</span> <span className={pnlClass(hover.pnl_up_1s)}>{fmtPnl(hover.pnl_up_1s)}</span></span>
-            <span><span className="text-down">−1σ</span> <span className={pnlClass(hover.pnl_dn_1s)}>{fmtPnl(hover.pnl_dn_1s)}</span></span>
+            <span><span className="text-text-tertiary">flat</span> <span className={pnlClass(hover.pnl_flat)}>{fmtPnl(hover.pnl_flat)}</span></span>
+            <span><span className="text-status-lime-text">+1σ</span> <span className={pnlClass(hover.pnl_up_1s)}>{fmtPnl(hover.pnl_up_1s)}</span></span>
+            <span><span className="text-status-rose-text">−1σ</span> <span className={pnlClass(hover.pnl_dn_1s)}>{fmtPnl(hover.pnl_dn_1s)}</span></span>
           </>
         ) : (
           <>
             <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-white" /> spot unchanged</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-up" /> +1σ path</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-down" /> −1σ path</span>
+            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-status-lime-text" /> +1σ path</span>
+            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-status-rose-text" /> −1σ path</span>
           </>
         )}
       </div>
@@ -256,7 +256,7 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
 }
 
 function pnlClass(v: number) {
-  return v >= 0 ? "text-up font-medium" : "text-down font-medium";
+  return v >= 0 ? "text-status-lime-text font-medium" : "text-status-rose-text font-medium";
 }
 
 function fmtPnl(v: number): string {

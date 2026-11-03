@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { RiLoader4Line as Loader2 } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 
 interface LoadingSpinnerProps {
@@ -30,14 +30,14 @@ export function LoadingSpinner({
     >
       <Loader2
         className={cn(
-          "animate-spin text-text-muted",
+          "animate-spin text-text-tertiary",
           sizeClasses[size],
           srOnly && "sr-only"
         )}
         aria-hidden={!srOnly}
       />
       {text && (
-        <span className="text-xs text-text-muted tabular">{text}</span>
+        <span className="text-caption-1-regular text-text-tertiary tabular">{text}</span>
       )}
       <span className="sr-only">{text ?? "Loading"}</span>
     </div>

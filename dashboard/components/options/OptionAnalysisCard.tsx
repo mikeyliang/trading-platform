@@ -102,12 +102,12 @@ export function OptionAnalysisCard({ result }: Props) {
 
   return (
     <div
-      className="flex flex-col rounded-md border border-border bg-surface overflow-hidden shrink-0"
+      className="flex flex-col rounded-md border border-separator-border bg-background-primary-default overflow-hidden shrink-0"
       style={{ minHeight: 680 }}
     >
-      <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
+      <div className="flex items-center gap-2 px-3 h-8 border-b border-separator-border bg-background-primary-default">
         <HintLabel
-          className="text-2xs text-text-muted"
+          className="text-caption-2-regular text-text-tertiary"
           hint={
             <div className="flex flex-col gap-1">
               <div className="font-medium">Option price & indicators</div>
@@ -134,24 +134,24 @@ export function OptionAnalysisCard({ result }: Props) {
         >
           Option contract
         </HintLabel>
-        <span className="ml-auto text-2xs tabular text-text-muted">
+        <span className="ml-auto text-caption-2-regular tabular text-text-tertiary">
           BS replay · IV-as-of-now
         </span>
       </div>
 
       {/* TradingChart-style OHLCV strip, hover-driven, falls back to last bar. */}
-      <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-border/60 bg-surface shrink-0 flex-wrap">
+      <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-separator-border bg-background-primary-default shrink-0 flex-wrap">
         <div className="flex items-baseline gap-2">
-          <span className="font-medium text-sm text-text-primary">
+          <span className="font-medium text-body-2-regular text-text-primary">
             {result.strike}
             {result.right}
           </span>
-          <span className="text-2xs tabular text-text-muted">
+          <span className="text-caption-2-regular tabular text-text-tertiary">
             {fmtExp(result.expiry)}
           </span>
           {isReal ? (
             <span
-              className="text-2xs px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-300/90 cursor-help"
+              className="text-caption-2-regular px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-300/90 cursor-help"
               title={
                 `Real IBKR option bars (${oc.bar_size} MIDPOINT). ${N} bars of the ` +
                 "contract's actual quoted price history, IBKR serves option history " +
@@ -163,7 +163,7 @@ export function OptionAnalysisCard({ result }: Props) {
             </span>
           ) : (
             <span
-              className="text-2xs px-1 py-0.5 rounded bg-amber-500/10 text-amber-300/90 cursor-help"
+              className="text-caption-2-regular px-1 py-0.5 rounded bg-status-orange-background-500/10 text-status-orange-text-300/90 cursor-help"
               title={
                 "Modeled, not traded history. This contract has no real IBKR bars, so " +
                 "the series is a Black-Scholes replay of the underlying's moves" +
@@ -182,13 +182,13 @@ export function OptionAnalysisCard({ result }: Props) {
               modeled
             </span>
           )}
-          <span className="text-base tabular font-medium text-text-primary">
+          <span className="text-headline-regular tabular font-medium text-text-primary">
             ${fmt(display.px)}
           </span>
           <span
             className={cn(
-              "text-xs tabular leading-none px-1.5 py-0.5 rounded",
-              positive ? "text-up bg-up/10" : "text-down bg-down/10",
+              "text-caption-1-regular tabular leading-none px-1.5 py-0.5 rounded",
+              positive ? "text-status-lime-text bg-status-lime-background" : "text-status-rose-text bg-status-rose-background",
             )}
           >
             {positive ? "+" : ""}
@@ -196,12 +196,12 @@ export function OptionAnalysisCard({ result }: Props) {
             {display.chgPct.toFixed(2)}%
           </span>
           {hover && (
-            <span className="text-2xs tabular text-text-muted ml-1">
+            <span className="text-caption-2-regular tabular text-text-tertiary ml-1">
               {formatBarTime(display.time)}
             </span>
           )}
         </div>
-        <div className="hidden md:flex items-center gap-3 text-2xs text-text-muted">
+        <div className="hidden md:flex items-center gap-3 text-caption-2-regular text-text-tertiary">
           <span style={{ color: CHART.ema.fast }}>
             EMA9 <OhlcVal n={display.ema9} />
           </span>
@@ -211,18 +211,18 @@ export function OptionAnalysisCard({ result }: Props) {
           <span style={{ color: CHART.forecast.meanrev }}>
             RV30{" "}
             <OhlcVal n={display.rv30 * 100} />
-            <span className="text-text-muted">%</span>
+            <span className="text-text-tertiary">%</span>
           </span>
           <span
             className={cn(
               "ml-2",
-              periodPct >= 0 ? "text-up" : "text-down",
+              periodPct >= 0 ? "text-status-lime-text" : "text-status-rose-text",
               "font-medium",
             )}
           >
             {periodPct >= 0 ? "+" : ""}
             {periodPct.toFixed(1)}%{" "}
-            <span className="text-text-muted normal-case tracking-normal">
+            <span className="text-text-tertiary normal-case tracking-normal">
               · {Math.min(N, VISIBLE_BARS_DEFAULT)} bars
             </span>
           </span>
@@ -670,9 +670,9 @@ function Panes({
     <>
       {/* Price pane, dominant, with contract label watermark. shrink-0
           so flex-column parents don't squash it to 0 on mount. */}
-      <div className="relative bg-bg shrink-0" style={{ height: 440 }}>
+      <div className="relative bg-background-full shrink-0" style={{ height: 440 }}>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-0">
-          <span className="text-[88px] font-medium text-text-muted/[0.04]">
+          <span className="text-[88px] font-medium text-text-tertiary/[0.04]">
             {contractLabel}
           </span>
         </div>
@@ -728,11 +728,11 @@ function Subpane({
   title?: string;
 }) {
   return (
-    <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }} title={title}>
-      <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-        <span className="text-2xs text-text-muted">{label}</span>
-        <span className="text-2xs tabular text-text-muted">{params}</span>
-        <div className="ml-auto flex items-center gap-3 text-2xs tabular text-text-muted">
+    <div className="border-t border-separator-border bg-background-full shrink-0" style={{ height: 140 }} title={title}>
+      <div className="flex items-center gap-3 px-3 h-6 border-b border-separator-border">
+        <span className="text-caption-2-regular text-text-tertiary">{label}</span>
+        <span className="text-caption-2-regular tabular text-text-tertiary">{params}</span>
+        <div className="ml-auto flex items-center gap-3 text-caption-2-regular tabular text-text-tertiary">
           {legend.map((l) => (
             <span key={l.label} className="flex items-center gap-1">
               <span className="w-2 h-0.5 inline-block" style={{ backgroundColor: l.color }} />
@@ -758,7 +758,7 @@ function tonedRv30VsIv(rv30: number | undefined, currentIv: number) {
   const ivPct = currentIv * 100;
   const ratio = ivPct > 0 && rvPct > 0 ? ivPct / rvPct : 1;
   const label = ratio >= 1.3 ? "rich" : ratio <= 0.8 ? "cheap" : "fair";
-  const cls = ratio >= 1.3 ? "text-down" : ratio <= 0.8 ? "text-up" : "text-text-secondary";
+  const cls = ratio >= 1.3 ? "text-status-rose-text" : ratio <= 0.8 ? "text-status-lime-text" : "text-text-secondary";
   return {
     value: `RV ${rvPct.toFixed(0)}% / IV ${ivPct.toFixed(0)}% · ${label}`,
     cls,
@@ -768,14 +768,14 @@ function tonedRv30VsIv(rv30: number | undefined, currentIv: number) {
 function tonedLast(series: number[], hi: number, lo: number) {
   const v = series[series.length - 1];
   if (!Number.isFinite(v)) return null;
-  const cls = v >= hi ? "text-down" : v <= lo ? "text-up" : "text-text-secondary";
+  const cls = v >= hi ? "text-status-rose-text" : v <= lo ? "text-status-lime-text" : "text-text-secondary";
   return { value: v.toFixed(0), cls };
 }
 function tonedDelta(a: number, b: number) {
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
   return {
     value: `${a.toFixed(3)} / ${b.toFixed(3)}`,
-    cls: a - b >= 0 ? "text-up" : "text-down",
+    cls: a - b >= 0 ? "text-status-lime-text" : "text-status-rose-text",
   };
 }
 
@@ -786,9 +786,9 @@ function OhlcVal({
   n: number;
   compact?: boolean;
 }) {
-  if (!Number.isFinite(n)) return <span className="tabular text-text-muted">n/a</span>;
+  if (!Number.isFinite(n)) return <span className="tabular text-text-tertiary">n/a</span>;
   return (
-    <span className="normal-case tracking-normal text-xs tabular text-text-secondary">
+    <span className="normal-case tracking-normal text-caption-1-regular tabular text-text-secondary">
       {compact ? fmtCompact(n) : fmt(n)}
     </span>
   );

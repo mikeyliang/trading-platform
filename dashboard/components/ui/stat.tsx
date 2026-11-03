@@ -5,9 +5,9 @@ type Tone = "default" | "up" | "down" | "warning" | "muted";
 
 const toneClass: Record<Tone, string> = {
   default: "text-text-primary",
-  up: "text-up",
-  down: "text-down",
-  warning: "text-warning",
+  up: "text-status-lime-text",
+  down: "text-status-rose-text",
+  warning: "text-status-yellow-text",
   muted: "text-text-secondary",
 };
 
@@ -20,16 +20,15 @@ interface StatProps {
   className?: string;
 }
 
+// Label over figure over hint, the BoardUI stat-card inner recipe.
 export function Stat({ label, value, hint, tone = "default", size = "sm", className }: StatProps) {
   const valueSize =
-    size === "lg" ? "text-lg" : size === "md" ? "text-base" : "text-sm";
+    size === "lg" ? "text-title-2-semibold" : size === "md" ? "text-headline-semibold" : "text-body-semibold";
   return (
-    <div className={cn("min-w-0", className)}>
-      <div className="text-2xs text-text-muted truncate">{label}</div>
-      <div className={cn("font-semibold tabular leading-tight mt-0.5 truncate", valueSize, toneClass[tone])}>
-        {value}
-      </div>
-      {hint != null && <div className="text-2xs text-text-muted tabular mt-0.5 truncate">{hint}</div>}
+    <div className={cn("min-w-0 flex flex-col gap-0.5", className)}>
+      <div className="text-caption-1-medium text-text-tertiary truncate">{label}</div>
+      <div className={cn("tabular truncate", valueSize, toneClass[tone])}>{value}</div>
+      {hint != null && <div className="text-caption-1-regular text-text-tertiary tabular truncate">{hint}</div>}
     </div>
   );
 }
@@ -37,22 +36,16 @@ export function Stat({ label, value, hint, tone = "default", size = "sm", classN
 interface StatGroupProps {
   children: React.ReactNode;
   className?: string;
-  /** number of columns, defaults to auto-fit min 110px */
+  /** number of columns, defaults to auto-fit min 120px */
   cols?: number;
 }
 
 export function StatGroup({ children, className, cols }: StatGroupProps) {
   const colStyle = cols
     ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
-    : { gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))" };
+    : { gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" };
   return (
-    <div
-      style={colStyle}
-      className={cn(
-        "grid gap-x-4 gap-y-2 divide-x divide-border/40 [&>*]:px-3 [&>*:first-child]:pl-0",
-        className
-      )}
-    >
+    <div style={colStyle} className={cn("grid gap-3 [&>*]:rounded-2lg [&>*]:bg-background-secondary-default [&>*]:p-3", className)}>
       {children}
     </div>
   );

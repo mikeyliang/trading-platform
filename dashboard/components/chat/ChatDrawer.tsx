@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Send, Sparkles, Loader2, Copy, Check, Eraser, Wand2, ChevronRight } from "lucide-react";
+import { RiCloseLine as X, RiSendPlaneFill as Send, RiSparklingLine as Sparkles, RiLoader4Line as Loader2, RiFileCopyLine as Copy, RiCheckLine as Check, RiEraserLine as Eraser, RiMagicLine as Wand2, RiArrowRightSLine as ChevronRight } from "@remixicon/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "@/components/ui/toaster";
@@ -189,7 +189,7 @@ export function ChatDrawer() {
       {/* backdrop */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-bg/70 backdrop-blur-sm transition-opacity",
+          "fixed inset-0 z-40 bg-background-full backdrop-blur-sm transition-opacity",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={() => setOpen(false)}
@@ -201,21 +201,21 @@ export function ChatDrawer() {
         role="dialog"
         aria-label="AI chat"
         className={cn(
-          "fixed top-0 right-0 z-50 h-full w-full max-w-md bg-surface border-l border-border shadow-2xl flex flex-col transition-transform duration-200 ease-out",
+          "fixed top-0 right-0 z-50 h-full w-full max-w-md bg-background-primary-default border-l border-separator-border shadow-2xl flex flex-col transition-transform duration-200 ease-out",
           open ? "translate-x-0" : "translate-x-full"
         )}
       >
         {/* header */}
-        <div className="flex items-center gap-2 px-4 h-10 border-b border-border/60 shrink-0">
-          <Sparkles size={12} className="text-accent" />
-          <span className="text-xs font-medium text-text-primary">Co-pilot</span>
+        <div className="flex items-center gap-2 px-4 h-10 border-b border-separator-border shrink-0">
+          <Sparkles size={12} className="text-accent-500" />
+          <span className="text-caption-1-regular font-medium text-text-primary">Co-pilot</span>
           <span
             className={cn(
               "w-1.5 h-1.5 rounded-full",
-              status?.available ? "bg-up" : "bg-text-muted"
+              status?.available ? "bg-status-lime-text" : "bg-foreground-icon-quaternary"
             )}
           />
-          <span className="text-2xs tabular text-text-muted">
+          <span className="text-caption-2-regular tabular text-text-tertiary">
             {status?.model?.replace("claude-", "") ?? "n/a"}
           </span>
           <div className="ml-auto flex items-center gap-0.5">
@@ -241,7 +241,7 @@ export function ChatDrawer() {
         </div>
 
         {/* composer */}
-        <div className="border-t border-border p-3 shrink-0">
+        <div className="border-t border-separator-border p-3 shrink-0">
           <div className="relative">
             <textarea
               ref={inputRef}
@@ -260,7 +260,7 @@ export function ChatDrawer() {
               }
               disabled={!status?.available || streaming}
               rows={2}
-              className="w-full resize-none bg-surface-2 border border-border rounded-md px-3 py-2 pr-10 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent disabled:opacity-50"
+              className="w-full resize-none bg-background-secondary-default border border-separator-border rounded-md px-3 py-2 pr-10 text-caption-1-regular text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent-500 disabled:opacity-50"
             />
             <button
               onClick={streaming ? stop : send}
@@ -268,17 +268,17 @@ export function ChatDrawer() {
               className={cn(
                 "absolute right-2 bottom-2 w-7 h-7 flex items-center justify-center rounded transition-colors",
                 streaming
-                  ? "bg-down/15 text-down hover:bg-down/25"
-                  : "bg-accent text-on-fill hover:bg-accent/90 disabled:opacity-40 disabled:hover:bg-accent"
+                  ? "bg-status-rose-background text-status-rose-text hover:bg-status-rose-background"
+                  : "bg-accent-500 text-text-white hover:bg-status-blue-background disabled:opacity-40 disabled:hover:bg-accent-500"
               )}
               aria-label={streaming ? "Stop" : "Send"}
             >
               {streaming ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
             </button>
           </div>
-          <div className="flex items-center justify-between mt-1.5 text-2xs text-text-muted">
+          <div className="flex items-center justify-between mt-1.5 text-caption-2-regular text-text-tertiary">
             <span>Context: {summarizeContext(path, positions.length, watchlist.length)}</span>
-            <kbd className="font-mono">⌘J</kbd>
+            <kbd className="tabular">⌘J</kbd>
           </div>
         </div>
       </aside>
@@ -301,17 +301,17 @@ function Message({ message }: { message: ChatMessage }) {
 
   return (
     <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
-      <div className="text-2xs text-text-muted">
+      <div className="text-caption-2-regular text-text-tertiary">
         {isUser ? "you" : "co-pilot"}
       </div>
 
       {/* main bubble */}
       <div
         className={cn(
-          "group relative max-w-[92%] rounded-md px-3 py-2 text-xs leading-relaxed",
+          "group relative max-w-[92%] rounded-md px-3 py-2 text-caption-1-regular leading-relaxed",
           isUser
-            ? "bg-accent/15 border border-accent/30 text-text-primary"
-            : "bg-surface-2 border border-border text-text-secondary"
+            ? "bg-status-blue-background border border-accent-500 text-text-primary"
+            : "bg-background-secondary-default border border-separator-border text-text-secondary"
         )}
       >
         {message.pending && !message.content ? (
@@ -335,7 +335,7 @@ function Message({ message }: { message: ChatMessage }) {
         {!message.pending && message.content && (
           <button
             onClick={copy}
-            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 w-5 h-5 rounded bg-surface border border-border flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
+            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 w-5 h-5 rounded bg-background-primary-default border border-separator-border flex items-center justify-center text-text-tertiary hover:text-text-primary transition-colors"
             aria-label="Copy"
           >
             {copied ? <Check size={9} /> : <Copy size={9} />}
@@ -414,28 +414,28 @@ function ProposalCard({ proposal }: { proposal: ParamProposal }) {
   const paramEntries = Object.entries(proposal.params);
 
   return (
-    <div className="max-w-[92%] w-full rounded-md border border-accent/30 bg-accent/5 p-3 flex flex-col gap-2">
+    <div className="max-w-[92%] w-full rounded-md border border-accent-500 bg-status-blue-background p-3 flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <Wand2 size={11} className="text-accent" />
-        <span className="text-2xs text-accent font-medium">
+        <Wand2 size={11} className="text-accent-500" />
+        <span className="text-caption-2-regular text-accent-500 font-medium">
           Suggested params
         </span>
-        <span className="text-2xs tabular text-text-muted ml-auto">
+        <span className="text-caption-2-regular tabular text-text-tertiary ml-auto">
           {proposal.strategy}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-caption-1-regular">
         {paramEntries.map(([k, v]) => (
           <div key={k} className="flex items-center justify-between">
-            <span className="text-text-muted font-mono text-2xs">{k}</span>
+            <span className="text-text-tertiary tabular text-caption-2-regular">{k}</span>
             <span className="tabular text-text-primary">{String(v)}</span>
           </div>
         ))}
       </div>
 
       {proposal.rationale && (
-        <p className="text-xs text-text-secondary leading-relaxed border-t border-border/60 pt-2">
+        <p className="text-caption-1-regular text-text-secondary leading-relaxed border-t border-separator-border pt-2">
           {proposal.rationale}
         </p>
       )}
@@ -466,12 +466,12 @@ function ProposalCard({ proposal }: { proposal: ParamProposal }) {
 function EmptyChat({ available, onPick }: { available: boolean; onPick: (s: string) => void }) {
   if (!available) {
     return (
-      <div className="text-center text-xs text-text-muted py-12">
-        <Sparkles size={20} className="mx-auto mb-2 text-text-muted/60" />
+      <div className="text-center text-caption-1-regular text-text-tertiary py-12">
+        <Sparkles size={20} className="mx-auto mb-2 text-text-tertiary/60" />
         <p className="mb-1 text-text-secondary font-medium">Chat is disabled</p>
         <p>
-          Add <code className="text-2xs bg-surface-2 px-1 py-0.5 rounded">ANTHROPIC_API_KEY</code> to{" "}
-          <code className="text-2xs bg-surface-2 px-1 py-0.5 rounded">.env</code> and restart the api container.
+          Add <code className="text-caption-2-regular bg-background-secondary-default px-1 py-0.5 rounded">ANTHROPIC_API_KEY</code> to{" "}
+          <code className="text-caption-2-regular bg-background-secondary-default px-1 py-0.5 rounded">.env</code> and restart the api container.
         </p>
       </div>
     );
@@ -487,15 +487,15 @@ function EmptyChat({ available, onPick }: { available: boolean; onPick: (s: stri
   return (
     <div className="flex flex-col gap-3 py-6">
       <div className="text-center mb-2">
-        <Sparkles size={20} className="mx-auto mb-2 text-accent" />
-        <p className="text-xs text-text-secondary">Ask about strategies, params, or last backtest.</p>
+        <Sparkles size={20} className="mx-auto mb-2 text-accent-500" />
+        <p className="text-caption-1-regular text-text-secondary">Ask about strategies, params, or last backtest.</p>
       </div>
       <div className="flex flex-col gap-1.5">
         {suggestions.map((s) => (
           <button
             key={s}
             onClick={() => onPick(s)}
-            className="text-left text-xs px-3 py-2 rounded-md border border-border bg-surface-2 hover:bg-surface-3 hover:border-surface-3 text-text-secondary hover:text-text-primary transition-colors"
+            className="text-left text-caption-1-regular px-3 py-2 rounded-md border border-separator-border bg-background-secondary-default hover:bg-background-tertiary-hover hover:border-background-tertiary-default text-text-secondary hover:text-text-primary transition-colors"
           >
             {s}
           </button>

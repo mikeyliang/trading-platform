@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpen } from "lucide-react";
+import { RiBookOpenLine as BookOpen } from "@remixicon/react";
 import {
   Dialog,
   DialogContent,
@@ -22,9 +22,9 @@ import { STRATEGIES, winRatePct, type StrategySpec } from "@/lib/ruleone";
 
 const TONE: Record<string, { text: string; bg: string; border: string }> = {
   rut:     { text: "text-text-secondary", bg: "bg-text-secondary/10", border: "border-text-secondary/40" },
-  mars:    { text: "text-accent",         bg: "bg-accent/10",         border: "border-accent/40" },
-  marsmax: { text: "text-warning",        bg: "bg-warning/10",        border: "border-warning/40" },
-  space:   { text: "text-up",             bg: "bg-up/10",             border: "border-up/40" },
+  mars:    { text: "text-accent-500",         bg: "bg-status-blue-background",         border: "border-accent-500" },
+  marsmax: { text: "text-status-yellow-text",        bg: "bg-status-yellow-background",        border: "border-status-yellow-text" },
+  space:   { text: "text-status-lime-text",             bg: "bg-status-lime-background",             border: "border-status-lime-text" },
 };
 
 export function StrategyGuideButton({ className }: { className?: string }) {
@@ -35,8 +35,8 @@ export function StrategyGuideButton({ className }: { className?: string }) {
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 h-6 px-2 rounded-sm border border-border bg-surface-2/60",
-            "text-2xs text-text-secondary hover:bg-surface-2 hover:text-text-primary transition-colors",
+            "inline-flex items-center gap-1.5 h-6 px-2 rounded-sm border border-separator-border bg-background-secondary-default",
+            "text-caption-2-regular text-text-secondary hover:bg-background-secondary-hover hover:text-text-primary transition-colors",
             className,
           )}
           title="Rule One strategy guide, entry gates, exit rules, decision tree"
@@ -73,33 +73,33 @@ function LevelDiagram() {
   return (
     <section>
       <SectionLabel>Anatomy of the trade · bull put</SectionLabel>
-      <div className="relative rounded-md border border-border bg-bg overflow-hidden" style={{ height: 230 }}>
+      <div className="relative rounded-md border border-separator-border bg-background-full overflow-hidden" style={{ height: 230 }}>
         {/* Zones between levels, the state machine the monitor runs. */}
-        <Zone top={0} bottom={Y.alert} className="bg-up/[0.05]" label="SAFE" labelTone="text-up/70"
+        <Zone top={0} bottom={Y.alert} className="bg-status-lime-text/[0.05]" label="SAFE" labelTone="text-status-lime-text/70"
           hint="price comfortably above the alert level, let theta work" />
-        <Zone top={Y.alert} bottom={Y.exit} className="bg-warning/[0.07]" label="WARNING" labelTone="text-warning/80"
+        <Zone top={Y.alert} bottom={Y.exit} className="bg-status-yellow-text/[0.07]" label="WARNING" labelTone="text-status-yellow-text/80"
           hint="alert fired, watch short Δ; on the last day this is the soft band" />
-        <Zone top={Y.exit} bottom={Y.short} className="bg-down/[0.08]" label="EXIT" labelTone="text-down/80"
+        <Zone top={Y.exit} bottom={Y.short} className="bg-status-rose-text/[0.08]" label="EXIT" labelTone="text-status-rose-text/80"
           hint="rule #2 zone, within the buffer of the short strike: close, don't negotiate" />
-        <Zone top={Y.short} bottom={100} className="bg-down/[0.14]" label="MAX-LOSS TERRITORY" labelTone="text-down"
+        <Zone top={Y.short} bottom={100} className="bg-status-rose-text/[0.14]" label="MAX-LOSS TERRITORY" labelTone="text-status-rose-text"
           hint="below the short strike the spread goes intrinsic; the long leg caps the bleed" />
 
         <Level y={Y.spot} dashed={false} cls="bg-text-primary"
           left="SPOT" right="underlying now" rightCls="text-text-secondary" />
-        <Level y={Y.alert} dashed cls="bg-warning/80"
-          left="ALERT" leftCls="text-warning"
-          right="strike + ½·buffer, set your broker alert here" rightCls="text-warning/90" />
-        <Level y={Y.exit} dashed cls="bg-down/80"
-          left="R2 EXIT" leftCls="text-down"
-          right="strike + buffer (3% trad RUT · 2% Mars/Max/Space)" rightCls="text-down/90" />
-        <Level y={Y.short} dashed={false} cls="bg-accent"
-          left="SHORT" leftCls="text-accent"
-          right="short strike, Δ ≤ 10 to 14 at entry, ~9 to 11% adj OTM" rightCls="text-accent/90" />
-        <Level y={Y.long} dashed cls="bg-text-muted"
-          left="LONG" leftCls="text-text-muted"
-          right="long strike, next strike down, caps max loss" rightCls="text-text-muted" />
+        <Level y={Y.alert} dashed cls="bg-status-yellow-background"
+          left="ALERT" leftCls="text-status-yellow-text"
+          right="strike + ½·buffer, set your broker alert here" rightCls="text-status-yellow-text/90" />
+        <Level y={Y.exit} dashed cls="bg-status-rose-background"
+          left="R2 EXIT" leftCls="text-status-rose-text"
+          right="strike + buffer (3% trad RUT · 2% Mars/Max/Space)" rightCls="text-status-rose-text/90" />
+        <Level y={Y.short} dashed={false} cls="bg-accent-500"
+          left="SHORT" leftCls="text-accent-500"
+          right="short strike, Δ ≤ 10 to 14 at entry, ~9 to 11% adj OTM" rightCls="text-accent-500/90" />
+        <Level y={Y.long} dashed cls="bg-foreground-icon-quaternary"
+          left="LONG" leftCls="text-text-tertiary"
+          right="long strike, next strike down, caps max loss" rightCls="text-text-tertiary" />
       </div>
-      <p className="mt-1.5 text-2xs text-text-muted leading-relaxed">
+      <p className="mt-1.5 text-caption-2-regular text-text-tertiary leading-relaxed">
         Call-side (bear call) mirrors this picture above spot. The exit monitor colors each open
         spread by which zone it&apos;s in and fires rule #1 (Δ trigger) / rule #2 (buffer on the
         last trade day) automatically.
@@ -118,7 +118,7 @@ function Zone({ top, bottom, className, label, labelTone, hint }: {
       title={hint}
     >
       <span className={cn(
-        "absolute left-2 top-1/2 -translate-y-1/2 text-2xs font-medium select-none",
+        "absolute left-2 top-1/2 -translate-y-1/2 text-caption-2-regular font-medium select-none",
         labelTone,
       )}>
         {label}
@@ -133,11 +133,11 @@ function Level({ y, dashed, cls, left, leftCls, right, rightCls }: {
 }) {
   return (
     <div className="absolute inset-x-0 flex items-center" style={{ top: `${y}%` }}>
-      <span className={cn("w-16 text-right pr-2 text-2xs font-semibold shrink-0", leftCls ?? "text-text-primary")}>
+      <span className={cn("w-16 text-right pr-2 text-caption-2-regular font-semibold shrink-0", leftCls ?? "text-text-primary")}>
         {left}
       </span>
       <div className={cn("flex-1 h-px", cls, dashed && "opacity-90 [mask-image:repeating-linear-gradient(90deg,black_0_6px,transparent_6px_12px)]")} />
-      <span className={cn("pl-2 pr-2 text-2xs tabular shrink-0 max-w-[55%] truncate", rightCls ?? "text-text-muted")}>
+      <span className={cn("pl-2 pr-2 text-caption-2-regular tabular shrink-0 max-w-[55%] truncate", rightCls ?? "text-text-tertiary")}>
         {right}
       </span>
     </div>
@@ -172,11 +172,11 @@ function SpecTable() {
   return (
     <section>
       <SectionLabel>Entry gates, exit rules and the 12-year backtest</SectionLabel>
-      <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-xs tabular">
+      <div className="overflow-x-auto rounded-md border border-separator-border">
+        <table className="w-full text-caption-1-regular tabular">
           <thead>
-            <tr className="border-b border-border bg-surface-2/40">
-              <th className="text-left px-3 py-2 font-normal text-2xs text-text-muted">Rule</th>
+            <tr className="border-b border-separator-border bg-background-secondary-default">
+              <th className="text-left px-3 py-2 font-normal text-caption-2-regular text-text-tertiary">Rule</th>
               {STRATEGIES.map((s) => (
                 <th key={s.id} className={cn("text-right px-3 py-2 font-semibold", TONE[s.id].text)}>
                   {s.name}
@@ -188,13 +188,13 @@ function SpecTable() {
             {rows.map((r, i) => (
               <tr
                 key={r.label}
-                className={cn("border-b border-border/30 last:border-b-0", i % 2 === 1 && "bg-surface-2/20")}
+                className={cn("border-b border-separator-border last:border-b-0", i % 2 === 1 && "bg-background-secondary-default")}
                 title={r.hint}
               >
                 <td className={cn(
                   "px-3 py-1.5 text-text-secondary",
-                  r.group === "exit" && "text-down/90",
-                  r.group === "hist" && "text-text-muted",
+                  r.group === "exit" && "text-status-rose-text/90",
+                  r.group === "hist" && "text-text-tertiary",
                 )}>
                   {r.label}
                 </td>
@@ -218,18 +218,18 @@ function ExitRules() {
     <section>
       <SectionLabel>The two exit rules, both always in effect</SectionLabel>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <div className="rounded-md border border-down/30 bg-down/[0.05] px-3 py-2.5">
-          <div className="text-xs font-semibold text-down mb-1">Rule #1 · delta trigger</div>
-          <p className="text-xs text-text-secondary leading-relaxed">
+        <div className="rounded-md border border-status-rose-text bg-status-rose-text/[0.05] px-3 py-2.5">
+          <div className="text-caption-1-regular font-semibold text-status-rose-text mb-1">Rule #1 · delta trigger</div>
+          <p className="text-caption-1-regular text-text-secondary leading-relaxed">
             Close the moment short-leg |Δ| reaches the trade&apos;s exit delta
             (30 / 36 / 42 / 32). The monitor tracks this every 5 minutes during
-            RTH and flags <span className="text-warning">warning</span> within 12 points of the
+            RTH and flags <span className="text-status-yellow-text">warning</span> within 12 points of the
             trigger.
           </p>
         </div>
-        <div className="rounded-md border border-down/30 bg-down/[0.05] px-3 py-2.5">
-          <div className="text-xs font-semibold text-down mb-1">Rule #2 · last trade day</div>
-          <p className="text-xs text-text-secondary leading-relaxed">
+        <div className="rounded-md border border-status-rose-text bg-status-rose-text/[0.05] px-3 py-2.5">
+          <div className="text-caption-1-regular font-semibold text-status-rose-text mb-1">Rule #2 · last trade day</div>
+          <p className="text-caption-1-regular text-text-secondary leading-relaxed">
             On the Thursday before expiration (index options stop trading Thursday
             close), close if the underlying is within the buffer (3% trad RUT, 2%
             others) of the short strike. Never carry it into settlement.
@@ -268,13 +268,13 @@ function DecisionTree() {
       <SectionLabel>Which one to place: the webinar decision tree</SectionLabel>
       <ol className="flex flex-col gap-1.5">
         {steps.map((s, i) => (
-          <li key={i} className="flex items-start gap-2.5 rounded-md border border-border/60 bg-surface-2/30 px-3 py-2">
-            <span className="shrink-0 w-4 h-4 rounded-full bg-surface-2 border border-border text-2xs tabular text-text-secondary flex items-center justify-center mt-0.5">
+          <li key={i} className="flex items-start gap-2.5 rounded-md border border-separator-border bg-background-secondary-default px-3 py-2">
+            <span className="shrink-0 w-4 h-4 rounded-full bg-background-secondary-default border border-separator-border text-caption-2-regular tabular text-text-secondary flex items-center justify-center mt-0.5">
               {i + 1}
             </span>
             <div className="min-w-0">
-              <div className="text-xs font-medium text-text-primary">{s.q}</div>
-              <div className={cn("text-xs leading-relaxed", s.tone ? TONE[s.tone].text : "text-text-secondary")}>
+              <div className="text-caption-1-regular font-medium text-text-primary">{s.q}</div>
+              <div className={cn("text-caption-1-regular leading-relaxed", s.tone ? TONE[s.tone].text : "text-text-secondary")}>
                 {s.a}
               </div>
             </div>
@@ -287,7 +287,7 @@ function DecisionTree() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-2xs text-text-muted font-medium mb-1.5">
+    <div className="text-caption-2-regular text-text-tertiary font-medium mb-1.5">
       {children}
     </div>
   );

@@ -18,17 +18,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { toast } from "@/components/ui/toaster";
-import {
-  Plus,
-  Trash2,
-  BookOpen,
-  Eye,
-  Edit3,
-  Save,
-  X as XIcon,
-  Search,
-  Tag,
-} from "lucide-react";
+import { RiAddLine as Plus, RiDeleteBinLine as Trash2, RiBookOpenLine as BookOpen, RiEyeLine as Eye, RiEditLine as Edit3, RiSaveLine as Save, RiCloseLine as XIcon, RiSearchLine as Search, RiPriceTag3Line as Tag } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 
 const MOODS: Mood[] = ["\u{1F680}", "\u{1F44D}", "\u{1F610}", "\u{1F44E}", "\u{1F480}"];
@@ -120,14 +110,14 @@ export default function JournalPage() {
         <div className="grid grid-cols-[280px_1fr] gap-3 flex-1 min-h-0">
           {/* left rail: filter + list */}
           <Card className="flex flex-col min-h-0 overflow-hidden">
-            <div className="p-2 border-b border-border/60 shrink-0 flex flex-col gap-2">
+            <div className="p-2 border-b border-separator-border shrink-0 flex flex-col gap-2">
               <div className="relative">
-                <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted" />
+                <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-text-tertiary" />
                 <Input
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                   placeholder="Search entries…"
-                  className="pl-7 h-7 text-xs"
+                  className="pl-7 h-7 text-caption-1-regular"
                 />
               </div>
               {tags.length > 0 && (
@@ -137,10 +127,10 @@ export default function JournalPage() {
                       key={t}
                       onClick={() => setTagFilter(tagFilter === t ? null : t)}
                       className={cn(
-                        "text-2xs px-1.5 py-0.5 rounded border transition-colors",
+                        "text-caption-2-regular px-1.5 py-0.5 rounded border transition-colors",
                         tagFilter === t
-                          ? "bg-accent/15 text-accent border-accent/30"
-                          : "bg-surface-2 text-text-muted border-border hover:text-text-secondary"
+                          ? "bg-status-blue-background text-accent-500 border-accent-500"
+                          : "bg-background-secondary-default text-text-tertiary border-separator-border hover:text-text-secondary"
                       )}
                     >
                       #{t}
@@ -149,7 +139,7 @@ export default function JournalPage() {
                   {overflowTagCount > 0 && (
                     <button
                       onClick={() => setShowAllTags((v) => !v)}
-                      className="text-2xs px-1.5 py-0.5 text-text-muted hover:text-text-secondary"
+                      className="text-caption-2-regular px-1.5 py-0.5 text-text-tertiary hover:text-text-secondary"
                     >
                       {showAllTags ? "less" : `+${overflowTagCount}`}
                     </button>
@@ -157,7 +147,7 @@ export default function JournalPage() {
                   {tagFilter && (
                     <button
                       onClick={() => setTagFilter(null)}
-                      className="text-2xs px-1.5 py-0.5 text-text-muted hover:text-down"
+                      className="text-caption-2-regular px-1.5 py-0.5 text-text-tertiary hover:text-status-rose-text"
                     >
                       clear
                     </button>
@@ -168,7 +158,7 @@ export default function JournalPage() {
 
             <div className="flex-1 overflow-y-auto">
               {filtered.length === 0 ? (
-                <div className="text-center py-6 text-xs text-text-muted">no matches</div>
+                <div className="text-center py-6 text-caption-1-regular text-text-tertiary">no matches</div>
               ) : (
                 filtered.map((e) => (
                   <button
@@ -178,19 +168,19 @@ export default function JournalPage() {
                       setEditing(false);
                     }}
                     className={cn(
-                      "w-full text-left px-3 py-2 border-b border-border/40 hover:bg-surface-2 transition-colors flex flex-col gap-0.5",
-                      activeId === e.id && "bg-surface-2"
+                      "w-full text-left px-3 py-2 border-b border-separator-border hover:bg-background-secondary-hover transition-colors flex flex-col gap-0.5",
+                      activeId === e.id && "bg-background-secondary-default"
                     )}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      {e.mood && <span className="text-2xs leading-none shrink-0 text-text-muted">{MOOD_LABEL[e.mood] ?? e.mood}</span>}
-                      <span className="text-xs font-medium text-text-primary truncate min-w-0">
+                      {e.mood && <span className="text-caption-2-regular leading-none shrink-0 text-text-tertiary">{MOOD_LABEL[e.mood] ?? e.mood}</span>}
+                      <span className="text-caption-1-regular font-medium text-text-primary truncate min-w-0">
                         {e.title || "(untitled)"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-2xs text-text-muted tabular">
+                    <div className="flex items-center gap-1.5 text-caption-2-regular text-text-tertiary tabular">
                       <span>{e.date}</span>
-                      {e.symbol && <span className="text-accent">{e.symbol}</span>}
+                      {e.symbol && <span className="text-accent-500">{e.symbol}</span>}
                       {e.tags.slice(0, 2).map((t) => (
                         <span key={t}>#{t}</span>
                       ))}
@@ -220,7 +210,7 @@ export default function JournalPage() {
                 />
               )
             ) : (
-              <div className="flex-1 flex items-center justify-center text-xs text-text-muted">
+              <div className="flex-1 flex items-center justify-center text-caption-1-regular text-text-tertiary">
                 Select an entry from the left, or create a new one.
               </div>
             )}
@@ -242,15 +232,15 @@ function Viewer({
 }) {
   return (
     <>
-      <div className="flex items-center gap-2 px-4 h-10 border-b border-border/60 shrink-0">
-        {entry.mood && <span className="text-xs leading-none text-text-secondary">{MOOD_LABEL[entry.mood] ?? entry.mood}</span>}
+      <div className="flex items-center gap-2 px-4 h-10 border-b border-separator-border shrink-0">
+        {entry.mood && <span className="text-caption-1-regular leading-none text-text-secondary">{MOOD_LABEL[entry.mood] ?? entry.mood}</span>}
         <div className="min-w-0">
-          <div className="text-sm font-medium text-text-primary leading-tight truncate">
+          <div className="text-body-2-regular font-medium text-text-primary leading-tight truncate">
             {entry.title || "(untitled)"}
           </div>
-          <div className="text-2xs text-text-muted tabular">
+          <div className="text-caption-2-regular text-text-tertiary tabular">
             {entry.date}
-            {entry.symbol && <> · <span className="text-accent">{entry.symbol}</span></>}
+            {entry.symbol && <> · <span className="text-accent-500">{entry.symbol}</span></>}
           </div>
         </div>
         <div className="ml-auto flex items-center gap-1">
@@ -274,9 +264,9 @@ function Viewer({
       </div>
 
       {entry.tags.length > 0 && (
-        <div className="px-4 py-2 border-b border-border/60 flex flex-wrap gap-1.5 shrink-0">
+        <div className="px-4 py-2 border-b border-separator-border flex flex-wrap gap-1.5 shrink-0">
           {entry.tags.map((t) => (
-            <Badge key={t} variant="default" className="text-2xs">
+            <Badge key={t} variant="default" className="text-caption-2-regular">
               #{t}
             </Badge>
           ))}
@@ -289,7 +279,7 @@ function Viewer({
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.body}</ReactMarkdown>
           </div>
         ) : (
-          <p className="text-xs text-text-muted">No body yet. Click edit to add one.</p>
+          <p className="text-caption-1-regular text-text-tertiary">No body yet. Click edit to add one.</p>
         )}
       </div>
     </>
@@ -323,12 +313,12 @@ function Editor({
 
   return (
     <>
-      <div className="flex items-center gap-2 px-3 h-10 border-b border-border/60 shrink-0">
+      <div className="flex items-center gap-2 px-3 h-10 border-b border-separator-border shrink-0">
         <Input
           value={draft.title}
           onChange={(e) => update("title", e.target.value)}
           placeholder="Title…"
-          className="h-7 text-xs font-medium"
+          className="h-7 text-caption-1-regular font-medium"
         />
         <div className="ml-auto flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={onCancel}>
@@ -342,37 +332,37 @@ function Editor({
         </div>
       </div>
 
-      <div className="px-3 py-2 border-b border-border/60 grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0 text-xs">
+      <div className="px-3 py-2 border-b border-separator-border grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0 text-caption-1-regular">
         <label className="flex items-center gap-2">
-          <span className="text-2xs text-text-muted">Date</span>
+          <span className="text-caption-2-regular text-text-tertiary">Date</span>
           <Input
             type="date"
             value={draft.date}
             onChange={(e) => update("date", e.target.value)}
-            className="h-7 flex-1 text-xs"
+            className="h-7 flex-1 text-caption-1-regular"
           />
         </label>
         <label className="flex items-center gap-2">
-          <span className="text-2xs text-text-muted">Symbol</span>
+          <span className="text-caption-2-regular text-text-tertiary">Symbol</span>
           <Input
             value={draft.symbol ?? ""}
             onChange={(e) => update("symbol", e.target.value.toUpperCase() || undefined)}
             placeholder="optional"
-            className="h-7 flex-1 text-xs tabular"
+            className="h-7 flex-1 text-caption-1-regular tabular"
           />
         </label>
         <label className="flex items-center gap-2 col-span-2">
-          <span className="text-2xs text-text-muted">Mood</span>
+          <span className="text-caption-2-regular text-text-tertiary">Mood</span>
           <div className="flex gap-1">
             {MOODS.map((m) => (
               <button
                 key={m}
                 onClick={() => update("mood", draft.mood === m ? undefined : m)}
                 className={cn(
-                  "px-2 h-7 text-2xs transition-colors leading-none border",
+                  "px-2 h-7 text-caption-2-regular transition-colors leading-none border",
                   draft.mood === m
-                    ? "bg-accent/15 border-accent text-text-primary"
-                    : "bg-surface-2 border-border text-text-secondary hover:border-border-strong"
+                    ? "bg-status-blue-background border-accent-500 text-text-primary"
+                    : "bg-background-secondary-default border-separator-border text-text-secondary hover:border-separator-border-strong"
                 )}
                 aria-pressed={draft.mood === m}
               >
@@ -383,13 +373,13 @@ function Editor({
         </label>
       </div>
 
-      <div className="px-3 py-2 border-b border-border/60 flex items-center gap-2 flex-wrap shrink-0">
-        <Tag size={11} className="text-text-muted" />
+      <div className="px-3 py-2 border-b border-separator-border flex items-center gap-2 flex-wrap shrink-0">
+        <Tag size={11} className="text-text-tertiary" />
         {draft.tags.map((t) => (
           <button
             key={t}
             onClick={() => removeTag(t)}
-            className="text-2xs px-1.5 py-0.5 rounded bg-accent/10 text-accent border border-accent/30 hover:bg-down/10 hover:text-down hover:border-down/30"
+            className="text-caption-2-regular px-1.5 py-0.5 rounded bg-status-blue-background text-accent-500 border border-accent-500 hover:bg-status-rose-background hover:text-status-rose-text hover:border-status-rose-text"
           >
             #{t} ×
           </button>
@@ -405,7 +395,7 @@ function Editor({
           }}
           onBlur={addTag}
           placeholder="add tag"
-          className="h-6 w-28 text-2xs"
+          className="h-6 w-28 text-caption-2-regular"
         />
       </div>
 
@@ -413,14 +403,14 @@ function Editor({
         value={draft.body}
         onChange={(e) => update("body", e.target.value)}
         placeholder="What did you see? What was the setup? What went right/wrong? Lessons?…"
-        className="flex-1 w-full bg-bg p-3 text-xs leading-relaxed text-text-primary placeholder:text-text-muted outline-none resize-none font-mono"
+        className="flex-1 w-full bg-background-full p-3 text-caption-1-regular leading-relaxed text-text-primary placeholder:text-text-tertiary outline-none resize-none tabular"
       />
 
-      <div className="flex items-center px-3 h-9 border-t border-border/60 shrink-0 text-2xs text-text-muted">
+      <div className="flex items-center px-3 h-9 border-t border-separator-border shrink-0 text-caption-2-regular text-text-tertiary">
         <span>Markdown supported. Preview after saving.</span>
         <button
           onClick={onDelete}
-          className="ml-auto text-text-muted hover:text-down transition-colors flex items-center gap-1"
+          className="ml-auto text-text-tertiary hover:text-status-rose-text transition-colors flex items-center gap-1"
         >
           <Trash2 size={10} />
           Delete entry

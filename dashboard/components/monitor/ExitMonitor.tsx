@@ -8,13 +8,13 @@ import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RiRefreshLine as RefreshCw } from "@remixicon/react";
 
 const STATUS_META: Record<MonitorEntry["status"], { label: string; tone: string; dot: string }> = {
-  safe:    { label: "safe",         tone: "text-up",         dot: "bg-up" },
-  warning: { label: "near trigger", tone: "text-warning",    dot: "bg-warning" },
-  trigger: { label: "exit now",     tone: "text-down",       dot: "bg-down" },
-  unknown: { label: "no data",      tone: "text-text-muted", dot: "bg-text-muted" },
+  safe:    { label: "safe",         tone: "text-status-lime-text",         dot: "bg-status-lime-text" },
+  warning: { label: "near trigger", tone: "text-status-yellow-text",    dot: "bg-status-yellow-text" },
+  trigger: { label: "exit now",     tone: "text-status-rose-text",       dot: "bg-status-rose-text" },
+  unknown: { label: "no data",      tone: "text-text-tertiary", dot: "bg-foreground-icon-quaternary" },
 };
 
 export function ExitMonitor() {
@@ -102,16 +102,16 @@ function SummaryStrip({ snap }: { snap: MonitorSnapshot | null }) {
   const safe = snap.count - (snap.warning ?? 0) - (snap.triggered ?? 0);
   const stats: [string, string, string?][] = [
     ["watching",  snap.count.toString()],
-    ["safe",      safe.toString(), safe > 0 ? "text-up" : undefined],
-    ["warning",   snap.warning.toString(), snap.warning > 0 ? "text-warning" : undefined],
-    ["trigger",   snap.triggered.toString(), snap.triggered > 0 ? "text-down" : undefined],
+    ["safe",      safe.toString(), safe > 0 ? "text-status-lime-text" : undefined],
+    ["warning",   snap.warning.toString(), snap.warning > 0 ? "text-status-yellow-text" : undefined],
+    ["trigger",   snap.triggered.toString(), snap.triggered > 0 ? "text-status-rose-text" : undefined],
   ];
   return (
     <div className="grid grid-cols-4 gap-x-4 md:gap-x-10 py-2">
       {stats.map(([k, v, tone]) => (
         <div key={k}>
-          <div className="text-2xs text-text-muted mb-1.5">{k}</div>
-          <div className={cn("text-xl md:text-2xl font-semibold tabular", tone ?? "text-text-primary")}>
+          <div className="text-caption-2-regular text-text-tertiary mb-1.5">{k}</div>
+          <div className={cn("text-title-2-regular md:text-title-1-regular font-semibold tabular", tone ?? "text-text-primary")}>
             {v}
           </div>
         </div>
@@ -129,30 +129,30 @@ function Row({ entry }: { entry: MonitorEntry }) {
   const triggerPct = Math.min(100, (trigger / 50) * 100);
 
   return (
-    <div className="border-t border-border/40 py-3">
+    <div className="border-t border-separator-border py-3">
       <div className="flex items-baseline justify-between gap-4 mb-5">
         <div className="flex items-baseline gap-3 min-w-0">
           <span className={cn("w-1.5 h-1.5 rounded-full translate-y-[-2px] shrink-0", meta.dot)} />
-          <div className="font-mono text-base tabular text-text-primary truncate">
-            {entry.symbol} {entry.short_strike}<span className="text-text-muted"> / </span>{entry.long_strike}
+          <div className="tabular text-headline-regular tabular text-text-primary truncate">
+            {entry.symbol} {entry.short_strike}<span className="text-text-tertiary"> / </span>{entry.long_strike}
           </div>
-          <span className="text-text-muted text-2xs hidden sm:inline">{entry.spread_type}</span>
+          <span className="text-text-tertiary text-caption-2-regular hidden sm:inline">{entry.spread_type}</span>
         </div>
-        <div className={cn("text-xs shrink-0", meta.tone)}>{meta.label}</div>
+        <div className={cn("text-caption-1-regular shrink-0", meta.tone)}>{meta.label}</div>
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-2">
         {/* delta scale */}
         <div className="relative h-8 flex-1">
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-border/60" />
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-separator-border" />
           {/* trigger threshold marker */}
           <div
-            className="absolute top-1 bottom-1 w-px bg-down/60"
+            className="absolute top-1 bottom-1 w-px bg-status-rose-background"
             style={{ left: `${triggerPct}%` }}
             aria-label={`exit Δ ${trigger}`}
           />
           <div
-            className="absolute -top-0.5 text-2xs tabular text-down/80 -translate-x-1/2"
+            className="absolute -top-0.5 text-caption-2-regular tabular text-status-rose-text/80 -translate-x-1/2"
             style={{ left: `${triggerPct}%` }}
           >
             exit {trigger}
@@ -163,12 +163,12 @@ function Row({ entry }: { entry: MonitorEntry }) {
               <div
                 className={cn(
                   "absolute top-1/2 w-2.5 h-2.5 rounded-full ring-2 ring-bg",
-                  entry.status === "trigger" ? "bg-down" : entry.status === "warning" ? "bg-warning" : "bg-up"
+                  entry.status === "trigger" ? "bg-status-rose-text" : entry.status === "warning" ? "bg-status-yellow-text" : "bg-status-lime-text"
                 )}
                 style={{ left: `${pct}%`, transform: "translate(-50%, -50%)" }}
               />
               <div
-                className="absolute -bottom-0.5 text-2xs tabular text-text-secondary -translate-x-1/2"
+                className="absolute -bottom-0.5 text-caption-2-regular tabular text-text-secondary -translate-x-1/2"
                 style={{ left: `${pct}%` }}
               >
                 Δ {current.toFixed(1)}
@@ -177,10 +177,10 @@ function Row({ entry }: { entry: MonitorEntry }) {
           )}
         </div>
 
-        <div className="flex items-baseline justify-between md:justify-end gap-4 md:gap-3 text-xs tabular shrink-0">
+        <div className="flex items-baseline justify-between md:justify-end gap-4 md:gap-3 text-caption-1-regular tabular shrink-0">
           <span className="text-text-secondary">{entry.quantity}× contract{entry.quantity !== 1 ? "s" : ""}</span>
-          <span className="text-text-muted">·</span>
-          <span className="text-text-muted">
+          <span className="text-text-tertiary">·</span>
+          <span className="text-text-tertiary">
             headroom <span className={cn(meta.tone, "font-medium")}>{entry.headroom != null ? entry.headroom.toFixed(1) : "n/a"}</span>
           </span>
         </div>
@@ -192,8 +192,8 @@ function Row({ entry }: { entry: MonitorEntry }) {
 function EmptyState() {
   return (
     <div className="py-16 text-center">
-      <p className="text-sm text-text-secondary">No open spreads to watch.</p>
-      <p className="text-xs text-text-muted mt-2">
+      <p className="text-body-2-regular text-text-secondary">No open spreads to watch.</p>
+      <p className="text-caption-1-regular text-text-tertiary mt-2">
         When you open a credit spread, it'll appear here and the monitor will track its delta every 5 minutes during market hours.
       </p>
     </div>
@@ -202,9 +202,9 @@ function EmptyState() {
 
 function Footer({ jobs, lastRun }: { jobs: ScheduledJob[]; lastRun: string | null }) {
   return (
-    <div className="border-t border-border/40 pt-4 flex items-baseline justify-between text-2xs text-text-muted">
+    <div className="border-t border-separator-border pt-4 flex items-baseline justify-between text-caption-2-regular text-text-tertiary">
       <span>Last checked {lastRun ? new Date(lastRun).toLocaleTimeString() : "never"}</span>
-      <span className="text-xs text-text-secondary">
+      <span className="text-caption-1-regular text-text-secondary">
         {(Array.isArray(jobs) && jobs.length > 0) ? `Scheduled: ${jobs.map((j) => j.id).join(", ")}` : "No jobs scheduled"}
       </span>
     </div>

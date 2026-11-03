@@ -29,10 +29,10 @@ function ToneDot({ tone }: { tone: Insight["tone"] }) {
     <span
       className={cn(
         "inline-block w-1.5 h-1.5 rounded-full shrink-0 translate-y-[5px]",
-        tone === "up" && "bg-up",
-        tone === "down" && "bg-down",
-        tone === "warning" && "bg-warning",
-        tone === "neutral" && "bg-text-muted",
+        tone === "up" && "bg-status-lime-text",
+        tone === "down" && "bg-status-rose-text",
+        tone === "warning" && "bg-status-yellow-text",
+        tone === "neutral" && "bg-foreground-icon-quaternary",
       )}
     />
   );
@@ -41,7 +41,7 @@ function ToneDot({ tone }: { tone: Insight["tone"] }) {
 function InsightList({ items }: { items: Insight[] }) {
   if (items.length === 0) {
     return (
-      <div className="text-xs text-text-muted">
+      <div className="text-caption-1-regular text-text-tertiary">
         No specific signals to flag.
       </div>
     );
@@ -53,16 +53,16 @@ function InsightList({ items }: { items: Insight[] }) {
           <ToneDot tone={it.tone} />
           <div className="min-w-0">
             <span className={cn(
-              "text-xs tabular font-medium",
-              it.tone === "up" && "text-up",
-              it.tone === "down" && "text-down",
-              it.tone === "warning" && "text-warning",
+              "text-caption-1-regular tabular font-medium",
+              it.tone === "up" && "text-status-lime-text",
+              it.tone === "down" && "text-status-rose-text",
+              it.tone === "warning" && "text-status-yellow-text",
               it.tone === "neutral" && "text-text-primary",
             )}>
               {it.label}
             </span>
             {it.detail && (
-              <span className="text-xs text-text-secondary">: {it.detail}</span>
+              <span className="text-caption-1-regular text-text-secondary">: {it.detail}</span>
             )}
           </div>
         </li>
@@ -358,8 +358,8 @@ interface Props {
 export function UnderlyingInsights({ result }: Props) {
   const items = buildUnderlyingInsights(result);
   return (
-    <div className="px-3 py-3 border-t border-border/40 bg-surface-2/30">
-      <div className="text-2xs text-text-muted font-medium mb-2">
+    <div className="px-3 py-3 border-t border-separator-border bg-background-secondary-default">
+      <div className="text-caption-2-regular text-text-tertiary font-medium mb-2">
         Read the chart
       </div>
       <InsightList items={items} />
@@ -370,8 +370,8 @@ export function UnderlyingInsights({ result }: Props) {
 export function OptionInsights({ result }: Props) {
   const items = buildOptionInsights(result);
   return (
-    <div className="px-3 py-3 border-t border-border/40 bg-surface-2/30">
-      <div className="text-2xs text-text-muted font-medium mb-2">
+    <div className="px-3 py-3 border-t border-separator-border bg-background-secondary-default">
+      <div className="text-caption-2-regular text-text-tertiary font-medium mb-2">
         Read the chart
       </div>
       <InsightList items={items} />
@@ -382,8 +382,8 @@ export function OptionInsights({ result }: Props) {
 export function PnlInsights({ result }: Props) {
   const items = buildPnlInsights(result);
   return (
-    <div className="px-3 py-3 border-t border-border/40 bg-surface-2/30">
-      <div className="text-2xs text-text-muted font-medium mb-2">
+    <div className="px-3 py-3 border-t border-separator-border bg-background-secondary-default">
+      <div className="text-caption-2-regular text-text-tertiary font-medium mb-2">
         Position read
       </div>
       <InsightList items={items} />

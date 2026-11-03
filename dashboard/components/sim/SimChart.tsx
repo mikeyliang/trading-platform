@@ -268,19 +268,19 @@ export function SimChart({ payload }: Props) {
         </div>
       </div>
 
-      <div ref={priceRef} className="w-full h-80 bg-bg border border-border rounded-md overflow-hidden" />
+      <div ref={priceRef} className="w-full h-80 bg-background-full border border-separator-border rounded-md overflow-hidden" />
 
-      <div className="flex items-center gap-3 px-1 text-2xs text-text-muted tabular">
-        <span><span className="text-up">▲</span> entry, score 0 to 7</span>
-        <span><span className="text-up">▼</span><span className="text-down">▼</span> exit ± P&L</span>
+      <div className="flex items-center gap-3 px-1 text-caption-2-regular text-text-tertiary tabular">
+        <span><span className="text-status-lime-text">▲</span> entry, score 0 to 7</span>
+        <span><span className="text-status-lime-text">▼</span><span className="text-status-rose-text">▼</span> exit ± P&L</span>
         {showStructure && <span><span style={{ color: COLORS.cyan }}>●</span> CHoCH</span>}
         <span className="ml-auto">dotted lines: POC / VAH / VAL</span>
       </div>
 
       {PANES.filter((p) => activePanes.includes(p.key)).map((p) => (
-        <div key={p.key} className="border border-border rounded-md overflow-hidden bg-bg">
-          <div className="flex items-center px-2 h-5 border-b border-border/60">
-            <span className="text-2xs text-text-muted">{p.label}</span>
+        <div key={p.key} className="border border-separator-border rounded-md overflow-hidden bg-background-full">
+          <div className="flex items-center px-2 h-5 border-b border-separator-border">
+            <span className="text-caption-2-regular text-text-tertiary">{p.label}</span>
           </div>
           <div ref={paneRefs[p.key]} className="w-full h-24" />
         </div>
@@ -296,11 +296,11 @@ function Toggle({ on, onClick, swatch, children }: {
     <button
       onClick={onClick}
       className={cn(
-        "px-1.5 h-5 rounded text-2xs transition-colors flex items-center gap-1",
-        on ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
+        "px-1.5 h-5 rounded text-caption-2-regular transition-colors flex items-center gap-1",
+        on ? "bg-background-tertiary-default text-text-primary" : "text-text-tertiary hover:text-text-secondary"
       )}
     >
-      {swatch && <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? swatch : "rgb(var(--c-border))" }} />}
+      {swatch && <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? swatch : "var(--color-border)" }} />}
       {children}
     </button>
   );

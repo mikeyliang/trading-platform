@@ -101,23 +101,23 @@ export function OptionEmaChart({ prices, ema9, ema21, title, height = 200 }: Pro
     <div className="relative w-full">
       <div className="flex items-center gap-2 mb-1">
         {title && (
-          <span className="text-2xs text-text-muted">{title}</span>
+          <span className="text-caption-2-regular text-text-tertiary">{title}</span>
         )}
-        <span className="text-2xs tabular text-text-secondary ml-auto">
+        <span className="text-caption-2-regular tabular text-text-secondary ml-auto">
           {hover ? (
             <>
-              <span className="text-text-muted">{hover.ago === 0 ? "now" : `−${hover.ago}d`}</span>
+              <span className="text-text-tertiary">{hover.ago === 0 ? "now" : `−${hover.ago}d`}</span>
               <span className="ml-2 text-sky-400">px</span>{" "}
               <span className="text-text-primary font-medium">${hover.price?.toFixed(2)}</span>
               <span className="ml-2 text-green-500">E9</span>{" "}
               <span className="text-text-primary">${hover.e9?.toFixed(2)}</span>
-              <span className="ml-2 text-amber-400">E21</span>{" "}
+              <span className="ml-2 text-status-orange-text-400">E21</span>{" "}
               <span className="text-text-primary">${hover.e21?.toFixed(2)}</span>
             </>
           ) : (
             <>
               last <span className="text-text-primary font-medium">${last?.toFixed(2)}</span>
-              <span className={change >= 0 ? "text-up ml-2" : "text-down ml-2"}>
+              <span className={change >= 0 ? "text-status-lime-text ml-2" : "text-status-rose-text ml-2"}>
                 {change >= 0 ? "+" : ""}
                 {change.toFixed(1)}%
               </span>
@@ -202,7 +202,7 @@ export function OptionEmaChart({ prices, ema9, ema21, title, height = 200 }: Pro
           </g>
         )}
       </svg>
-      <div className="flex items-center gap-3 text-2xs text-text-secondary mt-0.5">
+      <div className="flex items-center gap-3 text-caption-2-regular text-text-secondary mt-0.5">
         <span className="flex items-center gap-1">
           <span className="inline-block w-2.5 h-0.5 bg-sky-400" /> price
         </span>
@@ -210,7 +210,7 @@ export function OptionEmaChart({ prices, ema9, ema21, title, height = 200 }: Pro
           <span className="inline-block w-2.5 h-0.5 bg-green-500" /> EMA9
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-2.5 h-0.5 bg-amber-400" /> EMA21
+          <span className="inline-block w-2.5 h-0.5 bg-status-orange-background-400" /> EMA21
         </span>
       </div>
     </div>

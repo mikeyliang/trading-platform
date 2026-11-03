@@ -71,13 +71,13 @@ export function UnderlyingAnalysisCard({
   const chart = result.chart;
   if (!chart) {
     return (
-      <div className="rounded-md border border-border bg-bg overflow-hidden">
-        <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
-          <span className="text-2xs text-text-muted">
+      <div className="rounded-md border border-separator-border bg-background-full overflow-hidden">
+        <div className="flex items-center gap-2 px-3 h-8 border-b border-separator-border bg-background-primary-default">
+          <span className="text-caption-2-regular text-text-tertiary">
             Underlying analysis
           </span>
         </div>
-        <div className="h-[200px] flex items-center justify-center text-xs text-text-muted">
+        <div className="h-[200px] flex items-center justify-center text-caption-1-regular text-text-tertiary">
           Indicator data unavailable. The backend may need a restart.
         </div>
       </div>
@@ -140,11 +140,11 @@ export function UnderlyingAnalysisCard({
 
   return (
     <div
-      className="flex flex-col rounded-md border border-border bg-surface overflow-hidden shrink-0"
+      className="flex flex-col rounded-md border border-separator-border bg-background-primary-default overflow-hidden shrink-0"
       style={{ minHeight: 760 }}
     >
-      <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
-        <span className="text-2xs text-text-muted">
+      <div className="flex items-center gap-2 px-3 h-8 border-b border-separator-border bg-background-primary-default">
+        <span className="text-caption-2-regular text-text-tertiary">
           Underlying
         </span>
         <span className="ml-auto flex items-center gap-3">
@@ -171,28 +171,28 @@ export function UnderlyingAnalysisCard({
       </div>
 
       {chart.bars.length < 5 ? (
-        <div className="h-[300px] flex items-center justify-center text-xs text-text-muted">
+        <div className="h-[300px] flex items-center justify-center text-caption-1-regular text-text-tertiary">
           Not enough data for {timeframe} bars yet.
         </div>
       ) : (
         <>
           {/* TradingChart-style OHLCV header strip. Hover-driven; falls
               back to the last bar on pointer-leave. */}
-          <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-border/60 bg-surface shrink-0 flex-wrap">
+          <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-separator-border bg-background-primary-default shrink-0 flex-wrap">
             <div className="flex items-baseline gap-2">
-              <span className="font-medium text-sm text-text-primary">
+              <span className="font-medium text-body-2-regular text-text-primary">
                 {symbolLabel}
               </span>
               {headerDisplay && (
-                <span className="text-base tabular font-medium text-text-primary">
+                <span className="text-headline-regular tabular font-medium text-text-primary">
                   {fmt(headerDisplay.c)}
                 </span>
               )}
               {headerDisplay && (
                 <span
                   className={cn(
-                    "text-xs tabular leading-none px-1.5 py-0.5 rounded",
-                    positive ? "text-up bg-up/10" : "text-down bg-down/10",
+                    "text-caption-1-regular tabular leading-none px-1.5 py-0.5 rounded",
+                    positive ? "text-status-lime-text bg-status-lime-background" : "text-status-rose-text bg-status-rose-background",
                   )}
                 >
                   {positive ? "+" : ""}
@@ -202,13 +202,13 @@ export function UnderlyingAnalysisCard({
                 </span>
               )}
               {hover?.barIdx != null && headerDisplay && (
-                <span className="text-2xs tabular text-text-muted ml-1">
+                <span className="text-caption-2-regular tabular text-text-tertiary ml-1">
                   {formatBarTime(headerDisplay.time, timeframe)}
                 </span>
               )}
             </div>
             {headerDisplay && (
-              <div className="hidden md:flex items-center gap-3 text-2xs text-text-muted">
+              <div className="hidden md:flex items-center gap-3 text-caption-2-regular text-text-tertiary">
                 <span>O <OhlcVal n={headerDisplay.o} /></span>
                 <span>H <OhlcVal n={headerDisplay.h} tone="up" /></span>
                 <span>L <OhlcVal n={headerDisplay.l} tone="down" /></span>
@@ -1020,9 +1020,9 @@ function PaneStack({
             Height reduced from 560 → 400 so the analyzer page doesn't
             scroll forever, the three subpanes already add 300+ px of
             indicator context below. */}
-      <div className="relative bg-bg border-t border-border shrink-0" style={{ height: 400 }}>
+      <div className="relative bg-background-full border-t border-separator-border shrink-0" style={{ height: 400 }}>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-0">
-          <span className="text-[88px] font-medium text-text-muted/[0.04]">
+          <span className="text-[88px] font-medium text-text-tertiary/[0.04]">
             {symbolWatermark}
           </span>
         </div>
@@ -1034,10 +1034,10 @@ function PaneStack({
         {(tradeMarkers.renderedCount > 0 || tradeMarkers.trades.length > 0) && (
           <div
             className={cn(
-              "absolute top-2 left-2 z-20 inline-flex items-center gap-1 h-5 px-1.5 rounded-sm border text-2xs tabular pointer-events-none",
+              "absolute top-2 left-2 z-20 inline-flex items-center gap-1 h-5 px-1.5 rounded-sm border text-caption-2-regular tabular pointer-events-none",
               tradeMarkers.renderedCount > 0
-                ? "border-up/30 bg-up/10 text-up"
-                : "border-warning/30 bg-warning/10 text-warning",
+                ? "border-status-lime-text bg-status-lime-background text-status-lime-text"
+                : "border-status-yellow-text bg-status-yellow-background text-status-yellow-text",
             )}
             title={`${tradeMarkers.trades.length} trade(s) on ${symbolWatermark}; ${tradeMarkers.renderedCount} pinned in the loaded range. Click a marker to journal.`}
           >
@@ -1059,12 +1059,12 @@ function PaneStack({
           />
         )}
         {initError && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-bg/70 backdrop-blur-sm p-4">
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-background-full backdrop-blur-sm p-4">
             <div className="max-w-md text-center">
-              <div className="text-down text-xs font-semibold mb-1">
+              <div className="text-status-rose-text text-caption-1-regular font-semibold mb-1">
                 chart failed to initialize
               </div>
-              <div className="text-text-secondary text-xs tabular">
+              <div className="text-text-secondary text-caption-1-regular tabular">
                 {initError}
               </div>
             </div>
@@ -1073,7 +1073,7 @@ function PaneStack({
       </div>
 
       {/* ── Subpanes, each block mirrors the SMI subpane in TradingChart:
-            border-t, bg-bg, h-6 header strip with label · params · legend,
+            border-t, bg-background-full, h-6 header strip with label · params · legend,
             chart canvas below. Same look across all three sub-panes. */}
       <Subpane
         label="RSI"
@@ -1138,13 +1138,13 @@ function Subpane({
   containerRef: React.RefObject<HTMLDivElement>;
 }) {
   return (
-    <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }}>
-      <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-        <span className="text-2xs text-text-muted">
+    <div className="border-t border-separator-border bg-background-full shrink-0" style={{ height: 140 }}>
+      <div className="flex items-center gap-3 px-3 h-6 border-b border-separator-border">
+        <span className="text-caption-2-regular text-text-tertiary">
           {label}
         </span>
-        <span className="text-2xs tabular text-text-muted">{params}</span>
-        <div className="ml-auto flex items-center gap-3 text-2xs tabular text-text-muted">
+        <span className="text-caption-2-regular tabular text-text-tertiary">{params}</span>
+        <div className="ml-auto flex items-center gap-3 text-caption-2-regular tabular text-text-tertiary">
           {legend.map((l) => (
             <span key={l.label} className="flex items-center gap-1">
               <span
@@ -1169,7 +1169,7 @@ function Subpane({
 function tonedLast(series: number[], hi: number, lo: number) {
   const v = series[series.length - 1];
   if (!Number.isFinite(v)) return null;
-  const cls = v >= hi ? "text-down" : v <= lo ? "text-up" : "text-text-secondary";
+  const cls = v >= hi ? "text-status-rose-text" : v <= lo ? "text-status-lime-text" : "text-text-secondary";
   return { value: v.toFixed(0), cls };
 }
 function tonedDelta(a: number, b: number) {
@@ -1177,7 +1177,7 @@ function tonedDelta(a: number, b: number) {
   const d = a - b;
   return {
     value: `${a.toFixed(2)} / ${b.toFixed(2)}`,
-    cls: d >= 0 ? "text-up" : "text-down",
+    cls: d >= 0 ? "text-status-lime-text" : "text-status-rose-text",
   };
 }
 
@@ -1194,9 +1194,9 @@ function OhlcVal({
   compact?: boolean;
 }) {
   const cls =
-    tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-secondary";
+    tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text" : "text-text-secondary";
   return (
-    <span className={cn("normal-case tracking-normal text-xs tabular", cls)}>
+    <span className={cn("normal-case tracking-normal text-caption-1-regular tabular", cls)}>
       {compact ? fmtCompact(n) : fmt(n)}
     </span>
   );
@@ -1229,11 +1229,11 @@ function ForecastReadout({
   const dayOffset = fcStep + 1;
   const pctFromSpot = ((med - spot) / spot) * 100;
   const pctTone =
-    pctFromSpot >= 0.1 ? "text-up" : pctFromSpot <= -0.1 ? "text-down" : "text-text-muted";
+    pctFromSpot >= 0.1 ? "text-status-lime-text" : pctFromSpot <= -0.1 ? "text-status-rose-text" : "text-text-tertiary";
   return (
-    <div className="flex items-center gap-3 px-3 py-1.5 border-t border-border/60 bg-surface text-2xs tabular text-text-secondary flex-wrap">
+    <div className="flex items-center gap-3 px-3 py-1.5 border-t border-separator-border bg-background-primary-default text-caption-2-regular tabular text-text-secondary flex-wrap">
       <span
-        className="text-2xs font-medium"
+        className="text-caption-2-regular font-medium"
         style={{ color: CHART.forecast.cone }}
       >
         forecast +{dayOffset}d · {formatBarTime(projTime, "1d")}
@@ -1296,7 +1296,7 @@ function inferBarStepSeconds(
 function ControlGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-2xs text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       {children}
     </div>
   );
@@ -1314,18 +1314,18 @@ function TimeframePills({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex h-6 rounded-md border border-border overflow-hidden tabular">
+    <div className="flex h-6 rounded-md border border-separator-border overflow-hidden tabular">
       {options.map((tf, i) => (
         <button
           key={tf}
           onClick={() => !disabled && onChange(tf)}
           disabled={disabled}
           className={cn(
-            "px-2 text-2xs font-medium transition-colors",
-            i > 0 && "border-l border-border",
+            "px-2 text-caption-2-regular font-medium transition-colors",
+            i > 0 && "border-l border-separator-border",
             value === tf
-              ? "bg-accent/15 text-accent"
-              : "text-text-muted hover:bg-surface-2",
+              ? "bg-status-blue-background text-accent-500"
+              : "text-text-tertiary hover:bg-background-secondary-hover",
             disabled && "opacity-50 cursor-not-allowed",
           )}
         >
@@ -1350,7 +1350,7 @@ function ForecastHorizonPicker({
   agreement: Record<string, number>;
 }) {
   return (
-    <div className="flex h-6 rounded-md border border-border overflow-hidden tabular">
+    <div className="flex h-6 rounded-md border border-separator-border overflow-hidden tabular">
       {horizons.map((h, i) => {
         const hf = data[String(h)];
         const er = hf?.expected_return_pct ?? 0;
@@ -1363,19 +1363,19 @@ function ForecastHorizonPicker({
             key={h}
             onClick={() => onSelect(h)}
             className={cn(
-              "px-2 text-2xs transition-colors flex items-center gap-1",
-              i > 0 && "border-l border-border",
-              isSel ? "bg-accent/15" : "hover:bg-surface-2",
+              "px-2 text-caption-2-regular transition-colors flex items-center gap-1",
+              i > 0 && "border-l border-separator-border",
+              isSel ? "bg-status-blue-background" : "hover:bg-background-secondary-hover",
             )}
             title={`${h}d: median ${er >= 0 ? "+" : ""}${er.toFixed(2)}%, ±${band.toFixed(1)}% band, ${(agree * 100).toFixed(0)}% agreement`}
           >
-            <span className={cn("font-medium", isSel ? "text-accent" : "text-text-muted")}>
+            <span className={cn("font-medium", isSel ? "text-accent-500" : "text-text-tertiary")}>
               {h}d
             </span>
             <span
               className={cn(
                 "tabular",
-                dir === "up" ? "text-up" : dir === "down" ? "text-down" : "text-text-muted",
+                dir === "up" ? "text-status-lime-text" : dir === "down" ? "text-status-rose-text" : "text-text-tertiary",
               )}
             >
               {er >= 0 ? "+" : ""}

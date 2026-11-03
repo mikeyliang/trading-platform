@@ -44,7 +44,7 @@ function MicrostructureContent() {
               <Input
                 value={pending}
                 onChange={(e) => setPending(e.target.value.toUpperCase())}
-                className="h-7 w-24 font-semibold tabular text-xs"
+                className="h-7 w-24 font-semibold tabular text-caption-1-regular"
               />
             </form>
           </div>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, type OptionsChain } from "@/lib/api";
 import { cn, fmtCompact } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Loader2, Sigma } from "lucide-react";
+import { RiLoader4Line as Loader2, RiFunctions as Sigma } from "@remixicon/react";
 import {
   Select,
   SelectTrigger,
@@ -94,16 +94,16 @@ export function OpenInterestByStrike({ symbol }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-2 h-7 border-b border-border/60 text-2xs text-text-muted">
-        <Sigma size={10} className="text-accent" />
+      <div className="flex items-center gap-2 px-2 h-7 border-b border-separator-border text-caption-2-regular text-text-tertiary">
+        <Sigma size={10} className="text-accent-500" />
         <span>Open Interest · {symbol}</span>
         <Select value={expiry} onValueChange={setExpiry} disabled={expirations.length === 0}>
-          <SelectTrigger className="h-6 w-24 text-2xs tabular ml-auto">
+          <SelectTrigger className="h-6 w-24 text-caption-2-regular tabular ml-auto">
             <SelectValue placeholder="n/a" />
           </SelectTrigger>
           <SelectContent>
             {expirations.map((e) => (
-              <SelectItem key={e} value={e} className="text-2xs tabular">{fmtExp(e)}</SelectItem>
+              <SelectItem key={e} value={e} className="text-caption-2-regular tabular">{fmtExp(e)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -111,17 +111,17 @@ export function OpenInterestByStrike({ symbol }: Props) {
 
       {loading && !chain ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 size={14} className="animate-spin text-text-muted" />
+          <Loader2 size={14} className="animate-spin text-text-tertiary" />
         </div>
       ) : rows.length === 0 || (callOI === 0 && putOI === 0) ? (
         <EmptyState icon={Sigma} title="No OI data" description="Chain returned no open-interest values." />
       ) : (
         <div className="flex-1 overflow-auto">
           {/* Header: calls on the left mirror, strike centre, puts on the right */}
-          <div className="grid grid-cols-[1fr_64px_1fr] px-2 h-5 items-center text-2xs text-text-muted border-b border-border/40">
-            <span className="text-right text-up">Calls OI</span>
+          <div className="grid grid-cols-[1fr_64px_1fr] px-2 h-5 items-center text-caption-2-regular text-text-tertiary border-b border-separator-border">
+            <span className="text-right text-status-lime-text">Calls OI</span>
             <span className="text-center">Strike</span>
-            <span className="text-left text-down">Puts OI</span>
+            <span className="text-left text-status-rose-text">Puts OI</span>
           </div>
           {rows.slice().reverse().map((r) => {
             const isMaxPain = maxPain != null && r.strike === maxPain;
@@ -132,34 +132,34 @@ export function OpenInterestByStrike({ symbol }: Props) {
               <div
                 key={r.strike}
                 className={cn(
-                  "grid grid-cols-[1fr_64px_1fr] items-center h-[16px] px-2 text-2xs tabular border-b border-border/15",
-                  isMaxPain && "bg-warning/10",
-                  isNearSpot && !isMaxPain && "bg-accent/8"
+                  "grid grid-cols-[1fr_64px_1fr] items-center h-[16px] px-2 text-caption-2-regular tabular border-b border-separator-border",
+                  isMaxPain && "bg-status-yellow-background",
+                  isNearSpot && !isMaxPain && "bg-status-blue-background"
                 )}
               >
                 {/* Call bar (mirrored: grows right→left) */}
                 <div className="relative h-full flex items-center justify-end">
-                  <span className="absolute right-0 mr-1 text-up font-medium z-10">
+                  <span className="absolute right-0 mr-1 text-status-lime-text font-medium z-10">
                     {r.call > 0 ? fmtCompact(r.call) : ""}
                   </span>
                   <span
-                    className="h-[10px] bg-up/30 rounded-sm"
+                    className="h-[10px] bg-status-lime-background rounded-sm"
                     style={{ width: `${callW}%` }}
                   />
                 </div>
                 <span className={cn(
                   "text-center font-medium",
-                  isMaxPain ? "text-warning" : isNearSpot ? "text-accent" : "text-text-secondary"
+                  isMaxPain ? "text-status-yellow-text" : isNearSpot ? "text-accent-500" : "text-text-secondary"
                 )}>
                   {r.strike}
                 </span>
                 {/* Put bar (grows left→right) */}
                 <div className="relative h-full flex items-center">
                   <span
-                    className="h-[10px] bg-down/30 rounded-sm"
+                    className="h-[10px] bg-status-rose-background rounded-sm"
                     style={{ width: `${putW}%` }}
                   />
-                  <span className="absolute left-0 ml-1 text-down font-medium z-10">
+                  <span className="absolute left-0 ml-1 text-status-rose-text font-medium z-10">
                     {r.put > 0 ? fmtCompact(r.put) : ""}
                   </span>
                 </div>
@@ -170,12 +170,12 @@ export function OpenInterestByStrike({ symbol }: Props) {
       )}
 
       {rows.length > 0 && (
-        <div className="grid grid-cols-3 px-2 h-6 items-center border-t border-border/60 text-2xs tabular text-text-muted">
+        <div className="grid grid-cols-3 px-2 h-6 items-center border-t border-separator-border text-caption-2-regular tabular text-text-tertiary">
           <span>P/C OI <span className={cn(
             "font-medium",
-            pcr != null && pcr > 1.2 ? "text-down" : pcr != null && pcr < 0.7 ? "text-up" : "text-text-secondary"
+            pcr != null && pcr > 1.2 ? "text-status-rose-text" : pcr != null && pcr < 0.7 ? "text-status-lime-text" : "text-text-secondary"
           )}>{pcr != null ? pcr.toFixed(2) : "n/a"}</span></span>
-          <span className="text-center">Max Pain <span className="text-warning font-medium">{maxPain ?? "n/a"}</span></span>
+          <span className="text-center">Max Pain <span className="text-status-yellow-text font-medium">{maxPain ?? "n/a"}</span></span>
           <span className="text-right">spot <span className="text-text-primary font-medium">{spot != null ? spot.toFixed(2) : "n/a"}</span></span>
         </div>
       )}

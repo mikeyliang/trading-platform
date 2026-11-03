@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import { Plus, X, CheckCircle2 } from "lucide-react";
+import { RiAddLine as Plus, RiCloseLine as X, RiCheckboxCircleFill as CheckCircle2 } from "@remixicon/react";
 
 const TRADE_TYPES = [
   { value: "rut",     label: "RUT" },
@@ -20,9 +20,9 @@ const TRADE_TYPES = [
 
 const TRADE_TONE: Record<string, string> = {
   rut: "text-text-secondary",
-  mars: "text-accent",
-  marsmax: "text-warning",
-  space: "text-up",
+  mars: "text-accent-500",
+  marsmax: "text-status-yellow-text",
+  space: "text-status-lime-text",
 };
 
 const EXIT_REASONS = [
@@ -82,9 +82,9 @@ export function OkwTracker() {
       )}
 
       {trades.length === 0 ? (
-        <div className="py-12 text-center text-sm text-text-secondary">
+        <div className="py-12 text-center text-body-2-regular text-text-secondary">
           No trades logged yet.
-          <div className="text-xs text-text-muted mt-1.5">
+          <div className="text-caption-1-regular text-text-tertiary mt-1.5">
             Click <span className="text-text-primary">Add trade</span> after you place one
             to keep a running OKW.
           </div>
@@ -118,12 +118,12 @@ function SummaryStrip({ s: raw }: { s: OkwSummary }) {
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" | "accent" }) {
   return (
     <div>
-      <div className="text-2xs text-text-muted mb-1.5">{label}</div>
+      <div className="text-caption-2-regular text-text-tertiary mb-1.5">{label}</div>
       <div className={cn(
-        "text-xl md:text-2xl font-semibold tabular",
-        tone === "up" ? "text-up"
-          : tone === "down" ? "text-down"
-          : tone === "accent" ? "text-accent"
+        "text-title-2-regular md:text-title-1-regular font-semibold tabular",
+        tone === "up" ? "text-status-lime-text"
+          : tone === "down" ? "text-status-rose-text"
+          : tone === "accent" ? "text-accent-500"
           : "text-text-primary",
       )}>
         {value}
@@ -166,8 +166,8 @@ function AddForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () 
   };
 
   return (
-    <section className="border border-border/40 rounded-md p-4 bg-surface-2/30 flex flex-col gap-4">
-      <div className="text-2xs text-text-muted">Log a placed trade</div>
+    <section className="border border-separator-border rounded-md p-4 bg-background-secondary-default flex flex-col gap-4">
+      <div className="text-caption-2-regular text-text-tertiary">Log a placed trade</div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <FormField label="Type">
@@ -228,7 +228,7 @@ function AddForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () 
         </FormField>
       </div>
 
-      {error && <div className="text-xs text-down">{error}</div>}
+      {error && <div className="text-caption-1-regular text-status-rose-text">{error}</div>}
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
@@ -243,7 +243,7 @@ function AddForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-2xs text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       {children}
     </label>
   );
@@ -252,7 +252,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-2xs text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       {children}
     </label>
   );
@@ -262,8 +262,8 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 function TradesTable({ trades, onRefresh }: { trades: OkwTrade[]; onRefresh: () => void }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-xs tabular">
-        <thead className="text-2xs text-text-muted">
+      <table className="w-full text-caption-1-regular tabular">
+        <thead className="text-caption-2-regular text-text-tertiary">
           <tr>
             <th className="px-3 py-2 text-left font-medium">When</th>
             <th className="px-3 py-2 text-left font-medium">Type</th>
@@ -311,14 +311,14 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
 
   return (
     <>
-      <tr className="border-t border-border/30 hover:bg-surface-2/30">
+      <tr className="border-t border-separator-border hover:bg-background-secondary-hover">
         <td className="px-3 py-2.5 text-text-secondary whitespace-nowrap">{placedStr}</td>
-        <td className={cn("px-3 py-2.5 text-2xs", tone)}>
+        <td className={cn("px-3 py-2.5 text-caption-2-regular", tone)}>
           {t.trade_type === "marsmax" ? "MAX" : t.trade_type}
         </td>
         <td className="px-3 py-2.5 text-text-primary font-medium">{t.symbol}</td>
-        <td className="px-3 py-2.5 text-right font-mono text-text-primary">
-          {t.short_strike}<span className="text-text-muted">/</span>{t.long_strike}
+        <td className="px-3 py-2.5 text-right tabular text-text-primary">
+          {t.short_strike}<span className="text-text-tertiary">/</span>{t.long_strike}
         </td>
         <td className="px-3 py-2.5 text-right text-text-secondary whitespace-nowrap">
           {formatExpiry(t.expiry)} · {t.dte}d
@@ -326,7 +326,7 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
         <td className="px-3 py-2.5 text-right text-text-secondary">
           {t.short_delta != null ? Math.round(t.short_delta * 100) : "n/a"}
         </td>
-        <td className="px-3 py-2.5 text-right text-up">
+        <td className="px-3 py-2.5 text-right text-status-lime-text">
           {t.aroc_pct != null ? `${t.aroc_pct.toFixed(0)}%` : "n/a"}
         </td>
         <td className="px-3 py-2.5 text-right text-text-secondary">
@@ -336,20 +336,20 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
           {t.adj_distance_pct != null ? `${t.adj_distance_pct.toFixed(1)}%` : "n/a"}
         </td>
         <td className="px-3 py-2.5 text-right text-text-secondary">{t.contracts}</td>
-        <td className="px-3 py-2.5 text-right text-up">${t.credit.toFixed(2)}</td>
+        <td className="px-3 py-2.5 text-right text-status-lime-text">${t.credit.toFixed(2)}</td>
         <td className={cn(
           "px-3 py-2.5 text-right",
-          realized == null ? "text-text-muted" : realized > 0 ? "text-up" : realized < 0 ? "text-down" : "text-text-secondary"
+          realized == null ? "text-text-tertiary" : realized > 0 ? "text-status-lime-text" : realized < 0 ? "text-status-rose-text" : "text-text-secondary"
         )}>
           {realized != null ? fmtCurrency(realized) : "n/a"}
         </td>
         <td className="px-3 py-2.5">
           <span className={cn(
-            "text-2xs",
-            t.status === "open" ? "text-accent" : t.status === "closed" ? "text-text-secondary" : "text-text-muted"
+            "text-caption-2-regular",
+            t.status === "open" ? "text-accent-500" : t.status === "closed" ? "text-text-secondary" : "text-text-tertiary"
           )}>
             {t.status}
-            {t.exit_reason ? <span className="text-text-muted ml-1">· {t.exit_reason}</span> : null}
+            {t.exit_reason ? <span className="text-text-tertiary ml-1">· {t.exit_reason}</span> : null}
           </span>
         </td>
         <td className="px-3 py-2.5 text-right">
@@ -357,7 +357,7 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
             <button
               type="button"
               onClick={() => setClosing((v) => !v)}
-              className="text-2xs text-accent hover:underline"
+              className="text-caption-2-regular text-accent-500 hover:underline"
             >
               {closing ? "cancel" : "close"}
             </button>
@@ -371,7 +371,7 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
                   onRefresh();
                 }
               }}
-              className="text-text-muted hover:text-down"
+              className="text-text-tertiary hover:text-status-rose-text"
               title="Delete"
             >
               <X size={11} />
@@ -381,7 +381,7 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
       </tr>
       {closing && (
         <tr>
-          <td colSpan={14} className="px-3 py-3 bg-surface-2/30 border-t border-border/30">
+          <td colSpan={14} className="px-3 py-3 bg-background-secondary-default border-t border-separator-border">
             <div className="flex items-end gap-3 flex-wrap">
               <FormField label="Exit reason">
                 <Select value={exitReason} onValueChange={setExitReason}>

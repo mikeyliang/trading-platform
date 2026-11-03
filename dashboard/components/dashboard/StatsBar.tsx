@@ -8,14 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useHealth } from "@/lib/health";
 import type { Position } from "@/types";
 
-// Account KPI band at the top of the dashboard.
-//
-// Layout follows a stat-tile contract: sentence-case label, one value, and an
-// optional context line underneath. Net liquidation leads (the one larger
-// figure in the band); P&L tiles are signed AND carry a direction arrow so
-// up/down never rests on red/green alone; win rate gets a thin meter with a
-// 50% reference tick. Everything stays in one dense row on desktop and wraps
-// into a 2-column grid on narrow screens instead of scrolling sideways.
+// Account band at the top of the desk: one BoardUI card, six stat tiles
+// separated by hairlines. Net liquidation leads at a larger size; P&L tiles
+// are signed and coloured so direction never rests on colour alone; win
+// rate carries a thin meter with a tick at the coin flip.
 export const StatsBar = memo(function StatsBar() {
   const { account, initialLoad } = useHealth();
   // Positions are WS-pushed by the API every ~10s (via the `snapshot` event in
@@ -51,13 +47,12 @@ export const StatsBar = memo(function StatsBar() {
   const winRate = account?.win_rate ?? 0;
   const trades = account?.total_trades ?? 0;
 
-  const upnlPctOfEquity =
-    positions !== null && equity && equity > 0 ? (book.upnl / equity) * 100 : null;
+  const upnlPctOfEquity = positions !== null && equity && equity > 0 ? (book.upnl / equity) * 100 : null;
 
   return (
     <section
       aria-label="Account summary"
-      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 bg-surface border-b border-border shrink-0"
+      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 rounded-3xl border border-border-button-default bg-background-primary-default shadow-card shrink-0 overflow-hidden"
     >
       <Tile label="Net liquidation" lead loading={loading}>
         {account ? (
@@ -112,7 +107,7 @@ export const StatsBar = memo(function StatsBar() {
           <>
             <div className="flex items-baseline gap-2">
               <Value>{trades > 0 ? `${winRate.toFixed(0)}%` : "n/a"}</Value>
-              <span className="text-2xs text-text-muted tabular">
+              <span className="text-caption-1-regular text-text-tertiary tabular">
                 {trades} {trades === 1 ? "trade" : "trades"}
               </span>
             </div>
@@ -218,13 +213,13 @@ function Tile({
   return (
     <div
       className={cn(
-        "flex flex-col justify-start min-w-0 h-[68px] px-4 pt-2.5 pb-2 border-border",
+        "flex flex-col justify-start gap-0.5 min-w-0 h-[76px] px-4 py-3 border-separator-border",
         "border-b lg:border-b-0",
         !last && "border-r",
-        lead && "plate"
+        lead && "bg-background-secondary-default"
       )}
     >
-      <span className={cn("text-2xs font-medium leading-4 truncate", lead ? "opacity-70" : "text-text-muted")}>{label}</span>
+      <span className="text-caption-1-medium text-text-tertiary truncate">{label}</span>
       {loading ? (
         <div className="flex flex-col gap-1.5 mt-1">
           <Skeleton className="h-5 w-24" />
@@ -237,20 +232,12 @@ function Tile({
   );
 }
 
-function Value({
-  children,
-  lead,
-  muted,
-}: {
-  children: React.ReactNode;
-  lead?: boolean;
-  muted?: boolean;
-}) {
+function Value({ children, lead, muted }: { children: React.ReactNode; lead?: boolean; muted?: boolean }) {
   return (
     <span
       className={cn(
-        "font-semibold text-lg leading-6 truncate",
-        lead ? "figure" : "tabular",
+        "tabular truncate",
+        lead ? "text-title-2-semibold" : "text-title-3-semibold",
         muted ? "text-text-secondary" : "text-text-primary"
       )}
     >
@@ -260,13 +247,13 @@ function Value({
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <span className="text-2xs text-text-muted [.plate_&]:text-current [.plate_&]:opacity-70 [font-variant-numeric:tabular-nums] leading-4 truncate">{children}</span>;
+  return <span className="text-caption-1-regular text-text-tertiary tabular truncate">{children}</span>;
 }
 
 function Empty() {
   return (
     <>
-      <span className="text-lg font-semibold leading-6 text-text-muted tabular">n/a</span>
+      <span className="text-title-3-semibold text-text-tertiary tabular">n/a</span>
       <Hint>No data</Hint>
     </>
   );
@@ -280,8 +267,8 @@ function Signed({ value }: { value: number }) {
   return (
     <span
       className={cn(
-        "flex items-center gap-1 text-lg font-semibold leading-6 tabular truncate",
-        dir === "up" ? "text-up" : dir === "down" ? "text-down" : "text-text-secondary"
+        "flex items-center gap-1 text-title-3-semibold tabular truncate",
+        dir === "up" ? "text-status-lime-text" : dir === "down" ? "text-status-rose-text" : "text-text-secondary"
       )}
     >
       <span>
@@ -293,12 +280,14 @@ function Signed({ value }: { value: number }) {
   );
 }
 
-// 4px meter: fill = win rate, track = lighter step of the same hue, hairline
-// tick at 50% so "above / below a coin flip" reads without a number.
+// 4px meter: fill = win rate, track = the status background, hairline tick
+// at 50% so "above / below a coin flip" reads without a number.
 function WinMeter({ pct }: { pct: number | null }) {
   const v = pct == null ? 0 : Math.max(0, Math.min(100, pct));
-  const tone = pct == null ? "bg-text-muted" : v >= 50 ? "bg-up" : v >= 30 ? "bg-warning" : "bg-down";
-  const track = pct == null ? "bg-surface-3" : v >= 50 ? "bg-up/15" : v >= 30 ? "bg-warning/15" : "bg-down/15";
+  const tone =
+    pct == null ? "bg-foreground-icon-quaternary" : v >= 50 ? "bg-status-lime-text" : v >= 30 ? "bg-status-yellow-text" : "bg-status-rose-text";
+  const track =
+    pct == null ? "bg-background-tertiary-default" : v >= 50 ? "bg-status-lime-background" : v >= 30 ? "bg-status-yellow-background" : "bg-status-rose-background";
   return (
     <div
       role="meter"
@@ -306,10 +295,10 @@ function WinMeter({ pct }: { pct: number | null }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={pct == null ? undefined : Math.round(v)}
-      className={cn("relative h-1.5 w-full max-w-[120px] mt-1.5", track)}
+      className={cn("relative h-1 w-full max-w-[120px] mt-1.5 rounded-full overflow-hidden", track)}
     >
-      <div className={cn("absolute inset-y-0 left-0", tone)} style={{ width: `${v}%` }} />
-      <div className="absolute inset-y-0 left-1/2 w-px bg-surface" aria-hidden />
+      <div className={cn("absolute inset-y-0 left-0 rounded-full", tone)} style={{ width: `${v}%` }} />
+      <div className="absolute inset-y-0 left-1/2 w-px bg-background-primary-default" aria-hidden />
     </div>
   );
 }

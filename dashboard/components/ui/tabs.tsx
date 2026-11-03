@@ -6,20 +6,20 @@ import { cn } from "@/lib/utils";
 
 const Tabs = TabsPrimitive.Root;
 
+// BoardUI underline tabs (components/base/tabs/tabs.tsx): the strip sits on
+// a hairline, the active tab paints a 2px accent underline over it.
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn("inline-flex items-stretch gap-3 px-3 border-b border-border bg-surface", className)}
+    className={cn("inline-flex items-stretch gap-1 px-2 border-b border-separator-border", className)}
     {...props}
   />
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
 
-// Sentence-case tab with a 2px underline for the active state. 32px tall so
-// the strip lines up with card headers.
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
@@ -27,11 +27,13 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "relative inline-flex items-center gap-1.5 px-0.5 h-9 text-xs font-medium text-text-muted transition-colors",
-      "hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50",
+      "relative inline-flex items-center gap-2 px-2.5 h-10 text-body-2-regular text-text-secondary transition-colors rounded-t-md",
+      "hover:text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring",
       "disabled:pointer-events-none disabled:opacity-50",
-      "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-transparent after:transition-colors",
-      "data-[state=active]:text-text-primary data-[state=active]:after:bg-text-primary",
+      "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-transparent after:transition-colors",
+      "data-[state=active]:text-accent-500-600 data-[state=active]:text-body-2-medium data-[state=active]:after:bg-accent-500-600",
+      "[&_[data-count]]:rounded-sm [&_[data-count]]:px-1 [&_[data-count]]:py-px [&_[data-count]]:text-caption-1-medium [&_[data-count]]:bg-background-tertiary-default [&_[data-count]]:text-text-secondary",
+      "data-[state=active]:[&_[data-count]]:bg-accent-500-100 data-[state=active]:[&_[data-count]]:text-accent-500-600",
       className
     )}
     {...props}
@@ -44,11 +46,7 @@ const TabsContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
 >(({ className, ...props }, ref) => (
   // Consumers own height + overflow explicitly.
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn("focus-visible:outline-none", className)}
-    {...props}
-  />
+  <TabsPrimitive.Content ref={ref} className={cn("focus-visible:outline-none", className)} {...props} />
 ));
 TabsContent.displayName = TabsPrimitive.Content.displayName;
 

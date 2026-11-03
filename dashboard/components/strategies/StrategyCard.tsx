@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api, type StrategySchema } from "@/lib/api";
 import { cn, fmtCurrency } from "@/lib/utils";
 import type { StrategyInfo } from "@/types";
-import { Play, Square, Loader2, Sliders } from "lucide-react";
+import { RiPlayFill as Play, RiStopFill as Square, RiLoader4Line as Loader2, RiEqualizerLine as Sliders } from "@remixicon/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -98,17 +98,17 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
     <Card
       className={cn(
         "transition-colors",
-        running ? "border-accent/40 bg-surface-2" : "border-border bg-surface"
+        running ? "border-accent-500 bg-background-secondary-default" : "border-separator-border bg-background-primary-default"
       )}
     >
       <CardContent className="flex flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-sm">{strategy.name}</span>
+              <span className="font-medium text-body-2-regular">{strategy.name}</span>
               <Badge variant={running ? "up" : "muted"}>{strategy.status}</Badge>
             </div>
-            <p className="text-xs text-text-muted mt-1">{strategy.description}</p>
+            <p className="text-caption-1-regular text-text-tertiary mt-1">{strategy.description}</p>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -164,7 +164,7 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
         </div>
 
         {strategy.params && Object.keys(strategy.params).length > 0 && (
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-2xs text-text-muted pt-1 border-t border-border/60">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-caption-2-regular text-text-tertiary pt-1 border-t border-separator-border">
             {Object.entries(strategy.params).map(([k, v]) => (
               <span key={k}>
                 {k}: <span className="text-text-secondary tabular">{String(v)}</span>
@@ -235,11 +235,11 @@ function Metric({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-2xs text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       <span
         className={cn(
-          "tabular text-sm font-semibold",
-          tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-primary"
+          "tabular text-body-2-regular font-semibold",
+          tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text" : "text-text-primary"
         )}
       >
         {value}

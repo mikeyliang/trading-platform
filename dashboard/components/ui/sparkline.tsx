@@ -58,8 +58,8 @@ export function Sparkline({
 
   const positive = values[values.length - 1] >= values[0];
   // Theme tokens, so the line reads on both surfaces.
-  const lineColor = stroke ?? (auto ? (positive ? "rgb(var(--c-up))" : "rgb(var(--c-down))") : "rgb(var(--c-text-3))");
-  const fillColor = fill ?? (auto ? (positive ? "rgb(var(--c-up) / 0.12)" : "rgb(var(--c-down) / 0.12)") : "rgb(var(--c-text-3) / 0.1)");
+  const lineColor = stroke ?? (auto ? (positive ? "var(--color-up)" : "var(--color-down)") : "var(--color-text-muted)");
+  const fillColor = fill ?? (auto ? (positive ? "color-mix(in srgb, var(--color-up) 12%, transparent)" : "color-mix(in srgb, var(--color-down) 12%, transparent)") : "color-mix(in srgb, var(--color-text-muted) 10%, transparent)");
 
   const path = points.map(([x, y], i) => (i === 0 ? `M${x},${y}` : `L${x},${y}`)).join(" ");
   const area = `${path} L${width},${height} L0,${height} Z`;

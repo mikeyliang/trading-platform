@@ -26,13 +26,13 @@ export function StatusFooter() {
   return (
     <footer
       role="contentinfo"
-      className="h-6 flex items-center gap-3 px-3 bg-surface border-t border-border text-2xs text-text-muted shrink-0 select-none overflow-hidden"
+      className="h-5 flex items-center gap-3 px-1 text-caption-1-regular text-text-tertiary shrink-0 select-none overflow-hidden"
     >
       <StatusDot state={ib} label={ibLabel(ib)} />
       <StatusDot state={ws} label={wsLabel(ws)} />
       <StatusDot state={api} label={apiLabel(api)} />
       <Sep />
-      <span className={cn("font-medium", mode === "LIVE" ? "text-warning" : "text-text-secondary")}>
+      <span className={cn("font-medium", mode === "LIVE" ? "text-status-yellow-text" : "text-text-secondary")}>
         {modeLabel}
       </span>
 
@@ -52,7 +52,7 @@ export function StatusFooter() {
         <span className="flex items-center gap-1.5">
           <span
             aria-hidden
-            className={cn("h-1.5 w-1.5 rounded-full", session.open ? "bg-up" : "bg-text-muted")}
+            className={cn("h-1.5 w-1.5 rounded-full", session.open ? "bg-status-lime-text" : "bg-foreground-icon-quaternary")}
           />
           {session.label} <span className="text-text-secondary">{session.state}</span>
         </span>
@@ -69,13 +69,13 @@ export function StatusFooter() {
 
 function StatusDot({ state, label }: { state: ConnState; label: string }) {
   const color =
-    state === "connected" ? "bg-up"
-      : state === "reconnecting" ? "bg-warning"
-        : "bg-down";
+    state === "connected" ? "bg-status-lime-text"
+      : state === "reconnecting" ? "bg-status-yellow-text"
+        : "bg-status-rose-text";
   const text =
-    state === "connected" ? "text-text-muted"
-      : state === "reconnecting" ? "text-warning"
-        : "text-down";
+    state === "connected" ? "text-text-tertiary"
+      : state === "reconnecting" ? "text-status-yellow-text"
+        : "text-status-rose-text";
 
   return (
     <span className="flex items-center gap-1.5">
@@ -101,7 +101,7 @@ function apiLabel(s: ConnState) {
 }
 
 function Sep() {
-  return <span aria-hidden className="h-3 w-px bg-border" />;
+  return <span aria-hidden className="h-3 w-px bg-separator-border-strong" />;
 }
 
 function formatTime(d: Date): string {

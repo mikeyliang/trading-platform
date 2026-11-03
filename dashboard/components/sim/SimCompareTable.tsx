@@ -19,7 +19,7 @@ export function SimCompareTable({ runs, selectedId, onSelect }: Props) {
     .sort((a, b) => (b.aggregate!.avg_sharpe - a.aggregate!.avg_sharpe));
 
   if (completed.length === 0) {
-    return <p className="text-xs text-text-muted px-3 py-2">no completed runs to compare</p>;
+    return <p className="text-caption-1-regular text-text-tertiary px-3 py-2">no completed runs to compare</p>;
   }
 
   const best = {
@@ -52,29 +52,29 @@ export function SimCompareTable({ runs, selectedId, onSelect }: Props) {
             <TableRow
               key={r.id}
               onClick={() => onSelect(r.id)}
-              className={cn("cursor-pointer", selectedId === r.id && "bg-surface-2")}
+              className={cn("cursor-pointer", selectedId === r.id && "bg-background-secondary-default")}
             >
               <TableCell className="max-w-44 truncate" title={r.label}>{r.label}</TableCell>
-              <TableCell className="text-text-muted">{r.preset.replace("confluence-", "")}</TableCell>
-              <TableCell className="tabular text-text-muted">{r.timeframe}</TableCell>
+              <TableCell className="text-text-tertiary">{r.preset.replace("confluence-", "")}</TableCell>
+              <TableCell className="tabular text-text-tertiary">{r.timeframe}</TableCell>
               <TableCell className={cn("text-right tabular", pnlClass(a.avg_return_pct), a.avg_return_pct === best.ret && "font-semibold")}>
                 {a.avg_return_pct >= 0 ? "+" : ""}{a.avg_return_pct.toFixed(2)}%
               </TableCell>
-              <TableCell className={cn("text-right tabular", a.profit_factor >= 1 ? "text-up" : "text-down", a.profit_factor === best.pf && "font-semibold")}>
+              <TableCell className={cn("text-right tabular", a.profit_factor >= 1 ? "text-status-lime-text" : "text-status-rose-text", a.profit_factor === best.pf && "font-semibold")}>
                 {a.profit_factor.toFixed(2)}
               </TableCell>
-              <TableCell className={cn("text-right tabular", a.avg_sharpe === best.sharpe && "font-semibold text-up")}>
+              <TableCell className={cn("text-right tabular", a.avg_sharpe === best.sharpe && "font-semibold text-status-lime-text")}>
                 {a.avg_sharpe.toFixed(2)}
               </TableCell>
-              <TableCell className={cn("text-right tabular text-down/90", a.avg_max_drawdown_pct === best.dd && "font-semibold")}>
+              <TableCell className={cn("text-right tabular text-status-rose-text/90", a.avg_max_drawdown_pct === best.dd && "font-semibold")}>
                 {a.avg_max_drawdown_pct.toFixed(1)}%
               </TableCell>
               <TableCell className="text-right tabular">{a.total_trades}</TableCell>
               <TableCell className="text-right tabular">{a.win_rate.toFixed(0)}%</TableCell>
-              <TableCell className="text-2xs tabular whitespace-nowrap">
-                <span className="text-up">{a.best_symbol.symbol} {a.best_symbol.return_pct >= 0 ? "+" : ""}{a.best_symbol.return_pct.toFixed(1)}%</span>
-                <span className="text-text-muted"> / </span>
-                <span className="text-down">{a.worst_symbol.symbol} {a.worst_symbol.return_pct >= 0 ? "+" : ""}{a.worst_symbol.return_pct.toFixed(1)}%</span>
+              <TableCell className="text-caption-2-regular tabular whitespace-nowrap">
+                <span className="text-status-lime-text">{a.best_symbol.symbol} {a.best_symbol.return_pct >= 0 ? "+" : ""}{a.best_symbol.return_pct.toFixed(1)}%</span>
+                <span className="text-text-tertiary"> / </span>
+                <span className="text-status-rose-text">{a.worst_symbol.symbol} {a.worst_symbol.return_pct >= 0 ? "+" : ""}{a.worst_symbol.return_pct.toFixed(1)}%</span>
               </TableCell>
             </TableRow>
           );

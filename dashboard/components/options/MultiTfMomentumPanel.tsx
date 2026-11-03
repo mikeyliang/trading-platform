@@ -87,11 +87,11 @@ export function MultiTfMomentumPanel({ result }: Props) {
 
   const toneClass = (tone: "fires-for" | "fires-against" | "warn" | "neutral") =>
     tone === "fires-for"
-      ? "text-up bg-up/8"
+      ? "text-status-lime-text bg-status-lime-background"
       : tone === "fires-against"
-      ? "text-down bg-down/8"
+      ? "text-status-rose-text bg-status-rose-background"
       : tone === "warn"
-      ? "text-warning bg-warning/6"
+      ? "text-status-yellow-text bg-status-yellow-background"
       : "text-text-secondary";
 
   const cellVal = (
@@ -144,16 +144,16 @@ export function MultiTfMomentumPanel({ result }: Props) {
 
   return (
     <Card>
-      <div className="flex items-center gap-2 px-3 h-7 border-b border-border/60">
+      <div className="flex items-center gap-2 px-3 h-7 border-b border-separator-border">
         <HintLabel
-          className="text-2xs text-text-muted"
+          className="text-caption-2-regular text-text-tertiary"
           hint={
             <div className="flex flex-col gap-1">
               <div className="font-medium">Cross-timeframe momentum</div>
               <div>
                 Each column is a chart timeframe. Cells color-coded against
-                this position&apos;s direction: <span className="text-up">green</span> = aligned,{" "}
-                <span className="text-down">red</span> = against, <span className="text-warning">yellow</span> = caution.
+                this position&apos;s direction: <span className="text-status-lime-text">green</span> = aligned,{" "}
+                <span className="text-status-rose-text">red</span> = against, <span className="text-status-yellow-text">yellow</span> = caution.
               </div>
               <div>
                 Recommended primary TF is highlighted in the header, picked
@@ -165,28 +165,28 @@ export function MultiTfMomentumPanel({ result }: Props) {
         >
           Multi-TF momentum
         </HintLabel>
-        <span className="ml-auto text-2xs tabular text-text-muted">
+        <span className="ml-auto text-caption-2-regular tabular text-text-tertiary">
           DTE {result.dte}d · rec.{" "}
-          <span className="text-accent font-medium">{recommended}</span>
+          <span className="text-accent-500 font-medium">{recommended}</span>
         </span>
       </div>
       <CardContent className="p-0">
-        <table className="w-full border-collapse text-xs tabular">
+        <table className="w-full border-collapse text-caption-1-regular tabular">
           <thead>
-            <tr className="text-text-muted text-2xs border-b border-border/40">
+            <tr className="text-text-tertiary text-caption-2-regular border-b border-separator-border">
               <th className="text-left px-3 py-1.5 font-medium w-[78px]"></th>
               {sortedTfs.map((tf) => (
                 <th
                   key={tf}
                   className={cn(
                     "text-right px-3 py-1.5 font-medium",
-                    tf === recommended && "text-accent"
+                    tf === recommended && "text-accent-500"
                   )}
                   title={tf === recommended ? "Recommended primary timeframe for this DTE" : undefined}
                 >
                   {tf}
                   {tf === recommended && (
-                    <span className="ml-1 inline-block w-1 h-1 rounded-full bg-accent align-middle" />
+                    <span className="ml-1 inline-block w-1 h-1 rounded-full bg-accent-500 align-middle" />
                   )}
                 </th>
               ))}
@@ -197,8 +197,8 @@ export function MultiTfMomentumPanel({ result }: Props) {
               <tr
                 key={row.key}
                 className={cn(
-                  "border-t border-border/40",
-                  idx % 2 === 1 && "bg-surface-2/20"
+                  "border-t border-separator-border",
+                  idx % 2 === 1 && "bg-background-secondary-default"
                 )}
               >
                 <td className="px-3 py-1.5 text-text-secondary">
@@ -219,8 +219,8 @@ export function MultiTfMomentumPanel({ result }: Props) {
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-border/60 bg-surface-2/20">
-              <td className="px-3 py-1.5 text-text-muted text-2xs">
+            <tr className="border-t border-separator-border bg-background-secondary-default">
+              <td className="px-3 py-1.5 text-text-tertiary text-caption-2-regular">
                 Trend
               </td>
               {sortedTfs.map((tf) => {
@@ -228,20 +228,20 @@ export function MultiTfMomentumPanel({ result }: Props) {
                 const tone = toneFor("trend", s);
                 const tr = s?.trend ?? "n/a";
                 return (
-                  <td key={`trend-${tf}`} className={cn("text-right px-3 py-1.5 font-medium text-2xs", toneClass(tone))}>
+                  <td key={`trend-${tf}`} className={cn("text-right px-3 py-1.5 font-medium text-caption-2-regular", toneClass(tone))}>
                     {tr}
                   </td>
                 );
               })}
             </tr>
-            <tr className="border-t border-border/40">
-              <td className="px-3 py-1.5 text-text-muted text-2xs">
+            <tr className="border-t border-separator-border">
+              <td className="px-3 py-1.5 text-text-tertiary text-caption-2-regular">
                 Consensus
               </td>
               <td
                 colSpan={sortedTfs.length}
                 className={cn(
-                  "px-3 py-1.5 text-right font-medium text-2xs",
+                  "px-3 py-1.5 text-right font-medium text-caption-2-regular",
                   toneClass(consensus.tone)
                 )}
               >

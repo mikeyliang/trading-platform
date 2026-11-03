@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Activity, CalendarDays, ChevronDown, ChevronRight, LineChart as LineChartIcon, MessageSquare, Search, Table as TableIcon, X } from "lucide-react";
+import { RiPulseLine as Activity, RiCalendarLine as CalendarDays, RiArrowDownSLine as ChevronDown, RiArrowRightSLine as ChevronRight, RiLineChartLine as LineChartIcon, RiChat1Line as MessageSquare, RiSearchLine as Search, RiTableLine as TableIcon, RiCloseLine as X } from "@remixicon/react";
 import {
   CartesianGrid,
   Line,
@@ -208,10 +208,10 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
   };
 
   return (
-    <div className="flex flex-col h-full border-t border-border">
+    <div className="flex flex-col h-full border-t border-separator-border">
       <StatsStrip stats={stats} loading={loading && !stats} />
 
-      <div className="flex items-center flex-wrap gap-x-4 gap-y-1.5 px-2 py-1.5 border-b border-border/60 bg-surface/30">
+      <div className="flex items-center flex-wrap gap-x-4 gap-y-1.5 px-2 py-1.5 border-b border-separator-border bg-background-primary-default">
         <SearchInput
           value={symbolQ}
           onChange={(v) => setSymbolQ(v.toUpperCase())}
@@ -283,7 +283,7 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
           {activeFilterCount > 0 && (
             <button
               onClick={clearAll}
-              className="ml-auto inline-flex items-center gap-1 h-5 px-2 rounded-sm border border-border bg-surface-2/60 hover:bg-surface-2 text-text-secondary hover:text-text-primary text-2xs transition-colors"
+              className="ml-auto inline-flex items-center gap-1 h-5 px-2 rounded-sm border border-separator-border bg-background-secondary-default hover:bg-background-secondary-hover text-text-secondary hover:text-text-primary text-caption-2-regular transition-colors"
             >
               <X size={9} />
               Clear all
@@ -346,18 +346,18 @@ function ViewToggle({ value, onChange }: { value: View; onChange: (v: View) => v
     { v: "chart", label: "Chart", Icon: LineChartIcon },
   ];
   return (
-    <div className="flex h-6 rounded-sm border border-border overflow-hidden">
+    <div className="flex h-6 rounded-sm border border-separator-border overflow-hidden">
       {opts.map((o, i) => (
         <button
           key={o.v}
           onClick={() => onChange(o.v)}
           aria-pressed={value === o.v}
           className={cn(
-            "inline-flex items-center gap-1 px-2 text-2xs transition-colors whitespace-nowrap",
-            i > 0 && "border-l border-border",
+            "inline-flex items-center gap-1 px-2 text-caption-2-regular transition-colors whitespace-nowrap",
+            i > 0 && "border-l border-separator-border",
             value === o.v
-              ? "bg-accent/15 text-accent font-medium"
-              : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+              ? "bg-status-blue-background text-accent-500 font-medium"
+              : "text-text-secondary hover:bg-background-secondary-hover hover:text-text-primary"
           )}
         >
           <o.Icon size={10} />
@@ -372,7 +372,7 @@ function ViewToggle({ value, onChange }: { value: View; onChange: (v: View) => v
 
 function StatsStrip({ stats, loading }: { stats: TradeStats | null; loading: boolean }) {
   return (
-    <div className="flex items-center bg-surface border-b border-border px-3 h-8 overflow-x-auto shrink-0">
+    <div className="flex items-center bg-background-primary-default border-b border-separator-border px-3 h-8 overflow-x-auto shrink-0">
       <StatGroup>
         <StatItem
           label="Trades"
@@ -388,10 +388,10 @@ function StatsStrip({ stats, loading }: { stats: TradeStats | null; loading: boo
           valueClassName={
             stats
               ? stats.win_rate >= 0.5
-                ? "text-up"
+                ? "text-status-lime-text"
                 : stats.win_rate >= 0.3
-                ? "text-warning"
-                : "text-down"
+                ? "text-status-yellow-text"
+                : "text-status-rose-text"
               : undefined
           }
           loading={loading}
@@ -434,7 +434,7 @@ function StatGroup({ children, last }: { children: React.ReactNode; last?: boole
     <div
       className={cn(
         "flex items-center gap-3 px-3 first:pl-0",
-        !last && "border-r border-border/40"
+        !last && "border-r border-separator-border"
       )}
     >
       {children}
@@ -456,8 +456,8 @@ function StatItem({ label, value, valueClassName, loading, primary, muted }: Sta
     <div className="flex items-baseline gap-1.5 shrink-0">
       <span
         className={cn(
-          "text-2xs",
-          muted ? "text-text-muted/70" : "text-text-muted"
+          "text-caption-2-regular",
+          muted ? "text-text-tertiary/70" : "text-text-tertiary"
         )}
       >
         {label}
@@ -465,12 +465,12 @@ function StatItem({ label, value, valueClassName, loading, primary, muted }: Sta
       {loading ? (
         <Skeleton className="h-3 w-14" />
       ) : value === null ? (
-        <span className="tabular text-xs font-medium text-text-muted">n/a</span>
+        <span className="tabular text-caption-1-regular font-medium text-text-tertiary">n/a</span>
       ) : (
         <span
           className={cn(
             "tabular tabular-nums font-medium",
-            primary ? "text-sm text-text-primary" : "text-xs text-text-primary",
+            primary ? "text-body-2-regular text-text-primary" : "text-caption-1-regular text-text-primary",
             muted && !valueClassName && "text-text-secondary",
             valueClassName
           )}
@@ -498,24 +498,24 @@ function SearchInput({
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 h-6 px-2 rounded-sm border border-border bg-surface-2/40 transition-colors",
-        value ? "border-accent/50" : "hover:bg-surface-2/70"
+        "flex items-center gap-1.5 h-6 px-2 rounded-sm border border-separator-border bg-background-secondary-default transition-colors",
+        value ? "border-accent-500" : "hover:bg-background-secondary-hover"
       )}
     >
-      <Search size={11} className="text-text-muted shrink-0" />
+      <Search size={11} className="text-text-tertiary shrink-0" />
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          "bg-transparent text-xs tabular text-text-primary placeholder:text-text-muted/60 outline-none",
+          "bg-transparent text-caption-1-regular tabular text-text-primary placeholder:text-text-tertiary/60 outline-none",
           width
         )}
       />
       {value && (
         <button
           onClick={() => onChange("")}
-          className="text-text-muted hover:text-text-primary"
+          className="text-text-tertiary hover:text-text-primary"
           aria-label={`Clear ${placeholder.toLowerCase()} filter`}
         >
           <X size={10} />
@@ -538,18 +538,18 @@ function FilterGroup<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-2xs text-text-muted">{label}</span>
-      <div className="flex h-6 rounded-sm border border-border overflow-hidden">
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
+      <div className="flex h-6 rounded-sm border border-separator-border overflow-hidden">
         {options.map((o, i) => (
           <button
             key={o.v}
             onClick={() => onChange(o.v)}
             className={cn(
-              "px-2 text-2xs transition-colors whitespace-nowrap",
-              i > 0 && "border-l border-border",
+              "px-2 text-caption-2-regular transition-colors whitespace-nowrap",
+              i > 0 && "border-l border-separator-border",
               value === o.v
-                ? "bg-accent/15 text-accent font-medium"
-                : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+                ? "bg-status-blue-background text-accent-500 font-medium"
+                : "text-text-secondary hover:bg-background-secondary-hover hover:text-text-primary"
             )}
           >
             {o.label}
@@ -611,7 +611,7 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
 
   return (
     <TableRow>
-      <TableCell className="text-text-muted whitespace-nowrap" title={time.abs}>
+      <TableCell className="text-text-tertiary whitespace-nowrap" title={time.abs}>
         {time.rel}
       </TableCell>
       <TableCell className="font-medium">
@@ -625,12 +625,12 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
       </TableCell>
       <TableCell className="text-right tabular">{fmt(t.quantity, 0)}</TableCell>
       <TableCell className="text-right tabular">{fmt(t.price, 2)}</TableCell>
-      <TableCell className={cn("text-right tabular font-medium", pnl != null ? pnlClass(pnl) : "text-text-muted")}>
+      <TableCell className={cn("text-right tabular font-medium", pnl != null ? pnlClass(pnl) : "text-text-tertiary")}>
         {pnl != null ? (
           <span className="inline-flex items-baseline gap-1 justify-end">
             {fmtCurrency(pnl)}
             {pnlPct != null && (
-              <span className="text-2xs text-text-muted">
+              <span className="text-caption-2-regular text-text-tertiary">
                 ({fmtPct(pnlPct)})
               </span>
             )}
@@ -639,7 +639,7 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
           "n/a"
         )}
       </TableCell>
-      <TableCell className="text-text-muted">{t.strategy ?? "n/a"}</TableCell>
+      <TableCell className="text-text-tertiary">{t.strategy ?? "n/a"}</TableCell>
       <TableCell>
         <StatusBadge status={t.status} />
       </TableCell>
@@ -778,7 +778,7 @@ function EquityCurveChart({
                   ? `${p.symbol}  ${p.pnl >= 0 ? "+" : ""}${fmtCurrency(p.pnl)}`
                   : null;
               return [
-                <span key="v" className={v >= 0 ? "text-up" : "text-down"}>
+                <span key="v" className={v >= 0 ? "text-status-lime-text" : "text-status-rose-text"}>
                   {fmtCurrency(v)}
                 </span>,
                 trade ?? "Cumulative",
@@ -852,7 +852,7 @@ function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
       {groups.map((g) => {
         const open = openKeys.has(g.key);
         return (
-          <li key={g.key} className="border-b border-border/40">
+          <li key={g.key} className="border-b border-separator-border">
             <button
               type="button"
               onClick={() =>
@@ -863,31 +863,31 @@ function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
                   return next;
                 })
               }
-              className="w-full flex items-center gap-3 px-3 py-1.5 text-xs tabular hover:bg-surface-2/40 transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-1.5 text-caption-1-regular tabular hover:bg-background-secondary-hover transition-colors"
             >
-              <span className="text-text-muted shrink-0">
+              <span className="text-text-tertiary shrink-0">
                 {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
               </span>
               <span className="text-text-primary font-medium min-w-[110px] text-left">
                 {g.label}
               </span>
-              <span className="text-text-muted text-2xs">
+              <span className="text-text-tertiary text-caption-2-regular">
                 {g.trades.length} trade{g.trades.length === 1 ? "" : "s"}
               </span>
-              <span className="text-text-muted text-2xs">
+              <span className="text-text-tertiary text-caption-2-regular">
                 {g.buys}B / {g.sells}S
               </span>
               <span
                 className={cn(
-                  "text-xs tabular ml-auto font-medium",
-                  g.netPnl === 0 ? "text-text-muted" : pnlClass(g.netPnl),
+                  "text-caption-1-regular tabular ml-auto font-medium",
+                  g.netPnl === 0 ? "text-text-tertiary" : pnlClass(g.netPnl),
                 )}
                 title={`${g.wins} winning / ${g.losses} losing trades`}
               >
                 {g.netPnl === 0 ? "n/a" : fmtCurrency(g.netPnl)}
               </span>
               <span
-                className="text-2xs text-text-muted max-w-[160px] truncate hidden md:inline-block"
+                className="text-caption-2-regular text-text-tertiary max-w-[160px] truncate hidden md:inline-block"
                 title={g.symbols.join(", ")}
               >
                 {g.symbols.slice(0, 4).join(" · ")}
@@ -895,7 +895,7 @@ function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
               </span>
             </button>
             {open && (
-              <div className="bg-surface-2/15 border-t border-border/30">
+              <div className="bg-background-secondary-default border-t border-separator-border">
                 <Table>
                   <TableBody>
                     {g.trades.map((t) => (
@@ -996,7 +996,7 @@ function NoteIndicator({ note }: { note: string | null }) {
   const preview = note.length > 200 ? note.slice(0, 200) + "…" : note;
   return (
     <span
-      className="inline-flex items-center text-accent/80 hover:text-accent transition-colors cursor-help"
+      className="inline-flex items-center text-accent-500/80 hover:text-accent-500 transition-colors cursor-help"
       title={preview}
     >
       <MessageSquare size={10} />
@@ -1015,16 +1015,16 @@ function ContractCell({
     <span className="inline-flex items-baseline gap-1.5">
       <span className="text-text-primary">{symbol}</span>
       {contract.strike != null && contract.right && (
-        <span className="text-text-secondary tabular text-xs">
+        <span className="text-text-secondary tabular text-caption-1-regular">
           {formatStrike(contract.strike)}{contract.right}
         </span>
       )}
       {exp && (
-        <span className="text-text-muted text-2xs tabular">{exp}</span>
+        <span className="text-text-tertiary text-caption-2-regular tabular">{exp}</span>
       )}
       {contract.isExpiration && contract.txType && (
         <span
-          className="px-1 py-px rounded-sm bg-surface-2 text-text-muted text-2xs"
+          className="px-1 py-px rounded-sm bg-background-secondary-default text-text-tertiary text-caption-2-regular"
           title={`Transaction type: ${contract.txType}`}
         >
           {shortTxLabel(contract.txType)}
