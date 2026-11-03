@@ -59,7 +59,6 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
         <kbd className="hidden sm:inline text-2xs font-mono text-text-muted">⌘K</kbd>
       </button>
 
-      <div className="hidden sm:block h-5 w-px bg-border" aria-hidden />
 
       <ActiveQuote symbol={activeSymbol} quote={q} />
 
@@ -120,6 +119,7 @@ function ActiveQuote({
   const bid = quote?.bid ?? null;
   const ask = quote?.ask ?? null;
   const hasAnything = last != null || bid != null || ask != null;
+  if (!hasAnything) return null;
   return (
     <div className="hidden sm:flex items-baseline gap-2 tabular text-xs min-w-0">
       <span className="font-mono font-medium text-text-primary">{symbol}</span>

@@ -12,7 +12,7 @@ const TabsList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn("inline-flex items-stretch gap-1 px-1 border-b-2 border-border-strong bg-surface", className)}
+    className={cn("inline-flex items-stretch gap-3 px-3 border-b border-border bg-surface", className)}
     {...props}
   />
 ));
@@ -27,11 +27,11 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "relative inline-flex items-center gap-1.5 px-2.5 h-8 text-xs font-medium text-text-muted transition-colors",
+      "relative inline-flex items-center gap-1.5 px-0.5 h-9 text-xs font-medium text-text-muted transition-colors",
       "hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50",
       "disabled:pointer-events-none disabled:opacity-50",
-      "after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:bg-transparent after:transition-colors",
-      "data-[state=active]:text-text-primary data-[state=active]:after:bg-accent",
+      "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-transparent after:transition-colors",
+      "data-[state=active]:text-text-primary data-[state=active]:after:bg-text-primary",
       className
     )}
     {...props}

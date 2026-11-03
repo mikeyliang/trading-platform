@@ -55,6 +55,18 @@ body {
   letter-spacing: -0.02em;
 }
 
+/* Labels inside a pill, a button or a chip center on their cap height, not
+   their line box, so they no longer sit 2px low. */
+.cap {
+  line-height: 1;
+  text-box: trim-both cap alphabetic;
+}
+
+/* One icon set, one stroke weight, one optical color. */
+svg.lucide {
+  stroke-width: 1.75;
+}
+
 /* Section label: body face, a step smaller, sentence case, untracked. */
 .caption {
   font-size: 11px;

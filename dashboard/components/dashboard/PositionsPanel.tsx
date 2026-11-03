@@ -302,9 +302,9 @@ function FilterGroup<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5" role="group" aria-label={label}>
+    <div className="flex items-center gap-2" role="group" aria-label={label}>
       <span className="text-2xs text-text-muted">{label}</span>
-      <div className="flex h-6 p-0.5 gap-0.5 rounded-md bg-surface-2/60 border border-border/60">
+      <div className="flex h-7 p-0.5 bg-surface-2">
         {options.map((o) => (
           <button
             key={o.v}
@@ -312,9 +312,9 @@ function FilterGroup<T extends string>({
             aria-pressed={value === o.v}
             onClick={() => onChange(o.v)}
             className={cn(
-              "px-2 rounded text-2xs transition-colors whitespace-nowrap leading-none",
+              "px-2.5 text-2xs font-medium transition-colors whitespace-nowrap leading-none",
               value === o.v
-                ? "bg-surface text-text-primary font-medium shadow-ring"
+                ? "bg-surface text-text-primary shadow-thumb"
                 : "text-text-secondary hover:text-text-primary"
             )}
           >
@@ -533,9 +533,9 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                         ? "Modeled mark — Black-Scholes theoretical; no live quote available"
                         : "Stale mark — last good quote; this refresh missed"}
                       className={cn(
-                        "px-1 rounded text-2xs font-semibold leading-none py-0.5",
+                        "inline-flex items-center h-4 px-1.5 text-2xs font-medium cap",
                         p.mark_source === "modeled"
-                          ? "bg-warning/20 text-warning"
+                          ? "bg-warning/15 text-warning"
                           : "bg-surface-2 text-text-muted",
                       )}
                     >
@@ -577,7 +577,7 @@ function KindPill({ kind }: { kind: PositionKind }) {
   return (
     <span
       className={cn(
-        "text-2xs px-1.5 h-5 inline-flex items-center bg-surface-2 leading-none",
+        "text-2xs px-2 h-5 inline-flex items-center bg-surface-2 cap",
         styles[kind],
       )}
     >

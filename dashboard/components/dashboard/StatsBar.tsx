@@ -306,10 +306,10 @@ function WinMeter({ pct }: { pct: number | null }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={pct == null ? undefined : Math.round(v)}
-      className={cn("relative h-1 w-full max-w-[120px] rounded-full mt-1", track)}
+      className={cn("relative h-1.5 w-full max-w-[120px] mt-1.5", track)}
     >
-      <div className={cn("absolute inset-y-0 left-0 rounded-full", tone)} style={{ width: `${v}%` }} />
-      <div className="absolute -top-0.5 -bottom-0.5 left-1/2 w-px bg-text-secondary/60" aria-hidden />
+      <div className={cn("absolute inset-y-0 left-0", tone)} style={{ width: `${v}%` }} />
+      <div className="absolute inset-y-0 left-1/2 w-px bg-surface" aria-hidden />
     </div>
   );
 }

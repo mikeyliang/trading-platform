@@ -20,6 +20,7 @@ export function StatusFooter() {
   }, []);
 
   const mode = (health?.mode ?? "paper").toUpperCase();
+  const modeLabel = mode === "LIVE" ? "Live" : "Paper";
   const session = marketSession(now);
 
   return (
@@ -31,18 +32,18 @@ export function StatusFooter() {
       <StatusDot state={ws} label={wsLabel(ws)} />
       <StatusDot state={api} label={apiLabel(api)} />
       <Sep />
-      <span className={cn("", mode === "LIVE" ? "text-warning" : "text-text-secondary")}>
-        {mode}
+      <span className={cn("font-medium", mode === "LIVE" ? "text-warning" : "text-text-secondary")}>
+        {modeLabel}
       </span>
 
       {account && (
         <span className="hidden md:flex items-center gap-3">
           <Sep />
           <span>
-            NLV <span className="text-text-secondary">{fmtCurrency(account.equity ?? 0)}</span>
+            NLV <span className="text-text-secondary tabular">{fmtCurrency(account.equity ?? 0)}</span>
           </span>
           <span>
-            BP <span className="text-text-secondary">{fmtCurrency(account.buying_power ?? 0)}</span>
+            BP <span className="text-text-secondary tabular">{fmtCurrency(account.buying_power ?? 0)}</span>
           </span>
         </span>
       )}
@@ -56,7 +57,7 @@ export function StatusFooter() {
           {session.label} <span className="text-text-secondary">{session.state}</span>
         </span>
         <Sep />
-        <span suppressHydrationWarning>{now ? formatTime(now) : "--:--:--"} ET</span>
+        <span suppressHydrationWarning className="tabular">{now ? formatTime(now) : "--:--:--"} ET</span>
         <Sep />
         <span suppressHydrationWarning className="hidden sm:inline">
           upd {lastCheckedAt ? formatRelative(lastCheckedAt) : "--"}
@@ -90,13 +91,13 @@ function StatusDot({ state, label }: { state: ConnState; label: string }) {
 }
 
 function ibLabel(s: ConnState) {
-  return s === "connected" ? "IB" : s === "reconnecting" ? "IB RECONNECTING" : "IB OFFLINE";
+  return s === "connected" ? "IB" : s === "reconnecting" ? "IB reconnecting" : "IB offline";
 }
 function wsLabel(s: ConnState) {
-  return s === "connected" ? "STREAM" : s === "reconnecting" ? "STREAM RECONNECTING" : "STREAM DOWN";
+  return s === "connected" ? "Stream" : s === "reconnecting" ? "Stream reconnecting" : "Stream down";
 }
 function apiLabel(s: ConnState) {
-  return s === "connected" ? "API" : s === "reconnecting" ? "API CHECKING" : "API DOWN";
+  return s === "connected" ? "API" : s === "reconnecting" ? "API checking" : "API down";
 }
 
 function Sep() {
@@ -122,7 +123,7 @@ function formatRelative(ts: number): string {
 }
 
 function marketSession(d: Date | null): { label: string; state: string; open: boolean } {
-  if (!d) return { label: "MKT", state: "—", open: false };
+  if (!d) return { label: "Market", state: "n/a", open: false };
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     hour12: false,
@@ -137,11 +138,11 @@ function marketSession(d: Date | null): { label: string; state: string; open: bo
   const m = hh * 60 + mm;
 
   const isWeekend = wd === "Sat" || wd === "Sun";
-  if (isWeekend) return { label: "MKT", state: "CLOSED", open: false };
+  if (isWeekend) return { label: "Market", state: "closed", open: false };
 
   // Regular: 09:30–16:00 ET. Pre: 04:00–09:30. After: 16:00–20:00.
-  if (m >= 570 && m < 960) return { label: "RTH", state: "OPEN", open: true };
-  if (m >= 240 && m < 570) return { label: "PRE", state: "OPEN", open: true };
-  if (m >= 960 && m < 1200) return { label: "AH", state: "OPEN", open: true };
-  return { label: "MKT", state: "CLOSED", open: false };
+  if (m >= 570 && m < 960) return { label: "Market", state: "open", open: true };
+  if (m >= 240 && m < 570) return { label: "Pre-market", state: "open", open: true };
+  if (m >= 960 && m < 1200) return { label: "After hours", state: "open", open: true };
+  return { label: "Market", state: "closed", open: false };
 }

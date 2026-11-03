@@ -108,6 +108,7 @@ const config: Config = {
         pop: "var(--shadow-pop)",
         ring: "0 0 0 1px rgb(var(--c-border))",
         bar: "inset 0 0 0 2px rgb(var(--c-border-strong))",
+        thumb: "var(--shadow-thumb)",
       },
       keyframes: {
         "accordion-down": {

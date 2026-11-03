@@ -45,6 +45,7 @@
   --c-plate: 10 13 19;          /* the ink field behind the one amber figure */
   --c-plate-fg: 237 240 244;
   --shadow-pop: 0 24px 40px -24px rgb(8 11 16 / 0.6), 0 0 0 2px rgb(var(--c-border-strong));
+  --shadow-thumb: 0 1px 2px rgb(8 11 16 / 0.12), 0 0 0 0.5px rgb(var(--c-border));
 
   --chart-bg: #fbfeff;
   --chart-grid: #dde2e7;
@@ -85,6 +86,7 @@
   --c-plate: 23 27 34;          /* at night the plate is a raised sheet, not a flash of white */
   --c-plate-fg: 239 242 245;
   --shadow-pop: 0 0 0 2px rgb(var(--c-border-strong));
+  --shadow-thumb: 0 1px 2px rgb(0 0 0 / 0.35), 0 0 0 0.5px rgb(var(--c-border-strong));
 
   --chart-bg: #0f1319;
   --chart-grid: #171b22;

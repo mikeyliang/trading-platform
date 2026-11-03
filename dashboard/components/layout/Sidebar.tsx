@@ -153,16 +153,16 @@ function NavItem({
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
       className={cn(
-        "relative mx-1.5 flex flex-col items-center gap-1 py-1.5 rounded-md transition-colors",
+        "relative mx-1.5 flex flex-col items-center gap-1 py-1.5 transition-colors",
         active
-          ? "bg-accent/15 text-accent-fg"
-          : "text-text-muted hover:text-text-primary hover:bg-surface-2"
+          ? "bg-surface-2 text-text-primary"
+          : "text-text-muted hover:text-text-primary hover:bg-surface-2/60"
       )}
     >
       {active && (
-        <span aria-hidden className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r-full bg-accent" />
+        <span aria-hidden className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-5 w-0.5 bg-text-primary" />
       )}
-      <Icon size={16} strokeWidth={active ? 2 : 1.75} />
+      <Icon size={16} />
       <span className="text-2xs leading-none font-medium">{label}</span>
     </Link>
   );

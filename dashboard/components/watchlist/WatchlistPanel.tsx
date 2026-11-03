@@ -157,7 +157,7 @@ export function WatchlistPanel() {
                 <div
                   key={item.symbol}
                   className={cn(
-                    "group relative flex items-center gap-2 pl-3 pr-1.5 h-11 transition-colors border-b border-border/30 last:border-b-0",
+                    "group relative flex items-center gap-2.5 px-3 h-11 transition-colors border-b border-border/40 last:border-b-0",
                     active ? "bg-accent/10" : "hover:bg-surface-2"
                   )}
                 >

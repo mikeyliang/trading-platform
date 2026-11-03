@@ -6,17 +6,17 @@ import { cn } from "@/lib/utils";
 // and connection state; `accent` marks the interactive or selected thing;
 // `muted` is for neutral metadata such as account mode.
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 px-1.5 h-[18px] text-2xs font-medium border leading-none whitespace-nowrap transition-colors",
+  "inline-flex items-center gap-1.5 px-2 h-5 text-2xs font-medium whitespace-nowrap transition-colors [&>span]:cap",
   {
     variants: {
       variant: {
-        default: "bg-surface-3 text-text-secondary border-border",
-        outline: "bg-transparent text-text-secondary border-border",
-        up: "bg-up/10 text-up border-up/25",
-        down: "bg-down/10 text-down border-down/25",
-        warning: "bg-warning/10 text-warning border-warning/30",
-        accent: "bg-accent/10 text-accent-fg border-accent/25",
-        muted: "bg-surface-2 text-text-muted border-transparent",
+        default: "bg-surface-2 text-text-primary",
+        outline: "bg-transparent text-text-secondary shadow-[inset_0_0_0_1px_rgb(var(--c-border))]",
+        up: "bg-up/12 text-up",
+        down: "bg-down/12 text-down",
+        warning: "bg-warning/15 text-warning",
+        accent: "bg-accent/12 text-accent-fg",
+        muted: "bg-surface-2 text-text-muted",
       },
     },
     defaultVariants: {
@@ -27,8 +27,8 @@ const badgeVariants = cva(
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+function Badge({ className, variant, children, ...props }: BadgeProps) {
+  return <div className={cn(badgeVariants({ variant }), className)} {...props}><span className="cap">{children}</span></div>;
 }
 
 export { Badge, badgeVariants };
