@@ -13,7 +13,7 @@ Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
   ({ className, ...props }, ref) => (
-    <thead ref={ref} className={cn("sticky top-0 z-10 bg-surface", className)} {...props} />
+    <thead ref={ref} className={cn("sticky top-0 z-10 bg-surface shadow-[0_1px_0_0_rgb(var(--c-border))]", className)} {...props} />
   )
 );
 TableHeader.displayName = "TableHeader";
@@ -27,7 +27,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("border-b border-border/50 transition-colors hover:bg-surface-2 data-[state=selected]:bg-surface-2", className)}
+      className={cn("border-b border-border/40 transition-colors hover:bg-surface-2/70 data-[state=selected]:bg-accent/10", className)}
       {...props}
     />
   )
@@ -39,7 +39,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
     <th
       ref={ref}
       className={cn(
-        "h-6 px-2 text-left align-middle font-normal text-[10px] uppercase tracking-wider text-text-muted border-b border-border",
+        "h-7 px-2 text-left align-middle font-medium text-2xs text-text-muted whitespace-nowrap",
         className
       )}
       {...props}
@@ -50,14 +50,14 @@ TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn("px-2 py-1 align-middle", className)} {...props} />
+    <td ref={ref} className={cn("px-2 py-1.5 align-middle", className)} {...props} />
   )
 );
 TableCell.displayName = "TableCell";
 
 const TableEmpty = ({ colSpan, children }: { colSpan: number; children: React.ReactNode }) => (
   <tr>
-    <td colSpan={colSpan} className="text-center py-10 text-text-muted text-[11px]">
+    <td colSpan={colSpan} className="text-center py-10 text-text-muted text-xs">
       {children}
     </td>
   </tr>
@@ -107,7 +107,7 @@ function SortableTableHead<K extends string>({
         className={cn(
           "inline-flex items-center gap-0.5 select-none transition-colors hover:text-text-primary",
           align === "right" && "flex-row-reverse",
-          active && "text-accent"
+          active && "text-text-primary"
         )}
       >
         <span>{children}</span>

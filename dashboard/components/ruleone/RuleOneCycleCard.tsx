@@ -90,14 +90,14 @@ export function RuleOneCycleCard({ symbol }: Props) {
   if (!SUPPORTED.has(symbol)) return null;
 
   return (
-    <div className="w-[290px] bg-bg/85 backdrop-blur-md border border-border/40 rounded-md shadow-sm pointer-events-auto">
+    <div className="w-[290px] bg-surface/85 backdrop-blur-md rounded-lg shadow-pop pointer-events-auto">
       <header className="flex items-baseline gap-2 px-3.5 pt-2.5 pb-1.5">
         <span className="w-1 h-1 rounded-full bg-warning translate-y-[-1px]" />
-        <span className="text-[10px] uppercase tracking-wider text-text-secondary font-medium">
-          Rule One Cycle
+        <span className="text-2xs text-text-secondary font-medium">
+          Rule One cycle
         </span>
         {cycle?.cycle_label && (
-          <span className="text-[10px] text-text-muted">· {cycle.cycle_label}</span>
+          <span className="text-2xs text-text-muted">· {cycle.cycle_label}</span>
         )}
         {loading && (
           <Loader2 size={10} className="ml-auto animate-spin text-text-muted" />
@@ -109,12 +109,12 @@ export function RuleOneCycleCard({ symbol }: Props) {
           <DatesGrid cycle={cycle} />
           <div className="my-2.5 h-px bg-border/50" />
           {cycle.scanner_error ? (
-            <div className="text-[10px] text-down/80 tabular py-1">
-              scanner error · {cycle.scanner_error}
+            <div className="text-2xs text-down tabular py-1">
+              Scanner error · {cycle.scanner_error}
             </div>
           ) : cycle.candidates.length === 0 ? (
-            <div className="text-[10px] text-text-muted tabular py-1">
-              no strikes scanned yet
+            <div className="text-2xs text-text-muted tabular py-1">
+              No strikes scanned yet
             </div>
           ) : (
             <ul className="flex flex-col gap-1.5">
@@ -123,7 +123,7 @@ export function RuleOneCycleCard({ symbol }: Props) {
               ))}
             </ul>
           )}
-          <footer className="mt-2.5 pt-2 border-t border-border/40 text-[10px] text-text-muted tabular">
+          <footer className="mt-2.5 pt-2 border-t border-border/60 text-2xs text-text-muted tabular">
             <button
               type="button"
               onClick={() => fetchCycle("user")}
@@ -136,8 +136,8 @@ export function RuleOneCycleCard({ symbol }: Props) {
           </footer>
         </div>
       ) : !loading ? (
-        <div className="px-3.5 pb-3 text-[10px] text-text-muted">
-          unavailable for {symbol}
+        <div className="px-3.5 pb-3 text-2xs text-text-muted">
+          Unavailable for {symbol}
         </div>
       ) : (
         <div className="px-3.5 pb-3 h-[80px]" />
@@ -151,7 +151,7 @@ function DatesGrid({ cycle }: { cycle: RuleOneCycle }) {
   const entry = cycle.entry_date ? parseISO(cycle.entry_date) : null;
   const expiry = cycle.expiry_date ? parseISO(cycle.expiry_date) : null;
   return (
-    <div className="grid grid-cols-[auto_1fr_auto] gap-x-3 gap-y-1 text-[11px] tabular">
+    <div className="grid grid-cols-[auto_1fr_auto] gap-x-3 gap-y-1 text-xs tabular">
       <Row label="today" date={today} />
       <Row
         label="enter"
@@ -194,8 +194,8 @@ function CandidateRow({ c }: { c: RuleOneCandidate }) {
       : "—";
   const creditLabel = c.credit != null ? `+${c.credit.toFixed(2)}` : "—";
   return (
-    <li className="grid grid-cols-[42px_1fr_auto_14px] items-center gap-2 text-[11px] tabular">
-      <span className="text-[10px] uppercase tracking-wider text-text-secondary">
+    <li className="grid grid-cols-[42px_1fr_auto_14px] items-center gap-2 text-xs tabular">
+      <span className="text-2xs font-mono text-text-secondary">
         {STRATEGY_LABELS[c.strategy_id]}
       </span>
       <span className="text-text-primary font-mono">{strikeLabel}</span>

@@ -49,20 +49,20 @@ function BannerImpl({
   retry: () => Promise<void>;
   retrying: boolean;
 }) {
-  const label = apiDown ? "API Offline" : "IBKR Offline";
+  const label = apiDown ? "API offline" : "IBKR offline";
   const message = apiDown
-    ? "Trading API is unreachable — backend container may be down."
-    : "IBKR Gateway is offline — log in via VNC (port 5900) and the dashboard will reconnect automatically.";
+    ? "The trading API is unreachable. The backend container may be down."
+    : "IBKR Gateway is offline. Log in via VNC (port 5900) and the dashboard reconnects on its own.";
   const Icon = apiDown ? WifiOff : AlertTriangle;
 
   return (
     <div className={cn(
-      "flex items-center gap-3 px-4 h-9 border-b text-[11px] shrink-0 animate-fade-in",
+      "flex items-center gap-3 px-3 h-9 border-b text-xs shrink-0 animate-fade-in",
       apiDown ? "bg-down/10 border-down/20" : "bg-warning/10 border-warning/20",
     )}>
       <Icon size={13} className={cn("shrink-0", apiDown ? "text-down" : "text-warning")} />
       <div className="flex-1 flex items-center gap-2 min-w-0">
-        <span className={cn("font-medium uppercase tracking-wider", apiDown ? "text-down" : "text-warning")}>
+        <span className={cn("font-semibold", apiDown ? "text-down" : "text-warning")}>
           {label}
         </span>
         <span className="text-text-secondary truncate">{message}</span>
@@ -85,7 +85,7 @@ function BannerImpl({
         )}
       >
         <RefreshCw className={retrying ? "animate-spin" : ""} />
-        retry
+        Retry
       </Button>
     </div>
   );

@@ -22,14 +22,14 @@ export function PageHeader({ title, eyebrow, description, actions, className }: 
     >
       <div className="min-w-0">
         {eyebrow && (
-          <div className="text-[9px] uppercase tracking-wider text-text-muted mb-0.5">
+          <div className="eyebrow mb-0.5">
             {eyebrow}
           </div>
         )}
-        <h1 className="text-[12px] font-semibold text-text-primary leading-tight tracking-tight">
+        <h1 className="text-sm font-semibold text-text-primary leading-tight tracking-tight">
           {title}
         </h1>
-        {description && <p className="text-[11px] text-text-muted mt-0.5">{description}</p>}
+        {description && <p className="text-xs text-text-muted mt-0.5">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}
     </div>

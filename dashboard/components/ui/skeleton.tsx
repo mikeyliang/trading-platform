@@ -7,7 +7,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
       role="status"
       aria-label="Loading"
       className={cn(
-        "animate-pulse rounded-md bg-surface-2/70 border border-border/40",
+        "skeleton rounded-md",
         className
       )}
       {...props}
@@ -39,7 +39,7 @@ export function LoadingBlock({ label, className }: { label?: string; className?:
       )}
     >
       <Spinner size={16} />
-      {label && <span className="text-[11px] uppercase tracking-wider">{label}</span>}
+      {label && <span className="text-xs">{label}</span>}
     </div>
   );
 }

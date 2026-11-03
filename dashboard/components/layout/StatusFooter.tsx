@@ -5,8 +5,8 @@ import { useHealth } from "@/lib/health";
 import { cn, fmtCurrency } from "@/lib/utils";
 import { useConnectionStatus, type ConnState } from "@/lib/connection";
 
-// Slim status bar pinned to the bottom of every page, modeled on the IBKR TWS
-// footer: connection state, data stream, mode, server time, last update.
+// Status strip pinned to the bottom of every page: connection state, data
+// stream, account mode, market session, Eastern clock, last refresh.
 export function StatusFooter() {
   const { health, account, lastCheckedAt } = useHealth();
   const { ib, ws, api } = useConnectionStatus();
@@ -25,40 +25,41 @@ export function StatusFooter() {
   return (
     <footer
       role="contentinfo"
-      className="h-5 flex items-center gap-3 px-3 bg-bg border-t border-border/60 text-[10px] tabular font-mono text-text-muted shrink-0 select-none"
+      className="h-6 flex items-center gap-3 px-3 bg-surface border-t border-border text-2xs font-mono tabular text-text-muted shrink-0 select-none overflow-hidden"
     >
       <StatusDot state={ib} label={ibLabel(ib)} />
-      <Sep />
       <StatusDot state={ws} label={wsLabel(ws)} />
-      <Sep />
       <StatusDot state={api} label={apiLabel(api)} />
       <Sep />
-      <span className={cn("uppercase tracking-wider", mode === "LIVE" ? "text-warning" : "text-text-secondary")}>
+      <span className={cn("tracking-wider", mode === "LIVE" ? "text-warning" : "text-text-secondary")}>
         {mode}
       </span>
 
       {account && (
-        <>
+        <span className="hidden md:flex items-center gap-3">
           <Sep />
-          <span className="text-text-secondary">
-            EQ <span className="text-text-primary">{fmtCurrency(account.equity ?? 0)}</span>
+          <span>
+            NLV <span className="text-text-secondary">{fmtCurrency(account.equity ?? 0)}</span>
           </span>
-          <Sep />
-          <span className="text-text-secondary">
-            BP <span className="text-text-primary">{fmtCurrency(account.buying_power ?? 0)}</span>
+          <span>
+            BP <span className="text-text-secondary">{fmtCurrency(account.buying_power ?? 0)}</span>
           </span>
-        </>
+        </span>
       )}
 
       <span className="ml-auto flex items-center gap-3">
-        <span>
+        <span className="flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className={cn("h-1.5 w-1.5 rounded-full", session.open ? "bg-up" : "bg-text-muted")}
+          />
           {session.label} <span className="text-text-secondary">{session.state}</span>
         </span>
         <Sep />
         <span suppressHydrationWarning>{now ? formatTime(now) : "--:--:--"} ET</span>
         <Sep />
-        <span suppressHydrationWarning>
-          UPD {lastCheckedAt ? formatRelative(lastCheckedAt) : "--"}
+        <span suppressHydrationWarning className="hidden sm:inline">
+          upd {lastCheckedAt ? formatRelative(lastCheckedAt) : "--"}
         </span>
       </span>
     </footer>
@@ -83,7 +84,7 @@ function StatusDot({ state, label }: { state: ConnState; label: string }) {
           <span className={cn("absolute inset-0 rounded-full animate-ping opacity-75", color)} />
         )}
       </span>
-      <span className={cn("uppercase tracking-wider", text)}>{label}</span>
+      <span className={cn("tracking-wider", text)}>{label}</span>
     </span>
   );
 }
@@ -99,7 +100,7 @@ function apiLabel(s: ConnState) {
 }
 
 function Sep() {
-  return <span className="text-border">|</span>;
+  return <span aria-hidden className="h-3 w-px bg-border" />;
 }
 
 function formatTime(d: Date): string {
@@ -120,9 +121,8 @@ function formatRelative(ts: number): string {
   return `${Math.floor(delta / 3600)}h`;
 }
 
-function marketSession(d: Date | null): { label: string; state: string } {
-  if (!d) return { label: "MKT", state: "—" };
-  // Compute time in ET via Intl parts.
+function marketSession(d: Date | null): { label: string; state: string; open: boolean } {
+  if (!d) return { label: "MKT", state: "—", open: false };
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     hour12: false,
@@ -137,11 +137,11 @@ function marketSession(d: Date | null): { label: string; state: string } {
   const m = hh * 60 + mm;
 
   const isWeekend = wd === "Sat" || wd === "Sun";
-  if (isWeekend) return { label: "MKT", state: "CLOSED" };
+  if (isWeekend) return { label: "MKT", state: "CLOSED", open: false };
 
   // Regular: 09:30–16:00 ET. Pre: 04:00–09:30. After: 16:00–20:00.
-  if (m >= 570 && m < 960) return { label: "RTH", state: "OPEN" };
-  if (m >= 240 && m < 570) return { label: "PRE", state: "OPEN" };
-  if (m >= 960 && m < 1200) return { label: "AH", state: "OPEN" };
-  return { label: "MKT", state: "CLOSED" };
+  if (m >= 570 && m < 960) return { label: "RTH", state: "OPEN", open: true };
+  if (m >= 240 && m < 570) return { label: "PRE", state: "OPEN", open: true };
+  if (m >= 960 && m < 1200) return { label: "AH", state: "OPEN", open: true };
+  return { label: "MKT", state: "CLOSED", open: false };
 }

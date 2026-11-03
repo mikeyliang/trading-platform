@@ -44,7 +44,7 @@ export function Logo({ symbol, size = 24, className }: LogoProps) {
         />
       ) : (
         <span
-          className="font-semibold text-white"
+          className="font-semibold text-on-fill"
           style={{ fontSize: Math.max(9, size * 0.42) }}
         >
           {symbol.slice(0, 2)}

@@ -22,7 +22,7 @@ export function ConnectionPill() {
           aria-label={ibLabel}
           className={cn(
             badgeVariants({ variant }),
-            "h-6 px-2 rounded-sm cursor-pointer",
+            "h-6 px-2 cursor-pointer",
             ib === "connected" && "hover:bg-up/15",
             ib === "reconnecting" && "hover:bg-warning/15",
             ib === "disconnected" && "hover:bg-down/15",
@@ -34,8 +34,8 @@ export function ConnectionPill() {
       </TooltipTrigger>
       <TooltipContent side="bottom" className="max-w-xs">
         <div className="space-y-1.5">
-          <div className="text-[11px] font-medium text-text-primary">{ibLabel}</div>
-          <div className="text-[11px] text-text-secondary leading-snug">{ibDescription}</div>
+          <div className="text-xs font-medium text-text-primary">{ibLabel}</div>
+          <div className="text-xs text-text-secondary leading-snug">{ibDescription}</div>
           <div className="pt-1.5 mt-1 border-t border-border/60 space-y-1">
             <SubLine label="API" state={api} />
             <SubLine label="Stream" state={ws} />
@@ -49,11 +49,11 @@ export function ConnectionPill() {
 
 function SubLine({ label, state }: { label: string; state: ConnState }) {
   return (
-    <div className="flex items-center gap-2 text-[10px]">
+    <div className="flex items-center gap-2 text-2xs">
       <ConnectionDot state={state} small />
-      <span className="text-text-muted uppercase tracking-wider w-12">{label}</span>
+      <span className="text-text-muted w-12">{label}</span>
       <span className={cn(
-        "uppercase tracking-wider tabular",
+        "tabular",
         state === "connected" && "text-up",
         state === "reconnecting" && "text-warning",
         state === "disconnected" && "text-down",

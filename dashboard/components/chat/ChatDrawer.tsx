@@ -189,7 +189,7 @@ export function ChatDrawer() {
       {/* backdrop */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity",
+          "fixed inset-0 z-40 bg-bg/70 backdrop-blur-sm transition-opacity",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={() => setOpen(false)}
@@ -215,7 +215,7 @@ export function ChatDrawer() {
               status?.available ? "bg-up" : "bg-text-muted"
             )}
           />
-          <span className="text-[10px] tabular text-text-muted">
+          <span className="text-2xs tabular text-text-muted">
             {status?.model?.replace("claude-", "") ?? "—"}
           </span>
           <div className="ml-auto flex items-center gap-0.5">
@@ -269,14 +269,14 @@ export function ChatDrawer() {
                 "absolute right-2 bottom-2 w-7 h-7 flex items-center justify-center rounded transition-colors",
                 streaming
                   ? "bg-down/15 text-down hover:bg-down/25"
-                  : "bg-accent text-white hover:bg-accent/90 disabled:opacity-40 disabled:hover:bg-accent"
+                  : "bg-accent text-on-fill hover:bg-accent/90 disabled:opacity-40 disabled:hover:bg-accent"
               )}
               aria-label={streaming ? "Stop" : "Send"}
             >
               {streaming ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
             </button>
           </div>
-          <div className="flex items-center justify-between mt-1.5 text-[10px] text-text-muted">
+          <div className="flex items-center justify-between mt-1.5 text-2xs text-text-muted">
             <span>Context: {summarizeContext(path, positions.length, watchlist.length)}</span>
             <kbd className="font-mono">⌘J</kbd>
           </div>
@@ -301,7 +301,7 @@ function Message({ message }: { message: ChatMessage }) {
 
   return (
     <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted">
+      <div className="text-2xs uppercase tracking-wider text-text-muted">
         {isUser ? "you" : "co-pilot"}
       </div>
 
@@ -417,25 +417,25 @@ function ProposalCard({ proposal }: { proposal: ParamProposal }) {
     <div className="max-w-[92%] w-full rounded-md border border-accent/30 bg-accent/5 p-3 flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <Wand2 size={11} className="text-accent" />
-        <span className="text-[10px] uppercase tracking-wider text-accent font-medium">
+        <span className="text-2xs uppercase tracking-wider text-accent font-medium">
           Suggested params
         </span>
-        <span className="text-[10px] tabular text-text-muted ml-auto">
+        <span className="text-2xs tabular text-text-muted ml-auto">
           {proposal.strategy}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
         {paramEntries.map(([k, v]) => (
           <div key={k} className="flex items-center justify-between">
-            <span className="text-text-muted font-mono text-[10px]">{k}</span>
+            <span className="text-text-muted font-mono text-2xs">{k}</span>
             <span className="tabular text-text-primary">{String(v)}</span>
           </div>
         ))}
       </div>
 
       {proposal.rationale && (
-        <p className="text-[11px] text-text-secondary leading-relaxed border-t border-border/60 pt-2">
+        <p className="text-xs text-text-secondary leading-relaxed border-t border-border/60 pt-2">
           {proposal.rationale}
         </p>
       )}
@@ -466,12 +466,12 @@ function ProposalCard({ proposal }: { proposal: ParamProposal }) {
 function EmptyChat({ available, onPick }: { available: boolean; onPick: (s: string) => void }) {
   if (!available) {
     return (
-      <div className="text-center text-[11px] text-text-muted py-12">
+      <div className="text-center text-xs text-text-muted py-12">
         <Sparkles size={20} className="mx-auto mb-2 text-text-muted/60" />
         <p className="mb-1 text-text-secondary font-medium">Chat is disabled</p>
         <p>
-          Add <code className="text-[10px] bg-surface-2 px-1 py-0.5 rounded">ANTHROPIC_API_KEY</code> to{" "}
-          <code className="text-[10px] bg-surface-2 px-1 py-0.5 rounded">.env</code> and restart the api container.
+          Add <code className="text-2xs bg-surface-2 px-1 py-0.5 rounded">ANTHROPIC_API_KEY</code> to{" "}
+          <code className="text-2xs bg-surface-2 px-1 py-0.5 rounded">.env</code> and restart the api container.
         </p>
       </div>
     );
@@ -495,7 +495,7 @@ function EmptyChat({ available, onPick }: { available: boolean; onPick: (s: stri
           <button
             key={s}
             onClick={() => onPick(s)}
-            className="text-left text-[11px] px-3 py-2 rounded-md border border-border bg-surface-2 hover:bg-surface-3 hover:border-surface-3 text-text-secondary hover:text-text-primary transition-colors"
+            className="text-left text-xs px-3 py-2 rounded-md border border-border bg-surface-2 hover:bg-surface-3 hover:border-surface-3 text-text-secondary hover:text-text-primary transition-colors"
           >
             {s}
           </button>

@@ -60,7 +60,7 @@ export default function DashboardPage() {
           <div className={`
             ${watchlistOpen ? 'block' : 'hidden'} 
             md:block 
-            w-56 bg-bg shrink-0 border-l border-border
+            w-60 bg-surface shrink-0 border-l border-border
             absolute md:relative top-0 right-0 h-full z-20 md:z-auto
             md:h-auto
           `}>

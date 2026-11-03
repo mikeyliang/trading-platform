@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          className="md:hidden fixed inset-0 z-30 bg-black/50 animate-fade-in"
+          className="md:hidden fixed inset-0 z-30 bg-bg/70 backdrop-blur-sm animate-fade-in"
           aria-hidden="true"
         />
       )}

@@ -33,7 +33,7 @@ export function EmptyState({
       {Icon && (
         <div
           className={cn(
-            "rounded-full bg-surface-2 border border-border flex items-center justify-center mb-1",
+            "rounded-md bg-surface-2 border border-border flex items-center justify-center mb-1",
             compact ? "w-7 h-7" : "w-9 h-9"
           )}
         >
@@ -45,14 +45,14 @@ export function EmptyState({
           />
         </div>
       )}
-      <p className={cn("font-medium text-text-secondary", compact ? "text-[11px]" : "text-xs")}>
+      <p className={cn("font-medium text-text-primary", compact ? "text-xs" : "text-sm")}>
         {title}
       </p>
       {description && (
         <p
           className={cn(
             "text-text-muted leading-relaxed",
-            compact ? "text-[10px] max-w-[200px]" : "text-[11px] max-w-xs"
+            compact ? "text-2xs max-w-[200px]" : "text-xs max-w-xs"
           )}
         >
           {description}

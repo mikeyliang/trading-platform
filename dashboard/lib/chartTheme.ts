@@ -13,19 +13,19 @@
  */
 export const CHART = {
   // ── chrome ────────────────────────────────────────────────────────────
-  grid: "#262629",
-  axis: "#38383f",
-  crosshair: "#52525b",
-  axisText: "#71717a",
+  grid: "#1c222b",
+  axis: "#2a3341",
+  crosshair: "#677385",
+  axisText: "#7c8798",
 
   // Background tones (mirror of the surface palette) used when a chart
   // needs to set its own bg explicitly (lightweight-charts requires this).
-  bg: "#18181b",
-  surface: "#1f1f23",
+  bg: "#151a21",
+  surface: "#1c222b",
 
   // Foreground / primary text in chart annotations.
-  text: "#f4f4f5",
-  textMuted: "#71717a",
+  text: "#e6ebf2",
+  textMuted: "#7c8798",
 
   // ── price series ──────────────────────────────────────────────────────
   candle: {
@@ -82,10 +82,10 @@ export const CHART = {
   },
 
   // ── semantic shortcuts (mirror of root tokens) ────────────────────────
-  up: "#22c55e",
-  down: "#ef4444",
-  warning: "#f59e0b",
-  accent: "#3b82f6",
+  up: "#46c46e",
+  down: "#f45e68",
+  warning: "#e8ac38",
+  accent: "#8b96ff",
 } as const;
 
 /**
@@ -96,35 +96,67 @@ export const CHART = {
  */
 import { ColorType, CrosshairMode, LineStyle } from "lightweight-charts";
 
-export const baseChartOptions = () => ({
-  layout: {
-    background: { type: ColorType.Solid, color: CHART.bg },
-    textColor: CHART.axisText,
-    fontSize: 11,
-    fontFamily: "ui-monospace, SFMono-Regular, monospace",
-  },
-  grid: {
-    vertLines: { color: CHART.grid },
-    horzLines: { color: CHART.grid },
-  },
-  crosshair: {
-    mode: CrosshairMode.Normal,
-    vertLine: { color: CHART.crosshair, style: LineStyle.Dashed, width: 1 as const },
-    horzLine: { color: CHART.crosshair, style: LineStyle.Dashed, width: 1 as const },
-  },
-  rightPriceScale: {
-    borderColor: CHART.axis,
-    scaleMargins: { top: 0.08, bottom: 0.18 },
-  },
-  timeScale: {
-    borderColor: CHART.axis,
-    timeVisible: true,
-    secondsVisible: false,
-    // Keep candles readable on wide screens — without this, 90+ bars
-    // squashed across a 1300px pane produce hair-thin candles.
-    barSpacing: 10,
-    minBarSpacing: 6,
-  },
-  handleScroll: true,
-  handleScale: true,
-});
+/**
+ * Chart chrome follows the active theme. The series palette above is fixed
+ * (it is tuned to read on both surfaces), but background, grid, axis and
+ * label colors come from the CSS variables in globals.css so a chart built
+ * in light mode is not a dark rectangle. Read at creation time only.
+ */
+export function chartChrome() {
+  if (typeof window === "undefined") {
+    return {
+      bg: CHART.bg,
+      grid: CHART.grid,
+      axis: CHART.axis,
+      crosshair: CHART.crosshair,
+      axisText: CHART.axisText,
+      text: CHART.text,
+    };
+  }
+  const css = getComputedStyle(document.documentElement);
+  const read = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+  return {
+    bg: read("--chart-bg", CHART.bg),
+    grid: read("--chart-grid", CHART.grid),
+    axis: read("--chart-axis", CHART.axis),
+    crosshair: read("--chart-crosshair", CHART.crosshair),
+    axisText: read("--chart-axis-text", CHART.axisText),
+    text: read("--chart-text", CHART.text),
+  };
+}
+
+export const baseChartOptions = () => {
+  const c = chartChrome();
+  return {
+    layout: {
+      background: { type: ColorType.Solid, color: c.bg },
+      textColor: c.axisText,
+      fontSize: 11,
+      fontFamily: "var(--font-mono), ui-monospace, SFMono-Regular, monospace",
+    },
+    grid: {
+      vertLines: { color: c.grid },
+      horzLines: { color: c.grid },
+    },
+    crosshair: {
+      mode: CrosshairMode.Normal,
+      vertLine: { color: c.crosshair, style: LineStyle.Dashed, width: 1 as const },
+      horzLine: { color: c.crosshair, style: LineStyle.Dashed, width: 1 as const },
+    },
+    rightPriceScale: {
+      borderColor: c.axis,
+      scaleMargins: { top: 0.08, bottom: 0.18 },
+    },
+    timeScale: {
+      borderColor: c.axis,
+      timeVisible: true,
+      secondsVisible: false,
+      // Keep candles readable on wide screens — without this, 90+ bars
+      // squashed across a 1300px pane produce hair-thin candles.
+      barSpacing: 10,
+      minBarSpacing: 6,
+    },
+    handleScroll: true,
+    handleScale: true,
+  };
+};

@@ -146,50 +146,35 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
     <Tabs
       value={tab}
       onValueChange={(v) => setTab(v as Tab)}
-      className="flex flex-col h-full border-t border-border"
+      className="flex flex-col h-full bg-surface"
     >
-      {/* Tab strip — left. Filter status — right. */}
-      <div className="flex items-stretch border-b border-border bg-surface/40">
-        <TabsList className="shrink-0 border-0">
-          <TabTriggerWithCount value="positions" label="positions" count={filteredPositions.length} total={positions.length} />
-          <TabTriggerWithCount value="spreads" label="spreads" count={filteredSpreads.length} total={spreads.length} />
-          <TabTriggerWithCount value="trades" label="trades" count={filteredTrades.length} total={trades.length} />
+      {/* One toolbar: tabs on the left, filters on the right. Wraps to two
+          rows on narrow screens. */}
+      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 pr-2 border-b border-border bg-surface shrink-0">
+        <TabsList className="shrink-0 border-0 bg-transparent">
+          <TabTriggerWithCount value="positions" label="Positions" count={filteredPositions.length} total={positions.length} />
+          <TabTriggerWithCount value="spreads" label="Spreads" count={filteredSpreads.length} total={spreads.length} />
+          <TabTriggerWithCount value="trades" label="Trades" count={filteredTrades.length} total={trades.length} />
         </TabsList>
 
-        {activeFilterCount > 0 && (
-          <div className="ml-auto flex items-center gap-2 pr-2 text-[10px] text-text-muted">
-            <span className="tabular">
-              {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} on
-            </span>
-            <button
-              onClick={clearAll}
-              className="inline-flex items-center gap-1 h-5 px-2 rounded-sm border border-border bg-surface-2/60 hover:bg-surface-2 text-text-secondary hover:text-text-primary transition-colors"
-            >
-              <X size={9} />
-              Clear all
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Filter row — dedicated line so groups breathe and stay readable.
-          Each filter group is labeled; no cryptic abbreviations. "Any" is
-          a real choice in the segmented control so the off-state is clear. */}
-      <div className="flex items-center flex-wrap gap-x-4 gap-y-1.5 px-2 py-1.5 border-b border-border/60 bg-surface/30">
+        <div className="ml-auto flex items-center flex-wrap gap-x-3 gap-y-1 py-1">
         {/* Symbol search — magnifier + input + inline clear */}
         <div className={cn(
-          "flex items-center gap-1.5 h-6 px-2 rounded-sm border border-border bg-surface-2/40 transition-colors",
-          symbolQ ? "border-accent/50" : "hover:bg-surface-2/70"
+          "flex items-center gap-1.5 h-6 px-2 rounded-md border bg-surface-2/60 transition-colors",
+          symbolQ ? "border-accent/60" : "border-border/60 hover:border-border"
         )}>
-          <Search size={11} className="text-text-muted shrink-0" />
+          <Search size={11} className="text-text-muted shrink-0" aria-hidden />
           <input
+            id="positions-symbol-filter"
             value={symbolQ}
             onChange={(e) => setSymbolQ(e.target.value.toUpperCase())}
             placeholder="Symbol"
-            className="w-20 bg-transparent text-xs tabular leading-normal text-text-primary placeholder:text-text-muted/60 outline-none"
+            aria-label="Filter by symbol"
+            className="w-16 bg-transparent text-xs font-mono leading-normal text-text-primary placeholder:text-text-muted outline-none"
           />
           {symbolQ && (
             <button
+              type="button"
               onClick={() => setSymbolQ("")}
               className="text-text-muted hover:text-text-primary"
               aria-label="Clear symbol filter"
@@ -217,10 +202,22 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
             { v: "all", label: "Any" },
             { v: "stock", label: "Stock" },
             { v: "option", label: "Option" },
-            { v: "leg", label: "Spread leg" },
+            { v: "leg", label: "Leg" },
           ]}
           onChange={(v) => setKind(v as KindFilter)}
         />
+
+        {activeFilterCount > 0 && (
+          <button
+            type="button"
+            onClick={clearAll}
+            className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-2xs text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
+          >
+            <X size={10} />
+            Clear {activeFilterCount}
+          </button>
+        )}
+        </div>
       </div>
 
       <TabsContent value="positions" className="flex-1 overflow-auto mt-0">
@@ -231,7 +228,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           <EmptyState
             icon={Briefcase}
             title="No open positions"
-            description="Positions sync from IBKR Gateway once you have any open."
+            description="Positions sync from IBKR Gateway as soon as you have any open."
           />
         ) : filteredPositions.length === 0 ? (
           <FilterEmpty
@@ -250,13 +247,13 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           <EmptyState
             icon={Layers}
             title="No open spreads"
-            description="Load RUT or SPY on the chart — the Rule One cycle card shows the next short strike for each strategy."
+            description="Open RUT or SPX on the chart. The Rule One cycle card shows the next short strike for each strategy."
             action={
               <Link
                 href="/chart/RUT"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-accent hover:bg-accent/90 text-white text-xs"
+                className="inline-flex items-center gap-1.5 px-3 h-7 rounded-md bg-accent hover:bg-accent/90 text-on-fill text-xs font-medium"
               >
-                View RUT cycle →
+                View RUT cycle
               </Link>
             }
           />
@@ -274,7 +271,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           <EmptyState
             icon={Activity}
             title="No trades yet"
-            description="Trade history will populate once orders fill via your connected broker."
+            description="Fills from your connected broker show up here."
           />
         ) : filteredTrades.length === 0 ? (
           <FilterEmpty label={`No trades match "${symbolQ}"`} onClear={clearAll} />
@@ -305,19 +302,20 @@ function FilterGroup<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
-      <div className="flex h-6 rounded-sm border border-border overflow-hidden">
-        {options.map((o, i) => (
+    <div className="flex items-center gap-1.5" role="group" aria-label={label}>
+      <span className="text-2xs text-text-muted">{label}</span>
+      <div className="flex h-6 p-0.5 gap-0.5 rounded-md bg-surface-2/60 border border-border/60">
+        {options.map((o) => (
           <button
             key={o.v}
+            type="button"
+            aria-pressed={value === o.v}
             onClick={() => onChange(o.v)}
             className={cn(
-              "px-2 text-[10px] transition-colors whitespace-nowrap",
-              i > 0 && "border-l border-border",
+              "px-2 rounded text-2xs transition-colors whitespace-nowrap leading-none",
               value === o.v
-                ? "bg-accent/15 text-accent font-medium"
-                : "text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+                ? "bg-surface text-text-primary font-medium shadow-ring"
+                : "text-text-secondary hover:text-text-primary"
             )}
           >
             {o.label}
@@ -331,14 +329,15 @@ function FilterGroup<T extends string>({
 function FilterEmpty({ label, onClear }: { label: string; onClear?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-3 py-10 text-center animate-fade-in">
-      <div className="w-7 h-7 rounded-full bg-surface-2 border border-border flex items-center justify-center">
+      <div className="w-7 h-7 rounded-md bg-surface-2 border border-border flex items-center justify-center">
         <Search size={13} className="text-text-muted" strokeWidth={1.75} aria-hidden="true" />
       </div>
-      <p className="text-[11px] text-text-secondary max-w-xs">{label}</p>
+      <p className="text-xs text-text-secondary max-w-xs">{label}</p>
       {onClear && (
         <button
+          type="button"
           onClick={onClear}
-          className="mt-0.5 inline-flex items-center gap-1 h-5 px-2 rounded-sm border border-border bg-surface-2/60 hover:bg-surface-2 text-[10px] text-text-secondary hover:text-text-primary transition-colors"
+          className="mt-0.5 inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border bg-surface-2/60 hover:bg-surface-2 text-2xs text-text-secondary hover:text-text-primary transition-colors"
         >
           <X size={9} />
           Clear filters
@@ -348,9 +347,9 @@ function FilterEmpty({ label, onClear }: { label: string; onClear?: () => void }
   );
 }
 
-const POSITION_HEADERS = ["symbol", "type", "sector", "qty", "avg", "price", "unr. P&L", "unr. %"] as const;
-const SPREAD_HEADERS = ["symbol", "type", "expiry", "strikes", "qty", "credit", "max profit", "max loss"] as const;
-const TRADE_HEADERS = ["symbol", "side", "qty", "price", "P&L", "strategy", "time"] as const;
+const POSITION_HEADERS = ["Symbol", "Type", "Sector", "Qty", "Avg", "Price", "Unrealized", "Unr. %"] as const;
+const SPREAD_HEADERS = ["Symbol", "Type", "Expiry", "Strikes", "Qty", "Credit", "Max profit", "Max loss"] as const;
+const TRADE_HEADERS = ["Symbol", "Side", "Qty", "Price", "P&L", "Strategy", "Time"] as const;
 
 /**
  * Loading state for tabular data. Matches the real table chrome (sticky
@@ -367,7 +366,7 @@ function TableSkeleton({ cols, headers, rows = 6 }: { cols: number; headers: rea
             <th
               key={h}
               className={cn(
-                "h-6 px-2 align-middle font-normal text-[10px] uppercase tracking-wider text-text-muted border-b border-border",
+                "h-7 px-2 align-middle font-medium text-2xs text-text-muted",
                 i >= cols - 2 ? "text-right" : "text-left"
               )}
             >
@@ -396,7 +395,7 @@ function TabTriggerWithCount({
     <TabsTrigger value={value}>
       {label}
       {(count > 0 || showTotal) && (
-        <span className="px-1 rounded-sm bg-surface-3 text-[10px] text-text-secondary tabular">
+        <span className="px-1.5 rounded-full bg-surface-3 text-2xs text-text-secondary tabular leading-4">
           {showTotal ? `${count}/${total}` : count}
         </span>
       )}
@@ -464,19 +463,19 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
-          <SortableTableHead sortKey="type" sort={sort} onSort={toggleSort}>type</SortableTableHead>
-          <SortableTableHead sortKey="sector" sort={sort} onSort={toggleSort}>sector</SortableTableHead>
-          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
-          <SortableTableHead sortKey="avg" sort={sort} onSort={toggleSort} align="right">avg</SortableTableHead>
-          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">price</SortableTableHead>
-          <SortableTableHead sortKey="pnl" sort={sort} onSort={toggleSort} align="right">unr. P&amp;L</SortableTableHead>
-          <SortableTableHead sortKey="pnl_pct" sort={sort} onSort={toggleSort} align="right">unr. %</SortableTableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>Symbol</SortableTableHead>
+          <SortableTableHead sortKey="type" sort={sort} onSort={toggleSort}>Type</SortableTableHead>
+          <SortableTableHead sortKey="sector" sort={sort} onSort={toggleSort}>Sector</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">Qty</SortableTableHead>
+          <SortableTableHead sortKey="avg" sort={sort} onSort={toggleSort} align="right">Avg</SortableTableHead>
+          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">Price</SortableTableHead>
+          <SortableTableHead sortKey="pnl" sort={sort} onSort={toggleSort} align="right">Unrealized</SortableTableHead>
+          <SortableTableHead sortKey="pnl_pct" sort={sort} onSort={toggleSort} align="right">Unr. %</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {sorted.length === 0 ? (
-          <TableEmpty colSpan={8}>no open positions</TableEmpty>
+          <TableEmpty colSpan={8}>No open positions</TableEmpty>
         ) : (
           sorted.map(({ p, kind }, i) => {
             const pnlUp = p.unrealized_pnl > 0;
@@ -490,7 +489,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                 // Subtle left accent on hover — signals "row is the click target"
                 // without shifting layout. Uses box-shadow inset so the row stays
                 // the same height.
-                "hover:shadow-[inset_2px_0_0_0_#3b82f6]",
+                "hover:shadow-[inset_2px_0_0_0_rgb(var(--c-accent))]",
                 "hover:bg-surface-2/80 transition-[background,box-shadow] duration-100"
               )}
               title={p.is_option ? "Open in option analyzer" : "Analyze position"}
@@ -500,19 +499,19 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                   <Logo symbol={p.symbol} size={16} />
                   <div className="flex flex-col leading-tight">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="group-hover:text-accent transition-colors">{p.symbol}</span>
+                      <span className="group-hover:text-accent-fg transition-colors">{p.symbol}</span>
                       {p.is_option && (
                         <span className={cn(
-                          "text-[9px] uppercase tracking-wider px-1 py-px rounded-sm",
+                          "text-2xs px-1 py-px rounded leading-4",
                           p.right === "C" ? "bg-up/15 text-up" : "bg-down/15 text-down",
                         )}>
                           {p.right === "C" ? "Call" : "Put"}
                         </span>
                       )}
-                      <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent transition-opacity" />
+                      <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-fg transition-opacity" />
                     </span>
                     {p.is_option && (
-                      <span className="text-[10px] text-text-muted tabular">
+                      <span className="text-2xs text-text-muted tabular">
                         {formatExpiry(p.expiry)} · {Number(p.strike ?? 0).toFixed(0)}{p.right}
                       </span>
                     )}
@@ -534,7 +533,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                         ? "Modeled mark — Black-Scholes theoretical; no live quote available"
                         : "Stale mark — last good quote; this refresh missed"}
                       className={cn(
-                        "px-1 rounded-sm text-[8px] font-semibold uppercase tracking-wide leading-none py-0.5",
+                        "px-1 rounded text-[9px] font-semibold uppercase tracking-wide leading-none py-0.5",
                         p.mark_source === "modeled"
                           ? "bg-warning/20 text-warning"
                           : "bg-surface-2 text-text-muted",
@@ -547,7 +546,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                 </span>
               </TableCell>
               <TableCell className={cn("text-right tabular font-medium", pnlClass(p.unrealized_pnl))}>
-                {pnlUp ? "+" : ""}{fmtCurrency(p.unrealized_pnl)}
+                {pnlUp ? "+" : pnlDown ? "−" : ""}{fmtCurrency(Math.abs(p.unrealized_pnl))}
               </TableCell>
               <TableCell className="text-right">
 
@@ -571,14 +570,14 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
 function KindPill({ kind }: { kind: PositionKind }) {
   const styles: Record<PositionKind, string> = {
     stock: "border-border text-text-secondary",
-    option: "border-accent/40 text-accent",
-    leg: "border-amber-500/40 text-amber-500",
+    option: "border-accent/40 text-accent-fg",
+    leg: "border-warning/40 text-warning",
   };
   const label = kind === "stock" ? "Stock" : kind === "option" ? "Option" : "Leg";
   return (
     <span
       className={cn(
-        "text-[9px] uppercase tracking-wider px-1.5 py-px rounded-sm border bg-transparent",
+        "text-2xs px-1.5 py-px rounded border bg-transparent leading-4",
         styles[kind],
       )}
     >
@@ -631,19 +630,19 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
-          <SortableTableHead sortKey="spread_type" sort={sort} onSort={toggleSort}>type</SortableTableHead>
-          <SortableTableHead sortKey="expiry" sort={sort} onSort={toggleSort}>expiry</SortableTableHead>
-          <SortableTableHead sortKey="short_strike" sort={sort} onSort={toggleSort}>strikes</SortableTableHead>
-          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
-          <SortableTableHead sortKey="credit" sort={sort} onSort={toggleSort} align="right">credit</SortableTableHead>
-          <SortableTableHead sortKey="max_profit" sort={sort} onSort={toggleSort} align="right">max profit</SortableTableHead>
-          <SortableTableHead sortKey="max_loss" sort={sort} onSort={toggleSort} align="right">max loss</SortableTableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>Symbol</SortableTableHead>
+          <SortableTableHead sortKey="spread_type" sort={sort} onSort={toggleSort}>Type</SortableTableHead>
+          <SortableTableHead sortKey="expiry" sort={sort} onSort={toggleSort}>Expiry</SortableTableHead>
+          <SortableTableHead sortKey="short_strike" sort={sort} onSort={toggleSort}>Strikes</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">Qty</SortableTableHead>
+          <SortableTableHead sortKey="credit" sort={sort} onSort={toggleSort} align="right">Credit</SortableTableHead>
+          <SortableTableHead sortKey="max_profit" sort={sort} onSort={toggleSort} align="right">Max profit</SortableTableHead>
+          <SortableTableHead sortKey="max_loss" sort={sort} onSort={toggleSort} align="right">Max loss</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {sorted.length === 0 ? (
-          <TableEmpty colSpan={8}>no open spreads</TableEmpty>
+          <TableEmpty colSpan={8}>No open spreads</TableEmpty>
         ) : (
           sorted.map((s) => (
             <TableRow
@@ -651,7 +650,7 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
               onClick={() => router.push(`/chart/${s.symbol}`)}
               className={cn(
                 "cursor-pointer group relative",
-                "hover:shadow-[inset_2px_0_0_0_#3b82f6]",
+                "hover:shadow-[inset_2px_0_0_0_rgb(var(--c-accent))]",
                 "hover:bg-surface-2/80 transition-[background,box-shadow] duration-100"
               )}
               title="Open chart with cycle overlay"
@@ -659,8 +658,8 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
               <TableCell className="font-medium">
                 <span className="inline-flex items-center gap-2">
                   <Logo symbol={s.symbol} size={16} />
-                  <span className="group-hover:text-accent transition-colors">{s.symbol}</span>
-                  <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent transition-opacity" />
+                  <span className="group-hover:text-accent-fg transition-colors">{s.symbol}</span>
+                  <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-fg transition-opacity" />
                 </span>
               </TableCell>
               <TableCell>
@@ -722,28 +721,28 @@ function TradesTable({ trades }: { trades: Trade[] }) {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>symbol</SortableTableHead>
-          <SortableTableHead sortKey="side" sort={sort} onSort={toggleSort}>side</SortableTableHead>
-          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">qty</SortableTableHead>
-          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">price</SortableTableHead>
+          <SortableTableHead sortKey="symbol" sort={sort} onSort={toggleSort}>Symbol</SortableTableHead>
+          <SortableTableHead sortKey="side" sort={sort} onSort={toggleSort}>Side</SortableTableHead>
+          <SortableTableHead sortKey="qty" sort={sort} onSort={toggleSort} align="right">Qty</SortableTableHead>
+          <SortableTableHead sortKey="price" sort={sort} onSort={toggleSort} align="right">Price</SortableTableHead>
           <SortableTableHead sortKey="pnl" sort={sort} onSort={toggleSort} align="right">P&amp;L</SortableTableHead>
-          <SortableTableHead sortKey="strategy" sort={sort} onSort={toggleSort}>strategy</SortableTableHead>
-          <SortableTableHead sortKey="timestamp" sort={sort} onSort={toggleSort}>time</SortableTableHead>
+          <SortableTableHead sortKey="strategy" sort={sort} onSort={toggleSort}>Strategy</SortableTableHead>
+          <SortableTableHead sortKey="timestamp" sort={sort} onSort={toggleSort}>Time</SortableTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {sorted.length === 0 ? (
-          <TableEmpty colSpan={7}>no trades yet</TableEmpty>
+          <TableEmpty colSpan={7}>No trades yet</TableEmpty>
         ) : (
           sorted.map((t) => (
             <TableRow
               key={t.id}
-              className="group hover:bg-surface-2/80 hover:shadow-[inset_2px_0_0_0_#3b82f6] transition-[background,box-shadow] duration-100"
+              className="group hover:bg-surface-2/80 hover:shadow-[inset_2px_0_0_0_rgb(var(--c-accent))] transition-[background,box-shadow] duration-100"
             >
               <TableCell className="font-medium">
                 {t.symbol}
                 {t.is_option && t.strike != null && t.right && (
-                  <span className="ml-1.5 text-[10px] font-normal text-text-muted tabular">
+                  <span className="ml-1.5 text-2xs font-normal text-text-muted tabular">
                     {Number(t.strike).toFixed(0)}{t.right}
                     {t.expiry ? ` ${t.expiry.slice(4, 6)}/${t.expiry.slice(6, 8)}` : ""}
                   </span>
@@ -773,14 +772,14 @@ function PositionsTableSkeleton() {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>symbol</TableHead>
-          <TableHead>type</TableHead>
-          <TableHead>sector</TableHead>
-          <TableHead className="text-right">qty</TableHead>
-          <TableHead className="text-right">avg</TableHead>
-          <TableHead className="text-right">price</TableHead>
-          <TableHead className="text-right">unr. P&amp;L</TableHead>
-          <TableHead className="text-right">unr. %</TableHead>
+          <TableHead>Symbol</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Sector</TableHead>
+          <TableHead className="text-right">Qty</TableHead>
+          <TableHead className="text-right">Avg</TableHead>
+          <TableHead className="text-right">Price</TableHead>
+          <TableHead className="text-right">Unrealized</TableHead>
+          <TableHead className="text-right">Unr. %</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -799,14 +798,14 @@ function SpreadsTableSkeleton() {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>symbol</TableHead>
-          <TableHead>type</TableHead>
-          <TableHead>expiry</TableHead>
-          <TableHead>strikes</TableHead>
-          <TableHead className="text-right">qty</TableHead>
-          <TableHead className="text-right">credit</TableHead>
-          <TableHead className="text-right">max profit</TableHead>
-          <TableHead className="text-right">max loss</TableHead>
+          <TableHead>Symbol</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Expiry</TableHead>
+          <TableHead>Strikes</TableHead>
+          <TableHead className="text-right">Qty</TableHead>
+          <TableHead className="text-right">Credit</TableHead>
+          <TableHead className="text-right">Max profit</TableHead>
+          <TableHead className="text-right">Max loss</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -825,13 +824,13 @@ function TradesTableSkeleton() {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>symbol</TableHead>
-          <TableHead>side</TableHead>
-          <TableHead className="text-right">qty</TableHead>
-          <TableHead className="text-right">price</TableHead>
+          <TableHead>Symbol</TableHead>
+          <TableHead>Side</TableHead>
+          <TableHead className="text-right">Qty</TableHead>
+          <TableHead className="text-right">Price</TableHead>
           <TableHead className="text-right">P&amp;L</TableHead>
-          <TableHead>strategy</TableHead>
-          <TableHead>time</TableHead>
+          <TableHead>Strategy</TableHead>
+          <TableHead>Time</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

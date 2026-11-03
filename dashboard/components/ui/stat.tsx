@@ -22,14 +22,14 @@ interface StatProps {
 
 export function Stat({ label, value, hint, tone = "default", size = "sm", className }: StatProps) {
   const valueSize =
-    size === "lg" ? "text-lg" : size === "md" ? "text-sm" : "text-xs";
+    size === "lg" ? "text-lg" : size === "md" ? "text-base" : "text-sm";
   return (
     <div className={cn("min-w-0", className)}>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted truncate">{label}</div>
+      <div className="text-2xs text-text-muted truncate">{label}</div>
       <div className={cn("font-semibold tabular leading-tight mt-0.5 truncate", valueSize, toneClass[tone])}>
         {value}
       </div>
-      {hint != null && <div className="text-[10px] text-text-muted tabular mt-0.5 truncate">{hint}</div>}
+      {hint != null && <div className="text-2xs text-text-muted tabular mt-0.5 truncate">{hint}</div>}
     </div>
   );
 }

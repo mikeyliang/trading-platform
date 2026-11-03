@@ -1,5 +1,11 @@
 import type { Config } from "tailwindcss";
 
+// Every UI color resolves to a CSS variable defined in app/globals.css, so the
+// same class renders correctly in both the dark (default) and light themes.
+// Variables hold space-separated RGB triplets, which keeps Tailwind opacity
+// modifiers (`bg-accent/15`) working.
+const v = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -10,28 +16,31 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Calm dark grey — less inky than pure black, less elevated than a true mid-grey.
-        bg: "#18181b",
-        surface: "#1f1f23",
-        "surface-2": "#28282d",
-        "surface-3": "#313137",
-        border: "#38383f",
-        "text-primary": "#f4f4f5",
-        "text-secondary": "#a1a1aa",
-        "text-muted": "#52525b",
-        accent: "#3b82f6",
-        up: "#22c55e",
-        down: "#ef4444",
-        warning: "#f59e0b",
+        bg: v("c-bg"),
+        surface: v("c-surface"),
+        "surface-2": v("c-surface-2"),
+        "surface-3": v("c-surface-3"),
+        border: v("c-border"),
+        "border-strong": v("c-border-strong"),
+        "text-primary": v("c-text"),
+        "text-secondary": v("c-text-2"),
+        "text-muted": v("c-text-3"),
+        accent: v("c-accent"),
+        "accent-fg": v("c-accent-fg"),
+        up: v("c-up"),
+        down: v("c-down"),
+        warning: v("c-warning"),
+        // Ink used on top of a solid accent / status fill.
+        "on-fill": v("c-on-fill"),
 
         // Chart-specific semantic palette. Keep in lock-step with
         // lib/chartTheme.ts — both are read by chart code (Tailwind classes
         // for JSX, the TS constant for lightweight-charts / SVG attrs).
         chart: {
-          grid: "#262629",
-          axis: "#38383f",
-          crosshair: "#52525b",
-          axisText: "#71717a",
+          grid: "#1c222b",
+          axis: "#2a3341",
+          crosshair: "#677385",
+          axisText: "#7c8798",
           candle: { up: "#26a69a", down: "#ef5350" },
           ema: { fast: "#60a5fa", slow: "#a78bfa" },
           vwap: "#facc15",
@@ -57,12 +66,28 @@ const config: Config = {
         },
       },
       fontFamily: {
-        mono: ["ui-monospace", "SFMono-Regular", "monospace"],
+        sans: ["var(--font-sans)", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
+      fontSize: {
+        // Dense terminal scale. Base body is 12.5px (see globals.css).
+        "2xs": ["10px", { lineHeight: "14px" }],
+        xs: ["11px", { lineHeight: "16px" }],
+        sm: ["12.5px", { lineHeight: "18px" }],
+        base: ["13.5px", { lineHeight: "20px" }],
+        lg: ["16px", { lineHeight: "22px" }],
+        xl: ["20px", { lineHeight: "26px" }],
+        "2xl": ["26px", { lineHeight: "32px" }],
       },
       borderRadius: {
         lg: "0.5rem",
         md: "0.375rem",
         sm: "0.25rem",
+      },
+      boxShadow: {
+        // Overlay cards and popovers. Tuned per theme in globals.css.
+        pop: "var(--shadow-pop)",
+        ring: "0 0 0 1px rgb(var(--c-border))",
       },
       keyframes: {
         "accordion-down": {
@@ -77,11 +102,16 @@ const config: Config = {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        "slide-up": {
+          from: { opacity: "0", transform: "translateY(4px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.15s ease-out",
+        "slide-up": "slide-up 0.18s ease-out",
       },
     },
   },

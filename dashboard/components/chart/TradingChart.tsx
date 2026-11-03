@@ -1,5 +1,6 @@
 "use client";
 
+import { chartChrome } from "@/lib/chartTheme";
 import {
   CandlestickData,
   ColorType,
@@ -43,33 +44,38 @@ const TIMEFRAMES: Timeframe[] = ["5m", "15m", "30m", "1h", "4h", "1d"];
 // RUT/IWM run the RUT-family setups; SPX/SPY run Space.
 const RULEONE_SYMBOLS = new Set(["RUT", "IWM", "SPX", "SPY"]);
 
-const CHART_OPTS = {
-  layout: {
-    background: { type: ColorType.Solid, color: "#18181b" },
-    textColor: "#71717a",
-    fontSize: 11,
-    fontFamily: "ui-monospace, SFMono-Regular, monospace",
-  },
-  grid: {
-    vertLines: { color: "#262629" },
-    horzLines: { color: "#262629" },
-  },
-  crosshair: {
-    mode: CrosshairMode.Normal,
-    vertLine: { color: "#52525b", style: LineStyle.Dashed, width: 1 as 1 },
-    horzLine: { color: "#52525b", style: LineStyle.Dashed, width: 1 as 1 },
-  },
-  rightPriceScale: {
-    borderColor: "#38383f",
-    scaleMargins: { top: 0.08, bottom: 0.22 },
-  },
-  timeScale: {
-    borderColor: "#38383f",
-    timeVisible: true,
-    secondsVisible: false,
-  },
-  handleScroll: true,
-  handleScale: true,
+// Chart chrome follows the active theme (see lib/chartTheme.ts). Built at
+// chart creation, so a theme toggle applies on the next mount.
+const chartOpts = () => {
+  const c = chartChrome();
+  return {
+    layout: {
+      background: { type: ColorType.Solid, color: c.bg },
+      textColor: c.axisText,
+      fontSize: 11,
+      fontFamily: "var(--font-mono), ui-monospace, SFMono-Regular, monospace",
+    },
+    grid: {
+      vertLines: { color: c.grid },
+      horzLines: { color: c.grid },
+    },
+    crosshair: {
+      mode: CrosshairMode.Normal,
+      vertLine: { color: c.crosshair, style: LineStyle.Dashed, width: 1 as 1 },
+      horzLine: { color: c.crosshair, style: LineStyle.Dashed, width: 1 as 1 },
+    },
+    rightPriceScale: {
+      borderColor: c.axis,
+      scaleMargins: { top: 0.08, bottom: 0.22 },
+    },
+    timeScale: {
+      borderColor: c.axis,
+      timeVisible: true,
+      secondsVisible: false,
+    },
+    handleScroll: true,
+    handleScale: true,
+  };
 };
 
 interface Props {
@@ -434,7 +440,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     const el = containerRef.current.querySelector<HTMLDivElement>(".chart-main")!;
 
     disposedRef.current = false;
-    const chart = createChart(el, { ...CHART_OPTS, width: el.clientWidth, height: el.clientHeight });
+    const chart = createChart(el, { ...chartOpts(), width: el.clientWidth, height: el.clientHeight });
     chartRef.current = chart;
 
     candleRef.current = chart.addCandlestickSeries({
@@ -673,33 +679,33 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   return (
     <div className="flex flex-col w-full h-full bg-bg" style={height ? { height } : undefined}>
       {/* header strip */}
-      <div className="flex items-center gap-3 md:gap-5 px-3 md:px-4 min-h-10 py-1 border-b border-border/60 bg-surface shrink-0 flex-wrap">
+      <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-border bg-surface shrink-0 flex-wrap">
         <div className="flex items-baseline gap-2">
-          <span className="font-medium text-sm text-text-primary tracking-tight">{symbol}</span>
+          <span className="font-mono font-medium text-sm text-text-primary tracking-tight">{symbol}</span>
           {display && (
-            <span className="text-base tabular font-medium text-text-primary">
+            <span className="text-lg tabular font-semibold text-text-primary leading-none">
               {fmt(display.c)}
             </span>
           )}
           {display && (
             <span
               className={cn(
-                "text-[11px] tabular leading-none px-1.5 py-0.5 rounded",
+                "text-xs tabular leading-none px-1.5 py-0.5 rounded font-medium",
                 positive ? "text-up bg-up/10" : "text-down bg-down/10"
               )}
             >
-              {positive ? "+" : ""}
-              {fmt(display.chg)} · {display.chgPct >= 0 ? "+" : ""}{display.chgPct.toFixed(2)}%
+              {positive ? "+" : "−"}
+              {fmt(Math.abs(display.chg))} ({display.chgPct >= 0 ? "+" : "−"}{Math.abs(display.chgPct).toFixed(2)}%)
             </span>
           )}
           {hover && (
-            <span className="text-[10px] tabular text-text-muted ml-1">
+            <span className="text-2xs tabular text-text-muted ml-1">
               {formatHoverTime(hover.time, timeframe)}
             </span>
           )}
         </div>
         {display && (
-          <div className="hidden md:flex items-center gap-3 text-[10px] uppercase tracking-wider text-text-muted">
+          <div className="hidden md:flex items-center gap-3 text-2xs font-mono text-text-muted">
             <span>O <Val n={display.o} /></span>
             <span>H <Val n={display.h} tone="up" /></span>
             <span>L <Val n={display.l} tone="down" /></span>
@@ -710,11 +716,12 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
 
         <div className="ml-auto flex items-center gap-2 flex-wrap">
           <button
+            type="button"
             onClick={() => chartRef.current?.timeScale().resetTimeScale()}
-            className="px-2 py-1 text-xs bg-gray-700 text-white rounded hover:bg-gray-600"
-            title="Reset Zoom"
+            className="h-6 px-2 text-2xs rounded-md text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
+            title="Reset zoom"
           >
-            Reset Zoom
+            Reset zoom
           </button>
           <OverlaysMenu groups={buildOverlayGroups({
             emaOn, setEmaOn, smiOn, setSmiOn, vwapOn, setVwapOn,
@@ -749,7 +756,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           {tradesOn && (
             <span
               className={cn(
-                "ml-2 inline-flex items-center gap-1 h-6 px-2 rounded-sm text-[10px] tabular border",
+                "ml-2 inline-flex items-center gap-1 h-6 px-2 rounded-md text-2xs tabular border",
                 tradeMarkers.renderedCount > 0
                   ? "border-up/30 bg-up/10 text-up"
                   : tradeMarkers.trades.length > 0
@@ -772,22 +779,22 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       {/* market-data entitlement notice — names the missing IBKR
           subscription when the index can't be charted live. */}
       {dataNotice && (
-        <div className="flex items-start gap-2 px-3 md:px-4 py-1 border-b border-border/60 bg-amber-500/10 text-[11px] leading-tight text-amber-300/90 shrink-0">
+        <div className="flex items-start gap-2 px-3 py-1 border-b border-border/60 bg-warning/10 text-xs leading-tight text-warning shrink-0">
           <span className="font-medium shrink-0">
             {dataNotice.proxy ? `Showing ${dataNotice.proxy} proxy` : "No live data"}
           </span>
           {dataNotice.subscription ? (
-            <span className="text-amber-200/70">
+            <span className="text-text-secondary">
               · {symbol} needs an IBKR market-data subscription
               {dataNotice.subscription.hint ? (
-                <> — <span className="text-amber-100">{dataNotice.subscription.hint}</span></>
+                <>: <span className="text-text-primary">{dataNotice.subscription.hint}</span></>
               ) : null}
-              <span className="text-amber-200/40">
+              <span className="text-text-muted">
                 {" "}(IBKR err {dataNotice.subscription.code}: {dataNotice.subscription.message})
               </span>
             </span>
           ) : (
-            <span className="text-amber-200/70">· {symbol} live index data isn&apos;t entitled on this IBKR account</span>
+            <span className="text-text-secondary">· {symbol} live index data isn&apos;t entitled on this IBKR account</span>
           )}
         </div>
       )}
@@ -795,13 +802,13 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       {/* chart canvas */}
       <div ref={containerRef} className="relative flex-1 min-h-0">
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
-          <span className="text-[88px] font-medium text-text-muted/[0.04] tracking-[0.2em]">{symbol}</span>
+          <span className="text-[88px] font-mono font-medium text-text-primary/[0.035] tracking-[0.2em]">{symbol}</span>
         </div>
 
         {/* Custom floating tooltip */}
         {hover && (
           <div 
-            className="absolute z-30 bg-gray-900/90 text-white p-2 rounded-md text-xs tabular shadow-lg pointer-events-none"
+            className="absolute z-30 bg-surface text-text-primary p-2 rounded-md text-xs tabular shadow-pop pointer-events-none"
             style={{ 
               left: `${cursorPos.x + 10}px`, 
               top: `${cursorPos.y + 10}px`,
@@ -837,14 +844,14 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           const n = hoverBucket.trades.length;
           return (
             <div
-              className="absolute z-30 bg-gray-900/95 text-white rounded-md shadow-xl pointer-events-none border border-white/10 overflow-hidden"
+              className="absolute z-30 bg-surface text-text-primary rounded-md shadow-pop pointer-events-none overflow-hidden"
               style={{ left: `${hoverBucket.x + 16}px`, top: `${hoverBucket.y + 16}px`, width: 250 }}
             >
-              <div className="px-3 py-1.5 bg-white/[0.07] flex items-center justify-between">
-                <span className="text-[11px] font-semibold">{dayLabel}</span>
-                <span className="text-[10px] text-text-muted">{n} {n === 1 ? "trade" : "trades"}</span>
+              <div className="px-3 py-1.5 bg-surface-2 flex items-center justify-between">
+                <span className="text-xs font-semibold">{dayLabel}</span>
+                <span className="text-2xs text-text-muted">{n} {n === 1 ? "trade" : "trades"}</span>
               </div>
-              <div className="divide-y divide-white/[0.06]">
+              <div className="divide-y divide-border/60">
                 {hoverBucket.trades.slice(0, 5).map((t) => {
                   const m = (t.metadata ?? {}) as Record<string, unknown>;
                   const isBuy = (t.side || "").toString().toUpperCase().startsWith("B");
@@ -861,7 +868,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
                         <span className={cn("font-semibold shrink-0", isBuy ? "text-up" : "text-down")}>
                           {isBuy ? "Bought" : "Sold"} {fmt(t.quantity, 0)}
                         </span>
-                        <span className="text-white/75 shrink-0 tabular">@ ${fmt(t.price)}</span>
+                        <span className="text-text-secondary shrink-0 tabular">@ ${fmt(t.price)}</span>
                       </div>
                       <div className="text-[10px] text-text-muted truncate mt-0.5">{detail}</div>
                     </div>
@@ -869,9 +876,9 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
                 })}
               </div>
               {n > 5 && (
-                <div className="px-3 py-1 text-[10px] text-text-muted bg-white/[0.03]">+{n - 5} more</div>
+                <div className="px-3 py-1 text-2xs text-text-muted bg-surface-2/60">+{n - 5} more</div>
               )}
-              <div className="px-3 py-1 text-[9px] text-text-muted/80 bg-white/[0.03] border-t border-white/[0.06]">
+              <div className="px-3 py-1 text-2xs text-text-muted bg-surface-2/60 border-t border-border/60">
                 click marker for details &amp; journal
               </div>
             </div>
@@ -1104,7 +1111,7 @@ function Val({
 }) {
   const cls = tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-secondary";
   return (
-    <span className={cn("normal-case tracking-normal text-[11px] tabular", cls)}>
+    <span className={cn("text-xs tabular", cls)}>
       {compact ? fmtCompact(n) : fmt(n)}
     </span>
   );
@@ -1142,10 +1149,10 @@ function ToolbarChip({
       onClick={onClick}
       title={title}
       className={cn(
-        "h-6 px-2 text-[11px] tabular tracking-normal rounded-sm transition-colors",
+        "h-6 px-2 text-xs tabular rounded-md transition-colors",
         active
-          ? "text-text-primary bg-surface-2"
-          : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
+          ? "text-text-primary bg-surface-2 font-medium"
+          : "text-text-secondary hover:text-text-primary hover:bg-surface-2"
       )}
     >
       {children}
@@ -1166,9 +1173,8 @@ function OverlayCard({
     <div
       className={cn(
         // Match the chart canvas bg so info-cards look embedded, not floating.
-        "absolute z-20 bg-bg/80 backdrop-blur-md rounded-md px-3.5 py-2.5 text-[11px] shadow-sm pointer-events-auto",
-        "border",
-        borderTone === "warning" ? "border-warning/30" : "border-border/40",
+        "absolute z-20 bg-surface/85 backdrop-blur-md rounded-lg px-3.5 py-2.5 text-xs shadow-pop pointer-events-auto",
+        borderTone === "warning" && "ring-1 ring-warning/40",
         className
       )}
     >
@@ -1197,11 +1203,11 @@ function OverlayHeader({
   return (
     <div className="flex items-baseline gap-2">
       <span className={cn("w-1 h-1 rounded-full translate-y-[-1px]", dot)} />
-      <span className="text-[10px] uppercase tracking-wider text-text-secondary">{label}</span>
+      <span className="text-2xs font-medium text-text-secondary">{label}</span>
       {hint && (
-        <span className="text-[10px] text-text-muted">· {hint}</span>
+        <span className="text-2xs text-text-muted">· {hint}</span>
       )}
-      {trail && <span className="ml-auto text-[10px]">{trail}</span>}
+      {trail && <span className="ml-auto text-2xs">{trail}</span>}
     </div>
   );
 }

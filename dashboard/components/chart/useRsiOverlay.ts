@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { chartChrome } from "@/lib/chartTheme";
 import {
   ColorType,
   CrosshairMode,
@@ -62,29 +63,30 @@ export function useRsiOverlay({
 
     if (subChartRef.current) return;
 
+    const c = chartChrome();
     const chart = createChart(el, {
       width: el.clientWidth,
       height: el.clientHeight,
       layout: {
-        background: { type: ColorType.Solid, color: "#0a0a0a" },
-        textColor: "#71717a",
+        background: { type: ColorType.Solid, color: c.bg },
+        textColor: c.axisText,
         fontSize: 10,
-        fontFamily: "ui-monospace, SFMono-Regular, monospace",
+        fontFamily: "var(--font-mono), ui-monospace, SFMono-Regular, monospace",
       },
       grid: {
-        vertLines: { color: "#161616" },
-        horzLines: { color: "#161616" },
+        vertLines: { color: c.grid },
+        horzLines: { color: c.grid },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: "#3c3c3c", style: LineStyle.Dashed, width: 1 as 1 },
-        horzLine: { color: "#3c3c3c", style: LineStyle.Dashed, width: 1 as 1 },
+        vertLine: { color: c.crosshair, style: LineStyle.Dashed, width: 1 as 1 },
+        horzLine: { color: c.crosshair, style: LineStyle.Dashed, width: 1 as 1 },
       },
       rightPriceScale: {
-        borderColor: "#1f1f1f",
+        borderColor: c.axis,
       },
       timeScale: {
-        borderColor: "#1f1f1f",
+        borderColor: c.axis,
         timeVisible: true,
         secondsVisible: false,
       },
@@ -119,7 +121,7 @@ export function useRsiOverlay({
     });
     rsiSeriesRef.current.createPriceLine({
       price: 50,
-      color: "#3c3c3c",
+      color: c.axis,
       lineWidth: 1,
       lineStyle: LineStyle.Solid,
       axisLabelVisible: false,

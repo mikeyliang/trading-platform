@@ -113,7 +113,7 @@ export const StatsBar = memo(function StatsBar() {
           <>
             <div className="flex items-baseline gap-2">
               <Value>{trades > 0 ? `${winRate.toFixed(0)}%` : "—"}</Value>
-              <span className="text-[10px] text-text-muted tabular">
+              <span className="text-2xs text-text-muted tabular">
                 {trades} {trades === 1 ? "trade" : "trades"}
               </span>
             </div>
@@ -222,14 +222,14 @@ function Tile({
         "flex flex-col justify-center gap-0.5 min-w-0 px-3 py-2 border-border/50",
         "border-b lg:border-b-0",
         !last && "lg:border-r",
-        lead ? "lg:min-w-[190px] lg:pr-5" : "lg:min-w-[132px]",
+        lead ? "lg:min-w-[200px] lg:pr-6" : "lg:min-w-[140px]",
         "lg:flex-none"
       )}
     >
-      <span className="text-[10px] text-text-muted leading-none truncate">{label}</span>
+      <span className="text-2xs text-text-muted leading-none truncate">{label}</span>
       {loading ? (
         <div className="flex flex-col gap-1 mt-0.5">
-          <Skeleton className={cn(lead ? "h-5 w-28" : "h-4 w-20")} />
+          <Skeleton className={cn(lead ? "h-6 w-28" : "h-5 w-20")} />
           <Skeleton className="h-2.5 w-16" />
         </div>
       ) : (
@@ -252,7 +252,7 @@ function Value({
     <span
       className={cn(
         "font-semibold leading-tight truncate",
-        lead ? "text-lg tracking-tight" : "text-sm tabular",
+        lead ? "text-xl tracking-tight" : "text-base tabular",
         muted ? "text-text-secondary" : "text-text-primary"
       )}
     >
@@ -262,13 +262,13 @@ function Value({
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <span className="text-[10px] text-text-muted tabular leading-tight truncate">{children}</span>;
+  return <span className="text-2xs text-text-muted tabular leading-tight truncate">{children}</span>;
 }
 
 function Empty() {
   return (
     <>
-      <span className="text-sm font-semibold leading-tight text-text-muted">—</span>
+      <span className="text-base font-semibold leading-tight text-text-muted">—</span>
       <Hint>No data</Hint>
     </>
   );
@@ -283,7 +283,7 @@ function Signed({ value }: { value: number }) {
   return (
     <span
       className={cn(
-        "flex items-center gap-1 text-sm font-semibold leading-tight tabular truncate",
+        "flex items-center gap-1 text-base font-semibold leading-tight tabular truncate",
         dir === "up" ? "text-up" : dir === "down" ? "text-down" : "text-text-secondary"
       )}
     >

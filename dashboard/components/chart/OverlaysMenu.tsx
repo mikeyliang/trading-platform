@@ -39,15 +39,15 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
         <button
           type="button"
           className={cn(
-            "h-6 px-2 text-[11px] tabular tracking-normal rounded-sm transition-colors inline-flex items-center gap-1.5",
+            "h-6 px-2 text-xs tabular rounded-md transition-colors inline-flex items-center gap-1.5",
             activeCount > 0
               ? "text-text-primary bg-surface-2"
-              : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
+              : "text-text-secondary hover:text-text-primary hover:bg-surface-2"
           )}
         >
           <span>Overlays</span>
           {activeCount > 0 && (
-            <span className="text-[10px] tabular text-text-muted">
+            <span className="px-1 rounded-full bg-surface-3 text-2xs tabular text-text-secondary leading-4">
               {activeCount}
             </span>
           )}
@@ -58,7 +58,7 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
         <DropdownMenu.Content
           align="end"
           sideOffset={6}
-          className="z-50 w-[260px] rounded-md border border-border bg-surface/95 backdrop-blur-md shadow-xl animate-fade-in overflow-hidden"
+          className="z-50 w-[260px] rounded-lg bg-surface/95 backdrop-blur-md shadow-pop animate-fade-in overflow-hidden"
         >
           {groups.map((g, i) => (
             <div
@@ -69,7 +69,7 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
               )}
             >
               {g.title && (
-                <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-text-muted">
+                <div className="px-3 pb-1.5 eyebrow">
                   {g.title}
                 </div>
               )}
@@ -126,12 +126,12 @@ function OverlayRow({ toggle }: { toggle: OverlayToggle }) {
           )}
         />
       )}
-      <span className="text-[12px] tabular flex-1">{toggle.label}</span>
+      <span className="text-xs tabular flex-1">{toggle.label}</span>
       {toggle.hint && (
-        <span className="text-[10px] tabular text-text-muted">{toggle.hint}</span>
+        <span className="text-2xs tabular text-text-muted">{toggle.hint}</span>
       )}
       {toggle.active && (
-        <Check size={11} className="text-accent shrink-0" />
+        <Check size={11} className="text-accent-fg shrink-0" />
       )}
     </DropdownMenu.Item>
   );
