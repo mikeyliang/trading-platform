@@ -39,7 +39,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
     <th
       ref={ref}
       className={cn(
-        "h-7 px-2 text-left align-middle font-medium text-2xs text-text-muted whitespace-nowrap",
+        "h-8 px-3 text-left align-middle font-medium text-2xs text-text-muted whitespace-nowrap",
         className
       )}
       {...props}
@@ -50,7 +50,7 @@ TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn("px-2 py-1.5 align-middle", className)} {...props} />
+    <td ref={ref} className={cn("h-10 px-3 py-0 align-middle", className)} {...props} />
   )
 );
 TableCell.displayName = "TableCell";
@@ -97,7 +97,7 @@ function SortableTableHead<K extends string>({
   const direction = active ? sort!.direction : null;
   return (
     <TableHead
-      className={cn(align === "right" && "text-right", className)}
+      className={cn("group/th", align === "right" && "text-right", className)}
       aria-sort={active ? (direction === "asc" ? "ascending" : "descending") : "none"}
       {...props}
     >
@@ -118,7 +118,7 @@ function SortableTableHead<K extends string>({
             <ChevronDown size={10} className="shrink-0" />
           )
         ) : (
-          <ChevronsUpDown size={10} className="shrink-0 opacity-30" />
+          <ChevronsUpDown size={10} className="shrink-0 opacity-0 group-hover/th:opacity-40" />
         )}
       </button>
     </TableHead>

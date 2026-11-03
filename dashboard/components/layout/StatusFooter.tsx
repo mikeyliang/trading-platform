@@ -25,7 +25,7 @@ export function StatusFooter() {
   return (
     <footer
       role="contentinfo"
-      className="h-6 flex items-center gap-3 px-3 bg-surface border-t border-border text-2xs font-mono tabular text-text-muted shrink-0 select-none overflow-hidden"
+      className="h-6 flex items-center gap-3 px-3 bg-surface border-t border-border text-2xs text-text-muted shrink-0 select-none overflow-hidden"
     >
       <StatusDot state={ib} label={ibLabel(ib)} />
       <StatusDot state={ws} label={wsLabel(ws)} />

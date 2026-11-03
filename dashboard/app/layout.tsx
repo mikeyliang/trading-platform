@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Chivo_Mono } from "next/font/google";
+import { Chivo_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { WSProvider } from "@/components/layout/WSProvider";
@@ -11,10 +11,16 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
 
-// Chivo Mono, the Wayfind face: a sober grotesk cut to a fixed cell, so a
-// board of figures lines up without tabular tricks. Loaded at build time by
-// next/font (self-hosted, no runtime request); if the download is
-// unavailable at build, Next falls back to the system mono stack.
+// Two faces. Inter carries labels and copy; Chivo Mono carries every figure
+// and the display heads, so a board of numbers lines up on a fixed cell.
+// Loaded at build time by next/font (self-hosted, no runtime request); if a
+// download is unavailable at build, Next falls back to the system stack.
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-sans",
+  display: "swap",
+});
 const chivoMono = Chivo_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "800"],
@@ -38,7 +44,7 @@ try {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={chivoMono.variable} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${chivoMono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

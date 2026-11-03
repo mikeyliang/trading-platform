@@ -366,7 +366,7 @@ function TableSkeleton({ cols, headers, rows = 6 }: { cols: number; headers: rea
             <th
               key={h}
               className={cn(
-                "h-7 px-2 align-middle font-medium text-2xs text-text-muted",
+                "h-8 px-3 align-middle font-medium text-2xs text-text-muted",
                 i >= cols - 2 ? "text-right" : "text-left"
               )}
             >
@@ -495,15 +495,15 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
               title={p.is_option ? "Open in option analyzer" : "Analyze position"}
             >
               <TableCell className="font-medium">
-                <div className="inline-flex items-center gap-2">
-                  <Logo symbol={p.symbol} size={16} />
-                  <div className="flex flex-col leading-tight">
+                <div className="inline-flex items-center gap-2.5">
+                  <Logo symbol={p.symbol} size={18} />
+                  <div className="flex flex-col leading-4">
                     <span className="inline-flex items-center gap-1.5">
                       <span className="group-hover:text-accent-fg transition-colors">{p.symbol}</span>
                       {p.is_option && (
                         <span className={cn(
-                          "text-2xs px-1 py-px rounded leading-4",
-                          p.right === "C" ? "bg-up/15 text-up" : "bg-down/15 text-down",
+                          "text-2xs font-medium leading-4",
+                          p.right === "C" ? "text-up" : "text-down",
                         )}>
                           {p.right === "C" ? "Call" : "Put"}
                         </span>
@@ -553,9 +553,9 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                 {p.unrealized_pnl_pct == null || !Number.isFinite(p.unrealized_pnl_pct) ? (
                   <span className="tabular text-text-muted">n/a</span>
                 ) : (
-                  <Badge variant={p.unrealized_pnl_pct >= 0 ? "up" : "down"} className="tabular">
+                  <span className={cn("tabular", pnlClass(p.unrealized_pnl_pct))}>
                     {fmtPct(p.unrealized_pnl_pct)}
-                  </Badge>
+                  </span>
                 )}
               </TableCell>
             </TableRow>
@@ -569,15 +569,15 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
 
 function KindPill({ kind }: { kind: PositionKind }) {
   const styles: Record<PositionKind, string> = {
-    stock: "border-border text-text-secondary",
-    option: "border-accent/40 text-accent-fg",
-    leg: "border-warning/40 text-warning",
+    stock: "text-text-secondary",
+    option: "text-text-secondary",
+    leg: "text-text-secondary",
   };
   const label = kind === "stock" ? "Stock" : kind === "option" ? "Option" : "Leg";
   return (
     <span
       className={cn(
-        "text-2xs px-1.5 py-px rounded border bg-transparent leading-4",
+        "text-2xs px-1.5 h-5 inline-flex items-center bg-surface-2 leading-none",
         styles[kind],
       )}
     >

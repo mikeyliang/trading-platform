@@ -57,7 +57,7 @@ export const StatsBar = memo(function StatsBar() {
   return (
     <section
       aria-label="Account summary"
-      className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:items-stretch bg-surface border-b border-border shrink-0"
+      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 bg-surface border-b border-border shrink-0"
     >
       <Tile label="Net liquidation" lead loading={loading}>
         {account ? (
@@ -181,7 +181,7 @@ function positionsHint(b: BookSummary): string {
   if (b.stock) parts.push(`${b.stock} stk`);
   if (b.nearestDte !== null && b.nearestExpiry) {
     const d = parseYmd(b.nearestExpiry)!;
-    parts.push(`next exp ${d.getMonth() + 1}/${d.getDate()} (${b.nearestDte}d)`);
+    parts.push(`exp ${d.getMonth() + 1}/${d.getDate()} (${b.nearestDte}d)`);
   }
   return parts.join(", ");
 }
@@ -218,18 +218,17 @@ function Tile({
   return (
     <div
       className={cn(
-        "flex flex-col justify-center gap-0.5 min-w-0 px-3 py-2 border-border",
+        "flex flex-col justify-start min-w-0 h-[68px] px-4 pt-2.5 pb-2 border-border",
         "border-b lg:border-b-0",
-        !last && "lg:border-r",
-        lead ? "plate lg:min-w-[200px] lg:pr-6" : "lg:min-w-[140px]",
-        "lg:flex-none"
+        !last && "border-r",
+        lead && "plate"
       )}
     >
-      <span className={cn("text-2xs leading-none truncate", lead ? "opacity-75" : "text-text-muted")}>{label}</span>
+      <span className={cn("text-2xs font-medium leading-4 truncate", lead ? "opacity-70" : "text-text-muted")}>{label}</span>
       {loading ? (
-        <div className="flex flex-col gap-1 mt-0.5">
-          <Skeleton className={cn(lead ? "h-6 w-28" : "h-5 w-20")} />
-          <Skeleton className="h-2.5 w-16" />
+        <div className="flex flex-col gap-1.5 mt-1">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-3 w-16" />
         </div>
       ) : (
         children
@@ -250,8 +249,8 @@ function Value({
   return (
     <span
       className={cn(
-        "font-semibold leading-tight truncate",
-        lead ? "text-xl figure" : "text-base tabular",
+        "font-semibold text-lg leading-6 truncate",
+        lead ? "figure" : "tabular",
         muted ? "text-text-secondary" : "text-text-primary"
       )}
     >
@@ -261,13 +260,13 @@ function Value({
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <span className="text-2xs text-text-muted [.plate_&]:text-current [.plate_&]:opacity-75 tabular leading-tight truncate">{children}</span>;
+  return <span className="text-2xs text-text-muted [.plate_&]:text-current [.plate_&]:opacity-70 [font-variant-numeric:tabular-nums] leading-4 truncate">{children}</span>;
 }
 
 function Empty() {
   return (
     <>
-      <span className="text-base font-semibold leading-tight text-text-muted">n/a</span>
+      <span className="text-lg font-semibold leading-6 text-text-muted tabular">n/a</span>
       <Hint>No data</Hint>
     </>
   );
@@ -281,7 +280,7 @@ function Signed({ value }: { value: number }) {
   return (
     <span
       className={cn(
-        "flex items-center gap-1 text-base font-semibold leading-tight tabular truncate",
+        "flex items-center gap-1 text-lg font-semibold leading-6 tabular truncate",
         dir === "up" ? "text-up" : dir === "down" ? "text-down" : "text-text-secondary"
       )}
     >

@@ -68,8 +68,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Wayfind: mono is the material. One family everywhere.
-        sans: ["var(--font-mono)", "Chivo Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        // Inter for labels and copy, Chivo Mono for figures and display heads.
+        sans: ["var(--font-sans)", "Inter", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
         mono: ["var(--font-mono)", "Chivo Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       fontSize: {
@@ -85,8 +85,8 @@ const config: Config = {
       fontWeight: {
         normal: "400",
         medium: "500",
-        semibold: "800",
-        bold: "800",
+        semibold: "600",
+        bold: "700",
       },
       borderRadius: {
         // Wayfind is bordered and square. Only pills keep a radius.

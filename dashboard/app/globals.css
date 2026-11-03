@@ -16,7 +16,7 @@
 html,
 body {
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.4;
   height: 100%;
   overflow: hidden;
 }
@@ -36,21 +36,23 @@ body {
   background: rgb(var(--c-border-strong));
 }
 
-/* number font for prices */
-.tabular {
+/* Figures: every number sits in the mono face on a fixed cell. */
+.tabular,
+.figure {
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
-/* The plate: a field of ink inside a 2px border, holding one figure. */
+/* The plate: a raised field holding the one amber figure. */
 .plate {
-  background: rgb(var(--c-ink));
-  color: rgb(var(--c-bg));
-  border: var(--rule-bar) solid rgb(var(--c-ink));
+  background: rgb(var(--c-plate));
+  color: rgb(var(--c-plate-fg));
 }
 .plate .figure {
   color: rgb(var(--c-amber));
   font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 /* Section label: body face, a step smaller, sentence case, untracked. */

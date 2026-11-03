@@ -19,7 +19,7 @@
   --color-rule: oklch(80% 0.011 250); --color-ink-rule: oklch(34% 0.014 262);
   --color-accent: oklch(51% 0.22 264); --color-accent-2: oklch(81% 0.16 82); --color-accent-ink: oklch(99.5% 0.003 250); --color-accent-2-ink: oklch(16% 0.014 262); --color-focus: oklch(51% 0.22 264);
   --color-error: oklch(52% 0.19 27); --color-success: oklch(50% 0.12 150);
-  --font-display: "Chivo Mono", var(--font-mono), ui-monospace, monospace; --font-body: var(--font-display); --font-outlier: var(--font-body);
+  --font-display: "Chivo Mono", var(--font-mono), ui-monospace, monospace; --font-body: var(--font-sans), "Inter", system-ui, sans-serif; --font-outlier: var(--font-display);
   --radius-card: 0; --radius-pill: 999px; --rule-hair: 1px; --rule-bar: 2px;
   --shadow-card: 0 24px 40px -24px oklch(8% 0.01 260 / 0.6);
   --tracking-display: -0.03em; --display-weight: 800;
@@ -42,6 +42,8 @@
   --c-down: 190 35 35;
   --c-warning: 150 100 10;
   --c-on-fill: 251 254 255;
+  --c-plate: 10 13 19;          /* the ink field behind the one amber figure */
+  --c-plate-fg: 237 240 244;
   --shadow-pop: 0 24px 40px -24px rgb(8 11 16 / 0.6), 0 0 0 2px rgb(var(--c-border-strong));
 
   --chart-bg: #fbfeff;
@@ -80,6 +82,8 @@
   --c-down: 239 103 92;
   --c-warning: 244 181 34;
   --c-on-fill: 251 254 255;
+  --c-plate: 23 27 34;          /* at night the plate is a raised sheet, not a flash of white */
+  --c-plate-fg: 239 242 245;
   --shadow-pop: 0 0 0 2px rgb(var(--c-border-strong));
 
   --chart-bg: #0f1319;
