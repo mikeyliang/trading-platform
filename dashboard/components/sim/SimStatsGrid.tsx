@@ -43,7 +43,7 @@ export function SimStatsGrid({ stats }: { stats: SimStats }) {
     <div className="grid grid-cols-[repeat(auto-fit,minmax(86px,1fr))] border border-border rounded-md overflow-hidden bg-surface-1">
       {cells.map((c) => (
         <div key={c.label} className="px-2 py-1.5 border-r border-b border-border/50 last:border-r-0">
-          <div className="text-[9px] uppercase tracking-wider text-text-muted leading-tight">{c.label}</div>
+          <div className="text-2xs text-text-muted leading-tight">{c.label}</div>
           <div
             className={cn(
               "text-xs tabular leading-tight mt-0.5",

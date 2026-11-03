@@ -101,9 +101,9 @@ export function OptionEmaChart({ prices, ema9, ema21, title, height = 200 }: Pro
     <div className="relative w-full">
       <div className="flex items-center gap-2 mb-1">
         {title && (
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">{title}</span>
+          <span className="text-2xs text-text-muted">{title}</span>
         )}
-        <span className="text-[10px] tabular text-text-secondary ml-auto">
+        <span className="text-2xs tabular text-text-secondary ml-auto">
           {hover ? (
             <>
               <span className="text-text-muted">{hover.ago === 0 ? "now" : `−${hover.ago}d`}</span>
@@ -125,7 +125,7 @@ export function OptionEmaChart({ prices, ema9, ema21, title, height = 200 }: Pro
           )}
         </span>
       </div>
-      <svg
+      <svg aria-hidden="true"
         width="100%"
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
@@ -202,7 +202,7 @@ export function OptionEmaChart({ prices, ema9, ema21, title, height = 200 }: Pro
           </g>
         )}
       </svg>
-      <div className="flex items-center gap-3 text-[9px] text-text-secondary mt-0.5">
+      <div className="flex items-center gap-3 text-2xs text-text-secondary mt-0.5">
         <span className="flex items-center gap-1">
           <span className="inline-block w-2.5 h-0.5 bg-sky-400" /> price
         </span>

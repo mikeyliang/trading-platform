@@ -27,12 +27,12 @@ export function SignalInputsPanel({ result }: Props) {
     return (
       <div className="rounded-md border border-border bg-surface">
         <div className="flex items-baseline gap-2 px-3 h-7 border-b border-border/60">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+          <span className="text-2xs text-text-muted">
             Signals
           </span>
         </div>
-        <div className="p-3 text-[11px] text-text-muted">
-          Signal inputs unavailable — try refreshing the analyzer.
+        <div className="p-3 text-xs text-text-muted">
+          Signal inputs unavailable. Try refreshing the analyzer.
         </div>
       </div>
     );
@@ -230,7 +230,7 @@ export function SignalInputsPanel({ result }: Props) {
   return (
     <Card>
       <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">
+        <span className="text-2xs text-text-muted">
           Inputs to verdict
         </span>
         <InfoIcon
@@ -247,9 +247,9 @@ export function SignalInputsPanel({ result }: Props) {
         />
       </div>
       <CardContent className="p-0">
-        <table className="w-full border-collapse text-[11px] tabular">
+        <table className="w-full border-collapse text-xs tabular">
           <thead>
-            <tr className="text-text-muted text-[9px] uppercase tracking-wider">
+            <tr className="text-text-muted text-2xs">
               <th className="text-left px-3 py-1 font-medium w-4">·</th>
               <th className="text-left px-3 py-1 font-medium">Signal</th>
               <th className="text-left px-3 py-1 font-medium">Source</th>
@@ -268,11 +268,11 @@ export function SignalInputsPanel({ result }: Props) {
               >
                 <td className="px-3 py-1.5">{dot(r.mood)}</td>
                 <td className="px-3 py-1.5 text-text-primary">{r.name}</td>
-                <td className="px-3 py-1.5 text-text-muted text-[10px]">{r.source}</td>
+                <td className="px-3 py-1.5 text-text-muted text-2xs">{r.source}</td>
                 <td className="px-3 py-1.5 text-right text-text-primary">{r.value}</td>
                 <td
                   className={cn(
-                    "px-3 py-1.5 text-[10px]",
+                    "px-3 py-1.5 text-2xs",
                     r.mood === "fires-for" && "text-up",
                     r.mood === "fires-against" && "text-down",
                     r.mood === "warn" && "text-warning",

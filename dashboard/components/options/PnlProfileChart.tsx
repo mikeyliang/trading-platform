@@ -251,7 +251,7 @@ export function PnlProfileChart({
       {/* ── Headline: P/L at the cursor price, for the chosen date ─────── */}
       <div className="flex items-end gap-5 px-1 mb-2.5 flex-wrap">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+          <span className="text-2xs text-text-muted">
             P/L at ${cur.price.toFixed(2)}
             <span className="ml-1 text-text-muted/70">
               ({cur.movePct >= 0 ? "+" : ""}{cur.movePct.toFixed(1)}%)
@@ -263,21 +263,21 @@ export function PnlProfileChart({
               {fmtPnl(cur.live)}
             </span>
             {cur.retPct != null && (
-              <span className={cn("text-[12px] tabular font-semibold", cur.live >= 0 ? "text-up" : "text-down")}>
+              <span className={cn("text-xs tabular font-semibold", cur.live >= 0 ? "text-up" : "text-down")}>
                 {cur.retPct >= 0 ? "+" : ""}{cur.retPct.toFixed(0)}%
               </span>
             )}
           </div>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">at expiry</span>
+          <span className="text-2xs text-text-muted">at expiry</span>
           <span className={cn("text-[15px] tabular font-semibold leading-tight", cur.exp >= 0 ? "text-up" : "text-down")}>
             {fmtPnl(cur.exp)}
           </span>
         </div>
         <div className="ml-auto flex items-center gap-3">
           {(pop != null || probItm != null) && (
-            <div className="flex items-center gap-2 text-[10px] tabular">
+            <div className="flex items-center gap-2 text-2xs tabular">
               {pop != null && (
                 <span><span className="text-text-muted">POP </span>
                   <span className={cn("font-semibold", pop >= 0.6 ? "text-up" : pop >= 0.4 ? "text-warning" : "text-down")}>
@@ -291,7 +291,7 @@ export function PnlProfileChart({
           )}
           {scenarioActive && (
             <button type="button" onClick={resetAll}
-              className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-warning hover:text-text-primary transition-colors"
+              className="flex items-center gap-1.5 text-2xs text-warning hover:text-text-primary transition-colors"
               title="Reset date + IV to now">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning" />
               reset
@@ -300,7 +300,7 @@ export function PnlProfileChart({
         </div>
       </div>
 
-      <svg
+      <svg aria-hidden="true"
         ref={svgRef}
         width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
         className={cn("block touch-none", dragging ? "cursor-grabbing" : "cursor-grab")}
@@ -428,7 +428,7 @@ export function PnlProfileChart({
           </g>
         )}
       </svg>
-      <p className="text-[9px] text-text-muted text-center -mt-1 mb-1">
+      <p className="text-2xs text-text-muted text-center -mt-1 mb-1">
         drag anywhere on the chart to read P/L at any price
       </p>
 
@@ -502,14 +502,14 @@ function ScenarioSlider({
     <div className="flex flex-col gap-1">
       {/* header line */}
       <div className="flex items-baseline gap-2">
-        <span className="w-10 shrink-0 text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
-        <span className="text-[13px] tabular font-semibold leading-none" style={{ color: accent }}>{valueText}</span>
-        {subText && <span className="text-[10px] tabular text-text-muted leading-none">{subText}</span>}
+        <span className="w-10 shrink-0 text-2xs text-text-muted">{label}</span>
+        <span className="text-sm tabular font-semibold leading-none" style={{ color: accent }}>{valueText}</span>
+        {subText && <span className="text-2xs tabular text-text-muted leading-none">{subText}</span>}
         <button
           type="button" onClick={onReset}
           tabIndex={isDefault ? -1 : 0} aria-hidden={isDefault}
           className={cn(
-            "ml-auto text-[10px] uppercase tracking-wider transition-colors",
+            "ml-auto text-2xs transition-colors",
             isDefault ? "invisible pointer-events-none" : "text-text-muted hover:text-text-primary",
           )}
         >
@@ -561,7 +561,7 @@ function ScenarioSlider({
               <button
                 key={`lbl-${p.label}`} type="button" onClick={() => onChange(p.value)}
                 className={cn(
-                  "absolute top-0 text-[9px] tabular leading-none transition-colors",
+                  "absolute top-0 text-2xs tabular leading-none transition-colors",
                   anchor,
                   active ? "font-semibold" : "text-text-muted hover:text-text-secondary",
                 )}

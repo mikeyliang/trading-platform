@@ -46,26 +46,26 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-2 h-7 border-b border-border/60 text-[10px] uppercase tracking-wider text-text-muted">
+      <div className="flex items-center gap-2 px-2 h-7 border-b border-border/60 text-2xs text-text-muted">
         <BarChart3 size={10} className="text-accent" />
         <span>Volume Profile · {symbol}</span>
         <Select value={tf} onValueChange={setTf}>
-          <SelectTrigger className="h-5 w-14 text-[10px] tabular ml-auto">
+          <SelectTrigger className="h-5 w-14 text-2xs tabular ml-auto">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {["5m", "15m", "30m", "1h", "1d"].map((t) => (
-              <SelectItem key={t} value={t} className="text-[10px] tabular">{t}</SelectItem>
+              <SelectItem key={t} value={t} className="text-2xs tabular">{t}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={String(days)} onValueChange={(v: string) => setDays(Number(v))}>
-          <SelectTrigger className="h-5 w-14 text-[10px] tabular">
+          <SelectTrigger className="h-5 w-14 text-2xs tabular">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {[5, 10, 20, 60].map((d) => (
-              <SelectItem key={d} value={String(d)} className="text-[10px] tabular">{d}d</SelectItem>
+              <SelectItem key={d} value={String(d)} className="text-2xs tabular">{d}d</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -93,7 +93,7 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
               <div
                 key={i}
                 className={cn(
-                  "relative grid grid-cols-[60px_1fr_64px] items-center h-[14px] px-2 text-[10px] tabular border-b border-border/15",
+                  "relative grid grid-cols-[60px_1fr_64px] items-center h-[14px] px-2 text-2xs tabular border-b border-border/15",
                   inVA && !isPoc && "bg-accent/5",
                   isPoc && "bg-accent/15"
                 )}
@@ -116,11 +116,11 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
       )}
 
       {data && data.poc != null && (
-        <div className="flex items-center justify-between px-2 h-6 border-t border-border/60 text-[9px] tabular text-text-muted">
+        <div className="flex items-center justify-between px-2 h-6 border-t border-border/60 text-2xs tabular text-text-muted">
           <span>POC <span className="text-accent font-medium">{data.poc.toFixed(2)}</span></span>
           {data.value_area_low != null && data.value_area_high != null && (
             <span>VA <span className="text-text-secondary font-medium">
-              {data.value_area_low.toFixed(2)}–{data.value_area_high.toFixed(2)}
+              {data.value_area_low.toFixed(2)} to {data.value_area_high.toFixed(2)}
             </span></span>
           )}
           <span>Σ {fmtCompact(data.total_volume)}</span>

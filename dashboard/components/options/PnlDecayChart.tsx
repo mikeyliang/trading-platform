@@ -116,7 +116,7 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
 
   return (
     <div className="relative w-full">
-      <svg
+      <svg aria-hidden="true"
         width="100%"
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
@@ -233,7 +233,7 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
         )}
       </svg>
 
-      <div className="absolute top-1 right-3 flex items-center gap-2 text-[10px] tabular bg-surface/85 backdrop-blur rounded-md px-2 py-1 border border-border/40">
+      <div className="absolute top-1 right-3 flex items-center gap-2 text-2xs tabular bg-surface/85 backdrop-blur rounded-md px-2 py-1 border border-border/40">
         {hover ? (
           <>
             <span className="text-text-muted">

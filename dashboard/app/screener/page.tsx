@@ -222,7 +222,7 @@ export default function ScreenerPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-text-muted border-b border-border/40 text-[10px] uppercase tracking-wider">
+              <tr className="text-text-muted border-b border-border/40 text-2xs">
                 <Th onClick={() => onSort("symbol")} active={sortKey === "symbol"} dir={sortDir}>
                   Symbol
                 </Th>
@@ -264,7 +264,7 @@ export default function ScreenerPage() {
                 : filtered.map((r) => <Row key={r.symbol} r={r} />)}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-text-muted text-[11px]">
+                  <td colSpan={8} className="text-center py-10 text-text-muted text-xs">
                     No matches. Try removing filters.
                   </td>
                 </tr>
@@ -280,7 +280,7 @@ export default function ScreenerPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] text-text-muted uppercase tracking-wider">{label}</label>
+      <label className="text-2xs text-text-muted">{label}</label>
       {children}
     </div>
   );
@@ -333,7 +333,7 @@ function Row({ r }: { r: Fundamentals }) {
           <div className="flex flex-col min-w-0">
             <span className="font-medium text-text-primary">{r.symbol}</span>
             {r.name && (
-              <span className="text-[10px] text-text-muted truncate max-w-[180px]">{r.name}</span>
+              <span className="text-2xs text-text-muted truncate max-w-[180px]">{r.name}</span>
             )}
           </div>
         </Link>
@@ -355,7 +355,7 @@ function Row({ r }: { r: Fundamentals }) {
         {r.fifty_two_week_position != null ? (
           <Bar value={r.fifty_two_week_position} />
         ) : (
-          <span className="text-text-muted">—</span>
+          <span className="text-text-muted">n/a</span>
         )}
       </td>
       <td className="px-2 py-1 text-right">
@@ -389,7 +389,7 @@ function Bar({ value }: { value: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="tabular text-[10px] text-text-muted w-8 text-right">{pct}%</span>
+      <span className="tabular text-2xs text-text-muted w-8 text-right">{pct}%</span>
     </div>
   );
 }

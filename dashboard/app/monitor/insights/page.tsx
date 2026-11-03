@@ -219,20 +219,20 @@ function ForecastTrackCard({
       <div className="flex items-center justify-between px-3 h-7 border-b border-border/60">
         <div className="flex items-center gap-1.5">
           <Target size={12} className="text-accent" />
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+          <span className="text-2xs text-text-muted">
             Forecast track record
           </span>
         </div>
         {c && (
-          <div className="flex items-center gap-2 text-[10px] tabular text-text-muted">
+          <div className="flex items-center gap-2 text-2xs tabular text-text-muted">
             <span>
               <span className="text-text-secondary">{c.logged}</span> logged
             </span>
-            <span className="text-border">·</span>
+            <span className="w-px h-3 bg-border" aria-hidden="true" />
             <span>
               <span className="text-up">{c.scored}</span> scored
             </span>
-            <span className="text-border">·</span>
+            <span className="w-px h-3 bg-border" aria-hidden="true" />
             <span>
               <span className="text-warning">{c.pending}</span> pending
             </span>
@@ -243,7 +243,7 @@ function ForecastTrackCard({
         {loading && !track ? (
           <div className="h-20 skeleton rounded" />
         ) : !hasScored ? (
-          <div className="flex items-start gap-2.5 text-[11px] text-text-secondary">
+          <div className="flex items-start gap-2.5 text-xs text-text-secondary">
             <Clock size={14} className="text-warning mt-0.5 shrink-0" />
             <div className="leading-relaxed">
               <span className="text-text-primary">{c?.pending ?? 0} forecasts logged, accumulating.</span>{" "}
@@ -257,7 +257,7 @@ function ForecastTrackCard({
           <div className="flex flex-col gap-3">
             {/* per-model accuracy */}
             <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 items-center">
-              <div className="contents text-[9px] uppercase tracking-wider text-text-muted">
+              <div className="contents text-2xs text-text-muted">
                 <div>Model</div>
                 <div className="grid grid-cols-[3rem_3rem_1fr] gap-2">
                   <span className="text-right">MAE</span>
@@ -270,11 +270,11 @@ function ForecastTrackCard({
                 const hr = s.sign_hit_rate ?? 0;
                 return (
                   <div key={m} className="contents">
-                    <div className="text-[11px] text-text-primary flex items-center gap-1.5">
+                    <div className="text-xs text-text-primary flex items-center gap-1.5">
                       {MODEL_LABEL[m] ?? m}
-                      <span className="text-[9px] text-text-muted tabular">n={s.n}</span>
+                      <span className="text-2xs text-text-muted tabular">n={s.n}</span>
                     </div>
-                    <div className="grid grid-cols-[3rem_3rem_1fr] gap-2 items-center text-[11px] tabular">
+                    <div className="grid grid-cols-[3rem_3rem_1fr] gap-2 items-center text-xs tabular">
                       <span className="text-right text-text-secondary">
                         {s.mae_pct != null ? `${fmt(s.mae_pct, 2)}%` : "—"}
                       </span>
@@ -291,7 +291,7 @@ function ForecastTrackCard({
             {/* per-symbol ensemble breakdown */}
             {track && track.per_symbol.length > 0 && (
               <div className="border-t border-border/60 pt-2.5">
-                <div className="text-[9px] uppercase tracking-wider text-text-muted mb-1.5">
+                <div className="text-2xs text-text-muted mb-1.5">
                   Ensemble by symbol
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -302,10 +302,10 @@ function ForecastTrackCard({
                       title={`${p.n} scored · MAE ${p.mae_pct ?? "—"}%`}
                     >
                       <Logo symbol={p.symbol} size={14} />
-                      <span className="text-[10px] text-text-primary">{p.symbol}</span>
+                      <span className="text-2xs text-text-primary">{p.symbol}</span>
                       <span
                         className={cn(
-                          "text-[10px] tabular",
+                          "text-2xs tabular",
                           (p.hit_rate ?? 0) >= 0.5 ? "text-up" : "text-down"
                         )}
                       >
@@ -385,10 +385,10 @@ function VerdictTimeline({
     <div className="flex flex-col gap-1.5 min-h-0">
       <div className="flex items-center gap-1.5 px-0.5">
         <Sparkles size={12} className="text-accent" />
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">
+        <span className="text-2xs text-text-muted">
           AI verdicts
         </span>
-        <span className="text-[10px] tabular text-text-muted">· {runs.length}</span>
+        <span className="text-2xs tabular text-text-muted">· {runs.length}</span>
       </div>
       {runs.map((r) => (
         <VerdictRow key={r.id} run={r} nowMs={nowMs} />
@@ -421,11 +421,11 @@ function VerdictRow({ run, nowMs }: { run: RecentAgentRun; nowMs: number }) {
           {/* contract line */}
           <div className="flex items-center gap-2 mb-1">
             <Logo symbol={run.symbol} size={16} />
-            <span className="text-[12px] text-text-primary font-medium tabular">
+            <span className="text-xs text-text-primary font-medium tabular">
               {run.symbol} {fmt(run.strike, 0)}
               {run.right}
             </span>
-            <span className="text-[10px] tabular text-text-muted">
+            <span className="text-2xs tabular text-text-muted">
               ×{qty} · {dir} · {fmtExpiry(run.expiry)}
             </span>
             {run.failed_agents > 0 && (
@@ -434,21 +434,21 @@ function VerdictRow({ run, nowMs }: { run: RecentAgentRun; nowMs: number }) {
                 {run.failed_agents} failed
               </Badge>
             )}
-            <span className="ml-auto text-[10px] tabular text-text-muted shrink-0">
+            <span className="ml-auto text-2xs tabular text-text-muted shrink-0">
               {timeAgo(run.ran_at, nowMs)}
             </span>
           </div>
           {/* verdict */}
-          <div className={cn("text-[12px] leading-snug line-clamp-2", TONE_TEXT[tone])}>
+          <div className={cn("text-xs leading-snug line-clamp-2", TONE_TEXT[tone])}>
             {run.verdict ?? "—"}
           </div>
           {run.rationale && (
-            <div className="text-[11px] text-text-secondary leading-snug mt-0.5 line-clamp-2">
+            <div className="text-xs text-text-secondary leading-snug mt-0.5 line-clamp-2">
               {run.rationale}
             </div>
           )}
           {/* context strip */}
-          <div className="flex items-center gap-2.5 mt-1.5 text-[10px] tabular text-text-muted">
+          <div className="flex items-center gap-2.5 mt-1.5 text-2xs tabular text-text-muted">
             {run.spot_at_run != null && <span>spot {fmt(run.spot_at_run, 2)}</span>}
             {run.mid_at_run != null && <span>mid {fmtCurrency(run.mid_at_run)}</span>}
             {run.duration_ms != null && <span>{(run.duration_ms / 1000).toFixed(1)}s</span>}

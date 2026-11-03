@@ -62,7 +62,7 @@ export function AgentStatusRail({ items }: Props) {
             <div
               key={item.key}
               className={cn(
-                "flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-[11px] transition-colors min-w-[150px]",
+                "flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-xs transition-colors min-w-[150px]",
                 meta.bg,
                 meta.ring
               )}
@@ -73,7 +73,7 @@ export function AgentStatusRail({ items }: Props) {
                 <span className={cn("font-medium truncate", meta.tone)}>
                   {item.label}
                 </span>
-                <span className="text-[10px] text-text-muted uppercase tracking-wider">
+                <span className="text-2xs text-text-muted">
                   {meta.label}
                   {item.status === "done" && item.durationMs != null && (
                     <span className="ml-1 tabular">

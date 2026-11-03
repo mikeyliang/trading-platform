@@ -23,7 +23,7 @@ export function ConnectionToasts() {
     handle("Stream", previous?.ws, ws, "ws", wasDown.current,
       "Live data stream reconnected.",
       "Live stream dropped — automatically retrying.",
-      "Live stream offline — falling back to REST polling.");
+      "Live stream offline. Falling back to REST polling.");
     handle("API", previous?.api, api, "api", wasDown.current,
       "Trading API back online.",
       "Trading API unreachable — retrying.",

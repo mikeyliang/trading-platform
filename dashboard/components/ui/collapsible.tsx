@@ -34,7 +34,7 @@ export function Collapsible({
               open ? "rotate-0" : "-rotate-90"
             )}
           />
-          <div className="text-xs font-medium text-text-secondary uppercase tracking-wider truncate">
+          <div className="text-xs font-medium text-text-secondary truncate">
             {title}
           </div>
         </button>
@@ -68,11 +68,11 @@ export function Section({
     <section className={cn("rounded-md border border-border bg-surface", className)}>
       <header className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border">
         <div className="min-w-0">
-          <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider truncate">
+          <h3 className="text-xs font-medium text-text-secondary truncate">
             {title}
           </h3>
           {description && (
-            <p className="text-[11px] text-text-muted mt-0.5 truncate">{description}</p>
+            <p className="text-xs text-text-muted mt-0.5 truncate">{description}</p>
           )}
         </div>
         {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}

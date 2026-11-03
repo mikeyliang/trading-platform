@@ -257,7 +257,7 @@ export function MetricsTable({ result }: Props) {
               key={group.group}
               className="border-r last:border-r-0 border-border/40 p-3"
             >
-              <div className="text-[10px] uppercase tracking-wider text-text-muted mb-2">
+              <div className="text-2xs text-text-muted mb-2">
                 {group.group}
               </div>
               <dl className="flex flex-col gap-1.5">
@@ -266,14 +266,14 @@ export function MetricsTable({ result }: Props) {
                     key={m.label}
                     className="flex items-baseline justify-between gap-2"
                   >
-                    <dt className="text-[11px] text-text-secondary flex items-center gap-1 min-w-0 truncate">
+                    <dt className="text-xs text-text-secondary flex items-center gap-1 min-w-0 truncate">
                       <span className="truncate">{m.label}</span>
                       {m.info && <InfoIcon hint={m.info} />}
                     </dt>
                     <dd className="flex flex-col items-end shrink-0">
                       <span
                         className={cn(
-                          "text-[12px] font-semibold tabular",
+                          "text-xs font-semibold tabular",
                           m.tone === "up" && "text-up",
                           m.tone === "down" && "text-down",
                           m.tone === "warning" && "text-warning",
@@ -284,7 +284,7 @@ export function MetricsTable({ result }: Props) {
                         {m.value}
                       </span>
                       {m.hint && (
-                        <span className="text-[10px] text-text-muted tabular leading-none">
+                        <span className="text-2xs text-text-muted tabular leading-none">
                           {m.hint}
                         </span>
                       )}

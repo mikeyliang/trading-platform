@@ -28,7 +28,7 @@ export function Logo({ symbol, size = 24, className }: LogoProps) {
       style={{
         width: size,
         height: size,
-        background: useImg ? "#ffffff" : hashedColor(symbol),
+        background: useImg ? "rgb(var(--c-on-fill))" : hashedColor(symbol),
       }}
     >
       {useImg ? (

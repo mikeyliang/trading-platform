@@ -69,7 +69,7 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
               )}
             >
               {g.title && (
-                <div className="px-3 pb-1.5 eyebrow">
+                <div className="px-3 pb-1.5 caption">
                   {g.title}
                 </div>
               )}

@@ -59,7 +59,7 @@ export function EquityLine({ data, height = 200 }: Props) {
 
   if (data.length < 2) {
     return (
-      <div className="flex items-center justify-center text-text-muted text-[11px]" style={{ height }}>
+      <div className="flex items-center justify-center text-text-muted text-xs" style={{ height }}>
         not enough data
       </div>
     );

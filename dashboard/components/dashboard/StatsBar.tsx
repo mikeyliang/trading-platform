@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useEffect, useMemo, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmtCurrency, cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
@@ -182,9 +181,9 @@ function positionsHint(b: BookSummary): string {
   if (b.stock) parts.push(`${b.stock} stk`);
   if (b.nearestDte !== null && b.nearestExpiry) {
     const d = parseYmd(b.nearestExpiry)!;
-    parts.push(`next exp ${d.getMonth() + 1}/${d.getDate()} · ${b.nearestDte}d`);
+    parts.push(`next exp ${d.getMonth() + 1}/${d.getDate()} (${b.nearestDte}d)`);
   }
-  return parts.join(" · ");
+  return parts.join(", ");
 }
 
 function parseYmd(s?: string): Date | null {
@@ -219,14 +218,14 @@ function Tile({
   return (
     <div
       className={cn(
-        "flex flex-col justify-center gap-0.5 min-w-0 px-3 py-2 border-border/50",
+        "flex flex-col justify-center gap-0.5 min-w-0 px-3 py-2 border-border",
         "border-b lg:border-b-0",
         !last && "lg:border-r",
-        lead ? "lg:min-w-[200px] lg:pr-6" : "lg:min-w-[140px]",
+        lead ? "plate lg:min-w-[200px] lg:pr-6" : "lg:min-w-[140px]",
         "lg:flex-none"
       )}
     >
-      <span className="text-2xs text-text-muted leading-none truncate">{label}</span>
+      <span className={cn("text-2xs leading-none truncate", lead ? "opacity-75" : "text-text-muted")}>{label}</span>
       {loading ? (
         <div className="flex flex-col gap-1 mt-0.5">
           <Skeleton className={cn(lead ? "h-6 w-28" : "h-5 w-20")} />
@@ -252,7 +251,7 @@ function Value({
     <span
       className={cn(
         "font-semibold leading-tight truncate",
-        lead ? "text-xl tracking-tight" : "text-base tabular",
+        lead ? "text-xl figure" : "text-base tabular",
         muted ? "text-text-secondary" : "text-text-primary"
       )}
     >
@@ -262,23 +261,22 @@ function Value({
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <span className="text-2xs text-text-muted tabular leading-tight truncate">{children}</span>;
+  return <span className="text-2xs text-text-muted [.plate_&]:text-current [.plate_&]:opacity-75 tabular leading-tight truncate">{children}</span>;
 }
 
 function Empty() {
   return (
     <>
-      <span className="text-base font-semibold leading-tight text-text-muted">—</span>
+      <span className="text-base font-semibold leading-tight text-text-muted">n/a</span>
       <Hint>No data</Hint>
     </>
   );
 }
 
-// Signed currency with a direction glyph. The glyph + explicit sign carry the
-// direction; color only reinforces it.
+// Signed currency. The explicit sign carries the direction; colour only
+// reinforces it, and a screen reader hears the word.
 function Signed({ value }: { value: number }) {
   const dir = value > 0 ? "up" : value < 0 ? "down" : "flat";
-  const Icon = dir === "up" ? ArrowUpRight : dir === "down" ? ArrowDownRight : Minus;
   const sign = dir === "up" ? "+" : dir === "down" ? "−" : "";
   return (
     <span
@@ -287,7 +285,6 @@ function Signed({ value }: { value: number }) {
         dir === "up" ? "text-up" : dir === "down" ? "text-down" : "text-text-secondary"
       )}
     >
-      <Icon size={13} strokeWidth={2.25} aria-hidden className="shrink-0" />
       <span>
         {sign}
         {fmtCurrency(Math.abs(value))}

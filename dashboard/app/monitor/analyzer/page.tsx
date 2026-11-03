@@ -19,6 +19,7 @@ import { cn, fmtCurrency } from "@/lib/utils";
 import {
   ArrowRight,
   Brain,
+  ChevronLeft,
   ChevronRight,
   Clipboard,
   ClipboardCheck,
@@ -256,7 +257,7 @@ function AnalyzerContent() {
 
         {/* Live readout: spot + IV */}
         {(spot != null || result) && (
-          <div className="flex items-center gap-3 px-3 text-[11px] tabular">
+          <div className="flex items-center gap-3 px-3 text-xs tabular">
             {spot != null && (
               <span><span className="text-text-muted">spot </span>
                 <span className="text-text-primary font-semibold">${spot.toFixed(2)}</span></span>
@@ -290,9 +291,9 @@ function AnalyzerContent() {
                 if (idx > 0) setStrike(strikes[idx - 1]);
               }}
               disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) <= 0}
-              className="px-1.5 border border-border rounded-l-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] tabular"
+              className="px-1.5 border border-border rounded-l-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs tabular"
               title="Lower strike"
-            >◀</button>
+            ><ChevronLeft size={12} aria-hidden="true" /></button>
             <Select value={strike != null ? String(strike) : ""} onValueChange={(v: string) => setStrike(Number(v))} disabled={strikes.length === 0}>
               <SelectTrigger className="h-7 w-[88px] tabular text-xs border-l-0 border-r-0 rounded-none"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
@@ -311,9 +312,9 @@ function AnalyzerContent() {
                 if (idx >= 0 && idx < strikes.length - 1) setStrike(strikes[idx + 1]);
               }}
               disabled={strikes.length === 0 || strike == null || strikes.indexOf(strike) >= strikes.length - 1}
-              className="px-1.5 border border-border rounded-r-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] tabular"
+              className="px-1.5 border border-border rounded-r-md text-text-muted hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs tabular"
               title="Higher strike"
-            >▶</button>
+            ><ChevronRight size={12} aria-hidden="true" /></button>
           </div>
         </BarSeg>
 
@@ -468,7 +469,7 @@ function AnalysisBody({
             {/* Action verdict — the headline, in plain words (no "SPEC"). */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className={cn(
-                "text-[20px] leading-none font-bold tracking-tight",
+                "text-[20px] leading-none font-bold",
                 tone === "up" && "text-up",
                 tone === "down" && "text-down",
                 tone === "warning" && "text-warning",
@@ -478,7 +479,7 @@ function AnalysisBody({
               </span>
               {advice.conviction && (
                 <span
-                  className="px-1.5 py-0.5 rounded-sm text-[9px] uppercase tracking-wider font-semibold bg-surface-2 text-text-muted"
+                  className="px-1.5 py-0.5 rounded-sm text-2xs font-semibold bg-surface-2 text-text-muted"
                   title="How much to trust this call — from signal strength + model agreement."
                 >
                   {advice.conviction} conviction
@@ -487,7 +488,7 @@ function AnalysisBody({
             </div>
 
             {/* Reasoning — full sentence, never clipped. */}
-            <p className="text-[11px] leading-snug text-text-secondary">{labelExplanation}</p>
+            <p className="text-xs leading-snug text-text-secondary">{labelExplanation}</p>
 
             {/* Signal meter — the score made legible: where it sits between
                 "close it" and "keep it", with the number spelled out. */}
@@ -511,7 +512,7 @@ function AnalysisBody({
                 style={{ left: `${Math.max(0, Math.min(100, ((advice.score + 100) / 200) * 100))}%`, transform: "translateX(-50%)" }}
               />
             </div>
-            <div className="flex justify-between items-baseline text-[8px] uppercase tracking-wider text-text-muted/60 leading-none">
+            <div className="flex justify-between items-baseline text-2xs text-text-muted/60 leading-none">
               <span>close</span>
               <span className="text-text-muted normal-case tracking-normal tabular">
                 signal {advice.score > 0 ? "+" : ""}{advice.score} · {scoreWord}
@@ -520,7 +521,7 @@ function AnalysisBody({
             </div>
           </div>
 
-          <p className="text-[12px] leading-relaxed text-text-secondary flex-1 min-w-0 self-center">
+          <p className="text-xs leading-relaxed text-text-secondary flex-1 min-w-0 self-center">
             {result.narrative}
           </p>
         </div>
@@ -576,7 +577,7 @@ function AnalysisBody({
         <Tabs defaultValue="pnl">
           <TabsList className="!flex w-full overflow-x-auto rounded-none border-b border-border/60">
             <TabsTrigger value="pnl">P/L Profile</TabsTrigger>
-            <TabsTrigger value="underlying">Underlying · {timeframe}</TabsTrigger>
+            <TabsTrigger value="underlying">Underlying ({timeframe})</TabsTrigger>
             <TabsTrigger value="option">Option</TabsTrigger>
             <TabsTrigger value="greeks">Greeks</TabsTrigger>
             <TabsTrigger value="ai">AI Read</TabsTrigger>
@@ -612,7 +613,7 @@ function AnalysisBody({
                   probItm={result.probability.prob_itm}
                   height={440}
                 />
-                <div className="grid grid-cols-3 mt-3 pt-2 border-t border-border/40 text-[10px] tabular">
+                <div className="grid grid-cols-3 mt-3 pt-2 border-t border-border/40 text-2xs tabular">
                   <RiskCell label="Max profit"
                     value={result.max_profit != null && isFinite(result.max_profit) ? fmtCurrency(result.max_profit) : "∞"}
                     tone="up" />
@@ -631,15 +632,15 @@ function AnalysisBody({
                 <SignalInputsPanel result={result} />
                 <div className="rounded-md border border-border bg-surface flex-1">
                   <div className="flex items-baseline gap-2 px-3 h-7 border-b border-border/60">
-                    <span className="text-[10px] uppercase tracking-wider text-text-muted">Rationale</span>
-                    <span className="ml-auto text-[10px] tabular text-text-muted">
+                    <span className="text-2xs text-text-muted">Rationale</span>
+                    <span className="ml-auto text-2xs tabular text-text-muted">
                       {advice.notes.length} {advice.notes.length === 1 ? "note" : "notes"}
                     </span>
                   </div>
                   <div className="p-3">
                     <ul className="space-y-1.5">
                       {advice.notes.map((n, i) => (
-                        <li key={i} className="flex items-start gap-2 text-[11px] text-text-secondary leading-snug">
+                        <li key={i} className="flex items-start gap-2 text-xs text-text-secondary leading-snug">
                           <ArrowRight size={11} className={cn(
                             "shrink-0 mt-0.5",
                             tone === "up" && "text-up",
@@ -651,7 +652,7 @@ function AnalysisBody({
                         </li>
                       ))}
                       {advice.notes.length === 0 && (
-                        <li className="text-[11px] text-text-muted">No specific concerns flagged.</li>
+                        <li className="text-xs text-text-muted">No specific concerns flagged.</li>
                       )}
                     </ul>
                   </div>
@@ -708,7 +709,7 @@ function AnalysisBody({
             {result.decay_profile && result.decay_profile.length > 0 ? (
               <PnlDecayChart data={result.decay_profile} height={260} />
             ) : (
-              <div className="h-[210px] flex items-center justify-center text-[11px] text-text-muted">
+              <div className="h-[210px] flex items-center justify-center text-xs text-text-muted">
                 No decay profile
               </div>
             )}
@@ -741,8 +742,8 @@ function AnalysisBody({
 function CardBar({ title, hint }: { title: string; hint?: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-2 px-3 h-8 border-b border-border/60">
-      <span className="text-[11px] uppercase tracking-wider text-text-primary font-semibold">{title}</span>
-      {hint && <span className="text-[10px] uppercase tracking-wider text-text-muted">{hint}</span>}
+      <span className="text-xs text-text-primary font-semibold">{title}</span>
+      {hint && <span className="text-2xs text-text-muted">{hint}</span>}
     </div>
   );
 }
@@ -761,7 +762,7 @@ function HeroMetric({
 }) {
   return (
     <div className="flex flex-col gap-1 min-w-[82px] flex-1 px-3 py-1.5" title={hint}>
-      <span className="text-[9px] uppercase tracking-wider text-text-muted leading-none">
+      <span className="text-2xs text-text-muted leading-none">
         {label}
       </span>
       <span className={cn(
@@ -808,7 +809,7 @@ function AnalyticsTabs({ result }: { result: OptionAnalyzeResult }) {
           {result.decay_profile && result.decay_profile.length > 0 ? (
             <PnlDecayChart data={result.decay_profile} height={260} />
           ) : (
-            <div className="h-[210px] flex items-center justify-center text-[11px] text-text-muted">
+            <div className="h-[210px] flex items-center justify-center text-xs text-text-muted">
               No decay profile
             </div>
           )}
@@ -844,9 +845,9 @@ function RiskCell({ label, value, tone }: {
 }) {
   return (
     <div className="flex items-baseline justify-center gap-2 min-w-0">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       <span className={cn(
-        "text-[12px] font-semibold tabular",
+        "text-xs font-semibold tabular",
         tone === "up" && "text-up",
         tone === "down" && "text-down",
         !tone && "text-text-primary"
@@ -959,7 +960,7 @@ function AnalysisSkeleton() {
 function BarSeg({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted shrink-0">{label}</span>
+      <span className="text-2xs text-text-muted shrink-0">{label}</span>
       {children}
     </div>
   );

@@ -213,7 +213,7 @@ function PassMark({ passes, reasons }: { passes: boolean; reasons: string[] }) {
     <span
       title={title}
       className={cn(
-        "inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] leading-none rounded-sm font-medium",
+        "inline-flex items-center justify-center w-3.5 h-3.5 text-2xs leading-none rounded-sm font-medium",
         passes ? "text-up bg-up/15" : "text-down bg-down/15"
       )}
     >

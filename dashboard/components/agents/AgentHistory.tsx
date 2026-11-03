@@ -87,7 +87,7 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
       <section className="rounded-lg border border-border bg-surface p-4">
         <div className="flex items-center gap-2 text-text-muted text-xs">
           <History size={12} />
-          <span>No prior debates yet — runs save here automatically.</span>
+          <span>No prior debates yet. Runs save here automatically.</span>
         </div>
       </section>
     );
@@ -100,7 +100,7 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
         <div className="text-sm font-medium text-text-secondary">
           Conversation history
         </div>
-        <span className="text-[11px] text-text-muted">
+        <span className="text-xs text-text-muted">
           {filtered.length}
           {query ? ` of ${history.length}` : ""} runs
         </span>
@@ -114,7 +114,7 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search symbol, decision, text…"
-              className="h-7 w-56 pl-6 text-[11px]"
+              className="h-7 w-56 pl-6 text-xs"
             />
           </div>
           <Button size="sm" variant="ghost" onClick={onClear} title="Clear history">
@@ -139,7 +139,7 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
                 type="button"
                 onClick={() => onSelect(row)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-2 text-left text-[11px] tabular hover:bg-surface-2/60 transition-colors",
+                  "w-full flex items-center gap-3 px-4 py-2 text-left text-xs tabular hover:bg-surface-2/60 transition-colors",
                   isCurrent && "bg-surface-2"
                 )}
               >
@@ -162,7 +162,7 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
           );
         })}
         {filtered.length === 0 && (
-          <li className="px-4 py-3 text-[11px] text-text-muted">
+          <li className="px-4 py-3 text-xs text-text-muted">
             No matches for &ldquo;{query}&rdquo;.
           </li>
         )}

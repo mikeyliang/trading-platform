@@ -181,7 +181,7 @@ export function BacktestPanel() {
           <button
             type="button"
             onClick={() => setShowAdvanced((v) => !v)}
-            className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-text-muted hover:text-text-secondary transition-colors mt-1"
+            className="flex items-center gap-1.5 text-2xs text-text-muted hover:text-text-secondary transition-colors mt-1"
           >
             <ChevronDown
               size={11}
@@ -189,7 +189,7 @@ export function BacktestPanel() {
             />
             Parameters
             {paramCount > 0 && (
-              <span className="ml-auto text-[10px] text-accent">{paramCount} overridden</span>
+              <span className="ml-auto text-2xs text-accent">{paramCount} overridden</span>
             )}
           </button>
 
@@ -302,7 +302,7 @@ export function BacktestPanel() {
                               {fmtPct(t.pnl_pct)}
                             </Badge>
                           ) : (
-                            <span className="text-text-muted">—</span>
+                            <span className="text-text-muted">n/a</span>
                           )}
                         </TableCell>
                       </TableRow>
@@ -321,7 +321,7 @@ export function BacktestPanel() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] text-text-muted uppercase tracking-wider">{label}</label>
+      <label className="text-2xs text-text-muted">{label}</label>
       {children}
     </div>
   );

@@ -146,7 +146,7 @@ export function MultiTfMomentumPanel({ result }: Props) {
     <Card>
       <div className="flex items-center gap-2 px-3 h-7 border-b border-border/60">
         <HintLabel
-          className="text-[10px] uppercase tracking-wider text-text-muted"
+          className="text-2xs text-text-muted"
           hint={
             <div className="flex flex-col gap-1">
               <div className="font-medium">Cross-timeframe momentum</div>
@@ -165,15 +165,15 @@ export function MultiTfMomentumPanel({ result }: Props) {
         >
           Multi-TF momentum
         </HintLabel>
-        <span className="ml-auto text-[10px] tabular text-text-muted">
+        <span className="ml-auto text-2xs tabular text-text-muted">
           DTE {result.dte}d · rec.{" "}
           <span className="text-accent font-medium">{recommended}</span>
         </span>
       </div>
       <CardContent className="p-0">
-        <table className="w-full border-collapse text-[11px] tabular">
+        <table className="w-full border-collapse text-xs tabular">
           <thead>
-            <tr className="text-text-muted text-[9px] uppercase tracking-wider border-b border-border/40">
+            <tr className="text-text-muted text-2xs border-b border-border/40">
               <th className="text-left px-3 py-1.5 font-medium w-[78px]"></th>
               {sortedTfs.map((tf) => (
                 <th
@@ -220,7 +220,7 @@ export function MultiTfMomentumPanel({ result }: Props) {
           </tbody>
           <tfoot>
             <tr className="border-t border-border/60 bg-surface-2/20">
-              <td className="px-3 py-1.5 text-text-muted text-[9px] uppercase tracking-wider">
+              <td className="px-3 py-1.5 text-text-muted text-2xs">
                 Trend
               </td>
               {sortedTfs.map((tf) => {
@@ -228,20 +228,20 @@ export function MultiTfMomentumPanel({ result }: Props) {
                 const tone = toneFor("trend", s);
                 const tr = s?.trend ?? "—";
                 return (
-                  <td key={`trend-${tf}`} className={cn("text-right px-3 py-1.5 font-medium uppercase text-[10px] tracking-wider", toneClass(tone))}>
+                  <td key={`trend-${tf}`} className={cn("text-right px-3 py-1.5 font-medium text-2xs", toneClass(tone))}>
                     {tr}
                   </td>
                 );
               })}
             </tr>
             <tr className="border-t border-border/40">
-              <td className="px-3 py-1.5 text-text-muted text-[9px] uppercase tracking-wider">
+              <td className="px-3 py-1.5 text-text-muted text-2xs">
                 Consensus
               </td>
               <td
                 colSpan={sortedTfs.length}
                 className={cn(
-                  "px-3 py-1.5 text-right font-medium text-[10px]",
+                  "px-3 py-1.5 text-right font-medium text-2xs",
                   toneClass(consensus.tone)
                 )}
               >

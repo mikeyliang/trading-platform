@@ -13,7 +13,7 @@ export function ProbabilityPanel({ result }: { result: OptionAnalyzeResult }) {
   const emPct = result.sigma_ranges.expected_move_pct;
   return (
     <Panel title="Probability · risk-neutral">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-[11px] tabular">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-xs tabular">
         <Stat label="POP at expiry" value={pct(pop)} tone={tonePOP(pop, result.is_long)} />
         <Stat label="P(ITM)" value={pct(prob_itm)} />
         <Stat label="P(touch BE)" value={pct(prob_touch)} hint="rough Brownian estimate" />
@@ -45,7 +45,7 @@ export function VolContextPanel({ result }: { result: OptionAnalyzeResult }) {
     "muted";
   return (
     <Panel title="Volatility · IV vs realised">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-[11px] tabular">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-xs tabular">
         <Stat label="Implied vol" value={pctNum(iv)} />
         <Stat label="Realised 30d" value={pctNum(rv30)} />
         <Stat label="Realised 90d" value={pctNum(rv90)} />
@@ -73,7 +73,7 @@ export function LiquidityPanel({ result }: { result: OptionAnalyzeResult }) {
     "down";
   return (
     <Panel title="Liquidity · this contract">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-[11px] tabular">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-xs tabular">
         <Stat
           label="Bid / Ask"
           value={l.bid != null && l.ask != null ? `$${l.bid.toFixed(2)} / $${l.ask.toFixed(2)}` : "—"}
@@ -125,13 +125,13 @@ export function ScenarioMatrixPanel({ result }: { result: OptionAnalyzeResult })
   return (
     <Panel title="Scenario matrix · PnL by spot × time">
       <div className="overflow-x-auto">
-        <table className="w-full text-[11px] tabular">
+        <table className="w-full text-xs tabular">
           <thead>
             <tr className="text-text-muted border-b border-border/40">
-              <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-wider">When</th>
+              <th className="text-left px-3 py-1.5 font-normal text-2xs">When</th>
               {cols.map((c) => (
                 <th key={c.label} className={cn(
-                  "text-right px-2 py-1.5 font-normal text-[10px]",
+                  "text-right px-2 py-1.5 font-normal text-2xs",
                   c.pct === 0 && "text-text-secondary font-medium"
                 )}>{c.label}</th>
               ))}
@@ -170,7 +170,7 @@ function Panel({
   return (
     <div className="rounded-md border border-border bg-surface overflow-hidden">
       <div className="flex items-center gap-2 px-3 h-7 border-b border-border/60">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">{title}</span>
+        <span className="text-2xs text-text-muted">{title}</span>
       </div>
       {children}
     </div>
@@ -192,9 +192,9 @@ function Stat({
     "text-text-primary";
   return (
     <div className="flex flex-col">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       <span className={cn("font-medium tabular", toneCls)}>{value}</span>
-      {hint && <span className="text-[9px] text-text-muted italic">{hint}</span>}
+      {hint && <span className="text-2xs text-text-muted italic">{hint}</span>}
     </div>
   );
 }

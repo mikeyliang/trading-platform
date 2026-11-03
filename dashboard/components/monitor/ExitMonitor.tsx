@@ -110,8 +110,8 @@ function SummaryStrip({ snap }: { snap: MonitorSnapshot | null }) {
     <div className="grid grid-cols-4 gap-x-4 md:gap-x-10 py-2">
       {stats.map(([k, v, tone]) => (
         <div key={k}>
-          <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">{k}</div>
-          <div className={cn("text-xl md:text-2xl font-semibold tabular tracking-tight", tone ?? "text-text-primary")}>
+          <div className="text-2xs text-text-muted mb-1.5">{k}</div>
+          <div className={cn("text-xl md:text-2xl font-semibold tabular", tone ?? "text-text-primary")}>
             {v}
           </div>
         </div>
@@ -136,9 +136,9 @@ function Row({ entry }: { entry: MonitorEntry }) {
           <div className="font-mono text-base tabular text-text-primary truncate">
             {entry.symbol} {entry.short_strike}<span className="text-text-muted"> / </span>{entry.long_strike}
           </div>
-          <span className="text-text-muted text-[10px] uppercase tracking-wider hidden sm:inline">{entry.spread_type}</span>
+          <span className="text-text-muted text-2xs hidden sm:inline">{entry.spread_type}</span>
         </div>
-        <div className={cn("text-[11px] uppercase tracking-wider shrink-0", meta.tone)}>{meta.label}</div>
+        <div className={cn("text-xs shrink-0", meta.tone)}>{meta.label}</div>
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-2">
@@ -152,7 +152,7 @@ function Row({ entry }: { entry: MonitorEntry }) {
             aria-label={`exit Δ ${trigger}`}
           />
           <div
-            className="absolute -top-0.5 text-[9px] tabular text-down/80 -translate-x-1/2"
+            className="absolute -top-0.5 text-2xs tabular text-down/80 -translate-x-1/2"
             style={{ left: `${triggerPct}%` }}
           >
             exit {trigger}
@@ -168,7 +168,7 @@ function Row({ entry }: { entry: MonitorEntry }) {
                 style={{ left: `${pct}%`, transform: "translate(-50%, -50%)" }}
               />
               <div
-                className="absolute -bottom-0.5 text-[9px] tabular text-text-secondary -translate-x-1/2"
+                className="absolute -bottom-0.5 text-2xs tabular text-text-secondary -translate-x-1/2"
                 style={{ left: `${pct}%` }}
               >
                 Δ {current.toFixed(1)}
@@ -202,9 +202,9 @@ function EmptyState() {
 
 function Footer({ jobs, lastRun }: { jobs: ScheduledJob[]; lastRun: string | null }) {
   return (
-    <div className="border-t border-border/40 pt-4 flex items-baseline justify-between text-[10px] uppercase tracking-wider text-text-muted">
+    <div className="border-t border-border/40 pt-4 flex items-baseline justify-between text-2xs text-text-muted">
       <span>last checked {lastRun ? new Date(lastRun).toLocaleTimeString() : "—"}</span>
-      <span className="lowercase tracking-normal text-[11px] text-text-secondary normal-case">
+      <span className="lowercase tracking-normal text-xs text-text-secondary normal-case">
         {jobs.map((j) => j.id).join(" · ")} scheduled
       </span>
     </div>

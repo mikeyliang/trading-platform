@@ -154,7 +154,7 @@ export function BotPanel() {
             {/* sim gate */}
             <div
               className={cn(
-                "rounded border px-2 py-1.5 flex items-start gap-1.5 text-[10px] leading-relaxed",
+                "rounded border px-2 py-1.5 flex items-start gap-1.5 text-2xs leading-relaxed",
                 gate?.validated
                   ? "border-up/30 bg-up/5 text-up"
                   : "border-amber-400/30 bg-amber-400/5 text-amber-400"
@@ -165,15 +165,15 @@ export function BotPanel() {
                 : <ShieldAlert size={12} className="mt-0.5 shrink-0" />}
               {gate?.validated && gate.run ? (
                 <span>
-                  Sim-validated <span className="tabular">{gate.run.id}</span> · PF{" "}
-                  <span className="tabular">{gate.run.aggregate.profit_factor.toFixed(2)}</span> · avg{" "}
+                  Sim-validated <span className="tabular">{gate.run.id}</span>, PF{" "}
+                  <span className="tabular">{gate.run.aggregate.profit_factor.toFixed(2)}</span>, avg{" "}
                   <span className="tabular">
                     {gate.run.aggregate.avg_return_pct >= 0 ? "+" : ""}
                     {gate.run.aggregate.avg_return_pct.toFixed(2)}%
                   </span>
                 </span>
               ) : (
-                <span>No completed sim validates {preset} on {timeframe} — run one on the Simulate page.</span>
+                <span>No completed sim validates {preset} on {timeframe}. Run one on the Simulate page.</span>
               )}
             </div>
 
@@ -191,7 +191,7 @@ export function BotPanel() {
             <Field label={`Symbols (${symbols.length}/12)`}>
               <div className="flex flex-wrap gap-1">
                 {symbols.map((s) => (
-                  <span key={s} className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded bg-surface-2 text-[10px] tabular">
+                  <span key={s} className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded bg-surface-2 text-2xs tabular">
                     {s}
                     {!running && (
                       <button onClick={() => setSymbols(symbols.filter((x) => x !== s))} className="text-text-muted hover:text-down">
@@ -237,7 +237,7 @@ export function BotPanel() {
                 type="button"
                 onClick={() => !running && setNewsGate((v) => !v)}
                 className={cn(
-                  "flex items-center justify-between h-7 px-2 rounded border text-[10px] uppercase tracking-wider transition-colors",
+                  "flex items-center justify-between h-7 px-2 rounded border text-2xs transition-colors",
                   newsGate ? "border-accent/40 bg-accent/5 text-accent" : "border-border text-text-muted",
                   running && "opacity-60 cursor-default"
                 )}
@@ -260,12 +260,12 @@ export function BotPanel() {
             )}
             <div className="flex items-center justify-between">
               {!running && !gate?.validated ? (
-                <button onClick={() => start(true)} className="text-[10px] text-amber-400/80 hover:text-amber-400 underline underline-offset-2">
+                <button onClick={() => start(true)} className="text-2xs text-amber-400/80 hover:text-amber-400 underline underline-offset-2">
                   start anyway
                 </button>
               ) : <span />}
               {!running && snap && snap.trade_count > 0 && (
-                <button onClick={reset} className="text-[10px] text-text-muted hover:text-down">
+                <button onClick={reset} className="text-2xs text-text-muted hover:text-down">
                   reset paper account
                 </button>
               )}
@@ -273,8 +273,8 @@ export function BotPanel() {
           </CardContent>
         </Card>
 
-        <p className="text-[10px] leading-relaxed text-text-muted px-1">
-          Paper execution only — fills simulated at bar close with slippage, on the
+        <p className="text-2xs leading-relaxed text-text-muted px-1">
+          Paper execution only. Fills are simulated at bar close with slippage, on the
           same signal engine the simulator validates. Live order routing stays off
           until paper results earn it.
         </p>
@@ -304,7 +304,7 @@ export function BotPanel() {
               },
             ].map((c) => (
               <div key={c.l} className="px-2 py-1.5 border-r border-b lg:border-b-0 border-border/50 last:border-r-0">
-                <div className="text-[9px] uppercase tracking-wider text-text-muted leading-tight whitespace-nowrap">{c.l}</div>
+                <div className="text-2xs text-text-muted leading-tight whitespace-nowrap">{c.l}</div>
                 <div className={cn("text-xs tabular leading-tight mt-0.5 whitespace-nowrap", c.c ?? "text-text-primary")}>{c.v}</div>
               </div>
             ))}
@@ -327,8 +327,8 @@ export function BotPanel() {
                 <Badge variant="muted">{positions.length}/{snap?.config.max_positions ?? "—"}</Badge>
               </CardHeader>
               {positions.length === 0 ? (
-                <p className="text-[11px] text-text-muted px-3 pb-2.5">
-                  flat — waiting for a confluence entry{snap?.config.news_gate ? " that clears the news gate" : ""}
+                <p className="text-xs text-text-muted px-3 pb-2.5">
+                  flat, waiting for a confluence entry{snap?.config.news_gate ? " that clears the news gate" : ""}
                 </p>
               ) : (
                 <Table>
@@ -359,7 +359,7 @@ export function BotPanel() {
                           <TableCell className={cn("text-right tabular", pnlClass(upnl))}>{fmtCurrency(upnl)}</TableCell>
                           <TableCell className="tabular">{p.entry_score}/7</TableCell>
                           <TableCell>
-                            <span className={cn("text-[10px]",
+                            <span className={cn("text-2xs",
                               p.news_verdict === "bullish" ? "text-up" : p.news_verdict === "bearish" ? "text-down" : "text-text-muted")}>
                               {p.news_verdict}
                               {p.news_bias != null ? ` ${p.news_bias >= 0 ? "+" : ""}${p.news_bias.toFixed(2)}` : ""}
@@ -377,7 +377,7 @@ export function BotPanel() {
               <Card className="shrink-0">
                 <CardHeader>
                   <CardTitle>Paper equity</CardTitle>
-                  <span className="ml-auto text-[10px] tabular text-text-muted">
+                  <span className="ml-auto text-2xs tabular text-text-muted">
                     {fmtCurrency(snap.config.initial_capital)} → {fmtCurrency(snap.equity)}
                   </span>
                 </CardHeader>
@@ -393,7 +393,7 @@ export function BotPanel() {
                 <Badge variant="muted">{snap?.trade_count ?? 0}</Badge>
               </CardHeader>
               {(snap?.closed_trades.length ?? 0) === 0 ? (
-                <p className="text-[11px] text-text-muted px-3 pb-2.5">none yet</p>
+                <p className="text-xs text-text-muted px-3 pb-2.5">none yet</p>
               ) : (
                 <div className="overflow-auto max-h-64">
                   <Table>
@@ -419,7 +419,7 @@ export function BotPanel() {
                           <TableCell className="text-right tabular">{t.entry_price.toFixed(2)}</TableCell>
                           <TableCell className="text-right tabular">{t.exit_price.toFixed(2)}</TableCell>
                           <TableCell className={cn("text-right tabular", pnlClass(t.pnl))}>
-                            {fmtCurrency(t.pnl)} <span className="text-[9px]">({fmtPct(t.pnl_pct)})</span>
+                            {fmtCurrency(t.pnl)} <span className="text-2xs">({fmtPct(t.pnl_pct)})</span>
                           </TableCell>
                           <TableCell className="text-text-muted">{t.reason}</TableCell>
                         </TableRow>
@@ -441,7 +441,7 @@ export function BotPanel() {
                     key={f}
                     onClick={() => setLogFilter(f)}
                     className={cn(
-                      "px-1.5 h-5 rounded text-[9px] uppercase tracking-wider transition-colors",
+                      "px-1.5 h-5 rounded text-2xs transition-colors",
                       logFilter === f ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
                     )}
                   >
@@ -452,7 +452,7 @@ export function BotPanel() {
             </CardHeader>
             <div className="flex-1 overflow-y-auto">
               {decisions.length === 0 && (
-                <p className="text-[11px] text-text-muted px-3 py-2">
+                <p className="text-xs text-text-muted px-3 py-2">
                   {logFilter === "all"
                     ? "no activity yet — every entry, exit, and news block lands here"
                     : "nothing in this filter"}
@@ -461,15 +461,15 @@ export function BotPanel() {
               {decisions.map((d, i) => (
                 <div key={i} className="px-3 py-1.5 border-b border-border/30">
                   <div className="flex items-center gap-1.5">
-                    <span className={cn("px-1 rounded text-[9px] uppercase tracking-wider", (KIND_STYLE[d.kind] ?? KIND_STYLE.news).chip)}>
+                    <span className={cn("px-1 rounded text-2xs", (KIND_STYLE[d.kind] ?? KIND_STYLE.news).chip)}>
                       {d.kind}
                     </span>
-                    {d.symbol !== "*" && <span className="text-[10px] tabular font-medium">{d.symbol}</span>}
-                    <span className="ml-auto text-[9px] tabular text-text-muted whitespace-nowrap">
+                    {d.symbol !== "*" && <span className="text-2xs tabular font-medium">{d.symbol}</span>}
+                    <span className="ml-auto text-2xs tabular text-text-muted whitespace-nowrap">
                       {new Date(d.time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
-                  <p className="text-[10px] leading-snug text-text-secondary mt-0.5">{d.message}</p>
+                  <p className="text-2xs leading-snug text-text-secondary mt-0.5">{d.message}</p>
                 </div>
               ))}
             </div>
@@ -483,7 +483,7 @@ export function BotPanel() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] text-text-muted uppercase tracking-wider">{label}</label>
+      <label className="text-2xs text-text-muted">{label}</label>
       {children}
     </div>
   );

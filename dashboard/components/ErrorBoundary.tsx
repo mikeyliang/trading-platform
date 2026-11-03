@@ -50,14 +50,14 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-xs font-medium text-text-primary">
               {this.props.label ? `${this.props.label} failed to load` : 'Something went wrong'}
             </p>
-            <p className="text-[11px] text-text-muted max-w-md leading-relaxed">
+            <p className="text-xs text-text-muted max-w-md leading-relaxed">
               {this.state.error?.message || 'An unexpected error occurred while rendering this section.'}
             </p>
           </div>
           <button
             type="button"
             onClick={this.retry}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border border-border bg-surface-2 text-[11px] text-text-secondary hover:bg-surface-3 hover:text-text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent transition-colors"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border border-border bg-surface-2 text-xs text-text-secondary hover:bg-surface-3 hover:text-text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent transition-colors"
           >
             <RefreshCw size={11} />
             Try again
@@ -79,7 +79,7 @@ export function LoadingState({ message = 'Loading...', className }: { message?: 
     <div
       role="status"
       aria-live="polite"
-      className={cn('flex items-center justify-center gap-2 px-3 py-6 text-[11px] text-text-muted', className)}
+      className={cn('flex items-center justify-center gap-2 px-3 py-6 text-xs text-text-muted', className)}
     >
       <LoadingSpinner size="sm" />
       <span>{message}</span>

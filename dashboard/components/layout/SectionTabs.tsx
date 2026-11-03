@@ -25,7 +25,7 @@ export function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
             href={t.href}
             prefetch
             className={cn(
-              "relative px-3 h-7 flex items-center text-[11px] tabular tracking-normal rounded-sm transition-colors shrink-0",
+              "relative px-3 h-7 flex items-center text-xs tabular tracking-normal rounded-sm transition-colors shrink-0",
               active
                 ? "text-text-primary"
                 : "text-text-muted hover:text-text-secondary"

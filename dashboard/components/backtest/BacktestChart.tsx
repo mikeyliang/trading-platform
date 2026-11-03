@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { BacktestResult, Bar } from "@/types";
 import { cn } from "@/lib/utils";
+import { chartChrome } from "@/lib/chartTheme";
 
 const SMI_OB = 40;
 const SMI_OS = -40;
@@ -80,12 +81,12 @@ export function BacktestChart({ result }: Props) {
       });
 
       const candles = priceChart.addCandlestickSeries({
-        upColor: "#26a69a",
-        downColor: "#ef5350",
-        borderUpColor: "#26a69a",
-        borderDownColor: "#ef5350",
-        wickUpColor: "#26a69a",
-        wickDownColor: "#ef5350",
+        upColor: chartChrome().up,
+        downColor: chartChrome().down,
+        borderUpColor: chartChrome().up,
+        borderDownColor: chartChrome().down,
+        wickUpColor: chartChrome().up,
+        wickDownColor: chartChrome().down,
         priceLineColor: "#3f3f46",
         priceLineStyle: LineStyle.Dotted,
       });
@@ -278,14 +279,14 @@ export function BacktestChart({ result }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3 px-1">
-        <div className="text-[10px] uppercase tracking-wider text-text-muted">
+        <div className="text-2xs text-text-muted">
           {result.symbol} · {result.timeframe} · {result.start_date} → {result.end_date}
         </div>
-        <div className="ml-auto flex items-center gap-2 text-[10px]">
+        <div className="ml-auto flex items-center gap-2 text-2xs">
           <button
             onClick={() => setShowEma((v) => !v)}
             className={cn(
-              "px-1.5 h-5 rounded transition-colors uppercase tracking-wider",
+              "px-1.5 h-5 rounded transition-colors",
               showEma ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
             )}
           >
@@ -294,7 +295,7 @@ export function BacktestChart({ result }: Props) {
           <button
             onClick={() => setShowSmi((v) => !v)}
             className={cn(
-              "px-1.5 h-5 rounded transition-colors uppercase tracking-wider",
+              "px-1.5 h-5 rounded transition-colors",
               showSmi ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
             )}
           >
@@ -308,10 +309,10 @@ export function BacktestChart({ result }: Props) {
       {showSmi && (
         <div className="border border-border rounded-md overflow-hidden bg-bg">
           <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">SMI</span>
-            <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
-              <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-[#60a5fa]" /> smi</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-[#f59e0b]" /> signal</span>
+            <span className="text-2xs text-text-muted">SMI</span>
+            <div className="ml-auto flex items-center gap-3 text-2xs tabular text-text-muted">
+              <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-chart-ema-fast" /> smi</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-chart-macd-signal" /> signal</span>
             </div>
           </div>
           <div ref={smiRef} className="w-full h-32" />
@@ -320,15 +321,15 @@ export function BacktestChart({ result }: Props) {
 
       <div className="border border-border rounded-md overflow-hidden bg-bg">
         <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">Equity</span>
-          <span className="ml-auto text-[10px] tabular text-text-muted">
+          <span className="text-2xs text-text-muted">Equity</span>
+          <span className="ml-auto text-2xs tabular text-text-muted">
             ${result.initial_capital.toLocaleString()} → ${result.final_capital.toLocaleString()}
           </span>
         </div>
         <div ref={eqRef} className="w-full h-28" />
       </div>
 
-      {loading && <div className="text-[10px] text-text-muted text-center">loading bars…</div>}
+      {loading && <div className="text-2xs text-text-muted text-center">loading bars…</div>}
     </div>
   );
 }

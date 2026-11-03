@@ -122,7 +122,7 @@ function ActiveQuote({
   const hasAnything = last != null || bid != null || ask != null;
   return (
     <div className="hidden sm:flex items-baseline gap-2 tabular text-xs min-w-0">
-      <span className="font-mono font-medium text-text-primary tracking-tight">{symbol}</span>
+      <span className="font-mono font-medium text-text-primary">{symbol}</span>
       {hasAnything ? (
         <>
           <span className="text-text-primary font-medium">{last != null ? fmt(last, 2) : "—"}</span>

@@ -58,7 +58,7 @@ export function FilterBar({
               <button
                 key={c.key}
                 onClick={c.onRemove}
-                className="inline-flex items-center gap-1 rounded-full bg-surface-2 hover:bg-surface-3 border border-border text-[10px] text-text-secondary px-2 py-0.5 transition-colors"
+                className="inline-flex items-center gap-1 rounded-full bg-surface-2 hover:bg-surface-3 border border-border text-2xs text-text-secondary px-2 py-0.5 transition-colors"
               >
                 <span className="truncate max-w-[140px]">{c.label}</span>
                 <X size={10} className="text-text-muted" />
@@ -72,7 +72,7 @@ export function FilterBar({
               type="button"
               onClick={() => setOpen((v) => !v)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-sm border border-border bg-surface-2 hover:bg-surface-3 text-[11px] text-text-secondary px-2 py-1 transition-colors",
+                "inline-flex items-center gap-1.5 rounded-sm border border-border bg-surface-2 hover:bg-surface-3 text-xs text-text-secondary px-2 py-1 transition-colors",
                 open && "text-text-primary"
               )}
               aria-expanded={open}

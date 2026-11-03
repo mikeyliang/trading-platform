@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api, type EarningsInfo, type OptionRow, type OptionsChain } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { AlertTriangle } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { TableSkeletonRows } from "@/components/ui/skeleton";
@@ -137,13 +138,13 @@ export function OptionChain() {
         actions={
           <div className="flex items-end gap-2 flex-wrap">
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wider text-text-muted">Symbol</span>
+              <span className="text-2xs text-text-muted">Symbol</span>
               <Input
                 value={pendingSymbol}
                 onChange={(e) => setPendingSymbol(e.target.value.toUpperCase())}
                 onKeyDown={(e) => { if (e.key === "Enter") onSymbolSubmit(); }}
                 placeholder="RUT"
-                className="h-7 w-24 uppercase tabular"
+                className="h-7 w-24 tabular"
               />
             </label>
           </div>
@@ -159,14 +160,14 @@ export function OptionChain() {
 
       {/* Context badges: LTCG eligibility for this expiry + next earnings. */}
       {chain && expiry && (
-        <div className="flex items-center gap-2 flex-wrap text-[10px]">
+        <div className="flex items-center gap-2 flex-wrap text-2xs">
           {ranking.ltcgEligible ? (
             <span className="px-2 py-0.5 rounded-sm bg-up/10 text-up">
-              LTCG-eligible · {ranking.dte}d to expiry
+              LTCG-eligible, {ranking.dte}d to expiry
             </span>
           ) : (
             <span className="px-2 py-0.5 rounded-sm bg-surface-2 text-text-muted">
-              {ranking.dte}d to expiry · {ranking.dte > 0 ? `${(ranking.dte / 365).toFixed(1)}y` : "—"} hold for LTCG needs &gt;1y
+              {ranking.dte}d to expiry ({ranking.dte > 0 ? `${(ranking.dte / 365).toFixed(1)}y` : "0y"}); LTCG needs a hold over 1y
             </span>
           )}
           {earningsInfo && (
@@ -175,9 +176,9 @@ export function OptionChain() {
                 "px-2 py-0.5 rounded-sm",
                 earningsInfo.beforeExpiry ? "bg-warning/10 text-warning" : "bg-surface-2 text-text-secondary"
               )}
-              title={earningsInfo.beforeExpiry ? "Earnings falls before this expiry — expect an IV/price gap" : "Next earnings"}
+              title={earningsInfo.beforeExpiry ? "Earnings falls before this expiry. Expect an IV and price gap" : "Next earnings"}
             >
-              {earningsInfo.beforeExpiry ? "⚠ " : ""}Earnings {formatExp(earningsInfo.date)} · {earningsInfo.dte}d
+              {earningsInfo.beforeExpiry && <AlertTriangle size={11} className="inline mr-1 -mt-px" aria-hidden="true" />}Earnings {formatExp(earningsInfo.date)}, {earningsInfo.dte}d
             </span>
           )}
           <button
@@ -217,7 +218,7 @@ export function OptionChain() {
 
       {loading && !chain && (
         <div className="overflow-x-auto -mx-1">
-          <table className="w-full text-[11px] tabular">
+          <table className="w-full text-xs tabular">
             <tbody>
               <TableSkeletonRows rows={12} cols={13} />
             </tbody>
@@ -274,14 +275,14 @@ function ExpiryTabs({
             type="button"
             onClick={() => onChoose(e)}
             className={cn(
-              "shrink-0 h-7 px-3 text-[11px] tabular rounded-sm transition-colors flex items-baseline gap-1.5",
+              "shrink-0 h-7 px-3 text-xs tabular rounded-sm transition-colors flex items-baseline gap-1.5",
               isActive
                 ? "text-text-primary bg-surface-2"
                 : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
             )}
           >
             <span>{formatExp(e)}</span>
-            {dte != null && <span className="text-[10px] text-text-muted">{dte}d</span>}
+            {dte != null && <span className="text-2xs text-text-muted">{dte}d</span>}
           </button>
         );
       })}
@@ -313,9 +314,9 @@ function ChainTable({
 }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
+      <table className="w-full text-xs tabular">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-text-muted">
+          <tr className="text-2xs text-text-muted">
             <Th align="right" tone="call">Δ</Th>
             <Th align="right" tone="call">IV</Th>
             <Th align="right" tone="call">Bid</Th>
@@ -438,14 +439,14 @@ function RankCell({
 }: { score: number | undefined; align: "left" | "right"; isBest: boolean }) {
   const textAlign = align === "left" ? "text-left" : "text-right";
   if (score == null) {
-    return <td className={cn("px-2 py-1.5 text-text-muted/40", textAlign)}>—</td>;
+    return <td className={cn("px-2 py-1.5 text-text-muted/40", textAlign)}>n/a</td>;
   }
   const tone = scoreTone(score);
   return (
     <td className={cn("px-2 py-1.5", textAlign)}>
       <span
         className={cn(
-          "inline-block min-w-[22px] px-1.5 py-[1px] rounded-sm text-[10px] tabular text-center",
+          "inline-block min-w-[22px] px-1.5 py-[1px] rounded-sm text-2xs tabular text-center",
           tone.bg,
           tone.text,
           isBest && "ring-1 ring-accent/60",
@@ -480,7 +481,7 @@ function PickColumn({
 }) {
   if (!best) {
     return (
-      <div className="rounded-md border border-border/40 bg-surface p-3 text-[11px] text-text-muted">
+      <div className="rounded-md border border-border/40 bg-surface p-3 text-xs text-text-muted">
         <div className="text-text-secondary font-medium mb-1">{heading}</div>
         No suitable contract in the loaded strikes.
       </div>
@@ -533,14 +534,14 @@ function PickCard({
       {/* Heading + score */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-[11px] text-text-secondary font-medium leading-tight">{heading}</div>
-          <div className="text-[10px] text-text-muted leading-tight">{sub}</div>
+          <div className="text-xs text-text-secondary font-medium leading-tight">{heading}</div>
+          <div className="text-2xs text-text-muted leading-tight">{sub}</div>
         </div>
         <div className="flex flex-col items-end gap-0.5 shrink-0">
-          <span className={cn("px-2 py-0.5 rounded-sm text-[12px] tabular font-medium", tone.bg, tone.text)}>
+          <span className={cn("px-2 py-0.5 rounded-sm text-xs tabular font-medium", tone.bg, tone.text)}>
             {pick.score}
           </span>
-          <span className="text-[9px] uppercase tracking-wider text-text-muted">/ 100</span>
+          <span className="text-2xs text-text-muted">/ 100</span>
         </div>
       </div>
 
@@ -556,10 +557,10 @@ function PickCard({
         <span className="text-text-primary text-sm font-medium">
           {pick.row.strike}{right}
         </span>
-        <span className="text-[11px] text-text-secondary">
+        <span className="text-xs text-text-secondary">
           @ {pick.mid.toFixed(2)}
         </span>
-        <span className="text-[10px] text-text-muted">
+        <span className="text-2xs text-text-muted">
           BE {pick.breakeven.toFixed(2)}
         </span>
       </div>
@@ -576,7 +577,7 @@ function PickCard({
       />
 
       {/* Numeric stat strip — IBKR-style tabular row. */}
-      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-text-muted tabular">
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-2xs text-text-muted tabular">
         <span>Δ {pick.absDelta.toFixed(2)}</span>
         {pick.row.iv != null && <span>IV {(pick.row.iv * 100).toFixed(0)}%</span>}
         {pick.extrinsicPct != null && <span>{pick.extrinsicPct.toFixed(0)}% time val</span>}
@@ -602,9 +603,9 @@ function PickCard({
 
       <Link
         href={analyzeHref}
-        className="mt-auto inline-flex items-center justify-center h-7 rounded-sm bg-surface-2 hover:bg-surface-3 text-[11px] text-text-primary transition-colors"
+        className="mt-auto inline-flex items-center justify-center h-7 rounded-sm bg-surface-2 hover:bg-surface-3 text-xs text-text-primary transition-colors"
       >
-        Full analysis →
+        Open full analysis
       </Link>
     </div>
   );
@@ -617,7 +618,7 @@ function ActionChip({ lens }: { lens: "buy" | "sell" }) {
   return (
     <span
       className={cn(
-        "px-1.5 py-0.5 rounded-sm text-[10px] uppercase tracking-wider font-medium tabular",
+        "px-1.5 py-0.5 rounded-sm text-2xs font-medium tabular",
         isBuy ? "bg-up/15 text-up" : "bg-down/15 text-down",
       )}
     >
@@ -633,7 +634,7 @@ function ScoreMeter({
   return (
     <div className="relative h-1 w-full rounded-sm bg-surface-2 overflow-hidden">
       <div
-        className={cn("absolute inset-y-0 left-0 transition-[width]", tone.bar)}
+        className={cn("absolute inset-y-0 left-0", tone.bar)}
         style={{ width: `${pct}%` }}
       />
       {/* 50-baseline tick — shows whether the score is above/below "neutral". */}
@@ -670,8 +671,8 @@ function BreakdownStrip({ breakdown }: { breakdown: Record<BreakdownKey, number>
             )}
             title={`${labels[k]} contribution`}
           >
-            <span className="text-[8px] uppercase tracking-wider opacity-70">{labels[k]}</span>
-            <span className="text-[10px] font-medium leading-none">
+            <span className="text-2xs opacity-70">{labels[k]}</span>
+            <span className="text-2xs font-medium leading-none">
               {v === 0 ? "0" : `${sign}${v}`}
             </span>
           </div>
@@ -690,7 +691,7 @@ function ReasonChip({ sign, text }: { sign: ReasonSignType; text: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[10px] tabular",
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-2xs tabular",
         cls,
       )}
     >
@@ -709,7 +710,7 @@ function Alternates({
 }: { picks: RankedContract[]; symbol: string; expiry: string }) {
   return (
     <div className="rounded-md border border-border/40 bg-surface px-2 py-1.5">
-      <div className="text-[9px] uppercase tracking-wider text-text-muted px-1 pb-1">
+      <div className="text-2xs text-text-muted px-1 pb-1">
         Alternates
       </div>
       <ul className="flex flex-col">
@@ -734,11 +735,11 @@ function AlternateRow({
   return (
     <Link
       href={analyzeHref}
-      className="flex items-center gap-2 px-1 py-1 rounded-sm text-[11px] tabular hover:bg-surface-2/60 transition-colors"
+      className="flex items-center gap-2 px-1 py-1 rounded-sm text-xs tabular hover:bg-surface-2/60 transition-colors"
     >
       <span
         className={cn(
-          "min-w-[26px] text-center px-1 py-[1px] rounded-sm text-[10px] font-medium",
+          "min-w-[26px] text-center px-1 py-[1px] rounded-sm text-2xs font-medium",
           tone.bg, tone.text,
         )}
       >
@@ -748,10 +749,10 @@ function AlternateRow({
         {pick.row.strike}{right}
       </span>
       <span className="text-text-secondary">@ {pick.mid.toFixed(2)}</span>
-      <span className="text-text-muted text-[10px] ml-auto">
+      <span className="text-text-muted text-2xs ml-auto">
         BE {pick.breakeven.toFixed(2)}
       </span>
-      <span className="text-text-muted text-[10px]">
+      <span className="text-text-muted text-2xs">
         Δ {pick.absDelta.toFixed(2)}
       </span>
     </Link>
@@ -798,7 +799,7 @@ function StrikeButton({
     <Link
       href={pinHref}
       className={cn(
-        "inline-flex items-center justify-center min-w-[60px] h-6 px-2 rounded-sm tabular text-[12px] font-medium transition-colors",
+        "inline-flex items-center justify-center min-w-[60px] h-6 px-2 rounded-sm tabular text-xs font-medium transition-colors",
         isAtm
           ? "text-accent bg-accent/10 hover:bg-accent/20"
           : "text-text-primary hover:bg-surface-2"

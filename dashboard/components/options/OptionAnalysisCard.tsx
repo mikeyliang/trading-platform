@@ -107,7 +107,7 @@ export function OptionAnalysisCard({ result }: Props) {
     >
       <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
         <HintLabel
-          className="text-[10px] uppercase tracking-wider text-text-muted"
+          className="text-2xs text-text-muted"
           hint={
             <div className="flex flex-col gap-1">
               <div className="font-medium">Option price & indicators</div>
@@ -134,7 +134,7 @@ export function OptionAnalysisCard({ result }: Props) {
         >
           Option contract
         </HintLabel>
-        <span className="ml-auto text-[10px] tabular text-text-muted">
+        <span className="ml-auto text-2xs tabular text-text-muted">
           BS replay · IV-as-of-now
         </span>
       </div>
@@ -142,16 +142,16 @@ export function OptionAnalysisCard({ result }: Props) {
       {/* TradingChart-style OHLCV strip — hover-driven, falls back to last bar. */}
       <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-border/60 bg-surface shrink-0 flex-wrap">
         <div className="flex items-baseline gap-2">
-          <span className="font-medium text-sm text-text-primary tracking-tight">
+          <span className="font-medium text-sm text-text-primary">
             {result.strike}
             {result.right}
           </span>
-          <span className="text-[10px] tabular text-text-muted">
+          <span className="text-2xs tabular text-text-muted">
             {fmtExp(result.expiry)}
           </span>
           {isReal ? (
             <span
-              className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-300/90 cursor-help"
+              className="text-2xs px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-300/90 cursor-help"
               title={
                 `Real IBKR option bars (${oc.bar_size} MIDPOINT). ${N} bars of the ` +
                 "contract's actual quoted price history — IBKR serves option history " +
@@ -163,7 +163,7 @@ export function OptionAnalysisCard({ result }: Props) {
             </span>
           ) : (
             <span
-              className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/10 text-amber-300/90 cursor-help"
+              className="text-2xs px-1 py-0.5 rounded bg-amber-500/10 text-amber-300/90 cursor-help"
               title={
                 "Modeled, not traded history. This contract has no real IBKR bars, so " +
                 "the series is a Black-Scholes replay of the underlying's moves" +
@@ -187,7 +187,7 @@ export function OptionAnalysisCard({ result }: Props) {
           </span>
           <span
             className={cn(
-              "text-[11px] tabular leading-none px-1.5 py-0.5 rounded",
+              "text-xs tabular leading-none px-1.5 py-0.5 rounded",
               positive ? "text-up bg-up/10" : "text-down bg-down/10",
             )}
           >
@@ -196,12 +196,12 @@ export function OptionAnalysisCard({ result }: Props) {
             {display.chgPct.toFixed(2)}%
           </span>
           {hover && (
-            <span className="text-[10px] tabular text-text-muted ml-1">
+            <span className="text-2xs tabular text-text-muted ml-1">
               {formatBarTime(display.time)}
             </span>
           )}
         </div>
-        <div className="hidden md:flex items-center gap-3 text-[10px] uppercase tracking-wider text-text-muted">
+        <div className="hidden md:flex items-center gap-3 text-2xs text-text-muted">
           <span style={{ color: CHART.ema.fast }}>
             EMA9 <OhlcVal n={display.ema9} />
           </span>
@@ -672,7 +672,7 @@ function Panes({
           so flex-column parents don't squash it to 0 on mount. */}
       <div className="relative bg-bg shrink-0" style={{ height: 440 }}>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-0">
-          <span className="text-[88px] font-medium text-text-muted/[0.04] tracking-[0.2em]">
+          <span className="text-[88px] font-medium text-text-muted/[0.04]">
             {contractLabel}
           </span>
         </div>
@@ -730,9 +730,9 @@ function Subpane({
   return (
     <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }} title={title}>
       <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
-        <span className="text-[10px] tabular text-text-muted">{params}</span>
-        <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
+        <span className="text-2xs text-text-muted">{label}</span>
+        <span className="text-2xs tabular text-text-muted">{params}</span>
+        <div className="ml-auto flex items-center gap-3 text-2xs tabular text-text-muted">
           {legend.map((l) => (
             <span key={l.label} className="flex items-center gap-1">
               <span className="w-2 h-0.5 inline-block" style={{ backgroundColor: l.color }} />
@@ -786,9 +786,9 @@ function OhlcVal({
   n: number;
   compact?: boolean;
 }) {
-  if (!Number.isFinite(n)) return <span className="tabular text-text-muted">—</span>;
+  if (!Number.isFinite(n)) return <span className="tabular text-text-muted">n/a</span>;
   return (
-    <span className="normal-case tracking-normal text-[11px] tabular text-text-secondary">
+    <span className="normal-case tracking-normal text-xs tabular text-text-secondary">
       {compact ? fmtCompact(n) : fmt(n)}
     </span>
   );

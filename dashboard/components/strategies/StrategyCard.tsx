@@ -164,7 +164,7 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
         </div>
 
         {strategy.params && Object.keys(strategy.params).length > 0 && (
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-text-muted pt-1 border-t border-border/60">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-2xs text-text-muted pt-1 border-t border-border/60">
             {Object.entries(strategy.params).map(([k, v]) => (
               <span key={k}>
                 {k}: <span className="text-text-secondary tabular">{String(v)}</span>
@@ -179,7 +179,7 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
           <DialogHeader>
             <DialogTitle>Stop {strategy.name}?</DialogTitle>
             <DialogDescription>
-              This will halt the scan loop. Any open positions/spreads remain — they will not be auto-closed.
+              This will halt the scan loop. Any open positions and spreads remain; they will not be auto-closed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -235,7 +235,7 @@ function Metric({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-text-muted uppercase tracking-wider">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       <span
         className={cn(
           "tabular text-sm font-semibold",

@@ -31,7 +31,7 @@ export function StatusFooter() {
       <StatusDot state={ws} label={wsLabel(ws)} />
       <StatusDot state={api} label={apiLabel(api)} />
       <Sep />
-      <span className={cn("tracking-wider", mode === "LIVE" ? "text-warning" : "text-text-secondary")}>
+      <span className={cn("", mode === "LIVE" ? "text-warning" : "text-text-secondary")}>
         {mode}
       </span>
 
@@ -84,7 +84,7 @@ function StatusDot({ state, label }: { state: ConnState; label: string }) {
           <span className={cn("absolute inset-0 rounded-full animate-ping opacity-75", color)} />
         )}
       </span>
-      <span className={cn("tracking-wider", text)}>{label}</span>
+      <span className={cn("", text)}>{label}</span>
     </span>
   );
 }

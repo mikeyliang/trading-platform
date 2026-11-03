@@ -93,16 +93,16 @@ export function OpenInterestByStrike({ symbol }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-2 h-7 border-b border-border/60 text-[10px] uppercase tracking-wider text-text-muted">
+      <div className="flex items-center gap-2 px-2 h-7 border-b border-border/60 text-2xs text-text-muted">
         <Sigma size={10} className="text-accent" />
         <span>Open Interest · {symbol}</span>
         <Select value={expiry} onValueChange={setExpiry} disabled={expirations.length === 0}>
-          <SelectTrigger className="h-5 w-24 text-[10px] tabular ml-auto">
+          <SelectTrigger className="h-5 w-24 text-2xs tabular ml-auto">
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
             {expirations.map((e) => (
-              <SelectItem key={e} value={e} className="text-[10px] tabular">{fmtExp(e)}</SelectItem>
+              <SelectItem key={e} value={e} className="text-2xs tabular">{fmtExp(e)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -117,7 +117,7 @@ export function OpenInterestByStrike({ symbol }: Props) {
       ) : (
         <div className="flex-1 overflow-auto">
           {/* Header: calls on the left mirror, strike centre, puts on the right */}
-          <div className="grid grid-cols-[1fr_64px_1fr] px-2 h-5 items-center text-[9px] uppercase tracking-wider text-text-muted border-b border-border/40">
+          <div className="grid grid-cols-[1fr_64px_1fr] px-2 h-5 items-center text-2xs text-text-muted border-b border-border/40">
             <span className="text-right text-up">Calls OI</span>
             <span className="text-center">Strike</span>
             <span className="text-left text-down">Puts OI</span>
@@ -131,7 +131,7 @@ export function OpenInterestByStrike({ symbol }: Props) {
               <div
                 key={r.strike}
                 className={cn(
-                  "grid grid-cols-[1fr_64px_1fr] items-center h-[16px] px-2 text-[10px] tabular border-b border-border/15",
+                  "grid grid-cols-[1fr_64px_1fr] items-center h-[16px] px-2 text-2xs tabular border-b border-border/15",
                   isMaxPain && "bg-warning/10",
                   isNearSpot && !isMaxPain && "bg-accent/8"
                 )}
@@ -169,7 +169,7 @@ export function OpenInterestByStrike({ symbol }: Props) {
       )}
 
       {rows.length > 0 && (
-        <div className="grid grid-cols-3 px-2 h-6 items-center border-t border-border/60 text-[9px] tabular text-text-muted">
+        <div className="grid grid-cols-3 px-2 h-6 items-center border-t border-border/60 text-2xs tabular text-text-muted">
           <span>P/C OI <span className={cn(
             "font-medium",
             pcr != null && pcr > 1.2 ? "text-down" : pcr != null && pcr < 0.7 ? "text-up" : "text-text-secondary"

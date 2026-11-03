@@ -162,7 +162,7 @@ export function EquityCurveChart({
 
   if (!equity.length) {
     return (
-      <div className="text-[11px] text-text-muted text-center py-8">
+      <div className="text-xs text-text-muted text-center py-8">
         No equity data
       </div>
     );
@@ -174,14 +174,14 @@ export function EquityCurveChart({
     <div className="flex flex-col gap-2">
       <div className="border border-border rounded-md overflow-hidden bg-bg">
         <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+          <span className="text-2xs text-text-muted">
             Equity
           </span>
-          <span className="text-[10px] tabular text-text-muted">
+          <span className="text-2xs tabular text-text-muted">
             {fmtCurrency(stats?.first ?? 0)} → {fmtCurrency(stats?.last ?? 0)}
           </span>
           <span
-            className={`ml-auto text-[10px] tabular ${
+            className={`ml-auto text-2xs tabular ${
               retPct >= 0 ? "text-up" : "text-down"
             }`}
           >
@@ -193,10 +193,10 @@ export function EquityCurveChart({
 
       <div className="border border-border rounded-md overflow-hidden bg-bg">
         <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+          <span className="text-2xs text-text-muted">
             Drawdown
           </span>
-          <span className="ml-auto text-[10px] tabular text-down">
+          <span className="ml-auto text-2xs tabular text-down">
             max {stats ? fmtPct(stats.maxDd) : "—"}
           </span>
         </div>

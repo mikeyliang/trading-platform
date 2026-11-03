@@ -111,10 +111,23 @@ export function chartChrome() {
       crosshair: CHART.crosshair,
       axisText: CHART.axisText,
       text: CHART.text,
+      up: CHART.candle.up,
+      down: CHART.candle.down,
+      upSoft: CHART.candle.up,
+      downSoft: CHART.candle.down,
+      accent: CHART.accent,
     };
   }
   const css = getComputedStyle(document.documentElement);
   const read = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+  // `--c-*` hold space-separated RGB triplets (see app/tokens.css).
+  const rgb = (name: string, fallback: string, alpha = 1) => {
+    const t = css.getPropertyValue(name).trim();
+    if (!t) return fallback;
+    const [r, g, b] = t.split(/\s+/);
+    // lightweight-charts parses the comma form only.
+    return alpha < 1 ? `rgba(${r},${g},${b},${alpha})` : `rgb(${r},${g},${b})`;
+  };
   return {
     bg: read("--chart-bg", CHART.bg),
     grid: read("--chart-grid", CHART.grid),
@@ -122,6 +135,11 @@ export function chartChrome() {
     crosshair: read("--chart-crosshair", CHART.crosshair),
     axisText: read("--chart-axis-text", CHART.axisText),
     text: read("--chart-text", CHART.text),
+    up: rgb("--c-up", CHART.candle.up),
+    down: rgb("--c-down", CHART.candle.down),
+    upSoft: rgb("--c-up", CHART.candle.up, 0.35),
+    downSoft: rgb("--c-down", CHART.candle.down, 0.35),
+    accent: rgb("--c-accent", CHART.accent),
   };
 }
 

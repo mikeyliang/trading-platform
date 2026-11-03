@@ -36,7 +36,7 @@ export function StrategyGuideButton({ className }: { className?: string }) {
           type="button"
           className={cn(
             "inline-flex items-center gap-1.5 h-6 px-2 rounded-sm border border-border bg-surface-2/60",
-            "text-[10px] text-text-secondary hover:bg-surface-2 hover:text-text-primary transition-colors",
+            "text-2xs text-text-secondary hover:bg-surface-2 hover:text-text-primary transition-colors",
             className,
           )}
           title="Rule One strategy guide — entry gates, exit rules, decision tree"
@@ -99,7 +99,7 @@ function LevelDiagram() {
           left="LONG" leftCls="text-text-muted"
           right="long strike — next strike down, caps max loss" rightCls="text-text-muted" />
       </div>
-      <p className="mt-1.5 text-[10px] text-text-muted leading-relaxed">
+      <p className="mt-1.5 text-2xs text-text-muted leading-relaxed">
         Call-side (bear call) mirrors this picture above spot. The exit monitor colors each open
         spread by which zone it&apos;s in and fires rule #1 (Δ trigger) / rule #2 (buffer on the
         last trade day) automatically.
@@ -118,7 +118,7 @@ function Zone({ top, bottom, className, label, labelTone, hint }: {
       title={hint}
     >
       <span className={cn(
-        "absolute left-2 top-1/2 -translate-y-1/2 text-[9px] uppercase tracking-[0.2em] font-medium select-none",
+        "absolute left-2 top-1/2 -translate-y-1/2 text-2xs font-medium select-none",
         labelTone,
       )}>
         {label}
@@ -133,11 +133,11 @@ function Level({ y, dashed, cls, left, leftCls, right, rightCls }: {
 }) {
   return (
     <div className="absolute inset-x-0 flex items-center" style={{ top: `${y}%` }}>
-      <span className={cn("w-16 text-right pr-2 text-[9px] uppercase tracking-wider font-semibold shrink-0", leftCls ?? "text-text-primary")}>
+      <span className={cn("w-16 text-right pr-2 text-2xs font-semibold shrink-0", leftCls ?? "text-text-primary")}>
         {left}
       </span>
       <div className={cn("flex-1 h-px", cls, dashed && "opacity-90 [mask-image:repeating-linear-gradient(90deg,black_0_6px,transparent_6px_12px)]")} />
-      <span className={cn("pl-2 pr-2 text-[9px] tabular shrink-0 max-w-[55%] truncate", rightCls ?? "text-text-muted")}>
+      <span className={cn("pl-2 pr-2 text-2xs tabular shrink-0 max-w-[55%] truncate", rightCls ?? "text-text-muted")}>
         {right}
       </span>
     </div>
@@ -171,12 +171,12 @@ function SpecTable() {
 
   return (
     <section>
-      <SectionLabel>Entry gates · exit rules · 12-yr backtest</SectionLabel>
+      <SectionLabel>Entry gates, exit rules and the 12-year backtest</SectionLabel>
       <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-[11px] tabular">
+        <table className="w-full text-xs tabular">
           <thead>
             <tr className="border-b border-border bg-surface-2/40">
-              <th className="text-left px-3 py-2 font-normal text-[10px] uppercase tracking-wider text-text-muted">Rule</th>
+              <th className="text-left px-3 py-2 font-normal text-2xs text-text-muted">Rule</th>
               {STRATEGIES.map((s) => (
                 <th key={s.id} className={cn("text-right px-3 py-2 font-semibold", TONE[s.id].text)}>
                   {s.name}
@@ -216,11 +216,11 @@ function SpecTable() {
 function ExitRules() {
   return (
     <section>
-      <SectionLabel>The two exit rules — both always in effect</SectionLabel>
+      <SectionLabel>The two exit rules, both always in effect</SectionLabel>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div className="rounded-md border border-down/30 bg-down/[0.05] px-3 py-2.5">
-          <div className="text-[11px] font-semibold text-down mb-1">Rule #1 · delta trigger</div>
-          <p className="text-[11px] text-text-secondary leading-relaxed">
+          <div className="text-xs font-semibold text-down mb-1">Rule #1 · delta trigger</div>
+          <p className="text-xs text-text-secondary leading-relaxed">
             Close the moment short-leg |Δ| reaches the trade&apos;s exit delta
             (30 / 36 / 42 / 32). The monitor tracks this every 5 minutes during
             RTH and flags <span className="text-warning">warning</span> within 12 points of the
@@ -228,8 +228,8 @@ function ExitRules() {
           </p>
         </div>
         <div className="rounded-md border border-down/30 bg-down/[0.05] px-3 py-2.5">
-          <div className="text-[11px] font-semibold text-down mb-1">Rule #2 · last trade day</div>
-          <p className="text-[11px] text-text-secondary leading-relaxed">
+          <div className="text-xs font-semibold text-down mb-1">Rule #2 · last trade day</div>
+          <p className="text-xs text-text-secondary leading-relaxed">
             On the Thursday before expiration (index options stop trading Thursday
             close), close if the underlying is within the buffer (3% trad RUT, 2%
             others) of the short strike. Never carry it into settlement.
@@ -265,16 +265,16 @@ function DecisionTree() {
   ];
   return (
     <section>
-      <SectionLabel>Which one to place — webinar1 decision tree</SectionLabel>
+      <SectionLabel>Which one to place: the webinar decision tree</SectionLabel>
       <ol className="flex flex-col gap-1.5">
         {steps.map((s, i) => (
           <li key={i} className="flex items-start gap-2.5 rounded-md border border-border/60 bg-surface-2/30 px-3 py-2">
-            <span className="shrink-0 w-4 h-4 rounded-full bg-surface-2 border border-border text-[9px] tabular text-text-secondary flex items-center justify-center mt-0.5">
+            <span className="shrink-0 w-4 h-4 rounded-full bg-surface-2 border border-border text-2xs tabular text-text-secondary flex items-center justify-center mt-0.5">
               {i + 1}
             </span>
             <div className="min-w-0">
-              <div className="text-[11px] font-medium text-text-primary">{s.q}</div>
-              <div className={cn("text-[11px] leading-relaxed", s.tone ? TONE[s.tone].text : "text-text-secondary")}>
+              <div className="text-xs font-medium text-text-primary">{s.q}</div>
+              <div className={cn("text-xs leading-relaxed", s.tone ? TONE[s.tone].text : "text-text-secondary")}>
                 {s.a}
               </div>
             </div>
@@ -287,7 +287,7 @@ function DecisionTree() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium mb-1.5">
+    <div className="text-2xs text-text-muted font-medium mb-1.5">
       {children}
     </div>
   );

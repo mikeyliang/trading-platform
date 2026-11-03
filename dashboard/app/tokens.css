@@ -1,0 +1,91 @@
+/* Wayfind tokens (Hallmark v2.0.0), app scope, two colourways.
+   `platform` is the light paper on :root; `night` is the dark paper under
+   `.dark` on <html>, the project's existing mode switch. Every OKLCH value
+   is paired with an RGB triplet (`--c-*`) so the Tailwind utilities keep
+   their opacity modifiers (`bg-accent/15`). The two must stay in step. */
+:root {
+  color-scheme: light;
+
+  /* scale */
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px;
+  --text-xs: 0.6875rem; --text-sm: 0.75rem; --text-md: 0.8125rem; --text-lg: 0.875rem; --text-xl: 1rem; --text-2xl: 1.25rem; --text-3xl: 1.625rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms; --dur-short: 220ms;
+  --z-base: 1; --z-raised: 10; --z-dropdown: 100; --z-sticky: 200; --z-sticky-nav: 300; --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
+
+  /* Wayfind · platform */
+  --color-paper: oklch(95.5% 0.006 250); --color-paper-2: oklch(91% 0.009 250); --color-paper-3: oklch(99.5% 0.005 250);
+  --color-ink: oklch(16% 0.014 262); --color-ink-2: oklch(29% 0.014 262); --color-muted: oklch(47% 0.016 260);
+  --color-rule: oklch(80% 0.011 250); --color-ink-rule: oklch(34% 0.014 262);
+  --color-accent: oklch(51% 0.22 264); --color-accent-2: oklch(81% 0.16 82); --color-accent-ink: oklch(99.5% 0.003 250); --color-accent-2-ink: oklch(16% 0.014 262); --color-focus: oklch(51% 0.22 264);
+  --color-error: oklch(52% 0.19 27); --color-success: oklch(50% 0.12 150);
+  --font-display: "Chivo Mono", var(--font-mono), ui-monospace, monospace; --font-body: var(--font-display); --font-outlier: var(--font-body);
+  --radius-card: 0; --radius-pill: 999px; --rule-hair: 1px; --rule-bar: 2px;
+  --shadow-card: 0 24px 40px -24px oklch(8% 0.01 260 / 0.6);
+  --tracking-display: -0.03em; --display-weight: 800;
+
+  /* Tailwind triplets, the same colours */
+  --c-bg: 237 240 244;          /* paper */
+  --c-surface: 251 254 255;     /* paper-3, the lighter sheet a panel sits on */
+  --c-surface-2: 221 226 231;   /* paper-2 */
+  --c-surface-3: 207 213 220;
+  --c-border: 185 190 197;      /* rule */
+  --c-border-strong: 52 56 63;  /* ink-rule, the 2px bar */
+  --c-ink: 10 13 19;
+  --c-text: 10 13 19;           /* ink */
+  --c-text-2: 40 43 50;         /* ink-2 */
+  --c-text-3: 86 91 100;        /* muted */
+  --c-accent: 32 85 225;        /* cobalt, for what is live */
+  --c-accent-fg: 32 85 225;
+  --c-amber: 244 181 34;        /* figures on ink */
+  --c-up: 33 118 60;
+  --c-down: 190 35 35;
+  --c-warning: 150 100 10;
+  --c-on-fill: 251 254 255;
+  --shadow-pop: 0 24px 40px -24px rgb(8 11 16 / 0.6), 0 0 0 2px rgb(var(--c-border-strong));
+
+  --chart-bg: #fbfeff;
+  --chart-grid: #dde2e7;
+  --chart-axis: #b9bec5;
+  --chart-crosshair: #565b64;
+  --chart-axis-text: #565b64;
+  --chart-text: #0a0d13;
+}
+
+/* Wayfind · night. Hue never moves; paper steps lighter with elevation. */
+.dark {
+  color-scheme: dark;
+
+  --color-paper: oklch(15% 0.012 262); --color-paper-2: oklch(18.5% 0.014 262); --color-paper-3: oklch(22% 0.016 262);
+  --color-ink: oklch(96% 0.005 250); --color-ink-2: oklch(84% 0.008 255); --color-muted: oklch(64% 0.012 258);
+  --color-rule: oklch(31% 0.014 262); --color-ink-rule: oklch(42% 0.016 262);
+  --color-accent: oklch(62% 0.2 264); --color-accent-2: oklch(81% 0.16 82); --color-accent-ink: oklch(99.5% 0.003 250); --color-focus: oklch(62% 0.2 264);
+  --color-error: oklch(68% 0.17 27); --color-success: oklch(70% 0.14 150);
+  --shadow-card: none;
+
+  --c-bg: 8 11 16;
+  --c-surface: 15 19 25;
+  --c-surface-2: 23 27 34;
+  --c-surface-3: 33 38 46;
+  --c-border: 44 48 56;
+  --c-border-strong: 72 77 86;
+  --c-ink: 239 242 245;
+  --c-text: 239 242 245;
+  --c-text-2: 199 203 208;
+  --c-text-3: 136 140 148;
+  --c-accent: 69 124 253;
+  --c-accent-fg: 110 150 255;
+  --c-amber: 244 181 34;
+  --c-up: 84 182 110;
+  --c-down: 239 103 92;
+  --c-warning: 244 181 34;
+  --c-on-fill: 251 254 255;
+  --shadow-pop: 0 0 0 2px rgb(var(--c-border-strong));
+
+  --chart-bg: #0f1319;
+  --chart-grid: #171b22;
+  --chart-axis: #2c3038;
+  --chart-crosshair: #888c94;
+  --chart-axis-text: #888c94;
+  --chart-text: #eff2f5;
+}

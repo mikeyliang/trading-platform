@@ -63,7 +63,7 @@ export function VolumeProfilePanel({ bins, volumes, poc, vah, val, lastPrice }: 
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between text-[9px] uppercase tracking-wider text-text-muted px-0.5">
+      <div className="flex items-center justify-between text-2xs text-text-muted px-0.5">
         <span>vol · price</span>
         <span className="tabular text-amber-400">POC {poc.toFixed(2)}</span>
       </div>
@@ -91,7 +91,7 @@ export function VolumeProfilePanel({ bins, volumes, poc, vah, val, lastPrice }: 
         </div>
 
         {/* price axis — only the levels that matter */}
-        <div className="relative w-11 shrink-0 text-[9px] tabular text-right" style={{ height: HEIGHT }}>
+        <div className="relative w-11 shrink-0 text-2xs tabular text-right" style={{ height: HEIGHT }}>
           {clearOf(0, [pocIdx, lastIdx]) &&
             axisLabel(0, rows[0].price.toFixed(2), "text-text-muted")}
           {(lastIdx == null || clearOf(pocIdx, [lastIdx])) &&
@@ -103,7 +103,7 @@ export function VolumeProfilePanel({ bins, volumes, poc, vah, val, lastPrice }: 
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-[9px] tabular text-text-muted px-0.5">
+      <div className="flex items-center justify-between text-2xs tabular text-text-muted px-0.5">
         <span>VAL {val.toFixed(2)}</span>
         <span>VAH {vah.toFixed(2)}</span>
       </div>

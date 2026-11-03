@@ -73,7 +73,7 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between px-2 h-7 border-b border-border/60 text-[10px] uppercase tracking-wider text-text-muted">
+      <div className="flex items-center justify-between px-2 h-7 border-b border-border/60 text-2xs text-text-muted">
         <span className="flex items-center gap-1.5">
           <Layers size={10} className="text-accent" />
           Depth · {symbol}
@@ -91,13 +91,13 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
         )}
       </div>
 
-      <div className="grid grid-cols-2 text-[10px] tabular">
+      <div className="grid grid-cols-2 text-2xs tabular">
         <BookSide side="bid" levels={snap?.bids ?? []} maxSize={maxSize} rows={rows} />
         <BookSide side="ask" levels={snap?.asks ?? []} maxSize={maxSize} rows={rows} />
       </div>
 
       {snap && (
-        <div className="grid grid-cols-2 px-2 h-6 items-center text-[9px] tabular border-t border-border/60 text-text-muted">
+        <div className="grid grid-cols-2 px-2 h-6 items-center text-2xs tabular border-t border-border/60 text-text-muted">
           <span>bid Σ <span className="text-up font-medium">{fmtCompact(snap.bid_size_total)}</span></span>
           <span className="text-right">ask Σ <span className="text-down font-medium">{fmtCompact(snap.ask_size_total)}</span></span>
         </div>

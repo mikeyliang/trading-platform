@@ -216,11 +216,11 @@ function GreekCell({
       <div className="relative">
         <div className="flex items-baseline gap-2">
           <span className={cn("text-2xl font-semibold leading-none", c.text)}>{symbol}</span>
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">{name}</span>
+          <span className="text-2xs text-text-muted">{name}</span>
           {shiftIsMeaningful && (
             <span
               className={cn(
-                "ml-auto text-[9px] tabular px-1 py-0.5 rounded leading-none",
+                "ml-auto text-2xs tabular px-1 py-0.5 rounded leading-none",
                 shift! >= 0 ? "text-up bg-up/10" : "text-down bg-down/10",
               )}
               title={`From baseline ${rawFmt(baseline!)}`}
@@ -232,16 +232,16 @@ function GreekCell({
         <div className="mt-2 text-base font-medium tabular-nums text-text-primary">
           {raw != null ? rawFmt(raw) : "—"}
         </div>
-        <div className="text-[10px] tabular-nums text-text-secondary">
+        <div className="text-2xs tabular-nums text-text-secondary">
           {positional != null ? posFmt(positional) : "—"}
         </div>
         <div className="h-1 rounded-full bg-surface-2 mt-2 overflow-hidden">
           <div
-            className={cn("h-full rounded-full transition-all duration-500", c.bar)}
+            className={cn("h-full rounded-full transition-colors duration-500", c.bar)}
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-[10px] text-text-muted leading-snug mt-1.5">{hint}</p>
+        <p className="text-2xs text-text-muted leading-snug mt-1.5">{hint}</p>
       </div>
     </div>
   );
@@ -280,21 +280,21 @@ function ScenarioControls({
         onClick={onToggle}
         className="w-full flex items-center gap-2 px-3 h-7 border-b border-border/60 text-left hover:bg-surface-2/40 transition-colors"
       >
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">
+        <span className="text-2xs text-text-muted">
           What-if scenario
         </span>
-        <span className="text-[10px] tabular text-text-muted">
+        <span className="text-2xs tabular text-text-muted">
           sliders drive Greeks via BS · default = baseline
         </span>
         {active && whatIf && (
           <span className={cn(
-            "ml-auto text-[10px] tabular font-medium",
+            "ml-auto text-2xs tabular font-medium",
             whatIf.pnl >= 0 ? "text-up" : "text-down",
           )}>
             P/L {whatIf.pnl >= 0 ? "+" : ""}${whatIf.pnl.toFixed(0)}
           </span>
         )}
-        <span className={cn("text-[10px] text-text-muted transition-transform", active && "ml-2", open && "rotate-180")}>
+        <span className={cn("text-2xs text-text-muted transition-transform", active && "ml-2", open && "rotate-180")}>
           ▾
         </span>
       </button>
@@ -354,17 +354,17 @@ function ScenarioControls({
 
           {active && (
             <div className="md:col-span-3 mt-1 pt-2 border-t border-border/40 flex items-baseline justify-between gap-3 flex-wrap">
-              <span className="text-[10px] uppercase tracking-wider text-text-muted">
+              <span className="text-2xs text-text-muted">
                 Reading the scenario
               </span>
-              <span className="text-[11px] text-text-secondary flex-1 min-w-0">
+              <span className="text-xs text-text-secondary flex-1 min-w-0">
                 Greek values above swap to what they'd be at <b>${newSpot.toFixed(2)}</b>,
                 IV <b>{(newIv * 100).toFixed(1)}%</b>, in <b>{daysFwd}d</b>.
                 ΔΔ chip = shift from baseline.
               </span>
               <button
                 type="button" onClick={onReset}
-                className="text-[10px] uppercase tracking-wider text-text-muted hover:text-text-secondary"
+                className="text-2xs text-text-muted hover:text-text-secondary"
               >
                 reset all
               </button>
@@ -397,21 +397,21 @@ function ScenarioSlider({
   return (
     <div className="flex flex-col gap-1.5 min-w-0">
       <div className="flex items-baseline gap-2">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
-        <span className="text-[13px] tabular font-semibold leading-none" style={{ color: accent }}>
+        <span className="text-2xs text-text-muted">{label}</span>
+        <span className="text-sm tabular font-semibold leading-none" style={{ color: accent }}>
           {valueText}
         </span>
         {!isDefault && (
           <button
             type="button" onClick={onReset}
-            className="ml-auto text-[10px] uppercase tracking-wider text-text-muted hover:text-text-secondary"
+            className="ml-auto text-2xs text-text-muted hover:text-text-secondary"
             title="Reset"
           >
             reset
           </button>
         )}
       </div>
-      <span className="text-[10px] tabular text-text-muted leading-none">{subText}</span>
+      <span className="text-2xs tabular text-text-muted leading-none">{subText}</span>
       <input
         type="range"
         min={min} max={max} step={step} value={value}
@@ -430,7 +430,7 @@ function ScenarioSlider({
               type="button"
               onClick={() => onChange(p.value)}
               className={cn(
-                "px-2 py-0.5 rounded text-[10px] tabular border transition-colors",
+                "px-2 py-0.5 rounded text-2xs tabular border transition-colors",
                 active
                   ? "border-transparent text-bg font-semibold"
                   : "border-border text-text-muted hover:text-text-secondary hover:border-text-muted/50",

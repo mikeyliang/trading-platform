@@ -1,109 +1,27 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Wayfind (deal 2/3, seed rule-one-options-trading-6e90·b41c3488·2026-11-03·r0) · redesign: full
+ * nav: kept, the 64px labeled rail · signature: the net liquidation plate, one amber figure on a field of ink at the head of the board · states: loading, empty, full · wayfind: platform (light), night (.dark, default)
+ * axes: light/mono/cool · posture: committed · contrast: pass · modes: light+dark · scope: app · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E3 S4 R4 V4 · weakest: E, cobalt only on the live tab, the selected row and the one primary button; the plate carries the whole emphasis budget */
+@import url("./tokens.css");
+@import url("./base.css");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ───────────────────────────────────────────────────────────────────────────
-   Design tokens
-   Layout: a one-screen trading desk. Fixed shell (rail · header · footer),
-   scrolling panels inside. Dense, numeric, calm.
-
-   Colors are RGB triplets so Tailwind opacity modifiers work (`bg-accent/15`).
-   `:root` carries the LIGHT palette; `.dark` on <html> carries the DARK one.
-   The dashboard defaults to dark (see the inline script in app/layout.tsx);
-   the header toggle flips the class and the choice persists in localStorage.
-
-   Palette notes: the neutrals are cool slate with a slight blue bias, so the
-   page reads as one material rather than flat grey. The accent is a
-   periwinkle indigo, chosen so it never competes with the semantic
-   gain/loss/warning colors, which are reserved for data.
+   Layout: a one-screen trading desk. Fixed shell (rail, header, footer),
+   scrolling panels inside. The page is a departure board for a book of
+   spreads: square, bordered, mono, read at a glance.
    ─────────────────────────────────────────────────────────────────────────── */
-:root {
-  color-scheme: light;
-
-  --c-bg: 243 245 248;          /* #f3f5f8 */
-  --c-surface: 255 255 255;     /* #ffffff */
-  --c-surface-2: 238 241 245;   /* #eef1f5 */
-  --c-surface-3: 227 232 238;   /* #e3e8ee */
-  --c-border: 216 222 230;      /* #d8dee6 */
-  --c-border-strong: 190 199 210;
-
-  --c-text: 20 26 34;           /* #141a22 */
-  --c-text-2: 76 90 108;        /* #4c5a6c */
-  --c-text-3: 127 139 155;      /* #7f8b9b */
-
-  --c-accent: 74 90 217;        /* #4a5ad9 */
-  --c-accent-fg: 74 90 217;
-  --c-up: 31 138 60;            /* #1f8a3c */
-  --c-down: 208 52 63;          /* #d0343f */
-  --c-warning: 183 121 31;      /* #b7791f */
-  --c-on-fill: 255 255 255;
-
-  --shadow-pop: 0 8px 24px rgb(20 26 34 / 0.12), 0 0 0 1px rgb(var(--c-border));
-
-  /* Chart chrome, read at chart creation by lib/chartTheme.ts. */
-  --chart-bg: #ffffff;
-  --chart-grid: #eef1f5;
-  --chart-axis: #d8dee6;
-  --chart-crosshair: #9aa6b8;
-  --chart-axis-text: #7f8b9b;
-  --chart-text: #141a22;
-}
-
-.dark {
-  color-scheme: dark;
-
-  --c-bg: 14 17 22;             /* #0e1116 */
-  --c-surface: 21 26 33;        /* #151a21 */
-  --c-surface-2: 28 34 43;      /* #1c222b */
-  --c-surface-3: 36 44 55;      /* #242c37 */
-  --c-border: 42 51 65;         /* #2a3341 */
-  --c-border-strong: 62 74 92;
-
-  --c-text: 230 235 242;        /* #e6ebf2 */
-  --c-text-2: 154 166 184;      /* #9aa6b8 */
-  --c-text-3: 103 115 133;      /* #677385 */
-
-  --c-accent: 139 150 255;      /* #8b96ff */
-  --c-accent-fg: 160 170 255;
-  --c-up: 70 196 110;           /* #46c46e */
-  --c-down: 244 94 104;         /* #f45e68 */
-  --c-warning: 232 172 56;      /* #e8ac38 */
-  --c-on-fill: 14 17 22;
-
-  --shadow-pop: 0 12px 32px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(var(--c-border));
-
-  --chart-bg: #151a21;
-  --chart-grid: #1c222b;
-  --chart-axis: #2a3341;
-  --chart-crosshair: #677385;
-  --chart-axis-text: #7c8798;
-  --chart-text: #e6ebf2;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 html,
 body {
-  background-color: rgb(var(--c-bg));
-  color: rgb(var(--c-text));
-  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.45;
   height: 100%;
   overflow: hidden;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
-::selection {
-  background: rgb(var(--c-accent) / 0.3);
-}
-
-/* Scrollbars: thin, themed, hidden until hovered on most platforms. */
+/* Scrollbars: thin, themed. */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -113,16 +31,9 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: rgb(var(--c-border));
-  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--c-border-strong));
-}
-
-/* Visible keyboard focus everywhere; the dense UI strips most outlines. */
-:focus-visible {
-  outline: 2px solid rgb(var(--c-accent));
-  outline-offset: 1px;
 }
 
 /* number font for prices */
@@ -131,22 +42,26 @@ body {
   font-feature-settings: "tnum";
 }
 
-/* Section label: the one small-caps label style used across the app. */
-.eyebrow {
-  font-size: 10px;
+/* The plate: a field of ink inside a 2px border, holding one figure. */
+.plate {
+  background: rgb(var(--c-ink));
+  color: rgb(var(--c-bg));
+  border: var(--rule-bar) solid rgb(var(--c-ink));
+}
+.plate .figure {
+  color: rgb(var(--c-amber));
+  font-weight: 800;
+}
+
+/* Section label: body face, a step smaller, sentence case, untracked. */
+.caption {
+  font-size: 11px;
   line-height: 14px;
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: rgb(var(--c-text-3));
 }
 
-/* Hairline rule using the border token at reduced opacity. */
-.hairline {
-  border-color: rgb(var(--c-border) / 0.6);
-}
-
-/* chat markdown styling — terse, matches theme */
+/* chat markdown styling */
 .prose-chat {
   font-size: 12px;
   line-height: 1.55;
@@ -154,22 +69,19 @@ body {
 }
 .prose-chat p { margin: 0 0 0.5em 0; }
 .prose-chat p:last-child { margin-bottom: 0; }
-.prose-chat strong { color: rgb(var(--c-text)); font-weight: 600; }
+.prose-chat strong { color: rgb(var(--c-text)); font-weight: 800; }
 .prose-chat em { color: rgb(var(--c-text-2)); }
 .prose-chat code {
   background: rgb(var(--c-surface-2));
   border: 1px solid rgb(var(--c-border));
-  border-radius: 3px;
-  padding: 0 4px;
+  padding: 0 var(--space-2xs);
   font-size: 11px;
-  font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
   color: rgb(var(--c-text));
 }
 .prose-chat pre {
   background: rgb(var(--c-bg));
   border: 1px solid rgb(var(--c-border));
-  border-radius: 4px;
-  padding: 8px;
+  padding: var(--space-xs);
   margin: 0.5em 0;
   overflow-x: auto;
 }
@@ -187,7 +99,7 @@ body {
 .prose-chat a { color: rgb(var(--c-accent-fg)); text-decoration: underline; }
 .prose-chat h1, .prose-chat h2, .prose-chat h3 {
   color: rgb(var(--c-text));
-  font-weight: 600;
+  font-weight: 800;
   margin: 0.5em 0 0.25em 0;
   font-size: 12px;
 }
@@ -197,49 +109,43 @@ body {
   margin: 0.75em 0;
 }
 .prose-chat blockquote {
-  border-left: 2px solid rgb(var(--c-border));
+  border-left: 2px solid rgb(var(--c-border-strong));
   padding-left: 0.75em;
   margin: 0.5em 0;
   color: rgb(var(--c-text-2));
 }
 
-/* Range slider — minimal. Track color is set inline via the `background`
-   style on the input (so the filled portion picks up the per-slider accent).
-   This block styles the thumb so it looks the same across browsers. */
+/* Range slider. Track color is set inline via the `background` style on the
+   input (so the filled portion picks up the per-slider accent). */
 input[type="range"].slider-range {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  border-radius: 2px;
   outline: none;
   cursor: pointer;
 }
 input[type="range"].slider-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
+  width: 12px;
+  height: 12px;
   background: rgb(var(--c-text));
-  border: 1px solid rgb(var(--c-surface));
+  border: 2px solid rgb(var(--c-surface));
   cursor: grab;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25);
 }
 input[type="range"].slider-range::-webkit-slider-thumb:active {
   cursor: grabbing;
-  transform: scale(1.1);
 }
 input[type="range"].slider-range::-moz-range-thumb {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
   background: rgb(var(--c-text));
-  border: 1px solid rgb(var(--c-surface));
+  border: 2px solid rgb(var(--c-surface));
   cursor: grab;
 }
 
-/* Scenario sliders (P&L profile) — a transparent native range layered over
-   a custom-drawn track + thumb so we get reliable drag/keyboard behaviour
-   while controlling every pixel of the visuals in React. */
+/* Scenario sliders (P&L profile): a transparent native range layered over a
+   custom-drawn track + thumb. */
 input[type="range"].pnl-scrub {
   -webkit-appearance: none;
   appearance: none;
@@ -255,7 +161,6 @@ input[type="range"].pnl-scrub::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 22px;
   height: 22px;
-  border-radius: 50%;
   background: transparent;
   border: none;
   cursor: grab;
@@ -270,34 +175,7 @@ input[type="range"].pnl-scrub::-moz-range-thumb {
 }
 input[type="range"].pnl-scrub::-moz-range-track { background: transparent; }
 
-/* Shimmer skeleton — a subtle gradient sweep across loading placeholders. */
-@keyframes shimmer {
-  0%   { background-position: -800px 0; }
-  100% { background-position: 800px 0; }
-}
+/* Loading skeleton: a flat paper-2 block. Wayfind keeps still, so no sweep. */
 .skeleton {
   background-color: rgb(var(--c-surface-2));
-  background-image: linear-gradient(
-    90deg,
-    rgb(var(--c-text) / 0) 0%,
-    rgb(var(--c-text) / 0.05) 50%,
-    rgb(var(--c-text) / 0) 100%
-  );
-  background-size: 800px 100%;
-  background-repeat: no-repeat;
-  animation: shimmer 1.6s ease-in-out infinite;
-  border-radius: 4px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton,
-  .animate-pulse,
-  .animate-ping,
-  .animate-fade-in,
-  .animate-slide-up {
-    animation: none;
-  }
-  * {
-    transition-duration: 0.01ms !important;
-  }
 }

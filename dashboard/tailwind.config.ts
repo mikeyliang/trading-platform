@@ -32,6 +32,8 @@ const config: Config = {
         warning: v("c-warning"),
         // Ink used on top of a solid accent / status fill.
         "on-fill": v("c-on-fill"),
+        ink: v("c-ink"),
+        amber: v("c-amber"),
 
         // Chart-specific semantic palette. Keep in lock-step with
         // lib/chartTheme.ts — both are read by chart code (Tailwind classes
@@ -66,28 +68,46 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        // Wayfind: mono is the material. One family everywhere.
+        sans: ["var(--font-mono)", "Chivo Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        mono: ["var(--font-mono)", "Chivo Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       fontSize: {
-        // Dense terminal scale. Base body is 12.5px (see globals.css).
-        "2xs": ["10px", { lineHeight: "14px" }],
-        xs: ["11px", { lineHeight: "16px" }],
-        sm: ["12.5px", { lineHeight: "18px" }],
-        base: ["13.5px", { lineHeight: "20px" }],
+        // Dense app scale, ratio ~1.15, nothing under 11px.
+        "2xs": ["11px", { lineHeight: "14px" }],
+        xs: ["12px", { lineHeight: "16px" }],
+        sm: ["13px", { lineHeight: "18px" }],
+        base: ["14px", { lineHeight: "20px" }],
         lg: ["16px", { lineHeight: "22px" }],
-        xl: ["20px", { lineHeight: "26px" }],
-        "2xl": ["26px", { lineHeight: "32px" }],
+        xl: ["20px", { lineHeight: "24px" }],
+        "2xl": ["26px", { lineHeight: "28px" }],
+      },
+      fontWeight: {
+        normal: "400",
+        medium: "500",
+        semibold: "800",
+        bold: "800",
       },
       borderRadius: {
-        lg: "0.5rem",
-        md: "0.375rem",
-        sm: "0.25rem",
+        // Wayfind is bordered and square. Only pills keep a radius.
+        none: "0",
+        sm: "0",
+        DEFAULT: "0",
+        md: "0",
+        lg: "0",
+        xl: "0",
+        "2xl": "0",
+        full: "999px",
+      },
+      borderWidth: {
+        DEFAULT: "1px",
+        bar: "2px",
       },
       boxShadow: {
         // Overlay cards and popovers. Tuned per theme in globals.css.
         pop: "var(--shadow-pop)",
         ring: "0 0 0 1px rgb(var(--c-border))",
+        bar: "inset 0 0 0 2px rgb(var(--c-border-strong))",
       },
       keyframes: {
         "accordion-down": {

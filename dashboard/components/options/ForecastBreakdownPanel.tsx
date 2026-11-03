@@ -52,13 +52,13 @@ export function ForecastBreakdownPanel({ result }: Props) {
     <Card>
       <div className="flex items-center gap-2 px-3 h-7 border-b border-border/60">
         <HintLabel
-          className="text-[10px] uppercase tracking-wider text-text-muted"
+          className="text-2xs text-text-muted"
           hint="Each row is a model's forecast for the underlying over each horizon. 'ret' is the expected % change; '±band' is the p10/p90 80% confidence width. Lower agreement = members disagree more."
         >
           Forecast breakdown
         </HintLabel>
         {cal && (
-          <span className="ml-auto text-[9px] tabular text-text-muted">
+          <span className="ml-auto text-2xs tabular text-text-muted">
             <HintLabel
               hint={`Conformal-calibrated against ${cal.samples} past residuals. Band widths are scaled to match the empirical 80% quantile of recent forecast errors so coverage is honest, not theoretical.`}
             >
@@ -68,9 +68,9 @@ export function ForecastBreakdownPanel({ result }: Props) {
         )}
       </div>
       <CardContent className="p-0">
-        <table className="w-full border-collapse text-[11px] tabular">
+        <table className="w-full border-collapse text-xs tabular">
           <thead>
-            <tr className="text-text-muted text-[9px] uppercase tracking-wider border-b border-border/40">
+            <tr className="text-text-muted text-2xs border-b border-border/40">
               <th className="text-left px-3 py-1.5 font-medium">Model</th>
               {horizons.map((h) => (
                 <th key={h} className="text-right px-3 py-1.5 font-medium" colSpan={2}>
@@ -78,7 +78,7 @@ export function ForecastBreakdownPanel({ result }: Props) {
                 </th>
               ))}
             </tr>
-            <tr className="text-text-muted text-[9px] border-b border-border/40">
+            <tr className="text-text-muted text-2xs border-b border-border/40">
               <th></th>
               {horizons.flatMap((h) => [
                 <th key={`${h}-er`} className="text-right px-3 py-0.5 font-normal">ret</th>,
@@ -114,8 +114,8 @@ export function ForecastBreakdownPanel({ result }: Props) {
                     const hf = src.horizons[String(h)];
                     if (!hf) {
                       return [
-                        <td key={`${m}-${h}-er`} className="text-right px-3 py-1.5 text-text-muted">—</td>,
-                        <td key={`${m}-${h}-band`} className="text-right px-3 py-1.5 text-text-muted">—</td>,
+                        <td key={`${m}-${h}-er`} className="text-right px-3 py-1.5 text-text-muted">n/a</td>,
+                        <td key={`${m}-${h}-band`} className="text-right px-3 py-1.5 text-text-muted">n/a</td>,
                       ];
                     }
                     const er = hf.expected_return_pct;
@@ -125,7 +125,7 @@ export function ForecastBreakdownPanel({ result }: Props) {
                       <td key={`${m}-${h}-er`} className={cn("text-right px-3 py-1.5 font-medium", erTone)}>
                         {er >= 0 ? "+" : ""}{er.toFixed(2)}%
                       </td>,
-                      <td key={`${m}-${h}-band`} className="text-right px-3 py-1.5 text-text-muted text-[10px]">
+                      <td key={`${m}-${h}-band`} className="text-right px-3 py-1.5 text-text-muted text-2xs">
                         ±{band.toFixed(1)}%
                       </td>,
                     ];
@@ -135,10 +135,10 @@ export function ForecastBreakdownPanel({ result }: Props) {
             })}
           </tbody>
           <tfoot>
-            <tr className="border-t border-border/60 text-text-muted text-[9px]">
-              <td className="px-3 py-1.5 uppercase tracking-wider">
+            <tr className="border-t border-border/60 text-text-muted text-2xs">
+              <td className="px-3 py-1.5">
                 <HintLabel
-                  className="text-text-muted uppercase tracking-wider"
+                  className="text-text-muted"
                   hint="Per-horizon ensemble agreement (0..100%) — how closely members agree on direction/magnitude. Below 50% means soft signal. If calibration data exists, 'cov' shows what fraction of past native bands actually contained the realized outcome (ideally ≈80%)."
                 >
                   Agreement
@@ -155,7 +155,7 @@ export function ForecastBreakdownPanel({ result }: Props) {
                     </span>
                     {cov != null && (
                       <HintLabel
-                        className="text-text-muted/70 ml-2 text-[9px] tabular"
+                        className="text-text-muted/70 ml-2 text-2xs tabular"
                         hint="Observed coverage: fraction of past native p10/p90 bands that actually contained the realized return. Target ≈ 80%."
                       >
                         cov {(cov * 100).toFixed(0)}%

@@ -118,9 +118,9 @@ function HeroStats({
 function Big({ label, value, tone, muted }: { label: string; value: string; tone?: "up" | "down"; muted?: boolean }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">{label}</div>
+      <div className="text-2xs text-text-muted mb-1.5">{label}</div>
       <div className={cn(
-        "text-base md:text-lg font-semibold tabular tracking-tight",
+        "text-base md:text-lg font-semibold tabular",
         tone === "up" ? "text-up" : tone === "down" ? "text-down" : muted ? "text-text-secondary" : "text-text-primary"
       )}>
         {value}
@@ -134,8 +134,8 @@ function Section({ title, trail, children }: { title: string; trail?: string; ch
   return (
     <section className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between border-b border-border/40 pb-1.5">
-        <h2 className="text-[11px] uppercase tracking-wider text-text-secondary">{title}</h2>
-        {trail && <span className="text-[10px] text-text-muted tabular">{trail}</span>}
+        <h2 className="text-xs text-text-secondary">{title}</h2>
+        {trail && <span className="text-2xs text-text-muted tabular">{trail}</span>}
       </div>
       {children}
     </section>
@@ -143,15 +143,15 @@ function Section({ title, trail, children }: { title: string; trail?: string; ch
 }
 
 function Empty({ hint }: { hint: string }) {
-  return <div className="py-3 text-[11px] text-text-muted">{hint}</div>;
+  return <div className="py-3 text-xs text-text-muted">{hint}</div>;
 }
 
 // ─── Positions table ──────────────────────────────────────────────────────────
 function PositionsTable({ positions }: { positions: Position[] }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
-        <thead className="text-[10px] uppercase tracking-wider text-text-muted">
+      <table className="w-full text-xs tabular">
+        <thead className="text-2xs text-text-muted">
           <tr>
             <th className="px-2 py-1 text-left font-medium">Symbol</th>
             <th className="px-2 py-1 text-right font-medium">Qty</th>
@@ -223,8 +223,8 @@ function PositionsTable({ positions }: { positions: Position[] }) {
 function FillsTable({ trades }: { trades: Trade[] }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
-        <thead className="text-[10px] uppercase tracking-wider text-text-muted">
+      <table className="w-full text-xs tabular">
+        <thead className="text-2xs text-text-muted">
           <tr>
             <th className="px-2 py-1 text-left font-medium">When</th>
             <th className="px-2 py-1 text-left font-medium">Symbol</th>
@@ -251,7 +251,7 @@ function FillsTable({ trades }: { trades: Trade[] }) {
                 <td className="px-2 py-1.5">
                   <a href={`/chart/${t.symbol}`} className="font-medium text-text-primary hover:underline">{t.symbol}</a>
                 </td>
-                <td className={cn("px-2 py-1.5 uppercase text-[10px] tracking-wider",
+                <td className={cn("px-2 py-1.5 text-2xs",
                   t.side === "BUY" ? "text-up" : "text-down"
                 )}>{t.side}</td>
                 <td className="px-2 py-1.5 text-right text-text-secondary">{t.quantity.toLocaleString()}</td>
@@ -259,7 +259,7 @@ function FillsTable({ trades }: { trades: Trade[] }) {
                 <td className={cn("px-2 py-1.5 text-right", pnlClass(pnl))}>
                   {t.pnl != null ? fmtCurrency(pnl) : "—"}
                 </td>
-                <td className="px-2 py-1.5 text-text-muted text-[10px] uppercase tracking-wider">
+                <td className="px-2 py-1.5 text-text-muted text-2xs">
                   {t.strategy ?? "—"}
                 </td>
               </tr>

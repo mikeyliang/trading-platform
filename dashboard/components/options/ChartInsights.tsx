@@ -41,7 +41,7 @@ function ToneDot({ tone }: { tone: Insight["tone"] }) {
 function InsightList({ items }: { items: Insight[] }) {
   if (items.length === 0) {
     return (
-      <div className="text-[11px] text-text-muted">
+      <div className="text-xs text-text-muted">
         No specific signals to flag.
       </div>
     );
@@ -53,7 +53,7 @@ function InsightList({ items }: { items: Insight[] }) {
           <ToneDot tone={it.tone} />
           <div className="min-w-0">
             <span className={cn(
-              "text-[11px] tabular font-medium",
+              "text-xs tabular font-medium",
               it.tone === "up" && "text-up",
               it.tone === "down" && "text-down",
               it.tone === "warning" && "text-warning",
@@ -62,7 +62,7 @@ function InsightList({ items }: { items: Insight[] }) {
               {it.label}
             </span>
             {it.detail && (
-              <span className="text-[11px] text-text-secondary"> — {it.detail}</span>
+              <span className="text-xs text-text-secondary">: {it.detail}</span>
             )}
           </div>
         </li>
@@ -359,7 +359,7 @@ export function UnderlyingInsights({ result }: Props) {
   const items = buildUnderlyingInsights(result);
   return (
     <div className="px-3 py-3 border-t border-border/40 bg-surface-2/30">
-      <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium mb-2">
+      <div className="text-2xs text-text-muted font-medium mb-2">
         Read the chart
       </div>
       <InsightList items={items} />
@@ -371,7 +371,7 @@ export function OptionInsights({ result }: Props) {
   const items = buildOptionInsights(result);
   return (
     <div className="px-3 py-3 border-t border-border/40 bg-surface-2/30">
-      <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium mb-2">
+      <div className="text-2xs text-text-muted font-medium mb-2">
         Read the chart
       </div>
       <InsightList items={items} />
@@ -383,7 +383,7 @@ export function PnlInsights({ result }: Props) {
   const items = buildPnlInsights(result);
   return (
     <div className="px-3 py-3 border-t border-border/40 bg-surface-2/30">
-      <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium mb-2">
+      <div className="text-2xs text-text-muted font-medium mb-2">
         Position read
       </div>
       <InsightList items={items} />

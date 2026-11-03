@@ -50,7 +50,7 @@ export function PayoffChart({
   if (!data) {
     return (
       <div
-        className="flex items-center justify-center text-[10px] text-text-muted border border-dashed border-border rounded-md"
+        className="flex items-center justify-center text-2xs text-text-muted border border-dashed border-border rounded-md"
         style={{ height }}
       >
         enter strikes (short &gt; long) to render payoff
@@ -93,7 +93,7 @@ export function PayoffChart({
     `L ${xs(breakeven).toFixed(2)} ${zeroY.toFixed(2)} Z`;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height }}>
+    <svg aria-hidden="true" viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height }}>
       {/* axes */}
       <line x1={padL} y1={zeroY} x2={W - padR} y2={zeroY} stroke="currentColor" strokeOpacity={0.3} strokeWidth={1} />
       <line x1={padL} y1={padT} x2={padL} y2={H - padB} stroke="currentColor" strokeOpacity={0.3} strokeWidth={1} />
@@ -103,11 +103,11 @@ export function PayoffChart({
       <path d={lossArea} className="fill-down/15" />
 
       {/* zero line label */}
-      <text x={padL - 6} y={zeroY + 3} textAnchor="end" className="fill-text-muted text-[9px]">0</text>
-      <text x={padL - 6} y={ys(maxProfit) + 3} textAnchor="end" className="fill-up text-[9px]">
+      <text x={padL - 6} y={zeroY + 3} textAnchor="end" className="fill-text-muted text-2xs">0</text>
+      <text x={padL - 6} y={ys(maxProfit) + 3} textAnchor="end" className="fill-up text-2xs">
         ${fmt(maxProfit, 0)}
       </text>
-      <text x={padL - 6} y={ys(maxLoss) + 3} textAnchor="end" className="fill-down text-[9px]">
+      <text x={padL - 6} y={ys(maxLoss) + 3} textAnchor="end" className="fill-down text-2xs">
         -${fmt(Math.abs(maxLoss), 0)}
       </text>
 
@@ -117,16 +117,16 @@ export function PayoffChart({
       <line x1={xs(breakeven)} y1={padT} x2={xs(breakeven)} y2={H - padB} className="stroke-warning/60" strokeDasharray="2 2" />
       <line x1={xs(spot)} y1={padT} x2={xs(spot)} y2={H - padB} className="stroke-accent/70" strokeWidth={1.5} />
 
-      <text x={xs(longStrike)} y={H - padB + 12} textAnchor="middle" className="fill-text-muted text-[9px]">
+      <text x={xs(longStrike)} y={H - padB + 12} textAnchor="middle" className="fill-text-muted text-2xs">
         L {fmt(longStrike, 0)}
       </text>
-      <text x={xs(shortStrike)} y={H - padB + 12} textAnchor="middle" className="fill-text-muted text-[9px]">
+      <text x={xs(shortStrike)} y={H - padB + 12} textAnchor="middle" className="fill-text-muted text-2xs">
         S {fmt(shortStrike, 0)}
       </text>
-      <text x={xs(breakeven)} y={padT - 2} textAnchor="middle" className="fill-warning text-[9px]">
+      <text x={xs(breakeven)} y={padT - 2} textAnchor="middle" className="fill-warning text-2xs">
         BE {fmt(breakeven, 0)}
       </text>
-      <text x={xs(spot)} y={padT - 2} textAnchor="middle" className="fill-accent text-[9px]">
+      <text x={xs(spot)} y={padT - 2} textAnchor="middle" className="fill-accent text-2xs">
         spot {fmt(spot, 0)}
       </text>
 

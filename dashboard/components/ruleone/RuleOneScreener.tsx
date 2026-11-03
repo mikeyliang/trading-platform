@@ -126,7 +126,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
           <Card>
             <CardContent className="p-3 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase tracking-wider text-text-muted">
+                <span className="text-2xs text-text-muted">
                   Position sizing
                 </span>
                 <Badge variant="muted">{fmtCurrency(bankroll)} bankroll</Badge>
@@ -140,7 +140,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
                   tone={m.recommendedContracts > 0 ? "up" : undefined}
                 />
               </div>
-              <p className="text-[10px] text-text-muted leading-relaxed">
+              <p className="text-2xs text-text-muted leading-relaxed">
                 Sizing is the lesser of Kelly% × bankroll and Rule One's 33% bankroll cap, divided
                 by max loss per contract. Break-even at expiration:{" "}
                 <span className="text-text-secondary tabular">{fmt(m.breakeven, 2)}</span>.
@@ -151,7 +151,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
           {/* payoff diagram */}
           <Card>
             <CardContent className="p-3 flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wider text-text-muted">
+              <span className="text-2xs text-text-muted">
                 Payoff at expiration · {m.recommendedContracts || 1} ct
               </span>
               <PayoffChart
@@ -166,7 +166,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
         </>
       ) : (
         <Card>
-          <CardContent className="p-3 text-[11px] text-text-muted flex items-center gap-2">
+          <CardContent className="p-3 text-xs text-text-muted flex items-center gap-2">
             <Info size={12} />
             Enter spot, both strikes (short &gt; long), credit, and short delta to evaluate.
           </CardContent>
@@ -201,13 +201,13 @@ function StrategyResultCard({
             {!result.applicable ? "n/a" : result.passes ? "pass" : "fail"}
           </Badge>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-2xs">
           <CheckRow label={result.checks.delta.label} ok={result.checks.delta.pass} value={result.checks.delta.value} suffix="" applicable={result.applicable} />
           <CheckRow label={result.checks.adjOTM.label} ok={result.checks.adjOTM.pass} value={result.checks.adjOTM.value} suffix="%" applicable={result.applicable} />
           <CheckRow label={result.checks.aroc.label} ok={result.checks.aroc.pass} value={result.checks.aroc.value} suffix="%" applicable={result.applicable} />
           <CheckRow label={result.checks.kelly.label} ok={result.checks.kelly.pass} value={result.checks.kelly.value} suffix="" applicable={result.applicable} />
         </div>
-        <p className="text-[10px] text-text-muted leading-snug border-t border-border/60 pt-1.5">
+        <p className="text-2xs text-text-muted leading-snug border-t border-border/60 pt-1.5">
           Exit at Δ {spec.exitDelta}. {spec.notes}
         </p>
       </CardContent>
@@ -260,7 +260,7 @@ function NumField({
 }) {
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <label className="text-[10px] text-text-muted uppercase tracking-wider flex items-center gap-1">
+      <label className="text-2xs text-text-muted flex items-center gap-1">
         {label}
         {hint && <span className="lowercase tracking-normal text-text-muted/70 normal-case">· {hint}</span>}
       </label>
@@ -289,7 +289,7 @@ function Metric({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-text-muted uppercase tracking-wider">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       <span
         className={cn(
           "tabular text-sm font-semibold",

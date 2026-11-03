@@ -232,7 +232,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           />
         ) : filteredPositions.length === 0 ? (
           <FilterEmpty
-            label={`No positions match "${symbolQ}"${side !== "all" ? ` · ${side}` : ""}${kind !== "all" ? ` · ${kind}` : ""}`}
+            label={`No positions match ${[symbolQ && `"${symbolQ}"`, side !== "all" && side, kind !== "all" && kind].filter(Boolean).join(", ")}`}
             onClear={clearAll}
           />
         ) : (
@@ -512,7 +512,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                     </span>
                     {p.is_option && (
                       <span className="text-2xs text-text-muted tabular">
-                        {formatExpiry(p.expiry)} · {Number(p.strike ?? 0).toFixed(0)}{p.right}
+                        {formatExpiry(p.expiry)} {Number(p.strike ?? 0).toFixed(0)}{p.right}
                       </span>
                     )}
                   </div>
@@ -533,7 +533,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                         ? "Modeled mark — Black-Scholes theoretical; no live quote available"
                         : "Stale mark — last good quote; this refresh missed"}
                       className={cn(
-                        "px-1 rounded text-[9px] font-semibold uppercase tracking-wide leading-none py-0.5",
+                        "px-1 rounded text-2xs font-semibold leading-none py-0.5",
                         p.mark_source === "modeled"
                           ? "bg-warning/20 text-warning"
                           : "bg-surface-2 text-text-muted",
@@ -551,7 +551,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
               <TableCell className="text-right">
 
                 {p.unrealized_pnl_pct == null || !Number.isFinite(p.unrealized_pnl_pct) ? (
-                  <span className="tabular text-text-muted">—</span>
+                  <span className="tabular text-text-muted">n/a</span>
                 ) : (
                   <Badge variant={p.unrealized_pnl_pct >= 0 ? "up" : "down"} className="tabular">
                     {fmtPct(p.unrealized_pnl_pct)}

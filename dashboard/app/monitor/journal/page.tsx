@@ -31,7 +31,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const MOODS: Mood[] = ["🚀", "👍", "😐", "👎", "💀"];
+const MOODS: Mood[] = ["\u{1F680}", "\u{1F44D}", "\u{1F610}", "\u{1F44E}", "\u{1F480}"];
+const MOOD_LABEL: Record<string, string> = {
+  "\u{1F680}": "Great",
+  "\u{1F44D}": "Good",
+  "\u{1F610}": "Flat",
+  "\u{1F44E}": "Poor",
+  "\u{1F480}": "Blown",
+};
 
 export default function JournalPage() {
   const { entries, hydrated, upsert, remove } = useJournal();
@@ -120,7 +127,7 @@ export default function JournalPage() {
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                   placeholder="Search entries…"
-                  className="pl-7 h-7 text-[11px]"
+                  className="pl-7 h-7 text-xs"
                 />
               </div>
               {tags.length > 0 && (
@@ -130,7 +137,7 @@ export default function JournalPage() {
                       key={t}
                       onClick={() => setTagFilter(tagFilter === t ? null : t)}
                       className={cn(
-                        "text-[10px] px-1.5 py-0.5 rounded border transition-colors",
+                        "text-2xs px-1.5 py-0.5 rounded border transition-colors",
                         tagFilter === t
                           ? "bg-accent/15 text-accent border-accent/30"
                           : "bg-surface-2 text-text-muted border-border hover:text-text-secondary"
@@ -142,7 +149,7 @@ export default function JournalPage() {
                   {overflowTagCount > 0 && (
                     <button
                       onClick={() => setShowAllTags((v) => !v)}
-                      className="text-[10px] px-1.5 py-0.5 text-text-muted hover:text-text-secondary"
+                      className="text-2xs px-1.5 py-0.5 text-text-muted hover:text-text-secondary"
                     >
                       {showAllTags ? "less" : `+${overflowTagCount}`}
                     </button>
@@ -150,7 +157,7 @@ export default function JournalPage() {
                   {tagFilter && (
                     <button
                       onClick={() => setTagFilter(null)}
-                      className="text-[10px] px-1.5 py-0.5 text-text-muted hover:text-down"
+                      className="text-2xs px-1.5 py-0.5 text-text-muted hover:text-down"
                     >
                       clear
                     </button>
@@ -161,7 +168,7 @@ export default function JournalPage() {
 
             <div className="flex-1 overflow-y-auto">
               {filtered.length === 0 ? (
-                <div className="text-center py-6 text-[11px] text-text-muted">no matches</div>
+                <div className="text-center py-6 text-xs text-text-muted">no matches</div>
               ) : (
                 filtered.map((e) => (
                   <button
@@ -176,12 +183,12 @@ export default function JournalPage() {
                     )}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      {e.mood && <span className="text-xs leading-none shrink-0">{e.mood}</span>}
+                      {e.mood && <span className="text-2xs leading-none shrink-0 text-text-muted">{MOOD_LABEL[e.mood] ?? e.mood}</span>}
                       <span className="text-xs font-medium text-text-primary truncate min-w-0">
                         {e.title || "(untitled)"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-text-muted tabular">
+                    <div className="flex items-center gap-1.5 text-2xs text-text-muted tabular">
                       <span>{e.date}</span>
                       {e.symbol && <span className="text-accent">{e.symbol}</span>}
                       {e.tags.slice(0, 2).map((t) => (
@@ -213,7 +220,7 @@ export default function JournalPage() {
                 />
               )
             ) : (
-              <div className="flex-1 flex items-center justify-center text-[11px] text-text-muted">
+              <div className="flex-1 flex items-center justify-center text-xs text-text-muted">
                 Select an entry from the left, or create a new one.
               </div>
             )}
@@ -236,12 +243,12 @@ function Viewer({
   return (
     <>
       <div className="flex items-center gap-2 px-4 h-10 border-b border-border/60 shrink-0">
-        {entry.mood && <span className="text-base leading-none">{entry.mood}</span>}
+        {entry.mood && <span className="text-xs leading-none text-text-secondary">{MOOD_LABEL[entry.mood] ?? entry.mood}</span>}
         <div className="min-w-0">
           <div className="text-sm font-medium text-text-primary leading-tight truncate">
             {entry.title || "(untitled)"}
           </div>
-          <div className="text-[10px] text-text-muted tabular">
+          <div className="text-2xs text-text-muted tabular">
             {entry.date}
             {entry.symbol && <> · <span className="text-accent">{entry.symbol}</span></>}
           </div>
@@ -269,7 +276,7 @@ function Viewer({
       {entry.tags.length > 0 && (
         <div className="px-4 py-2 border-b border-border/60 flex flex-wrap gap-1.5 shrink-0">
           {entry.tags.map((t) => (
-            <Badge key={t} variant="default" className="text-[9px]">
+            <Badge key={t} variant="default" className="text-2xs">
               #{t}
             </Badge>
           ))}
@@ -282,7 +289,7 @@ function Viewer({
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.body}</ReactMarkdown>
           </div>
         ) : (
-          <p className="text-[11px] text-text-muted">No body yet. Click edit to add one.</p>
+          <p className="text-xs text-text-muted">No body yet. Click edit to add one.</p>
         )}
       </div>
     </>
@@ -335,41 +342,41 @@ function Editor({
         </div>
       </div>
 
-      <div className="px-3 py-2 border-b border-border/60 grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0 text-[11px]">
+      <div className="px-3 py-2 border-b border-border/60 grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0 text-xs">
         <label className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">Date</span>
+          <span className="text-2xs text-text-muted">Date</span>
           <Input
             type="date"
             value={draft.date}
             onChange={(e) => update("date", e.target.value)}
-            className="h-7 flex-1 text-[11px]"
+            className="h-7 flex-1 text-xs"
           />
         </label>
         <label className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">Symbol</span>
+          <span className="text-2xs text-text-muted">Symbol</span>
           <Input
             value={draft.symbol ?? ""}
             onChange={(e) => update("symbol", e.target.value.toUpperCase() || undefined)}
             placeholder="optional"
-            className="h-7 flex-1 text-[11px] uppercase tabular"
+            className="h-7 flex-1 text-xs tabular"
           />
         </label>
         <label className="flex items-center gap-2 col-span-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">Mood</span>
+          <span className="text-2xs text-text-muted">Mood</span>
           <div className="flex gap-1">
             {MOODS.map((m) => (
               <button
                 key={m}
                 onClick={() => update("mood", draft.mood === m ? undefined : m)}
                 className={cn(
-                  "w-6 h-6 rounded text-sm transition-all leading-none",
+                  "px-2 h-7 text-2xs transition-colors leading-none border",
                   draft.mood === m
-                    ? "bg-accent/20 border border-accent/40 scale-110"
-                    : "bg-surface-2 border border-border hover:border-surface-3"
+                    ? "bg-accent/15 border-accent text-text-primary"
+                    : "bg-surface-2 border-border text-text-secondary hover:border-border-strong"
                 )}
-                aria-label={`mood ${m}`}
+                aria-pressed={draft.mood === m}
               >
-                {m}
+                {MOOD_LABEL[m] ?? m}
               </button>
             ))}
           </div>
@@ -382,7 +389,7 @@ function Editor({
           <button
             key={t}
             onClick={() => removeTag(t)}
-            className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent border border-accent/30 hover:bg-down/10 hover:text-down hover:border-down/30"
+            className="text-2xs px-1.5 py-0.5 rounded bg-accent/10 text-accent border border-accent/30 hover:bg-down/10 hover:text-down hover:border-down/30"
           >
             #{t} ×
           </button>
@@ -398,7 +405,7 @@ function Editor({
           }}
           onBlur={addTag}
           placeholder="add tag"
-          className="h-6 w-28 text-[10px]"
+          className="h-6 w-28 text-2xs"
         />
       </div>
 
@@ -406,11 +413,11 @@ function Editor({
         value={draft.body}
         onChange={(e) => update("body", e.target.value)}
         placeholder="What did you see? What was the setup? What went right/wrong? Lessons?…"
-        className="flex-1 w-full bg-bg p-3 text-[11px] leading-relaxed text-text-primary placeholder:text-text-muted outline-none resize-none font-mono"
+        className="flex-1 w-full bg-bg p-3 text-xs leading-relaxed text-text-primary placeholder:text-text-muted outline-none resize-none font-mono"
       />
 
-      <div className="flex items-center px-3 h-9 border-t border-border/60 shrink-0 text-[10px] text-text-muted">
-        <span>Markdown supported — preview after saving.</span>
+      <div className="flex items-center px-3 h-9 border-t border-border/60 shrink-0 text-2xs text-text-muted">
+        <span>Markdown supported. Preview after saving.</span>
         <button
           onClick={onDelete}
           className="ml-auto text-text-muted hover:text-down transition-colors flex items-center gap-1"

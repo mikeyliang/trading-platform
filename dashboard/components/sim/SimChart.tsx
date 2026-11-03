@@ -270,8 +270,8 @@ export function SimChart({ payload }: Props) {
 
       <div ref={priceRef} className="w-full h-80 bg-bg border border-border rounded-md overflow-hidden" />
 
-      <div className="flex items-center gap-3 px-1 text-[9px] text-text-muted tabular">
-        <span><span className="text-up">▲</span> entry · score 0–7</span>
+      <div className="flex items-center gap-3 px-1 text-2xs text-text-muted tabular">
+        <span><span className="text-up">▲</span> entry, score 0 to 7</span>
         <span><span className="text-up">▼</span><span className="text-down">▼</span> exit ± P&L</span>
         {showStructure && <span><span style={{ color: COLORS.cyan }}>●</span> CHoCH</span>}
         <span className="ml-auto">dotted lines: POC / VAH / VAL</span>
@@ -280,7 +280,7 @@ export function SimChart({ payload }: Props) {
       {PANES.filter((p) => activePanes.includes(p.key)).map((p) => (
         <div key={p.key} className="border border-border rounded-md overflow-hidden bg-bg">
           <div className="flex items-center px-2 h-5 border-b border-border/60">
-            <span className="text-[9px] uppercase tracking-wider text-text-muted">{p.label}</span>
+            <span className="text-2xs text-text-muted">{p.label}</span>
           </div>
           <div ref={paneRefs[p.key]} className="w-full h-24" />
         </div>
@@ -296,11 +296,11 @@ function Toggle({ on, onClick, swatch, children }: {
     <button
       onClick={onClick}
       className={cn(
-        "px-1.5 h-5 rounded text-[10px] uppercase tracking-wider transition-colors flex items-center gap-1",
+        "px-1.5 h-5 rounded text-2xs transition-colors flex items-center gap-1",
         on ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
       )}
     >
-      {swatch && <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? swatch : "#3f3f46" }} />}
+      {swatch && <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? swatch : "rgb(var(--c-border))" }} />}
       {children}
     </button>
   );

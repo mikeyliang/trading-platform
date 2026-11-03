@@ -141,12 +141,12 @@ function CardShell({
       <div className="flex items-center justify-between gap-2 px-3 h-7 border-b border-border/60">
         <div className="flex items-center gap-1.5">
           <Icon size={11} className={iconCls} />
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+          <span className="text-2xs text-text-muted">
             {title}
           </span>
         </div>
         {subtitle && (
-          <span className="text-[9px] uppercase tracking-wider text-text-muted/70">
+          <span className="text-2xs text-text-muted/70">
             {subtitle}
           </span>
         )}
@@ -193,20 +193,20 @@ function InsightCard({
               {trade.pnl != null ? fmtCurrency(trade.pnl) : "—"}
             </span>
             {showPct && trade.pnl_percentage != null && (
-              <span className={cn("text-[11px] tabular", pnlClass(trade.pnl_percentage))}>
+              <span className={cn("text-xs tabular", pnlClass(trade.pnl_percentage))}>
                 {fmtPct(trade.pnl_percentage)}
               </span>
             )}
           </div>
           <div
-            className="text-[10px] text-text-muted tabular"
+            className="text-2xs text-text-muted tabular"
             title={new Date(trade.timestamp).toLocaleString()}
           >
             {fmtRelative(trade.timestamp)}
           </div>
         </div>
       ) : (
-        <div className="px-3 py-4 text-[11px] text-text-muted text-center">
+        <div className="px-3 py-4 text-xs text-text-muted text-center">
           no qualifying trade
         </div>
       )}
@@ -219,13 +219,13 @@ function HoldTimeCard({ seconds }: { seconds: number | null }) {
     <CardShell title="Avg hold time" icon={Clock} tone="neutral">
       <div className="px-3 py-2.5 flex flex-col gap-1">
         {seconds == null ? (
-          <span className="text-sm font-medium text-text-muted">—</span>
+          <span className="text-sm font-medium text-text-muted">n/a</span>
         ) : (
           <>
             <span className="text-base font-semibold text-text-primary tabular tabular-nums">
               {fmtDuration(seconds)}
             </span>
-            <span className="text-[10px] text-text-muted">
+            <span className="text-2xs text-text-muted">
               average BUY → SELL gap per symbol
             </span>
           </>

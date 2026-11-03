@@ -157,7 +157,7 @@ export function FlexBackfillCard() {
     <div className="border border-border/60 bg-surface rounded-md">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40">
         <Database size={13} className="text-text-muted" />
-        <span className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">
+        <span className="text-xs text-text-secondary font-medium">
           IBKR Flex backfill
         </span>
         {status && (
@@ -207,13 +207,13 @@ export function FlexBackfillCard() {
       )}
 
       <div className="flex items-center gap-2 flex-wrap px-3 py-2 border-t border-border/40 bg-surface-2/20">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">Pull</span>
+        <span className="text-2xs text-text-muted">Pull</span>
         <YearsToggle value={years} onChange={setYears} disabled={pulling} />
-        <span className="text-[10px] text-text-muted">365-day slice{years > 1 ? "s" : ""}</span>
+        <span className="text-2xs text-text-muted">365-day slice{years > 1 ? "s" : ""}</span>
 
         <label
           className={cn(
-            "inline-flex items-center gap-1 h-6 px-2 rounded-sm border text-[10px] cursor-pointer select-none transition-colors",
+            "inline-flex items-center gap-1 h-6 px-2 rounded-sm border text-2xs cursor-pointer select-none transition-colors",
             refresh
               ? "border-accent/50 bg-accent/10 text-accent"
               : "border-border bg-surface-2/40 text-text-secondary hover:bg-surface-2",
@@ -236,7 +236,7 @@ export function FlexBackfillCard() {
           onClick={onBackfill}
           disabled={pulling || cooldownLive > 0 || !status?.configured}
           className={cn(
-            "ml-auto inline-flex items-center gap-1.5 h-6 px-3 rounded-sm text-[11px] transition-colors",
+            "ml-auto inline-flex items-center gap-1.5 h-6 px-3 rounded-sm text-xs transition-colors",
             pulling || cooldownLive > 0 || !status?.configured
               ? "bg-surface-2 text-text-muted cursor-not-allowed"
               : "bg-accent/15 text-accent hover:bg-accent/25",
@@ -259,7 +259,7 @@ export function FlexBackfillCard() {
 
       {/* Progress / result strip — visible during and after a backfill. */}
       {(job?.status === "running" || lastResult || pullError) && (
-        <div className="px-3 py-2 border-t border-border/40 text-[11px] tabular">
+        <div className="px-3 py-2 border-t border-border/40 text-xs tabular">
           {pullError && (
             <NoteRow
               tone="error"
@@ -284,11 +284,11 @@ function StatBlock({
 }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex flex-col gap-0.5 min-w-0">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       <span
         className={cn(
-          "text-[12px] text-text-primary truncate",
-          mono ? "tabular text-[11px]" : "tabular font-medium",
+          "text-xs text-text-primary truncate",
+          mono ? "tabular text-xs" : "tabular font-medium",
         )}
         title={value}
       >
@@ -303,14 +303,14 @@ function ConfiguredBadge({
 }: { configured: boolean; queryId: string | null }) {
   if (!configured) {
     return (
-      <span className="px-1.5 py-0.5 rounded-sm bg-warning/15 text-warning text-[10px] uppercase tracking-wider">
+      <span className="px-1.5 py-0.5 rounded-sm bg-warning/15 text-warning text-2xs">
         not configured
       </span>
     );
   }
   return (
     <span
-      className="px-1.5 py-0.5 rounded-sm bg-up/10 text-up text-[10px] tabular"
+      className="px-1.5 py-0.5 rounded-sm bg-up/10 text-up text-2xs tabular"
       title="IBKR Flex token + query id configured"
     >
       query {queryId ?? "—"}
@@ -330,7 +330,7 @@ function YearsToggle({
           onClick={() => onChange(n)}
           disabled={disabled}
           className={cn(
-            "px-2 text-[10px] tabular transition-colors",
+            "px-2 text-2xs tabular transition-colors",
             i > 0 && "border-l border-border",
             value === n
               ? "bg-accent/15 text-accent font-medium"
@@ -355,21 +355,21 @@ function JobProgress({ job }: { job: FlexJobState }) {
   const lastInfo = job.last_slice_info;
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-2 text-[11px] text-text-secondary">
+      <div className="flex items-center gap-2 text-xs text-text-secondary">
         <Loader2 size={11} className="animate-spin text-accent" />
         <span>
           Slice <span className="text-text-primary tabular">{done}</span> / {total}
         </span>
         {lastInfo?.from && lastInfo?.to && (
-          <span className="text-text-muted text-[10px]">
+          <span className="text-text-muted text-2xs">
             {fmtCompactDate(lastInfo.from)} → {fmtCompactDate(lastInfo.to)}
           </span>
         )}
-        <span className="text-text-muted text-[10px] ml-auto">job {job.id}</span>
+        <span className="text-text-muted text-2xs ml-auto">job {job.id}</span>
       </div>
       <div className="relative h-1 w-full rounded-sm bg-surface-2 overflow-hidden">
         <div
-          className="absolute inset-y-0 left-0 bg-accent/70 transition-[width] duration-500"
+          className="absolute inset-y-0 left-0 bg-accent/70 duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -387,7 +387,7 @@ function BackfillResultStrip({ result }: { result: FlexBackfillResult }) {
     <div className="flex flex-col gap-1">
       <div
         className={cn(
-          "inline-flex items-center gap-1.5 text-[11px] flex-wrap",
+          "inline-flex items-center gap-1.5 text-xs flex-wrap",
           tone === "good" && "text-up",
           tone === "info" && "text-text-secondary",
           tone === "warn" && "text-warning",
@@ -408,7 +408,7 @@ function BackfillResultStrip({ result }: { result: FlexBackfillResult }) {
           )}
         </span>
       </div>
-      <details className="text-[10px] text-text-muted">
+      <details className="text-2xs text-text-muted">
         <summary className="cursor-pointer hover:text-text-secondary select-none">
           slices · {result.slices.length}
         </summary>
@@ -441,7 +441,7 @@ function NoteRow({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 w-full",
+        "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 w-full",
         tone === "info" && "text-text-secondary bg-surface-2/30",
         tone === "warn" && "text-warning bg-warning/5",
         tone === "error" && "text-down bg-down/5",

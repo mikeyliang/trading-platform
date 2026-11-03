@@ -98,7 +98,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       <nav className="flex-1 flex flex-col gap-3 py-3 overflow-y-auto">
         {groups.map((g) => (
           <div key={g.name} className="flex flex-col gap-0.5">
-            <div className="eyebrow text-center text-[9px] tracking-[0.08em] mb-1 select-none">{g.name}</div>
+            <div className="caption text-center text-2xs mb-1 select-none">{g.name}</div>
             {g.items.map((n) => (
               <NavItem key={n.href} {...n} active={isActive(path, n.href)} onNavigate={onMobileClose} />
             ))}
@@ -163,7 +163,7 @@ function NavItem({
         <span aria-hidden className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r-full bg-accent" />
       )}
       <Icon size={16} strokeWidth={active ? 2 : 1.75} />
-      <span className="text-[10px] leading-none font-medium tracking-tight">{label}</span>
+      <span className="text-2xs leading-none font-medium">{label}</span>
     </Link>
   );
 }

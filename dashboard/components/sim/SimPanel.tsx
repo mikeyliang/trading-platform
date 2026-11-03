@@ -201,7 +201,7 @@ export function SimPanel() {
               </Select>
             </Field>
             {selectedPreset && (
-              <p className="text-[10px] leading-relaxed text-text-muted -mt-1">
+              <p className="text-2xs leading-relaxed text-text-muted -mt-1">
                 {selectedPreset.description}
               </p>
             )}
@@ -209,7 +209,7 @@ export function SimPanel() {
             <Field label={`Symbols (${symbols.length}/12)`}>
               <div className="flex flex-wrap gap-1 mb-1">
                 {symbols.map((s) => (
-                  <span key={s} className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded bg-surface-2 text-[10px] tabular">
+                  <span key={s} className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded bg-surface-2 text-2xs tabular">
                     {s}
                     <button
                       onClick={() => setSymbols(symbols.filter((x) => x !== s))}
@@ -254,7 +254,7 @@ export function SimPanel() {
               </Field>
             </div>
             {(timeframe === "15m" || timeframe === "30m") && (
-              <p className="text-[10px] text-amber-500/80 -mt-1">
+              <p className="text-2xs text-amber-500/80 -mt-1">
                 intraday {"<"}1h data is limited to ~60 days back
               </p>
             )}
@@ -273,7 +273,7 @@ export function SimPanel() {
           </CardHeader>
           <div className="flex-1 overflow-y-auto">
             {runs.length === 0 && (
-              <p className="text-[11px] text-text-muted px-3 py-2">no runs yet</p>
+              <p className="text-xs text-text-muted px-3 py-2">no runs yet</p>
             )}
             {runs.map((r) => (
               <button
@@ -293,7 +293,7 @@ export function SimPanel() {
                       r.status === "error" && "bg-down"
                     )}
                   />
-                  <span className="text-[11px] truncate flex-1">{r.label}</span>
+                  <span className="text-xs truncate flex-1">{r.label}</span>
                   <span
                     role="button"
                     tabIndex={0}
@@ -304,7 +304,7 @@ export function SimPanel() {
                     <Trash2 size={10} />
                   </span>
                 </div>
-                <div className="flex items-center gap-2 pl-3 text-[10px] tabular text-text-muted">
+                <div className="flex items-center gap-2 pl-3 text-2xs tabular text-text-muted">
                   <span>{r.timeframe}</span>
                   <span>{r.symbols.length} sym</span>
                   {r.status === "running" ? (
@@ -341,7 +341,7 @@ export function SimPanel() {
               <span>
                 simulating {runDetail.progress.current ?? "…"} ({runDetail.progress.done}/{runDetail.progress.total})
               </span>
-              <span className="text-[10px]">NautilusTrader backtest engine</span>
+              <span className="text-2xs">NautilusTrader backtest engine</span>
             </div>
           </Card>
         )}
@@ -351,11 +351,11 @@ export function SimPanel() {
             {/* header strip: run identity + aggregate + view toggle */}
             <div className="shrink-0 flex items-stretch border border-border rounded-md overflow-hidden bg-surface-1">
               <div className="px-2.5 py-1.5 border-r border-border/50 min-w-0">
-                <div className="text-[9px] uppercase tracking-wider text-text-muted leading-tight">Run</div>
+                <div className="text-2xs text-text-muted leading-tight">Run</div>
                 <div className="text-xs leading-tight mt-0.5 truncate max-w-44" title={runDetail.label}>{runDetail.label}</div>
               </div>
               <div className="px-2.5 py-1.5 border-r border-border/50">
-                <div className="text-[9px] uppercase tracking-wider text-text-muted leading-tight">Setup</div>
+                <div className="text-2xs text-text-muted leading-tight">Setup</div>
                 <div className="text-xs tabular leading-tight mt-0.5 whitespace-nowrap">
                   {runDetail.preset.replace("confluence-", "")} · {runDetail.timeframe} · {runDetail.start_date.slice(2)}→{runDetail.end_date.slice(2)}
                 </div>
@@ -368,7 +368,7 @@ export function SimPanel() {
                 { l: "Trades · Win", v: `${runDetail.aggregate.total_trades} · ${runDetail.aggregate.win_rate.toFixed(0)}%` },
               ].map((cell) => (
                 <div key={cell.l} className="px-2.5 py-1.5 border-r border-border/50">
-                  <div className="text-[9px] uppercase tracking-wider text-text-muted leading-tight whitespace-nowrap">{cell.l}</div>
+                  <div className="text-2xs text-text-muted leading-tight whitespace-nowrap">{cell.l}</div>
                   <div className={cn("text-xs tabular leading-tight mt-0.5 whitespace-nowrap", cell.c ?? "text-text-primary")}>{cell.v}</div>
                 </div>
               ))}
@@ -378,7 +378,7 @@ export function SimPanel() {
                     key={v}
                     onClick={() => setView(v)}
                     className={cn(
-                      "px-2 h-6 rounded text-[10px] uppercase tracking-wider transition-colors",
+                      "px-2 h-6 rounded text-2xs transition-colors",
                       view === v ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
                     )}
                   >
@@ -420,7 +420,7 @@ export function SimPanel() {
                   onClick={() => t.stats && setActiveSymbol(t.symbol)}
                   disabled={!t.stats}
                   className={cn(
-                    "h-6 px-2 rounded text-[11px] tabular flex items-center gap-1.5 border transition-colors",
+                    "h-6 px-2 rounded text-xs tabular flex items-center gap-1.5 border transition-colors",
                     activeSymbol === t.symbol
                       ? "bg-surface-3 border-border text-text-primary"
                       : t.stats
@@ -458,7 +458,7 @@ export function SimPanel() {
                       <CardTitle>
                         {activeSymbol} · {runDetail.timeframe} bars
                       </CardTitle>
-                      <span className="text-[10px] tabular text-text-muted">
+                      <span className="text-2xs tabular text-text-muted">
                         {runDetail.start_date} → {runDetail.end_date}
                       </span>
                       <Badge variant="muted">{chartPayload.trades.length} trades</Badge>
@@ -492,7 +492,7 @@ export function SimPanel() {
                 <Card className="flex-1 min-w-0">
                   <CardHeader>
                     <CardTitle>Equity & drawdown</CardTitle>
-                    <span className="ml-auto text-[10px] tabular text-text-muted">
+                    <span className="ml-auto text-2xs tabular text-text-muted">
                       {fmtCurrency(chartPayload.stats.initial_capital)} → {fmtCurrency(chartPayload.stats.final_capital)}
                     </span>
                   </CardHeader>
@@ -566,7 +566,7 @@ export function SimPanel() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] text-text-muted uppercase tracking-wider">{label}</label>
+      <label className="text-2xs text-text-muted">{label}</label>
       {children}
     </div>
   );

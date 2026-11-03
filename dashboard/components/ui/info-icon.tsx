@@ -39,7 +39,7 @@ export function InfoIcon({ hint, size = 9, side = "top", className }: InfoIconPr
           <Info size={size} />
         </button>
       </TooltipTrigger>
-      <TooltipContent side={side} className="max-w-[260px] text-[10.5px] leading-relaxed">
+      <TooltipContent side={side} className="max-w-[260px] text-2xs leading-relaxed">
         {hint}
       </TooltipContent>
     </Tooltip>
@@ -69,7 +69,7 @@ export function HintLabel({
           {children}
         </span>
       </TooltipTrigger>
-      <TooltipContent side={side} className="max-w-[260px] text-[10.5px] leading-relaxed">
+      <TooltipContent side={side} className="max-w-[260px] text-2xs leading-relaxed">
         {hint}
       </TooltipContent>
     </Tooltip>

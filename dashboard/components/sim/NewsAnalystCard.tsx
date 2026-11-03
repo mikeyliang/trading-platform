@@ -42,7 +42,7 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
       <CardHeader>
         <CardTitle>AI news read</CardTitle>
         <div className="ml-auto flex items-center gap-1.5">
-          {read && <span className="text-[9px] text-text-muted truncate max-w-28">{read.model.split("/").pop()}</span>}
+          {read && <span className="text-2xs text-text-muted truncate max-w-28">{read.model.split("/").pop()}</span>}
           <button
             onClick={() => load(symbol)}
             disabled={loading}
@@ -55,25 +55,25 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {loading && !read && (
-          <div className="flex items-center gap-2 text-[11px] text-text-muted py-2">
+          <div className="flex items-center gap-2 text-xs text-text-muted py-2">
             <Loader2 size={12} className="animate-spin" /> reading headlines…
           </div>
         )}
         {error && !loading && (
-          <p className="text-[10px] text-down">{error.includes("503") ? "OPENROUTER_API_KEY not configured" : error}</p>
+          <p className="text-2xs text-down">{error.includes("503") ? "OPENROUTER_API_KEY not configured" : error}</p>
         )}
         {read && (
           <>
             <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  "h-5 px-2 rounded border text-[10px] uppercase tracking-wider flex items-center",
+                  "h-5 px-2 rounded border text-2xs flex items-center",
                   VERDICT_STYLE[read.verdict] ?? VERDICT_STYLE.neutral
                 )}
               >
                 {read.verdict}
               </span>
-              <span className="text-[10px] tabular text-text-muted">{read.confidence}% conf</span>
+              <span className="text-2xs tabular text-text-muted">{read.confidence}% conf</span>
               {read.cached && <Badge variant="muted">cached</Badge>}
             </div>
 
@@ -89,28 +89,28 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
               />
             </div>
 
-            <p className="text-[11px] leading-relaxed text-text-secondary">{read.summary}</p>
+            <p className="text-xs leading-relaxed text-text-secondary">{read.summary}</p>
 
             {read.working_for.length > 0 && (
               <div>
-                <div className="text-[9px] uppercase tracking-wider text-up/80 mb-0.5">Working for</div>
+                <div className="text-2xs text-up/80 mb-0.5">Working for</div>
                 {read.working_for.map((x, i) => (
-                  <p key={i} className="text-[10px] text-text-muted leading-snug pl-2 border-l border-up/30 mb-0.5">{x}</p>
+                  <p key={i} className="text-2xs text-text-muted leading-snug pl-2 border-l border-up/30 mb-0.5">{x}</p>
                 ))}
               </div>
             )}
             {read.working_against.length > 0 && (
               <div>
-                <div className="text-[9px] uppercase tracking-wider text-down/80 mb-0.5">Working against</div>
+                <div className="text-2xs text-down/80 mb-0.5">Working against</div>
                 {read.working_against.map((x, i) => (
-                  <p key={i} className="text-[10px] text-text-muted leading-snug pl-2 border-l border-down/30 mb-0.5">{x}</p>
+                  <p key={i} className="text-2xs text-text-muted leading-snug pl-2 border-l border-down/30 mb-0.5">{x}</p>
                 ))}
               </div>
             )}
 
             {read.headlines.length > 0 && (
               <details className="group">
-                <summary className="text-[9px] uppercase tracking-wider text-text-muted cursor-pointer hover:text-text-secondary list-none">
+                <summary className="text-2xs text-text-muted cursor-pointer hover:text-text-secondary list-none">
                   {read.headlines.length} headlines ▸
                 </summary>
                 <div className="mt-1 flex flex-col gap-1 max-h-40 overflow-y-auto">
@@ -120,7 +120,7 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
                       href={h.link}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[10px] leading-snug text-text-muted hover:text-accent transition-colors"
+                      className="text-2xs leading-snug text-text-muted hover:text-accent transition-colors"
                     >
                       {h.title}
                     </a>

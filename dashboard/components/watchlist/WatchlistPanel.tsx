@@ -130,7 +130,7 @@ export function WatchlistPanel() {
               if (e.key === "Escape") setAdding(false);
             }}
             placeholder="Symbol, e.g. RUT"
-            className="h-7 font-mono uppercase"
+            className="h-7 font-mono"
             aria-label="Symbol to add"
           />
           <Button type="submit" variant="default" size="sm">
@@ -142,7 +142,7 @@ export function WatchlistPanel() {
       <ScrollArea className="flex-1">
         {Object.entries(grouped).map(([sector, stocks]) => (
           <div key={sector}>
-            <div className="px-3 h-6 flex items-center gap-2 eyebrow bg-surface/90 backdrop-blur sticky top-0 z-10 border-b border-border/40">
+            <div className="px-3 h-6 flex items-center gap-2 caption bg-surface/90 backdrop-blur sticky top-0 z-10 border-b border-border/40">
               <span className="truncate">{sector}</span>
               <span className="tabular">{stocks.length}</span>
             </div>
@@ -189,7 +189,7 @@ export function WatchlistPanel() {
                   <button
                     type="button"
                     onClick={() => remove(item.symbol)}
-                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 w-5 h-5 rounded-sm flex items-center justify-center text-text-muted hover:text-down hover:bg-down/10 transition-all"
+                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 w-5 h-5 rounded-sm flex items-center justify-center text-text-muted hover:text-down hover:bg-down/10 transition-colors"
                     aria-label={`Remove ${item.symbol} from watchlist`}
                   >
                     <X size={11} />

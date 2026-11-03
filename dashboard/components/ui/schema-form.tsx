@@ -47,7 +47,7 @@ interface Props {
 export function SchemaForm({ schema, value, onChange, className, showReset = true }: Props) {
   if (!schema || !schema.properties) {
     return (
-      <div className="text-[11px] text-text-muted py-4 text-center">
+      <div className="text-xs text-text-muted py-4 text-center">
         No tunable parameters for this strategy.
       </div>
     );
@@ -64,7 +64,7 @@ export function SchemaForm({ schema, value, onChange, className, showReset = tru
     <div className={cn("flex flex-col gap-4", className)}>
       {showReset && (
         <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+          <span className="text-2xs text-text-muted">
             Parameters
           </span>
           <Button
@@ -72,7 +72,7 @@ export function SchemaForm({ schema, value, onChange, className, showReset = tru
             size="sm"
             onClick={reset}
             disabled={!dirty}
-            className="h-6 text-[10px]"
+            className="h-6 text-2xs"
           >
             <RotateCcw />
             Reset
@@ -82,7 +82,7 @@ export function SchemaForm({ schema, value, onChange, className, showReset = tru
 
       {groups.map(([group, fields]) => (
         <div key={group} className="flex flex-col gap-2">
-          <div className="text-[10px] uppercase tracking-wider text-text-muted border-b border-border/60 pb-1">
+          <div className="text-2xs text-text-muted border-b border-border/60 pb-1">
             {group}
           </div>
           <div className="flex flex-col gap-2">
@@ -121,7 +121,7 @@ function FieldRow({
   return (
     <div className="flex items-center justify-between gap-3 min-h-[26px]">
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className="text-[11px] text-text-secondary truncate">{label}</span>
+        <span className="text-xs text-text-secondary truncate">{label}</span>
         {field.description && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -137,7 +137,7 @@ function FieldRow({
       <div className="shrink-0">
         {enumValues ? (
           <Select value={String(value ?? "")} onValueChange={onChange}>
-            <SelectTrigger className="h-7 w-28 text-[11px]">
+            <SelectTrigger className="h-7 w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -156,13 +156,13 @@ function FieldRow({
             max={field.maximum}
             value={(value ?? "") as number | string}
             onChange={(e) => onChange(e.target.value === "" ? "" : +e.target.value)}
-            className="h-7 w-20 text-right tabular text-[11px]"
+            className="h-7 w-20 text-right tabular text-xs"
           />
         ) : (
           <Input
             value={(value ?? "") as string}
             onChange={(e) => onChange(e.target.value)}
-            className="h-7 w-28 text-[11px]"
+            className="h-7 w-28 text-xs"
           />
         )}
       </div>

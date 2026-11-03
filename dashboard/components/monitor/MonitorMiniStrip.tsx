@@ -71,21 +71,21 @@ export function MonitorMiniStrip() {
         className="w-full flex items-baseline justify-between gap-3 py-2 text-left"
       >
         <div className="flex items-baseline gap-3 flex-wrap">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">In-trade monitor</span>
+          <span className="text-2xs text-text-muted">In-trade monitor</span>
           <Pill label="watching" value={snap.count} />
           <Pill label="safe"     value={safe}            tone={safe > 0 ? "text-up" : undefined} />
           <Pill label="near"     value={snap.warning}    tone={snap.warning > 0 ? "text-warning" : undefined} />
           <Pill label="trigger"  value={snap.triggered}  tone={snap.triggered > 0 ? "text-down" : undefined} />
           {allSafe && (
-            <span className="text-[10px] text-text-muted">· all clear</span>
+            <span className="text-2xs text-text-muted">all clear</span>
           )}
         </div>
         <Link
           href="/monitor/exit"
-          className="text-[10px] text-accent hover:underline shrink-0"
+          className="text-2xs text-accent hover:underline shrink-0"
           onClick={(e) => e.stopPropagation()}
         >
-          full monitor →
+          Open monitor
         </Link>
       </button>
 
@@ -103,8 +103,8 @@ export function MonitorMiniStrip() {
 function Pill({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
-      <span className={cn("text-[12px] tabular", tone ?? "text-text-primary")}>{value}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
+      <span className={cn("text-xs tabular", tone ?? "text-text-primary")}>{value}</span>
     </span>
   );
 }
@@ -116,12 +116,12 @@ function MiniRow({ entry }: { entry: MonitorEntry }) {
     <div className="flex items-baseline justify-between gap-3 py-1 border-t border-border/20">
       <div className="flex items-baseline gap-2 min-w-0">
         <span className={cn("w-1.5 h-1.5 rounded-full translate-y-[-2px] shrink-0", dot)} />
-        <span className="font-mono text-[12px] tabular text-text-primary truncate">
+        <span className="font-mono text-xs tabular text-text-primary truncate">
           {entry.symbol} {entry.short_strike}<span className="text-text-muted"> / </span>{entry.long_strike}
         </span>
-        <span className="text-[10px] uppercase tracking-wider text-text-muted hidden sm:inline">{entry.spread_type}</span>
+        <span className="text-2xs text-text-muted hidden sm:inline">{entry.spread_type}</span>
       </div>
-      <div className="flex items-baseline gap-x-3 text-[11px] tabular shrink-0">
+      <div className="flex items-baseline gap-x-3 text-xs tabular shrink-0">
         <span className="text-text-muted">Δ <span className="text-text-primary">{entry.current_delta != null ? entry.current_delta.toFixed(1) : "—"}</span></span>
         <span className="text-text-muted">exit <span className="text-text-secondary">{entry.exit_delta}</span></span>
         <span className="text-text-muted">head <span className={cn(tone, "font-medium")}>{entry.headroom != null ? entry.headroom.toFixed(1) : "—"}</span></span>

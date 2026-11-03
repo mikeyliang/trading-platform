@@ -60,7 +60,7 @@ export function TradeMarkerPopover({
       role="dialog"
     >
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-surface-2/30">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">Trade</span>
+        <span className="text-2xs text-text-muted">Trade</span>
         {trades.length > 1 && (
           <div className="flex items-center gap-0.5">
             {trades.map((_t, i) => (
@@ -69,7 +69,7 @@ export function TradeMarkerPopover({
                 type="button"
                 onClick={() => setActiveIdx(i)}
                 className={cn(
-                  "h-4 min-w-[16px] px-1 rounded-sm text-[9px] tabular transition-colors",
+                  "h-4 min-w-[16px] px-1 rounded-sm text-2xs tabular transition-colors",
                   i === activeIdx
                     ? "bg-accent/20 text-accent"
                     : "bg-surface-2 text-text-muted hover:text-text-secondary",
@@ -78,7 +78,7 @@ export function TradeMarkerPopover({
                 {i + 1}
               </button>
             ))}
-            <span className="text-[9px] text-text-muted ml-1">/ {trades.length}</span>
+            <span className="text-2xs text-text-muted ml-1">/ {trades.length}</span>
           </div>
         )}
         <button
@@ -120,11 +120,11 @@ function TradeDetails({ trade: t }: { trade: TradeHistoryRecord }) {
   }, [t.timestamp]);
 
   return (
-    <div className="px-3 py-2 flex flex-col gap-2 text-[11px]">
+    <div className="px-3 py-2 flex flex-col gap-2 text-xs">
       <div className="flex items-baseline gap-2">
         <span
           className={cn(
-            "px-1.5 py-0.5 rounded-sm text-[10px] uppercase tracking-wider font-medium tabular",
+            "px-1.5 py-0.5 rounded-sm text-2xs font-medium tabular",
             isBuy ? "bg-up/15 text-up" : "bg-down/15 text-down",
           )}
         >
@@ -132,18 +132,18 @@ function TradeDetails({ trade: t }: { trade: TradeHistoryRecord }) {
         </span>
         <span className="text-text-primary font-medium tabular">{t.symbol}</span>
         {isOption && strike != null && right && (
-          <span className="text-text-secondary tabular text-[11px]">
+          <span className="text-text-secondary tabular text-xs">
             {formatStrike(strike)}{right}
           </span>
         )}
         {isOption && expiry && (
-          <span className="text-text-muted text-[10px] tabular">
+          <span className="text-text-muted text-2xs tabular">
             {fmtOptionExpiry(expiry)}
           </span>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] tabular">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-2xs tabular">
         <Field label="Time" value={tsLabel} />
         <Field label="Qty" value={fmt(t.quantity, 0)} />
         <Field label="Fill" value={fmt(t.price, 2)} />
@@ -160,7 +160,7 @@ function TradeDetails({ trade: t }: { trade: TradeHistoryRecord }) {
 
       <a
         href={`/trade-history?trade=${t.id}`}
-        className="inline-flex items-center gap-1 text-[10px] text-text-muted hover:text-accent transition-colors w-fit"
+        className="inline-flex items-center gap-1 text-2xs text-text-muted hover:text-accent transition-colors w-fit"
       >
         Open in history <ExternalLink size={9} />
       </a>
@@ -173,11 +173,11 @@ function Field({
 }: { label: string; value: string; valueClassName?: string; mono?: boolean }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       <span
         className={cn(
           "text-text-primary tabular",
-          mono && "text-[10px]",
+          mono && "text-2xs",
           valueClassName,
         )}
         title={value}
@@ -233,11 +233,11 @@ function JournalEditor({
   return (
     <div className="px-3 pb-2 pt-1 border-t border-border/40 flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-[9px] uppercase tracking-wider text-text-muted">Journal</span>
+        <span className="text-2xs text-text-muted">Journal</span>
         {savedAt && !dirty && !saving && (
-          <span className="text-[9px] text-up">saved</span>
+          <span className="text-2xs text-up">saved</span>
         )}
-        {err && <span className="text-[9px] text-down" title={err}>save failed</span>}
+        {err && <span className="text-2xs text-down" title={err}>save failed</span>}
       </div>
       <textarea
         ref={inputRef}
@@ -248,18 +248,18 @@ function JournalEditor({
         rows={3}
         className={cn(
           "w-full resize-y rounded-sm border border-border bg-surface-2/30",
-          "px-2 py-1 text-[11px] text-text-primary placeholder:text-text-muted/60",
+          "px-2 py-1 text-xs text-text-primary placeholder:text-text-muted/60",
           "outline-none focus:border-accent/50 transition-colors tabular",
         )}
       />
       <div className="flex items-center gap-2">
-        <span className="text-[9px] text-text-muted">⌘/Ctrl-Enter to save</span>
+        <span className="text-2xs text-text-muted">⌘/Ctrl-Enter to save</span>
         <button
           type="button"
           onClick={onSave}
           disabled={!dirty || saving}
           className={cn(
-            "ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-sm text-[10px] transition-colors",
+            "ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-sm text-2xs transition-colors",
             !dirty || saving
               ? "bg-surface-2 text-text-muted cursor-not-allowed"
               : "bg-accent/15 text-accent hover:bg-accent/25",

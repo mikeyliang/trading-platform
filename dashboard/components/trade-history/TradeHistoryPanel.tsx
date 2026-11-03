@@ -281,7 +281,7 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
           {activeFilterCount > 0 && (
             <button
               onClick={clearAll}
-              className="ml-auto inline-flex items-center gap-1 h-5 px-2 rounded-sm border border-border bg-surface-2/60 hover:bg-surface-2 text-text-secondary hover:text-text-primary text-[10px] transition-colors"
+              className="ml-auto inline-flex items-center gap-1 h-5 px-2 rounded-sm border border-border bg-surface-2/60 hover:bg-surface-2 text-text-secondary hover:text-text-primary text-2xs transition-colors"
             >
               <X size={9} />
               Clear all
@@ -351,7 +351,7 @@ function ViewToggle({ value, onChange }: { value: View; onChange: (v: View) => v
           onClick={() => onChange(o.v)}
           aria-pressed={value === o.v}
           className={cn(
-            "inline-flex items-center gap-1 px-2 text-[10px] transition-colors whitespace-nowrap",
+            "inline-flex items-center gap-1 px-2 text-2xs transition-colors whitespace-nowrap",
             i > 0 && "border-l border-border",
             value === o.v
               ? "bg-accent/15 text-accent font-medium"
@@ -454,7 +454,7 @@ function StatItem({ label, value, valueClassName, loading, primary, muted }: Sta
     <div className="flex items-baseline gap-1.5 shrink-0">
       <span
         className={cn(
-          "text-[10px] uppercase tracking-wider",
+          "text-2xs",
           muted ? "text-text-muted/70" : "text-text-muted"
         )}
       >
@@ -463,7 +463,7 @@ function StatItem({ label, value, valueClassName, loading, primary, muted }: Sta
       {loading ? (
         <Skeleton className="h-3 w-14" />
       ) : value === null ? (
-        <span className="tabular text-xs font-medium text-text-muted">—</span>
+        <span className="tabular text-xs font-medium text-text-muted">n/a</span>
       ) : (
         <span
           className={cn(
@@ -506,7 +506,7 @@ function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          "bg-transparent text-[11px] tabular text-text-primary placeholder:text-text-muted/60 outline-none",
+          "bg-transparent text-xs tabular text-text-primary placeholder:text-text-muted/60 outline-none",
           width
         )}
       />
@@ -536,14 +536,14 @@ function FilterGroup<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       <div className="flex h-6 rounded-sm border border-border overflow-hidden">
         {options.map((o, i) => (
           <button
             key={o.v}
             onClick={() => onChange(o.v)}
             className={cn(
-              "px-2 text-[10px] transition-colors whitespace-nowrap",
+              "px-2 text-2xs transition-colors whitespace-nowrap",
               i > 0 && "border-l border-border",
               value === o.v
                 ? "bg-accent/15 text-accent font-medium"
@@ -628,7 +628,7 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
           <span className="inline-flex items-baseline gap-1 justify-end">
             {fmtCurrency(pnl)}
             {pnlPct != null && (
-              <span className="text-[10px] text-text-muted">
+              <span className="text-2xs text-text-muted">
                 ({fmtPct(pnlPct)})
               </span>
             )}
@@ -861,7 +861,7 @@ function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
                   return next;
                 })
               }
-              className="w-full flex items-center gap-3 px-3 py-1.5 text-[11px] tabular hover:bg-surface-2/40 transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-1.5 text-xs tabular hover:bg-surface-2/40 transition-colors"
             >
               <span className="text-text-muted shrink-0">
                 {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
@@ -869,15 +869,15 @@ function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
               <span className="text-text-primary font-medium min-w-[110px] text-left">
                 {g.label}
               </span>
-              <span className="text-text-muted text-[10px]">
+              <span className="text-text-muted text-2xs">
                 {g.trades.length} trade{g.trades.length === 1 ? "" : "s"}
               </span>
-              <span className="text-text-muted text-[10px]">
+              <span className="text-text-muted text-2xs">
                 {g.buys}B / {g.sells}S
               </span>
               <span
                 className={cn(
-                  "text-[11px] tabular ml-auto font-medium",
+                  "text-xs tabular ml-auto font-medium",
                   g.netPnl === 0 ? "text-text-muted" : pnlClass(g.netPnl),
                 )}
                 title={`${g.wins} winning / ${g.losses} losing trades`}
@@ -885,7 +885,7 @@ function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
                 {g.netPnl === 0 ? "—" : fmtCurrency(g.netPnl)}
               </span>
               <span
-                className="text-[10px] text-text-muted max-w-[160px] truncate hidden md:inline-block"
+                className="text-2xs text-text-muted max-w-[160px] truncate hidden md:inline-block"
                 title={g.symbols.join(", ")}
               >
                 {g.symbols.slice(0, 4).join(" · ")}
@@ -1013,16 +1013,16 @@ function ContractCell({
     <span className="inline-flex items-baseline gap-1.5">
       <span className="text-text-primary">{symbol}</span>
       {contract.strike != null && contract.right && (
-        <span className="text-text-secondary tabular text-[11px]">
+        <span className="text-text-secondary tabular text-xs">
           {formatStrike(contract.strike)}{contract.right}
         </span>
       )}
       {exp && (
-        <span className="text-text-muted text-[10px] tabular">{exp}</span>
+        <span className="text-text-muted text-2xs tabular">{exp}</span>
       )}
       {contract.isExpiration && contract.txType && (
         <span
-          className="px-1 py-px rounded-sm bg-surface-2 text-text-muted text-[9px] uppercase tracking-wider"
+          className="px-1 py-px rounded-sm bg-surface-2 text-text-muted text-2xs"
           title={`Transaction type: ${contract.txType}`}
         >
           {shortTxLabel(contract.txType)}

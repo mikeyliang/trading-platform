@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 // and connection state; `accent` marks the interactive or selected thing;
 // `muted` is for neutral metadata such as account mode.
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded px-1.5 h-[18px] text-2xs font-medium uppercase tracking-wider border leading-none whitespace-nowrap transition-colors",
+  "inline-flex items-center gap-1 px-1.5 h-[18px] text-2xs font-medium border leading-none whitespace-nowrap transition-colors",
   {
     variants: {
       variant: {

@@ -77,10 +77,10 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-2 h-7 border-b border-border/60 text-[10px] uppercase tracking-wider text-text-muted">
+      <div className="flex items-center justify-between px-2 h-7 border-b border-border/60 text-2xs text-text-muted">
         <span className="flex items-center gap-1.5">
           <Receipt size={10} className="text-accent" />
-          Tape · {symbol}
+          Tape, {symbol}
           <span
             className={cn(
               "ml-1 inline-block w-1 h-1 rounded-full",
@@ -99,7 +99,7 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[64px_1fr_72px] px-2 h-5 items-center text-[9px] uppercase tracking-wider text-text-muted border-b border-border/40">
+      <div className="grid grid-cols-[64px_1fr_72px] px-2 h-5 items-center text-2xs text-text-muted border-b border-border/40">
         <span>Time</span>
         <span>Price</span>
         <span className="text-right">Size</span>
@@ -107,7 +107,7 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
 
       <div className="flex-1 overflow-auto">
         {prints.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-[10px] text-text-muted">
+          <div className="h-full flex items-center justify-center text-2xs text-text-muted">
             awaiting prints…
           </div>
         ) : (
@@ -121,7 +121,7 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
               <div
                 key={`${p.ts}-${i}`}
                 className={cn(
-                  "grid grid-cols-[64px_1fr_72px] px-2 h-[18px] items-center text-[10px] tabular border-b border-border/15",
+                  "grid grid-cols-[64px_1fr_72px] px-2 h-[18px] items-center text-2xs tabular border-b border-border/15",
                   isLarge && "bg-warning/10"
                 )}
               >

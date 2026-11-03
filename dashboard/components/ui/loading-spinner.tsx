@@ -37,7 +37,7 @@ export function LoadingSpinner({
         aria-hidden={!srOnly}
       />
       {text && (
-        <span className="text-[11px] text-text-muted tabular">{text}</span>
+        <span className="text-xs text-text-muted tabular">{text}</span>
       )}
       <span className="sr-only">{text ?? "Loading"}</span>
     </div>

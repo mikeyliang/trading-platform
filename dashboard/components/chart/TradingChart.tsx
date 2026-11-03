@@ -382,10 +382,11 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           open: b.open, high: b.high, low: b.low, close: b.close,
         })));
         if (volumeOn) {
+          const vc = chartChrome();
           volRef.current?.setData(bars.map((b: Bar) => ({
             time: b.time as UTCTimestamp,
             value: b.volume,
-            color: b.close >= b.open ? "rgba(38,166,154,0.3)" : "rgba(239,83,80,0.3)",
+            color: b.close >= b.open ? vc.upSoft : vc.downSoft,
           })));
         } else {
           volRef.current?.setData([]);
@@ -443,11 +444,12 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     const chart = createChart(el, { ...chartOpts(), width: el.clientWidth, height: el.clientHeight });
     chartRef.current = chart;
 
+    const chrome = chartChrome();
     candleRef.current = chart.addCandlestickSeries({
-      upColor: "#26a69a", downColor: "#ef5350",
-      borderUpColor: "#26a69a", borderDownColor: "#ef5350",
-      wickUpColor: "#26a69a", wickDownColor: "#ef5350",
-      priceLineColor: "#3f3f46",
+      upColor: chrome.up, downColor: chrome.down,
+      borderUpColor: chrome.up, borderDownColor: chrome.down,
+      wickUpColor: chrome.up, wickDownColor: chrome.down,
+      priceLineColor: chrome.crosshair,
       priceLineStyle: LineStyle.Dotted,
     });
 
@@ -681,7 +683,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       {/* header strip */}
       <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-border bg-surface shrink-0 flex-wrap">
         <div className="flex items-baseline gap-2">
-          <span className="font-mono font-medium text-sm text-text-primary tracking-tight">{symbol}</span>
+          <span className="font-mono font-medium text-sm text-text-primary">{symbol}</span>
           {display && (
             <span className="text-lg tabular font-semibold text-text-primary leading-none">
               {fmt(display.c)}
@@ -802,7 +804,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       {/* chart canvas */}
       <div ref={containerRef} className="relative flex-1 min-h-0">
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
-          <span className="text-[88px] font-mono font-medium text-text-primary/[0.035] tracking-[0.2em]">{symbol}</span>
+          <span className="text-[88px] font-mono font-medium text-text-primary/[0.035]">{symbol}</span>
         </div>
 
         {/* Custom floating tooltip */}
@@ -864,13 +866,13 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
                     : t.symbol;
                   return (
                     <div key={t.id} className="px-3 py-1.5">
-                      <div className="flex items-baseline justify-between gap-2 text-[11px]">
+                      <div className="flex items-baseline justify-between gap-2 text-xs">
                         <span className={cn("font-semibold shrink-0", isBuy ? "text-up" : "text-down")}>
                           {isBuy ? "Bought" : "Sold"} {fmt(t.quantity, 0)}
                         </span>
                         <span className="text-text-secondary shrink-0 tabular">@ ${fmt(t.price)}</span>
                       </div>
-                      <div className="text-[10px] text-text-muted truncate mt-0.5">{detail}</div>
+                      <div className="text-2xs text-text-muted truncate mt-0.5">{detail}</div>
                     </div>
                   );
                 })}
@@ -905,7 +907,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
                 />
                 <div className="flex flex-col gap-1 mt-1">
                   {legs.map((leg, i) => (
-                    <div key={i} className="flex items-center justify-between text-[11px] tabular">
+                    <div key={i} className="flex items-center justify-between text-xs tabular">
                       <span className={cn(leg.action === "SELL" ? "text-down" : "text-up")}>
                         {leg.action === "SELL" ? "short" : "long"}
                       </span>
@@ -915,7 +917,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
                     </div>
                   ))}
                 </div>
-                <div className="mt-2 pt-2 border-t border-border/40 text-[10px] text-text-muted tabular">
+                <div className="mt-2 pt-2 border-t border-border/40 text-2xs text-text-muted tabular">
                   max {fmt(s.max_profit)} / {fmt(-Math.abs(s.max_loss))}
                 </div>
               </OverlayCard>
@@ -928,16 +930,16 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
                 tone="warning"
                 hint={`${projected.dte}d · ${projected.expiryLabel}`}
               />
-              <div className="flex items-center gap-2 text-[11px] tabular mt-1">
-                <span className="text-warning font-mono">{projected.shortStrike}P</span>
+              <div className="flex items-center gap-2 text-xs tabular mt-1">
+                <span className="text-warning text-xs">{projected.shortStrike}P</span>
                 <span className="text-text-muted">/</span>
-                <span className="text-accent font-mono">{projected.longStrike}P</span>
+                <span className="text-accent text-xs">{projected.longStrike}P</span>
                 <span className="ml-auto text-text-muted">
                   Δ {Math.abs(projected.shortDelta).toFixed(2)}
                 </span>
               </div>
               {projected.estCredit != null && (
-                <div className="mt-1.5 text-[10px] text-text-muted tabular">
+                <div className="mt-1.5 text-2xs text-text-muted tabular">
                   est credit <span className="text-up">${projected.estCredit.toFixed(2)}</span>
                   <span className="ml-2">
                     max loss ${((projected.shortStrike - projected.longStrike - projected.estCredit) * 100).toFixed(0)}
@@ -1021,14 +1023,14 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       {smiOn && (
         <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }}>
           <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">SMI</span>
-            <span className="text-[10px] tabular text-text-muted">13 · 25 · 2</span>
-            <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
+            <span className="text-2xs text-text-muted">SMI</span>
+            <span className="text-2xs tabular text-text-muted">13, 25, 2</span>
+            <div className="ml-auto flex items-center gap-3 text-2xs tabular text-text-muted">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-0.5 bg-[#60a5fa]" /> smi
+                <span className="w-2 h-0.5 bg-chart-ema-fast" /> smi
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-0.5 bg-[#f59e0b]" /> signal
+                <span className="w-2 h-0.5 bg-chart-macd-signal" /> signal
               </span>
             </div>
           </div>
@@ -1040,22 +1042,22 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       {rsiOn && (
         <div className="border-t border-border bg-bg shrink-0" style={{ height: 120 }}>
           <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">RSI</span>
-            <span className="text-[10px] tabular text-text-muted">14</span>
+            <span className="text-2xs text-text-muted">RSI</span>
+            <span className="text-2xs tabular text-text-muted">14</span>
             {rsiSnap?.rsi != null && (
-              <span className="text-[10px] tabular text-text-secondary">
+              <span className="text-2xs tabular text-text-secondary">
                 {rsiSnap.rsi.toFixed(1)}
               </span>
             )}
             {rsiSnap?.zone === "overbought" && (
-              <span className="text-[10px] tabular text-down">overbought</span>
+              <span className="text-2xs tabular text-down">overbought</span>
             )}
             {rsiSnap?.zone === "oversold" && (
-              <span className="text-[10px] tabular text-up">oversold</span>
+              <span className="text-2xs tabular text-up">oversold</span>
             )}
-            <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
+            <div className="ml-auto flex items-center gap-3 text-2xs tabular text-text-muted">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-0.5 bg-[#a855f7]" /> rsi
+                <span className="w-2 h-0.5 bg-chart-ema-slow" /> rsi
               </span>
             </div>
           </div>
@@ -1067,20 +1069,20 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       {macdOn && (
         <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }}>
           <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">MACD</span>
-            <span className="text-[10px] tabular text-text-muted">12 · 26 · 9</span>
+            <span className="text-2xs text-text-muted">MACD</span>
+            <span className="text-2xs tabular text-text-muted">12, 26, 9</span>
             {macdSnap?.cross === "bullish" && (
-              <span className="text-[10px] tabular text-up">bullish</span>
+              <span className="text-2xs tabular text-up">bullish</span>
             )}
             {macdSnap?.cross === "bearish" && (
-              <span className="text-[10px] tabular text-down">bearish</span>
+              <span className="text-2xs tabular text-down">bearish</span>
             )}
-            <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
+            <div className="ml-auto flex items-center gap-3 text-2xs tabular text-text-muted">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-0.5 bg-[#60a5fa]" /> macd
+                <span className="w-2 h-0.5 bg-chart-ema-fast" /> macd
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-0.5 bg-[#f59e0b]" /> signal
+                <span className="w-2 h-0.5 bg-chart-macd-signal" /> signal
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-up/60" /> hist
@@ -1286,14 +1288,14 @@ function buildOverlayGroups(args: {
     ],
     extra: args.fibOn ? (
       <div className="flex flex-wrap gap-0.5 pt-1.5 pl-1.5">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted self-center pr-1">fib lookback</span>
+        <span className="text-2xs text-text-muted self-center pr-1">fib lookback</span>
         {(["3m", "6m", "9m", "12m", "all"] as FibRange[]).map((r) => (
           <button
             key={r}
             type="button"
             onClick={() => args.setFibRange(r)}
             className={cn(
-              "h-5 px-1.5 text-[10px] tabular rounded-sm transition-colors",
+              "h-5 px-1.5 text-2xs tabular rounded-sm transition-colors",
               args.fibRange === r
                 ? "text-text-primary bg-surface-2"
                 : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60",

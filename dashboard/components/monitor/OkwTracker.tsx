@@ -116,9 +116,9 @@ function SummaryStrip({ s }: { s: OkwSummary }) {
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" | "accent" }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">{label}</div>
+      <div className="text-2xs text-text-muted mb-1.5">{label}</div>
       <div className={cn(
-        "text-xl md:text-2xl font-semibold tabular tracking-tight",
+        "text-xl md:text-2xl font-semibold tabular",
         tone === "up" ? "text-up"
           : tone === "down" ? "text-down"
           : tone === "accent" ? "text-accent"
@@ -165,7 +165,7 @@ function AddForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () 
 
   return (
     <section className="border border-border/40 rounded-md p-4 bg-surface-2/30 flex flex-col gap-4">
-      <div className="text-[10px] uppercase tracking-wider text-text-muted">Log a placed trade</div>
+      <div className="text-2xs text-text-muted">Log a placed trade</div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <FormField label="Type">
@@ -177,7 +177,7 @@ function AddForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () 
           </Select>
         </FormField>
         <FormField label="Symbol">
-          <Input value={f.symbol ?? ""} onChange={(e) => setField("symbol", e.target.value.toUpperCase())} className="h-8 uppercase tabular" />
+          <Input value={f.symbol ?? ""} onChange={(e) => setField("symbol", e.target.value.toUpperCase())} className="h-8 tabular" />
         </FormField>
         <FormField label="Expiry YYYYMMDD">
           <Input value={f.expiry ?? ""} onChange={(e) => setField("expiry", e.target.value)} placeholder="20260620" className="h-8 tabular" />
@@ -226,7 +226,7 @@ function AddForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () 
         </FormField>
       </div>
 
-      {error && <div className="text-[11px] text-down">{error}</div>}
+      {error && <div className="text-xs text-down">{error}</div>}
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
@@ -241,7 +241,7 @@ function AddForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       {children}
     </label>
   );
@@ -250,7 +250,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       {children}
     </label>
   );
@@ -260,8 +260,8 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 function TradesTable({ trades, onRefresh }: { trades: OkwTrade[]; onRefresh: () => void }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
-        <thead className="text-[10px] uppercase tracking-wider text-text-muted">
+      <table className="w-full text-xs tabular">
+        <thead className="text-2xs text-text-muted">
           <tr>
             <th className="px-3 py-2 text-left font-medium">When</th>
             <th className="px-3 py-2 text-left font-medium">Type</th>
@@ -311,7 +311,7 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
     <>
       <tr className="border-t border-border/30 hover:bg-surface-2/30">
         <td className="px-3 py-2.5 text-text-secondary whitespace-nowrap">{placedStr}</td>
-        <td className={cn("px-3 py-2.5 uppercase text-[10px] tracking-wider", tone)}>
+        <td className={cn("px-3 py-2.5 text-2xs", tone)}>
           {t.trade_type === "marsmax" ? "MAX" : t.trade_type}
         </td>
         <td className="px-3 py-2.5 text-text-primary font-medium">{t.symbol}</td>
@@ -343,7 +343,7 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
         </td>
         <td className="px-3 py-2.5">
           <span className={cn(
-            "text-[10px] uppercase tracking-wider",
+            "text-2xs",
             t.status === "open" ? "text-accent" : t.status === "closed" ? "text-text-secondary" : "text-text-muted"
           )}>
             {t.status}
@@ -355,7 +355,7 @@ function Row({ t, onRefresh }: { t: OkwTrade; onRefresh: () => void }) {
             <button
               type="button"
               onClick={() => setClosing((v) => !v)}
-              className="text-[10px] text-accent hover:underline"
+              className="text-2xs text-accent hover:underline"
             >
               {closing ? "cancel" : "close"}
             </button>

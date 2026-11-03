@@ -21,7 +21,7 @@ export default function SettingsPage() {
         actions={
           <button
             onClick={() => refetch()}
-            className="h-6 px-2 text-[11px] rounded-sm bg-surface-2 hover:bg-surface-3 text-text-secondary border border-border/60"
+            className="h-6 px-2 text-xs rounded-sm bg-surface-2 hover:bg-surface-3 text-text-secondary border border-border/60"
           >
             Refresh
           </button>
@@ -32,7 +32,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Runtime</CardTitle>
-            <span className="text-[10px] tabular font-mono text-text-muted">
+            <span className="text-2xs tabular font-mono text-text-muted">
               {lastCheckedAt ? new Date(lastCheckedAt).toLocaleTimeString() : "—"}
             </span>
           </CardHeader>
@@ -54,7 +54,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Account</CardTitle>
-            <span className={cn("text-[10px] tabular font-mono", account ? "text-text-secondary" : "text-text-muted")}>
+            <span className={cn("text-2xs tabular font-mono", account ? "text-text-secondary" : "text-text-muted")}>
               {account ? "live" : "no binding"}
             </span>
           </CardHeader>
@@ -108,7 +108,7 @@ export default function SettingsPage() {
         </Card>
       </div>
 
-      <p className="text-[10px] text-text-muted">
+      <p className="text-2xs text-text-muted">
         Persistent preferences (theme switching, custom layouts, API endpoint overrides) are not yet wired —
         runtime values shown here are read-only.
       </p>
@@ -133,10 +133,10 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between px-3 h-7">
-      <span className="text-[11px] text-text-muted">{label}</span>
+      <span className="text-xs text-text-muted">{label}</span>
       <span
         className={cn(
-          "text-[11px]",
+          "text-xs",
           mono && "tabular font-mono",
           valueClass ?? "text-text-primary"
         )}

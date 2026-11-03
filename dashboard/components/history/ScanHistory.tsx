@@ -50,7 +50,7 @@ export function ScanHistory() {
                 type="button"
                 onClick={() => setFilter(f.value)}
                 className={cn(
-                  "h-7 px-2.5 text-[11px] tabular rounded-sm transition-colors",
+                  "h-7 px-2.5 text-xs tabular rounded-sm transition-colors",
                   filter === f.value
                     ? "text-text-primary bg-surface-2"
                     : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
@@ -78,9 +78,9 @@ export function ScanHistory() {
 
       {!loading && scans.length > 0 && (
         <div className="overflow-x-auto -mx-1">
-          <table className="w-full text-[11px] tabular">
+          <table className="w-full text-xs tabular">
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-text-muted">
+              <tr className="text-2xs text-text-muted">
                 <th className="px-3 py-2 text-left font-medium">When</th>
                 <th className="px-3 py-2 text-left font-medium">Scope</th>
                 <th className="px-3 py-2 text-left font-medium">Sym</th>
@@ -166,11 +166,11 @@ function Metric({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">{label}</div>
+      <div className="text-2xs text-text-muted mb-1.5">{label}</div>
       <div className="flex items-baseline gap-2">
         <span
           className={cn(
-            "text-xl md:text-2xl font-semibold tabular tracking-tight",
+            "text-xl md:text-2xl font-semibold tabular",
             tone === "up" ? "text-up" : tone === "accent" ? "text-accent" : "text-text-primary",
           )}
         >
@@ -194,9 +194,9 @@ function Row({ scan }: { scan: ScanRecord }) {
   return (
     <tr className="border-t border-border/30 hover:bg-surface-2/30 transition-colors">
       <td className="px-3 py-2.5 text-text-secondary tabular whitespace-nowrap">{dateStr}</td>
-      <td className="px-3 py-2.5 text-text-muted text-[10px] uppercase tracking-wider whitespace-nowrap">{scan.scope ?? "—"}</td>
+      <td className="px-3 py-2.5 text-text-muted text-2xs whitespace-nowrap">{scan.scope ?? "—"}</td>
       <td className="px-3 py-2.5 text-text-secondary">{scan.symbol ?? "—"}</td>
-      <td className={cn("px-3 py-2.5 uppercase text-[10px] tracking-wider", tone)}>
+      <td className={cn("px-3 py-2.5 text-2xs", tone)}>
         {reco ?? "—"}
       </td>
       <td className="px-3 py-2.5 text-right font-mono text-text-primary">

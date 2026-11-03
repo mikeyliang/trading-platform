@@ -73,12 +73,12 @@ export function UnderlyingAnalysisCard({
     return (
       <div className="rounded-md border border-border bg-bg overflow-hidden">
         <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+          <span className="text-2xs text-text-muted">
             Underlying analysis
           </span>
         </div>
-        <div className="h-[200px] flex items-center justify-center text-[11px] text-text-muted">
-          Indicator data unavailable — backend may need a restart.
+        <div className="h-[200px] flex items-center justify-center text-xs text-text-muted">
+          Indicator data unavailable. The backend may need a restart.
         </div>
       </div>
     );
@@ -144,7 +144,7 @@ export function UnderlyingAnalysisCard({
       style={{ minHeight: 760 }}
     >
       <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">
+        <span className="text-2xs text-text-muted">
           Underlying
         </span>
         <span className="ml-auto flex items-center gap-3">
@@ -171,7 +171,7 @@ export function UnderlyingAnalysisCard({
       </div>
 
       {chart.bars.length < 5 ? (
-        <div className="h-[300px] flex items-center justify-center text-[11px] text-text-muted">
+        <div className="h-[300px] flex items-center justify-center text-xs text-text-muted">
           Not enough data for {timeframe} bars yet.
         </div>
       ) : (
@@ -180,7 +180,7 @@ export function UnderlyingAnalysisCard({
               back to the last bar on pointer-leave. */}
           <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-border/60 bg-surface shrink-0 flex-wrap">
             <div className="flex items-baseline gap-2">
-              <span className="font-medium text-sm text-text-primary tracking-tight">
+              <span className="font-medium text-sm text-text-primary">
                 {symbolLabel}
               </span>
               {headerDisplay && (
@@ -191,7 +191,7 @@ export function UnderlyingAnalysisCard({
               {headerDisplay && (
                 <span
                   className={cn(
-                    "text-[11px] tabular leading-none px-1.5 py-0.5 rounded",
+                    "text-xs tabular leading-none px-1.5 py-0.5 rounded",
                     positive ? "text-up bg-up/10" : "text-down bg-down/10",
                   )}
                 >
@@ -202,13 +202,13 @@ export function UnderlyingAnalysisCard({
                 </span>
               )}
               {hover?.barIdx != null && headerDisplay && (
-                <span className="text-[10px] tabular text-text-muted ml-1">
+                <span className="text-2xs tabular text-text-muted ml-1">
                   {formatBarTime(headerDisplay.time, timeframe)}
                 </span>
               )}
             </div>
             {headerDisplay && (
-              <div className="hidden md:flex items-center gap-3 text-[10px] uppercase tracking-wider text-text-muted">
+              <div className="hidden md:flex items-center gap-3 text-2xs text-text-muted">
                 <span>O <OhlcVal n={headerDisplay.o} /></span>
                 <span>H <OhlcVal n={headerDisplay.h} tone="up" /></span>
                 <span>L <OhlcVal n={headerDisplay.l} tone="down" /></span>
@@ -1022,7 +1022,7 @@ function PaneStack({
             indicator context below. */}
       <div className="relative bg-bg border-t border-border shrink-0" style={{ height: 400 }}>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-0">
-          <span className="text-[88px] font-medium text-text-muted/[0.04] tracking-[0.2em]">
+          <span className="text-[88px] font-medium text-text-muted/[0.04]">
             {symbolWatermark}
           </span>
         </div>
@@ -1034,7 +1034,7 @@ function PaneStack({
         {(tradeMarkers.renderedCount > 0 || tradeMarkers.trades.length > 0) && (
           <div
             className={cn(
-              "absolute top-2 left-2 z-20 inline-flex items-center gap-1 h-5 px-1.5 rounded-sm border text-[10px] tabular pointer-events-none",
+              "absolute top-2 left-2 z-20 inline-flex items-center gap-1 h-5 px-1.5 rounded-sm border text-2xs tabular pointer-events-none",
               tradeMarkers.renderedCount > 0
                 ? "border-up/30 bg-up/10 text-up"
                 : "border-warning/30 bg-warning/10 text-warning",
@@ -1061,10 +1061,10 @@ function PaneStack({
         {initError && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-bg/70 backdrop-blur-sm p-4">
             <div className="max-w-md text-center">
-              <div className="text-down text-[11px] uppercase tracking-wider font-semibold mb-1">
+              <div className="text-down text-xs font-semibold mb-1">
                 chart failed to initialize
               </div>
-              <div className="text-text-secondary text-[11px] tabular">
+              <div className="text-text-secondary text-xs tabular">
                 {initError}
               </div>
             </div>
@@ -1140,11 +1140,11 @@ function Subpane({
   return (
     <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }}>
       <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">
+        <span className="text-2xs text-text-muted">
           {label}
         </span>
-        <span className="text-[10px] tabular text-text-muted">{params}</span>
-        <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
+        <span className="text-2xs tabular text-text-muted">{params}</span>
+        <div className="ml-auto flex items-center gap-3 text-2xs tabular text-text-muted">
           {legend.map((l) => (
             <span key={l.label} className="flex items-center gap-1">
               <span
@@ -1196,7 +1196,7 @@ function OhlcVal({
   const cls =
     tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-secondary";
   return (
-    <span className={cn("normal-case tracking-normal text-[11px] tabular", cls)}>
+    <span className={cn("normal-case tracking-normal text-xs tabular", cls)}>
       {compact ? fmtCompact(n) : fmt(n)}
     </span>
   );
@@ -1231,9 +1231,9 @@ function ForecastReadout({
   const pctTone =
     pctFromSpot >= 0.1 ? "text-up" : pctFromSpot <= -0.1 ? "text-down" : "text-text-muted";
   return (
-    <div className="flex items-center gap-3 px-3 py-1.5 border-t border-border/60 bg-surface text-[10px] tabular text-text-secondary flex-wrap">
+    <div className="flex items-center gap-3 px-3 py-1.5 border-t border-border/60 bg-surface text-2xs tabular text-text-secondary flex-wrap">
       <span
-        className="text-[9px] uppercase tracking-wider font-medium"
+        className="text-2xs font-medium"
         style={{ color: CHART.forecast.cone }}
       >
         forecast +{dayOffset}d · {formatBarTime(projTime, "1d")}
@@ -1296,7 +1296,7 @@ function inferBarStepSeconds(
 function ControlGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       {children}
     </div>
   );
@@ -1321,7 +1321,7 @@ function TimeframePills({
           onClick={() => !disabled && onChange(tf)}
           disabled={disabled}
           className={cn(
-            "px-2 text-[10px] font-medium transition-colors",
+            "px-2 text-2xs font-medium transition-colors",
             i > 0 && "border-l border-border",
             value === tf
               ? "bg-accent/15 text-accent"
@@ -1363,7 +1363,7 @@ function ForecastHorizonPicker({
             key={h}
             onClick={() => onSelect(h)}
             className={cn(
-              "px-2 text-[9px] transition-colors flex items-center gap-1",
+              "px-2 text-2xs transition-colors flex items-center gap-1",
               i > 0 && "border-l border-border",
               isSel ? "bg-accent/15" : "hover:bg-surface-2",
             )}

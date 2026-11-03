@@ -301,7 +301,7 @@ function Message({ message }: { message: ChatMessage }) {
 
   return (
     <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
-      <div className="text-2xs uppercase tracking-wider text-text-muted">
+      <div className="text-2xs text-text-muted">
         {isUser ? "you" : "co-pilot"}
       </div>
 
@@ -335,7 +335,7 @@ function Message({ message }: { message: ChatMessage }) {
         {!message.pending && message.content && (
           <button
             onClick={copy}
-            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 w-5 h-5 rounded bg-surface border border-border flex items-center justify-center text-text-muted hover:text-text-primary transition-all"
+            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 w-5 h-5 rounded bg-surface border border-border flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
             aria-label="Copy"
           >
             {copied ? <Check size={9} /> : <Copy size={9} />}
@@ -417,7 +417,7 @@ function ProposalCard({ proposal }: { proposal: ParamProposal }) {
     <div className="max-w-[92%] w-full rounded-md border border-accent/30 bg-accent/5 p-3 flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <Wand2 size={11} className="text-accent" />
-        <span className="text-2xs uppercase tracking-wider text-accent font-medium">
+        <span className="text-2xs text-accent font-medium">
           Suggested params
         </span>
         <span className="text-2xs tabular text-text-muted ml-auto">

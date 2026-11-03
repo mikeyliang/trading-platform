@@ -136,7 +136,7 @@ export function SpreadFinder() {
                 onChange={(e) => setPending(e.target.value.toUpperCase())}
                 onKeyDown={(e) => { if (e.key === "Enter") onScan(); }}
                 placeholder="ALL"
-                className="h-8 w-24 uppercase tabular"
+                className="h-8 w-24 tabular"
               />
             </Field>
             <Field
@@ -192,12 +192,12 @@ export function SpreadFinder() {
       <MonitorMiniStrip />
 
       {error && (
-        <div className="text-[11px] text-down/80">{error}</div>
+        <div className="text-xs text-down/80">{error}</div>
       )}
 
       {!result && !loading && (
         <div className="py-12 text-center text-sm text-text-secondary">
-          No cached scan yet — the picker hits IBKR for you.
+          No cached scan yet. The picker hits IBKR for you.
           <div className="text-xs text-text-muted mt-1.5">
             Daily 09:30 ET fills this in automatically.
           </div>
@@ -222,7 +222,7 @@ export function SpreadFinder() {
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
-          className="self-start inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary"
+          className="self-start inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary"
         >
           <ChevronDown size={11} className={cn("transition-transform", showAll && "rotate-180")} />
           {showAll ? "Hide" : "Show"} all {allCandidates.length} candidates
@@ -241,11 +241,11 @@ export function SpreadFinder() {
 function Field({ label, hint, children }: { label: string; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       {children}
       {hint && (
         <span className={cn(
-          "text-[10px] tabular",
+          "text-2xs tabular",
           typeof hint === "string" && hint.startsWith("●") ? "text-up" : "text-text-muted"
         )}>
           {hint}
@@ -267,17 +267,17 @@ function StatusLine({
     : refreshSec === 1800 ? "every 30 min"
     : "hourly";
   return (
-    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-text-muted">
+    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted">
       <span className="inline-flex items-center gap-1.5">
         <span className={cn(
           "w-1.5 h-1.5 rounded-full",
           loading ? "bg-warning animate-pulse" : refreshSec > 0 ? "bg-up" : "bg-text-muted"
         )} />
-        {loading ? "Scanning…" : refreshSec === 0 ? "Manual" : `Auto · ${mode}`}
+        {loading ? "Scanning…" : refreshSec === 0 ? "Manual" : `Auto, ${mode}`}
       </span>
       {ago && <span>last <span className="text-text-secondary tabular">{ago}</span> ago</span>}
-      {hydratedFromCache && !loading && <span className="text-text-secondary">· from cache</span>}
-      {candidates > 0 && <span>· {candidates} candidates</span>}
+      {hydratedFromCache && !loading && <span className="text-text-secondary">from cache</span>}
+      {candidates > 0 && <span>{candidates} candidates</span>}
     </div>
   );
 }
@@ -298,18 +298,18 @@ function RecommendationRow({ result, bankroll }: { result: SpreadScanResult; ban
   return (
     <div className="py-4 border-y border-border/40 flex flex-col gap-3">
       <div className="flex items-baseline gap-3 flex-wrap">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">Recommended</span>
-        <span className={cn("text-base font-semibold tracking-tight", tone)}>
+        <span className="text-2xs text-text-muted">Recommended</span>
+        <span className={cn("text-base font-semibold", tone)}>
           {label}
         </span>
         <span className="font-mono text-sm tabular text-text-primary">
           {c.short_strike}<span className="text-text-muted"> / </span>{c.long_strike}{c.side === "put" ? "P" : "C"}
         </span>
-        <span className="text-[11px] text-text-muted tabular">
+        <span className="text-xs text-text-muted tabular">
           {formatExpiry(c.expiry)} · {c.dte}d
         </span>
       </div>
-      <div className="flex items-baseline gap-x-6 gap-y-2 flex-wrap text-[11px] tabular">
+      <div className="flex items-baseline gap-x-6 gap-y-2 flex-wrap text-xs tabular">
         <Stat label="AROC"   value={`${c.aroc_pct.toFixed(0)}%`} tone="up" />
         <Stat label="Kelly"  value={c.kelly_pct.toFixed(0)} />
         <Stat label="POP"    value={`${c.win_prob_pct.toFixed(0)}%`} />
@@ -317,9 +317,9 @@ function RecommendationRow({ result, bankroll }: { result: SpreadScanResult; ban
         <Stat label="adj %"  value={`${c.adj_distance_pct.toFixed(1)}%`} />
         <Stat label="size"   value={`${sizing.recommendedContracts} ×`} tone="up" />
       </div>
-      <p className="text-[11px] text-text-muted leading-relaxed">{rec.reason}</p>
-      <div className="flex gap-3 text-[11px]">
-        <Link href={chartHref} className="text-accent hover:underline">View on chart →</Link>
+      <p className="text-xs text-text-muted leading-relaxed">{rec.reason}</p>
+      <div className="flex gap-3 text-xs">
+        <Link href={chartHref} className="text-accent hover:underline">View on chart</Link>
       </div>
     </div>
   );
@@ -328,7 +328,7 @@ function RecommendationRow({ result, bankroll }: { result: SpreadScanResult; ban
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" }) {
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       <span className={cn(tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-primary")}>
         {value}
       </span>
@@ -349,9 +349,9 @@ function PicksTable({
 }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
+      <table className="w-full text-xs tabular">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-text-muted">
+          <tr className="text-2xs text-text-muted">
             <Th>Trade</Th>
             <Th align="right">Spot</Th>
             <Th align="right">Strikes</Th>
@@ -439,7 +439,7 @@ function PickRow({
           <span className={cn("w-1.5 h-1.5 rounded-full translate-y-[-2px]", dot)} />
           <span className={tone}>{label}</span>
           {isRecommended && (
-            <span className="text-[9px] uppercase tracking-wider text-up">pick</span>
+            <span className="text-2xs text-up">pick</span>
           )}
         </Link>
       </td>
@@ -488,9 +488,9 @@ function AllCandidates({
 }: { rows: { type: string; cand: SpreadCandidate }[]; recommendedType?: string }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
+      <table className="w-full text-xs tabular">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-text-muted">
+          <tr className="text-2xs text-text-muted">
             <Th>Trade</Th>
             <Th align="right">Strikes</Th>
             <Th align="right">Δ</Th>

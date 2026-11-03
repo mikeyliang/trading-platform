@@ -19,7 +19,7 @@ export function SimCompareTable({ runs, selectedId, onSelect }: Props) {
     .sort((a, b) => (b.aggregate!.avg_sharpe - a.aggregate!.avg_sharpe));
 
   if (completed.length === 0) {
-    return <p className="text-[11px] text-text-muted px-3 py-2">no completed runs to compare</p>;
+    return <p className="text-xs text-text-muted px-3 py-2">no completed runs to compare</p>;
   }
 
   const best = {
@@ -71,7 +71,7 @@ export function SimCompareTable({ runs, selectedId, onSelect }: Props) {
               </TableCell>
               <TableCell className="text-right tabular">{a.total_trades}</TableCell>
               <TableCell className="text-right tabular">{a.win_rate.toFixed(0)}%</TableCell>
-              <TableCell className="text-[10px] tabular whitespace-nowrap">
+              <TableCell className="text-2xs tabular whitespace-nowrap">
                 <span className="text-up">{a.best_symbol.symbol} {a.best_symbol.return_pct >= 0 ? "+" : ""}{a.best_symbol.return_pct.toFixed(1)}%</span>
                 <span className="text-text-muted"> / </span>
                 <span className="text-down">{a.worst_symbol.symbol} {a.worst_symbol.return_pct >= 0 ? "+" : ""}{a.worst_symbol.return_pct.toFixed(1)}%</span>

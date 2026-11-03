@@ -327,7 +327,7 @@ export function AgentDebate() {
                   if (e.key === "Enter") runDebate();
                 }}
                 placeholder="RUT"
-                className="h-7 w-20 uppercase tabular"
+                className="h-7 w-20 tabular"
               />
             </Field>
             <Field label="As-of date">
@@ -365,25 +365,25 @@ export function AgentDebate() {
       )}
 
       {result?.cached && (
-        <div className="text-[11px] text-text-muted">
+        <div className="text-xs text-text-muted">
           Cached (1hr TTL) — re-runs are free.
         </div>
       )}
 
       {error && (
-        <div className="flex items-start gap-2 p-2 rounded border border-down/30 bg-down/5 text-[11px]">
+        <div className="flex items-start gap-2 p-2 rounded border border-down/30 bg-down/5 text-xs">
           <AlertCircle size={12} className="text-down shrink-0 mt-0.5" />
           <div>
             <div className="font-medium text-down">Run failed</div>
-            <div className="text-text-secondary mt-0.5 font-mono text-[11px]">{error}</div>
+            <div className="text-text-secondary mt-0.5 font-mono text-xs">{error}</div>
           </div>
         </div>
       )}
 
       {loading && (
-        <div className="p-3 rounded border border-border bg-surface text-[11px] text-text-muted text-center">
-          Running multi-agent debate — this takes 30–90s depending on model and
-          rounds. Each analyst makes 1–2 LLM calls, then bull/bear debate runs
+        <div className="p-3 rounded border border-border bg-surface text-xs text-text-muted text-center">
+          Running multi-agent debate. This takes 30 to 90 seconds depending on model and
+          rounds. Each analyst makes one or two LLM calls, then bull/bear debate runs
           for up to max_debate_rounds.
         </div>
       )}
@@ -436,7 +436,7 @@ function initStreamingStatus(): Record<
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] text-text-muted uppercase tracking-wider">{label}</span>
+      <span className="text-2xs text-text-muted">{label}</span>
       {children}
     </label>
   );
@@ -531,7 +531,7 @@ function DecisionBanner({ result }: { result: AnalyzeResult }) {
           : "border-border bg-surface"
       )}
     >
-      <div className="text-xs uppercase tracking-wider text-text-muted mb-1">
+      <div className="text-xs text-text-muted mb-1">
         Final decision · {result.symbol} · {result.trade_date}
       </div>
       <div
@@ -582,7 +582,7 @@ function ReportSection({
   return (
     <section
       className={cn(
-        "rounded-lg border border-border bg-surface overflow-hidden transition-all",
+        "rounded-lg border border-border bg-surface overflow-hidden transition-colors",
         visible ? "opacity-100 translate-y-0" : "opacity-40 translate-y-1"
       )}
     >
