@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, type Fundamentals } from "@/lib/api";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +14,28 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  SortableTableHead,
+  type SortState,
+} from "@/components/ui/table";
+import { TableSkeletonRows } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { cn, fmtCompact } from "@/lib/utils";
-import { RiArrowUpDownLine as ArrowUpDown, RiFocus3Line as Target } from "@remixicon/react";
+import {
+  RiFocus3Line as Target,
+  RiFilterOffLine as FilterOff,
+  RiRefreshLine as Refresh,
+  RiErrorWarningFill as ErrorDot,
+} from "@remixicon/react";
 
 // Curated universe, same anchor list as the logo map, expanded slightly
 const UNIVERSE = [
@@ -66,9 +82,12 @@ type SortKey =
   | "beta"
   | "fifty_two_week_position";
 
+const COLS = 8;
+
 export default function ScreenerPage() {
   const [data, setData] = useState<Fundamentals[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [query, setQuery] = useState("");
   const [sector, setSector] = useState("All");
   const [tier, setTier] = useState("any");
@@ -77,14 +96,22 @@ export default function ScreenerPage() {
   const [sortKey, setSortKey] = useState<SortKey>("market_cap");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true);
+    setError(false);
     api
       .fundamentalsBulk(UNIVERSE)
       .then((d) => setData(d))
-      .catch(() => setData([]))
+      .catch(() => {
+        setData([]);
+        setError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = useMemo(() => {
     let rows = data.filter((r) => r.market_cap || r.price); // drop fully-empty
@@ -127,151 +154,212 @@ export default function ScreenerPage() {
       setSortDir(k === "symbol" ? "asc" : "desc");
     }
   };
+  const sort: SortState<SortKey> = { key: sortKey, direction: sortDir };
+
+  const hasFilters = query.trim() !== "" || sector !== "All" || tier !== "any" || !!maxPE || !!minDiv;
+  const clearFilters = () => {
+    setQuery("");
+    setSector("All");
+    setTier("any");
+    setMaxPE("");
+    setMinDiv("");
+  };
+
+  const countChip = loading ? (
+    <Badge variant="muted">Loading</Badge>
+  ) : error ? (
+    <Badge variant="down">Fetch failed</Badge>
+  ) : (
+    <Badge variant="muted" className="tabular">
+      {filtered.length} of {data.length} shown
+    </Badge>
+  );
 
   return (
     <PageShell>
       <PageHeader
         title="Screener"
-        actions={
-          <>
-            <Badge variant="muted">
-              {loading ? "loading…" : `${filtered.length} / ${data.length}`}
-            </Badge>
-          </>
-        }
+        description="Fundamentals across the curated universe. Click a symbol to chart it."
+        actions={countChip}
       />
 
-      {/* filters, search always visible, advanced behind disclosure, active filters as chips */}
-      <FilterBar
-        search={{ value: query, onChange: setQuery, placeholder: "Symbol or name…" }}
-        chips={[
-          ...(sector !== "All"
-            ? [{ key: "sector", label: `Sector: ${sector}`, onRemove: () => setSector("All") }]
-            : []),
-          ...(tier !== "any"
-            ? [
-                {
-                  key: "tier",
-                  label: `Cap: ${TIERS.find((t) => t.value === tier)?.label ?? tier}`,
-                  onRemove: () => setTier("any"),
-                },
-              ]
-            : []),
-          ...(maxPE
-            ? [{ key: "pe", label: `P/E ≤ ${maxPE}`, onRemove: () => setMaxPE("") }]
-            : []),
-          ...(minDiv
-            ? [{ key: "div", label: `Div ≥ ${minDiv}%`, onRemove: () => setMinDiv("") }]
-            : []),
-        ]}
-        advanced={
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <Field label="Sector">
-              <Select value={sector} onValueChange={setSector}>
-                <SelectTrigger className="h-7">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SECTORS.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                      {s !== "All" && sectorCounts.get(s) ? ` · ${sectorCounts.get(s)}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Market cap">
-              <Select value={tier} onValueChange={setTier}>
-                <SelectTrigger className="h-7">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIERS.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Max P/E">
-              <Input
-                value={maxPE}
-                onChange={(e) => setMaxPE(e.target.value)}
-                placeholder="e.g. 25"
-                type="number"
-                className="h-7 tabular"
-              />
-            </Field>
-            <Field label="Min dividend %">
-              <Input
-                value={minDiv}
-                onChange={(e) => setMinDiv(e.target.value)}
-                placeholder="e.g. 2"
-                type="number"
-                className="h-7 tabular"
-              />
-            </Field>
-          </div>
-        }
-      />
-
-      {/* table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-caption-1-regular">
-            <thead>
-              <tr className="text-text-tertiary border-b border-separator-border text-caption-2-regular">
-                <Th onClick={() => onSort("symbol")} active={sortKey === "symbol"} dir={sortDir}>
-                  Symbol
-                </Th>
-                <Th>Sector</Th>
-                <Th onClick={() => onSort("market_cap")} active={sortKey === "market_cap"} dir={sortDir} align="right">
-                  Mkt cap
-                </Th>
-                <Th onClick={() => onSort("pe_trailing")} active={sortKey === "pe_trailing"} dir={sortDir} align="right">
-                  P/E
-                </Th>
-                <Th onClick={() => onSort("dividend_yield")} active={sortKey === "dividend_yield"} dir={sortDir} align="right">
-                  Div %
-                </Th>
-                <Th onClick={() => onSort("beta")} active={sortKey === "beta"} dir={sortDir} align="right">
-                  Beta
-                </Th>
-                <Th
-                  onClick={() => onSort("fifty_two_week_position")}
-                  active={sortKey === "fifty_two_week_position"}
-                  dir={sortDir}
-                  align="right"
-                >
-                  52w pos
-                </Th>
-                <Th align="right" />
-              </tr>
-            </thead>
-            <tbody>
-              {loading
-                ? Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i} className="border-b border-separator-border">
-                      {Array.from({ length: 8 }).map((__, j) => (
-                        <td key={j} className="px-2 py-1">
-                          <Skeleton className="h-3 w-16" />
-                        </td>
+      {/* Filters: search always visible, advanced behind disclosure, active filters as chips */}
+      <Card className="shrink-0">
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <FilterOff />
+              Clear
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="p-3">
+          <FilterBar
+            search={{ value: query, onChange: setQuery, placeholder: "Symbol or name" }}
+            chips={[
+              ...(sector !== "All"
+                ? [{ key: "sector", label: `Sector: ${sector}`, onRemove: () => setSector("All") }]
+                : []),
+              ...(tier !== "any"
+                ? [
+                    {
+                      key: "tier",
+                      label: `Cap: ${TIERS.find((t) => t.value === tier)?.label ?? tier}`,
+                      onRemove: () => setTier("any"),
+                    },
+                  ]
+                : []),
+              ...(maxPE
+                ? [{ key: "pe", label: `P/E up to ${maxPE}`, onRemove: () => setMaxPE("") }]
+                : []),
+              ...(minDiv
+                ? [{ key: "div", label: `Dividend from ${minDiv}%`, onRemove: () => setMinDiv("") }]
+                : []),
+            ]}
+            advanced={
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Field label="Sector">
+                  <Select value={sector} onValueChange={setSector}>
+                    <SelectTrigger className="bg-background-primary-default">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECTORS.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                          {s !== "All" && sectorCounts.get(s) ? ` (${sectorCounts.get(s)})` : ""}
+                        </SelectItem>
                       ))}
-                    </tr>
-                  ))
-                : filtered.map((r) => <Row key={r.symbol} r={r} />)}
-              {!loading && filtered.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="text-center py-10 text-text-tertiary text-caption-1-regular">
-                    No matches. Try removing filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Market cap">
+                  <Select value={tier} onValueChange={setTier}>
+                    <SelectTrigger className="bg-background-primary-default">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIERS.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Max P/E">
+                  <Input
+                    value={maxPE}
+                    onChange={(e) => setMaxPE(e.target.value)}
+                    placeholder="e.g. 25"
+                    type="number"
+                    className="tabular bg-background-primary-default"
+                  />
+                </Field>
+                <Field label="Min dividend %">
+                  <Input
+                    value={minDiv}
+                    onChange={(e) => setMinDiv(e.target.value)}
+                    placeholder="e.g. 2"
+                    type="number"
+                    className="tabular bg-background-primary-default"
+                  />
+                </Field>
+              </div>
+            }
+          />
+        </CardContent>
+      </Card>
+
+      {/* Results */}
+      <Card className="shrink-0">
+        <CardHeader>
+          <CardTitle>Results</CardTitle>
+          <span className="text-caption-1-medium text-text-tertiary">Sorted by market cap unless you pick a column</span>
+        </CardHeader>
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <SortableTableHead sortKey="symbol" sort={sort} onSort={onSort}>
+                Symbol
+              </SortableTableHead>
+              <TableHead>Sector</TableHead>
+              <SortableTableHead sortKey="market_cap" sort={sort} onSort={onSort} align="right">
+                Market cap
+              </SortableTableHead>
+              <SortableTableHead sortKey="pe_trailing" sort={sort} onSort={onSort} align="right">
+                P/E
+              </SortableTableHead>
+              <SortableTableHead sortKey="dividend_yield" sort={sort} onSort={onSort} align="right">
+                Dividend
+              </SortableTableHead>
+              <SortableTableHead sortKey="beta" sort={sort} onSort={onSort} align="right">
+                Beta
+              </SortableTableHead>
+              <SortableTableHead sortKey="fifty_two_week_position" sort={sort} onSort={onSort} align="right">
+                52w position
+              </SortableTableHead>
+              <TableHead className="w-10" aria-label="Actions" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableSkeletonRows
+                rows={8}
+                cols={COLS}
+                widths={["w-32", "w-24", "w-16", "w-10", "w-12", "w-10", "w-24", "w-4"]}
+              />
+            ) : error ? (
+              <tr>
+                <td colSpan={COLS}>
+                  <EmptyState
+                    icon={ErrorDot}
+                    title="Fundamentals failed to load"
+                    description="The fundamentals service did not answer. Retry when the API is back."
+                    action={
+                      <div className="flex items-center gap-2">
+                        <Badge variant="down">Error</Badge>
+                        <Button variant="secondary" size="sm" onClick={load}>
+                          <Refresh />
+                          Retry
+                        </Button>
+                      </div>
+                    }
+                  />
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={COLS}>
+                  <EmptyState
+                    icon={FilterOff}
+                    title={data.length === 0 ? "No fundamentals yet" : "No matches"}
+                    description={
+                      data.length === 0
+                        ? "The universe returned no rows. Try again once the data service has warmed up."
+                        : "Nothing in the universe passes every filter. Remove one to widen the net."
+                    }
+                    action={
+                      hasFilters ? (
+                        <Button variant="secondary" size="sm" onClick={clearFilters}>
+                          Clear filters
+                        </Button>
+                      ) : (
+                        <Button variant="secondary" size="sm" onClick={load}>
+                          <Refresh />
+                          Reload
+                        </Button>
+                      )
+                    }
+                  />
+                </td>
+              </tr>
+            ) : (
+              filtered.map((r) => <Row key={r.symbol} r={r} />)
+            )}
+          </TableBody>
+        </Table>
       </Card>
     </PageShell>
   );
@@ -280,96 +368,58 @@ export default function ScreenerPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-caption-2-regular text-text-tertiary">{label}</label>
+      <label className="text-caption-1-medium text-text-tertiary">{label}</label>
       {children}
     </div>
   );
 }
 
-function Th({
-  children,
-  onClick,
-  active,
-  dir,
-  align,
-}: {
-  children?: React.ReactNode;
-  onClick?: () => void;
-  active?: boolean;
-  dir?: "asc" | "desc";
-  align?: "right";
-}) {
-  return (
-    <th
-      className={cn(
-        "px-2 py-1 font-normal",
-        align === "right" ? "text-right" : "text-left",
-        onClick && "cursor-pointer hover:text-text-secondary select-none"
-      )}
-      onClick={onClick}
-    >
-      <span className="inline-flex items-center gap-1">
-        {children}
-        {onClick && (
-          <ArrowUpDown
-            size={9}
-            className={cn(
-              "transition-colors",
-              active ? "text-accent-500" : "text-text-tertiary/50"
-            )}
-          />
-        )}
-      </span>
-    </th>
-  );
-}
-
 function Row({ r }: { r: Fundamentals }) {
   return (
-    <tr className="group border-b border-separator-border hover:bg-background-secondary-hover transition-colors">
-      <td className="px-2 py-1">
+    <TableRow className="group">
+      <TableCell>
         <Link href={`/chart/${r.symbol}`} className="flex items-center gap-2 min-w-0">
           <Logo symbol={r.symbol} size={18} />
-          <div className="flex flex-col min-w-0">
-            <span className="font-medium text-text-primary">{r.symbol}</span>
+          <div className="flex flex-col min-w-0 leading-tight">
+            <span className="text-body-2-medium text-text-primary">{r.symbol}</span>
             {r.name && (
-              <span className="text-caption-2-regular text-text-tertiary truncate max-w-[180px]">{r.name}</span>
+              <span className="text-caption-1-regular text-text-tertiary truncate max-w-[180px]">{r.name}</span>
             )}
           </div>
         </Link>
-      </td>
-      <td className="px-2 py-1 text-text-tertiary">{r.sector ?? "n/a"}</td>
-      <td className="px-2 py-1 text-right tabular">
+      </TableCell>
+      <TableCell className="text-text-secondary">{r.sector ?? "n/a"}</TableCell>
+      <TableCell className="text-right">
         {r.market_cap ? `$${fmtCompact(r.market_cap)}` : "n/a"}
-      </td>
-      <td className="px-2 py-1 text-right tabular">
+      </TableCell>
+      <TableCell className="text-right">
         {r.pe_trailing ? r.pe_trailing.toFixed(1) : "n/a"}
-      </td>
-      <td className="px-2 py-1 text-right tabular">
+      </TableCell>
+      <TableCell className="text-right">
         {r.dividend_yield ? `${(r.dividend_yield * 100).toFixed(2)}%` : "n/a"}
-      </td>
-      <td className="px-2 py-1 text-right tabular">
+      </TableCell>
+      <TableCell className="text-right">
         {r.beta != null ? r.beta.toFixed(2) : "n/a"}
-      </td>
-      <td className="px-2 py-1 text-right">
+      </TableCell>
+      <TableCell className="text-right">
         {r.fifty_two_week_position != null ? (
           <Bar value={r.fifty_two_week_position} />
         ) : (
           <span className="text-text-tertiary">n/a</span>
         )}
-      </td>
-      <td className="px-2 py-1 text-right">
+      </TableCell>
+      <TableCell className="text-right">
         <Link
           href={`/analyzer?symbol=${r.symbol}`}
-          className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex"
+          className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity inline-flex"
           title="Analyze"
         >
           <Button variant="ghost" size="icon-sm" aria-label={`Analyze ${r.symbol}`}>
             <Target />
           </Button>
         </Link>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -380,16 +430,16 @@ function Bar({ value }: { value: number }) {
   const tone = v >= 0.85 ? "down" : v <= 0.15 ? "up" : "neutral";
   return (
     <div className="inline-flex items-center gap-1.5">
-      <div className="relative w-16 h-1.5 rounded-full bg-background-secondary-default overflow-hidden">
+      <div className="relative w-16 h-1.5 rounded-full bg-background-tertiary-default overflow-hidden">
         <div
           className={cn(
-            "absolute top-0 left-0 h-full",
-            tone === "up" ? "bg-status-lime-background" : tone === "down" ? "bg-status-rose-background" : "bg-text-secondary/70"
+            "absolute top-0 left-0 h-full rounded-full",
+            tone === "up" ? "bg-status-lime-text" : tone === "down" ? "bg-status-rose-text" : "bg-foreground-icon-tertiary"
           )}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="tabular text-caption-2-regular text-text-tertiary w-8 text-right">{pct}%</span>
+      <span className="tabular text-caption-1-regular text-text-tertiary w-8 text-right">{pct}%</span>
     </div>
   );
 }

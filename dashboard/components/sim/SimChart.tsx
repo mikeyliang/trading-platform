@@ -247,7 +247,7 @@ export function SimChart({ payload }: Props) {
     setOverlaysOn((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2 px-1 flex-wrap">
         <div className="flex items-center gap-1">
           {OVERLAYS.map((ov) => (
@@ -268,19 +268,19 @@ export function SimChart({ payload }: Props) {
         </div>
       </div>
 
-      <div ref={priceRef} className="w-full h-80 bg-background-full border border-separator-border rounded-md overflow-hidden" />
+      <div ref={priceRef} className="w-full h-80 rounded-2lg bg-background-secondary-default overflow-hidden" />
 
-      <div className="flex items-center gap-3 px-1 text-caption-2-regular text-text-tertiary tabular">
-        <span><span className="text-status-lime-text">▲</span> entry, score 0 to 7</span>
-        <span><span className="text-status-lime-text">▼</span><span className="text-status-rose-text">▼</span> exit ± P&L</span>
+      <div className="flex items-center gap-3 flex-wrap text-caption-1-regular text-text-tertiary tabular">
+        <span><span className="text-status-lime-text">▲</span> Entry, score 0 to 7</span>
+        <span><span className="text-status-lime-text">▼</span><span className="text-status-rose-text">▼</span> Exit with signed P&L</span>
         {showStructure && <span><span style={{ color: COLORS.cyan }}>●</span> CHoCH</span>}
-        <span className="ml-auto">dotted lines: POC / VAH / VAL</span>
+        <span className="ml-auto">Dotted lines: POC, VAH, VAL</span>
       </div>
 
       {PANES.filter((p) => activePanes.includes(p.key)).map((p) => (
-        <div key={p.key} className="border border-separator-border rounded-md overflow-hidden bg-background-full">
-          <div className="flex items-center px-2 h-5 border-b border-separator-border">
-            <span className="text-caption-2-regular text-text-tertiary">{p.label}</span>
+        <div key={p.key} className="rounded-2lg overflow-hidden bg-background-secondary-default">
+          <div className="flex items-center px-3 h-6">
+            <span className="text-caption-1-medium text-text-tertiary">{p.label}</span>
           </div>
           <div ref={paneRefs[p.key]} className="w-full h-24" />
         </div>
@@ -295,12 +295,14 @@ function Toggle({ on, onClick, swatch, children }: {
   return (
     <button
       onClick={onClick}
+      type="button"
+      aria-pressed={on}
       className={cn(
-        "px-1.5 h-5 rounded text-caption-2-regular transition-colors flex items-center gap-1",
-        on ? "bg-background-tertiary-default text-text-primary" : "text-text-tertiary hover:text-text-secondary"
+        "px-2 h-6 rounded-md text-caption-1-medium transition-colors flex items-center gap-1.5 outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring",
+        on ? "bg-background-tertiary-default text-text-primary" : "text-text-tertiary hover:text-text-primary"
       )}
     >
-      {swatch && <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? swatch : "var(--color-border)" }} />}
+      {swatch && <span className="size-2 rounded-full" style={{ background: on ? swatch : "var(--color-separator-border-strong)" }} aria-hidden />}
       {children}
     </button>
   );

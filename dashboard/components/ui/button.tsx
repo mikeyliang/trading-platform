@@ -25,7 +25,7 @@ const buttonVariants = cva(
           "bg-button-ghost-background text-button-ghost-foreground hover:bg-button-ghost-hover active:bg-button-ghost-active disabled:text-button-ghost-disabled-foreground",
         destructive: "bg-button-danger text-text-white shadow-xs disabled:text-foreground-disabled-danger disabled:shadow-none",
         success: "bg-status-lime-background text-status-lime-text hover:brightness-95 disabled:opacity-50",
-        link: "text-accent-500-600 underline-offset-4 hover:underline px-0",
+        link: "text-accent-600 underline-offset-4 hover:underline px-0",
       },
       size: {
         default: "h-8 rounded-lg px-2.5 text-body-2-medium [&_svg]:size-[18px]",

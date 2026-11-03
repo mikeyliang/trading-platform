@@ -31,9 +31,9 @@ const TabsTrigger = React.forwardRef<
       "hover:text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring",
       "disabled:pointer-events-none disabled:opacity-50",
       "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-transparent after:transition-colors",
-      "data-[state=active]:text-accent-500-600 data-[state=active]:text-body-2-medium data-[state=active]:after:bg-accent-500-600",
+      "data-[state=active]:text-accent-600 data-[state=active]:text-body-2-medium data-[state=active]:after:bg-accent-600",
       "[&_[data-count]]:rounded-sm [&_[data-count]]:px-1 [&_[data-count]]:py-px [&_[data-count]]:text-caption-1-medium [&_[data-count]]:bg-background-tertiary-default [&_[data-count]]:text-text-secondary",
-      "data-[state=active]:[&_[data-count]]:bg-accent-500-100 data-[state=active]:[&_[data-count]]:text-accent-500-600",
+      "data-[state=active]:[&_[data-count]]:bg-accent-100 data-[state=active]:[&_[data-count]]:text-accent-600",
       className
     )}
     {...props}

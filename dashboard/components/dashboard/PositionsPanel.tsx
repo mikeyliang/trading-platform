@@ -499,7 +499,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                   <Logo symbol={p.symbol} size={18} />
                   <div className="flex flex-col leading-4">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="group-hover:text-accent-500-600 transition-colors">{p.symbol}</span>
+                      <span className="group-hover:text-accent-600 transition-colors">{p.symbol}</span>
                       {p.is_option && (
                         <span className={cn(
                           "text-caption-2-regular font-medium leading-4",
@@ -508,7 +508,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                           {p.right === "C" ? "Call" : "Put"}
                         </span>
                       )}
-                      <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-500-600 transition-opacity" />
+                      <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-600 transition-opacity" />
                     </span>
                     {p.is_option && (
                       <span className="text-caption-2-regular text-text-tertiary tabular">
@@ -658,8 +658,8 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
               <TableCell className="font-medium">
                 <span className="inline-flex items-center gap-2">
                   <Logo symbol={s.symbol} size={16} />
-                  <span className="group-hover:text-accent-500-600 transition-colors">{s.symbol}</span>
-                  <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-500-600 transition-opacity" />
+                  <span className="group-hover:text-accent-600 transition-colors">{s.symbol}</span>
+                  <Target size={9} className="opacity-0 group-hover:opacity-100 text-accent-600 transition-opacity" />
                 </span>
               </TableCell>
               <TableCell>

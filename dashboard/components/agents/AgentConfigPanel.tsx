@@ -1,8 +1,9 @@
 "use client";
 
-import { RiEqualizerLine as Settings2, RiArrowGoBackLine as RotateCcw } from "@remixicon/react";
-import { cn } from "@/lib/utils";
+import { RiArrowDownSLine, RiArrowRightSLine, RiArrowGoBackLine } from "@remixicon/react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export type AgentKey =
@@ -48,7 +49,7 @@ const AGENT_LABELS: Record<AgentKey, string> = {
   investment_debate_state: "Bull/Bear",
   trader_investment_plan: "Trader",
   risk_debate_state: "Risk",
-  final_trade_decision: "PM Decision",
+  final_trade_decision: "PM decision",
 };
 
 const STORAGE_KEY = "agentDebateConfig.v1";
@@ -93,46 +94,41 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
   const focusedCount = Object.values(config.focused).filter(Boolean).length;
 
   return (
-    <section className="rounded-lg border border-separator-border bg-background-primary-default overflow-hidden">
+    <Card className="shrink-0">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-background-secondary-hover transition-colors"
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-3 px-4 h-11 hover:bg-background-secondary-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring"
       >
-        <div className="flex items-center gap-2">
-          <Settings2 size={14} className="text-text-secondary" />
-          <div className="text-left">
-            <div className="text-body-2-regular font-medium text-text-secondary">
-              Agent configuration
-            </div>
-            <div className="text-caption-1-regular text-text-tertiary">
-              {focusedCount} of {Object.keys(AGENT_LABELS).length} agents focused · speed{" "}
-              {config.streamingSpeedMs}ms
-            </div>
-          </div>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-body-semibold text-text-primary">Agent configuration</span>
+          <Badge variant="muted" className="tabular">
+            {focusedCount} of {Object.keys(AGENT_LABELS).length} agents
+          </Badge>
+          <Badge variant="muted" className="tabular">{config.streamingSpeedMs}ms per agent</Badge>
         </div>
-        <span className="text-caption-1-regular text-text-tertiary">{open ? "Hide" : "Show"}</span>
+        <span className="inline-flex items-center gap-1 text-caption-1-medium text-text-tertiary shrink-0">
+          {open ? "Hide" : "Show"}
+          {open ? <RiArrowDownSLine size={16} aria-hidden /> : <RiArrowRightSLine size={16} aria-hidden />}
+        </span>
       </button>
 
       {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-separator-border space-y-3">
+        <CardContent className="border-t border-separator-border flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1">
-              <span className="text-caption-2-regular text-text-tertiary">
-                Default ticker
-              </span>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-caption-1-medium text-text-tertiary">Default ticker</span>
               <Input
                 value={config.defaultSymbol}
                 onChange={(e) =>
                   update({ defaultSymbol: e.target.value.toUpperCase() })
                 }
-                className="h-7 w-24 tabular"
+                className="w-32 tabular"
               />
             </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-caption-2-regular text-text-tertiary">
-                Streaming speed (ms per agent)
-              </span>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-caption-1-medium text-text-tertiary">Streaming speed (ms per agent)</span>
               <Input
                 type="number"
                 min={50}
@@ -142,15 +138,13 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
                 onChange={(e) =>
                   update({ streamingSpeedMs: Number(e.target.value) || 350 })
                 }
-                className="h-7 w-28 tabular"
+                className="w-32 tabular"
               />
             </label>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-caption-2-regular text-text-tertiary">
-              Focused agents
-            </span>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-caption-1-medium text-text-tertiary">Focused agents</span>
             <div className="flex flex-wrap gap-1.5">
               {(Object.keys(AGENT_LABELS) as AgentKey[]).map((key) => {
                 const on = config.focused[key];
@@ -158,28 +152,26 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
                   <button
                     key={key}
                     type="button"
+                    aria-pressed={on}
                     onClick={() => toggleAgent(key)}
-                    className={cn(
-                      "px-2 py-1 rounded border text-caption-1-regular transition-colors",
-                      on
-                        ? "border-accent-500 bg-status-blue-background text-accent-500"
-                        : "border-separator-border bg-background-secondary-default text-text-tertiary hover:text-text-secondary"
-                    )}
+                    className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring"
                   >
-                    {AGENT_LABELS[key]}
+                    <Badge variant={on ? "accent" : "muted"} className="h-6 px-2 cursor-pointer">
+                      {AGENT_LABELS[key]}
+                    </Badge>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 text-caption-1-regular">
+          <div className="flex flex-wrap gap-4 text-body-2-regular">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={config.autoExpandSections}
                 onChange={(e) => update({ autoExpandSections: e.target.checked })}
-                className="h-3.5 w-3.5 accent-accent"
+                className="size-3.5 accent-accent-500"
               />
               <span className="text-text-secondary">Auto-expand all sections</span>
             </label>
@@ -188,23 +180,19 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
                 type="checkbox"
                 checked={config.showAgentChips}
                 onChange={(e) => update({ showAgentChips: e.target.checked })}
-                className="h-3.5 w-3.5 accent-accent"
+                className="size-3.5 accent-accent-500"
               />
-              <span className="text-text-secondary">Show agent status chips</span>
+              <span className="text-text-secondary">Show agent status</span>
             </label>
           </div>
 
-          <div className="pt-2 border-t border-separator-border">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onChange(DEFAULT_CONFIG)}
-            >
-              <RotateCcw size={12} /> Reset to defaults
+          <div className="pt-3 border-t border-separator-border">
+            <Button variant="secondary" size="sm" onClick={() => onChange(DEFAULT_CONFIG)}>
+              <RiArrowGoBackLine /> Reset to defaults
             </Button>
           </div>
-        </div>
+        </CardContent>
       )}
-    </section>
+    </Card>
   );
 }

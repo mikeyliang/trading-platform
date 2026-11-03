@@ -2,7 +2,16 @@
 
 import { memo, useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { RiPulseLine as Activity, RiAwardLine as Award, RiTimeLine as Clock, RiMoneyDollarCircleLine as DollarSign, RiArrowRightDownLine as TrendingDown, RiStockLine as TrendingUp, type RemixiconComponentType as LucideIcon } from "@remixicon/react";
+import {
+  RiPulseLine,
+  RiAwardLine,
+  RiTimeLine,
+  RiMoneyDollarCircleLine,
+  RiArrowRightDownLine,
+  RiArrowRightUpLine,
+  RiErrorWarningFill,
+  type RemixiconComponentType,
+} from "@remixicon/react";
 import {
   api,
   type TradeAnalysisResponse,
@@ -10,6 +19,8 @@ import {
 } from "@/lib/api";
 import { cn, fmtCurrency, fmtPct, pnlClass } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -19,6 +30,8 @@ export const TradeAnalysisPanel = memo(function TradeAnalysisPanel() {
   const [data, setData] = useState<TradeAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,64 +55,76 @@ export const TradeAnalysisPanel = memo(function TradeAnalysisPanel() {
       cancelled = true;
       clearInterval(id);
     };
-  }, []);
+  }, [nonce]);
 
+  let body: React.ReactNode;
   if (error) {
-    return (
+    body = (
       <EmptyState
-        icon={Activity}
-        title="Couldn't load trade analysis"
+        icon={RiErrorWarningFill}
+        title="Analysis unavailable"
         description={error}
+        action={<Button onClick={() => setNonce((n) => n + 1)}>Retry</Button>}
       />
     );
-  }
-
-  if (loading && !data) return <LoadingSkeleton />;
-
-  if (!data || isEmpty(data)) {
-    return (
+  } else if (loading && !data) {
+    body = <LoadingSkeleton />;
+  } else if (!data || isEmpty(data)) {
+    body = (
       <EmptyState
-        icon={Activity}
-        title="No analysis available yet"
-        description="Close some trades with realized P&L and they'll show up here."
+        icon={RiPulseLine}
+        title="No analysis yet"
+        description="Close some trades with realized P&L and the best, worst and biggest show up here."
       />
+    );
+  } else {
+    body = (
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          <InsightCard
+            title="Best trade"
+            subtitle="by return"
+            icon={RiArrowRightUpLine}
+            tone="up"
+            trade={data.best_trade}
+            showPct
+          />
+          <InsightCard
+            title="Worst trade"
+            subtitle="by return"
+            icon={RiArrowRightDownLine}
+            tone="down"
+            trade={data.worst_trade}
+            showPct
+          />
+          <InsightCard
+            title="Biggest win"
+            subtitle="by P&L"
+            icon={RiAwardLine}
+            tone="up"
+            trade={data.biggest_win}
+          />
+          <InsightCard
+            title="Biggest loss"
+            subtitle="by P&L"
+            icon={RiMoneyDollarCircleLine}
+            tone="down"
+            trade={data.biggest_loss}
+          />
+          <HoldTimeCard seconds={data.avg_hold_time_seconds} />
+        </div>
+      </CardContent>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 p-2">
-      <InsightCard
-        title="Best trade"
-        subtitle="by % return"
-        icon={TrendingUp}
-        tone="up"
-        trade={data.best_trade}
-        showPct
-      />
-      <InsightCard
-        title="Worst trade"
-        subtitle="by % return"
-        icon={TrendingDown}
-        tone="down"
-        trade={data.worst_trade}
-        showPct
-      />
-      <InsightCard
-        title="Biggest win"
-        subtitle="by $ P&L"
-        icon={Award}
-        tone="up"
-        trade={data.biggest_win}
-      />
-      <InsightCard
-        title="Biggest loss"
-        subtitle="by $ P&L"
-        icon={DollarSign}
-        tone="down"
-        trade={data.biggest_loss}
-      />
-      <HoldTimeCard seconds={data.avg_hold_time_seconds} />
-    </div>
+    <Card className="shrink-0">
+      <CardHeader>
+        <CardTitle>Trade analysis</CardTitle>
+        <span className="text-caption-1-regular text-text-tertiary">Realized P&L, refreshed every minute</span>
+      </CardHeader>
+      {body}
+    </Card>
   );
 });
 
@@ -113,7 +138,7 @@ function isEmpty(d: TradeAnalysisResponse): boolean {
   );
 }
 
-function CardShell({
+function Tile({
   title,
   subtitle,
   icon: Icon,
@@ -122,26 +147,20 @@ function CardShell({
 }: {
   title: string;
   subtitle?: string;
-  icon: LucideIcon;
+  icon: RemixiconComponentType;
   tone?: "up" | "down" | "neutral";
   children: React.ReactNode;
 }) {
   const iconCls =
-    tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text" : "text-text-tertiary";
+    tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text" : "text-foreground-icon-tertiary";
   return (
-    <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-3 h-7 border-b border-separator-border">
-        <div className="flex items-center gap-1.5">
-          <Icon size={11} className={iconCls} />
-          <span className="text-caption-2-regular text-text-tertiary">
-            {title}
-          </span>
+    <div className="rounded-2lg bg-background-secondary-default p-3 flex flex-col gap-2 min-w-0">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Icon size={16} className={cn("shrink-0", iconCls)} aria-hidden />
+          <span className="text-caption-1-medium text-text-tertiary truncate">{title}</span>
         </div>
-        {subtitle && (
-          <span className="text-caption-2-regular text-text-tertiary/70">
-            {subtitle}
-          </span>
-        )}
+        {subtitle && <span className="text-caption-1-regular text-text-tertiary whitespace-nowrap">{subtitle}</span>}
       </div>
       {children}
     </div>
@@ -158,82 +177,76 @@ function InsightCard({
 }: {
   title: string;
   subtitle: string;
-  icon: LucideIcon;
+  icon: RemixiconComponentType;
   tone: "up" | "down";
   trade: TradeAnalysisTrade | null;
   showPct?: boolean;
 }) {
   return (
-    <CardShell title={title} subtitle={subtitle} icon={icon} tone={tone}>
+    <Tile title={title} subtitle={subtitle} icon={icon} tone={tone}>
       {trade ? (
-        <div className="px-3 py-2.5 flex flex-col gap-1.5">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-body-2-regular font-medium text-text-primary tabular">
-              {trade.symbol ?? "n/a"}
-            </span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-body-2-medium text-text-primary tabular truncate">{trade.symbol ?? "n/a"}</span>
             {trade.side && (
-              <Badge variant={trade.side === "BUY" ? "up" : "down"}>{trade.side}</Badge>
+              <Badge variant={trade.side === "BUY" ? "up" : "down"}>{trade.side === "BUY" ? "Buy" : "Sell"}</Badge>
             )}
           </div>
           <div className="flex items-baseline gap-2">
             <span
               className={cn(
-                "text-headline-regular font-semibold tabular tabular-nums",
+                "text-headline-semibold tabular",
                 trade.pnl != null ? pnlClass(trade.pnl) : "text-text-tertiary"
               )}
             >
               {trade.pnl != null ? fmtCurrency(trade.pnl) : "n/a"}
             </span>
             {showPct && trade.pnl_percentage != null && (
-              <span className={cn("text-caption-1-regular tabular", pnlClass(trade.pnl_percentage))}>
+              <span className={cn("text-caption-1-medium tabular", pnlClass(trade.pnl_percentage))}>
                 {fmtPct(trade.pnl_percentage)}
               </span>
             )}
           </div>
           <div
-            className="text-caption-2-regular text-text-tertiary tabular"
+            className="text-caption-1-regular text-text-tertiary tabular"
             title={new Date(trade.timestamp).toLocaleString()}
           >
             {fmtRelative(trade.timestamp)}
           </div>
         </div>
       ) : (
-        <div className="px-3 py-4 text-caption-1-regular text-text-tertiary text-center">
-          no qualifying trade
-        </div>
+        <div className="py-3 text-caption-1-regular text-text-tertiary">No qualifying trade</div>
       )}
-    </CardShell>
+    </Tile>
   );
 }
 
 function HoldTimeCard({ seconds }: { seconds: number | null }) {
   return (
-    <CardShell title="Avg hold time" icon={Clock} tone="neutral">
-      <div className="px-3 py-2.5 flex flex-col gap-1">
+    <Tile title="Avg hold time" icon={RiTimeLine} tone="neutral">
+      <div className="flex flex-col gap-1">
         {seconds == null ? (
-          <span className="text-body-2-regular font-medium text-text-tertiary">n/a</span>
+          <span className="text-headline-semibold text-text-tertiary">n/a</span>
         ) : (
           <>
-            <span className="text-headline-regular font-semibold text-text-primary tabular tabular-nums">
-              {fmtDuration(seconds)}
-            </span>
-            <span className="text-caption-2-regular text-text-tertiary">
-              average BUY → SELL gap per symbol
-            </span>
+            <span className="text-headline-semibold text-text-primary tabular">{fmtDuration(seconds)}</span>
+            <span className="text-caption-1-regular text-text-tertiary">Average buy to sell gap per symbol</span>
           </>
         )}
       </div>
-    </CardShell>
+    </Tile>
   );
 }
 
 function LoadingSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 p-2">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Skeleton key={i} className="h-24" />
-      ))}
-    </div>
+    <CardContent>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3" role="status" aria-label="Loading analysis">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-2lg" />
+        ))}
+      </div>
+    </CardContent>
   );
 }
 

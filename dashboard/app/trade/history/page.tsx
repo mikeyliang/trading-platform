@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { FlexBackfillCard } from "@/components/trade-history/FlexBackfillCard";
 import { TradeAnalysisPanel } from "@/components/trade-history/TradeAnalysisPanel";
 import { TradeHistoryPanel } from "@/components/trade-history/TradeHistoryPanel";
@@ -9,14 +10,18 @@ import { TradeHistoryPanel } from "@/components/trade-history/TradeHistoryPanel"
 // trade log. /trade-history redirects here so the old deep links keep working.
 export default function TradeHistoryPage() {
   useEffect(() => {
-    document.title = "History · Trade";
+    document.title = "Trade history";
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <PageShell>
+      <PageHeader
+        title="Trade history"
+        description="Fills from IBKR Flex, realized P&L analysis and the full trade log."
+      />
       <FlexBackfillCard />
       <TradeAnalysisPanel />
       <TradeHistoryPanel />
-    </div>
+    </PageShell>
   );
 }

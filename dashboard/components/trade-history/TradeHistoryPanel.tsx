@@ -2,7 +2,16 @@
 
 import { memo, useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { RiPulseLine as Activity, RiCalendarLine as CalendarDays, RiArrowDownSLine as ChevronDown, RiArrowRightSLine as ChevronRight, RiLineChartLine as LineChartIcon, RiChat1Line as MessageSquare, RiSearchLine as Search, RiTableLine as TableIcon, RiCloseLine as X } from "@remixicon/react";
+import {
+  RiPulseLine,
+  RiCalendarLine,
+  RiArrowDownSLine,
+  RiArrowRightSLine,
+  RiErrorWarningFill,
+  RiLineChartLine,
+  RiChat1Line,
+  RiTableLine,
+} from "@remixicon/react";
 import {
   CartesianGrid,
   Line,
@@ -17,8 +26,17 @@ import { api, type TradeHistoryRecord, type TradeStats, type TradeStatus } from 
 import { CHART } from "@/lib/chartTheme";
 import { cn, fmt, fmtCompact, fmtCurrency, fmtPct, pnlClass } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { Input } from "@/components/ui/input";
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from "@/components/ui/select";
+import { Skeleton, TableSkeletonRows } from "@/components/ui/skeleton";
+import { Stat, StatGroup } from "@/components/ui/stat";
+import { ToggleGroup } from "@/components/ui/toggle-group";
 import {
   Table,
   TableBody,
@@ -84,6 +102,7 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
   const [chartTrades, setChartTrades] = useState<TradeHistoryRecord[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
 
   // Server-side filters: symbol / side / strategy / asset / account / tx
   // go to the API so paging is accurate and stats reflect the filtered set.
@@ -139,7 +158,7 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [symbolQ, strategyQ, side, asset, accountQ, tx, notes]);
+  }, [symbolQ, strategyQ, side, asset, accountQ, tx, notes, nonce]);
 
   // Chart view pulls a larger, unpaginated slice so the equity curve covers
   // the full filtered set rather than just the first table page. Skipped
@@ -207,356 +226,228 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
     setNotes("all");
   };
 
+  const SIDE_LABEL: Record<SideFilter, string> = { all: "Any", BUY: "Buy", SELL: "Sell" };
+  const ASSET_LABEL: Record<AssetFilter, string> = { all: "Any", stock: "Stock", option: "Option" };
+  const TX_LABEL: Record<TxFilter, string> = {
+    all: "Any", ExchTrade: "Fill", BookTrade: "Book", EXPIRATION: "Expiration", EXERCISE: "Exercise", ASSIGNMENT: "Assignment",
+  };
+  const NOTES_LABEL: Record<NotesFilter, string> = { all: "Any", with: "With notes", without: "Without notes" };
+
+  const chips = [
+    ...(side !== "all" ? [{ key: "side", label: `Side: ${SIDE_LABEL[side]}`, onRemove: () => setSide("all") }] : []),
+    ...(strategyQ ? [{ key: "strategy", label: `Strategy: ${strategyQ}`, onRemove: () => setStrategyQ("") }] : []),
+    ...(asset !== "all" ? [{ key: "asset", label: `Asset: ${ASSET_LABEL[asset]}`, onRemove: () => setAsset("all") }] : []),
+    ...(tx !== "all" ? [{ key: "tx", label: `Type: ${TX_LABEL[tx]}`, onRemove: () => setTx("all") }] : []),
+    ...(accountQ ? [{ key: "account", label: `Account: ${accountQ}`, onRemove: () => setAccountQ("") }] : []),
+    ...(notes !== "all" ? [{ key: "notes", label: NOTES_LABEL[notes], onRemove: () => setNotes("all") }] : []),
+  ];
+
+  const retry = () => {
+    setLoading(true);
+    setError(null);
+    setNonce((n) => n + 1);
+  };
+
   return (
-    <div className="flex flex-col h-full border-t border-separator-border">
-      <StatsStrip stats={stats} loading={loading && !stats} />
+    <>
+      <StatsCard stats={stats} loading={loading && !stats} />
 
-      <div className="flex items-center flex-wrap gap-x-4 gap-y-1.5 px-2 py-1.5 border-b border-separator-border bg-background-primary-default">
-        <SearchInput
-          value={symbolQ}
-          onChange={(v) => setSymbolQ(v.toUpperCase())}
-          placeholder="Symbol"
-          width="w-20"
-        />
-
-        <FilterGroup
-          label="Side"
-          value={side}
-          options={[
-            { v: "all", label: "Any" },
-            { v: "BUY", label: "Buy" },
-            { v: "SELL", label: "Sell" },
-          ]}
-          onChange={(v) => setSide(v as SideFilter)}
-        />
-
-        <SearchInput
-          value={strategyQ}
-          onChange={setStrategyQ}
-          placeholder="Strategy"
-          width="w-32"
-        />
-
-        <FilterGroup
-          label="Asset"
-          value={asset}
-          options={[
-            { v: "all", label: "Any" },
-            { v: "stock", label: "Stock" },
-            { v: "option", label: "Option" },
-          ]}
-          onChange={(v) => setAsset(v as AssetFilter)}
-        />
-
-        <FilterGroup
-          label="Tx"
-          value={tx}
-          options={[
-            { v: "all", label: "Any" },
-            { v: "ExchTrade", label: "Fill" },
-            { v: "EXPIRATION", label: "Exp" },
-            { v: "EXERCISE", label: "Exr" },
-            { v: "ASSIGNMENT", label: "Asn" },
-          ]}
-          onChange={(v) => setTx(v as TxFilter)}
-        />
-
-        <SearchInput
-          value={accountQ}
-          onChange={(v) => setAccountQ(v.toUpperCase())}
-          placeholder="Account"
-          width="w-24"
-        />
-
-        <FilterGroup
-          label="Notes"
-          value={notes}
-          options={[
-            { v: "all", label: "Any" },
-            { v: "with", label: "With" },
-            { v: "without", label: "Without" },
-          ]}
-          onChange={(v) => setNotes(v as NotesFilter)}
-        />
-
-        <div className={cn("flex items-center gap-2", activeFilterCount > 0 ? "" : "ml-auto")}>
-          {activeFilterCount > 0 && (
-            <button
-              onClick={clearAll}
-              className="ml-auto inline-flex items-center gap-1 h-5 px-2 rounded-sm border border-separator-border bg-background-secondary-default hover:bg-background-secondary-hover text-text-secondary hover:text-text-primary text-caption-2-regular transition-colors"
-            >
-              <X size={9} />
-              Clear all
-            </button>
-          )}
-          <ViewToggle value={view} onChange={setView} />
-        </div>
-      </div>
-
-      <div className={cn("flex-1", view === "chart" ? "overflow-hidden" : "overflow-auto")}>
-        {view === "chart" ? (
-          chartError ? (
-            <EmptyState
-              icon={Activity}
-              title="Couldn't load equity curve"
-              description={chartError}
-            />
-          ) : chartLoading && chartTrades.length === 0 ? (
-            <ChartSkeleton />
-          ) : (
-            <EquityCurveChart
-              trades={chartTrades}
-              emptyHint={activeFilterCount > 0}
-            />
-          )
-        ) : error ? (
-          <EmptyState
-            icon={Activity}
-            title="Couldn't load trade history"
-            description={error}
-          />
-        ) : loading && trades.length === 0 ? (
-          <LoadingRows />
-        ) : trades.length === 0 ? (
-          <EmptyState
-            icon={Activity}
-            title={activeFilterCount > 0 ? "No trades match your filters" : "No trades yet"}
-            description={
-              activeFilterCount > 0
-                ? "Try clearing filters or widening the symbol search."
-                : "Trade rows will appear here as orders fill."
+      <Card className="shrink-0">
+        <CardContent className="p-1">
+          <FilterBar
+            className="bg-transparent"
+            search={{
+              value: symbolQ,
+              onChange: (v) => setSymbolQ(v.toUpperCase()),
+              placeholder: "Symbol",
+            }}
+            chips={chips}
+            actions={
+              activeFilterCount > 0 ? (
+                <Button variant="secondary" onClick={clearAll}>Clear all</Button>
+              ) : undefined
+            }
+            advanced={
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+                <Field label="Side">
+                  <Select value={side} onValueChange={(v) => setSide(v as SideFilter)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(SIDE_LABEL) as SideFilter[]).map((k) => (
+                        <SelectItem key={k} value={k}>{SIDE_LABEL[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Asset">
+                  <Select value={asset} onValueChange={(v) => setAsset(v as AssetFilter)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(ASSET_LABEL) as AssetFilter[]).map((k) => (
+                        <SelectItem key={k} value={k}>{ASSET_LABEL[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Transaction">
+                  <Select value={tx} onValueChange={(v) => setTx(v as TxFilter)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(["all", "ExchTrade", "EXPIRATION", "EXERCISE", "ASSIGNMENT"] as TxFilter[]).map((k) => (
+                        <SelectItem key={k} value={k}>{TX_LABEL[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Notes">
+                  <Select value={notes} onValueChange={(v) => setNotes(v as NotesFilter)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(NOTES_LABEL) as NotesFilter[]).map((k) => (
+                        <SelectItem key={k} value={k}>{NOTES_LABEL[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Strategy">
+                  <Input value={strategyQ} onChange={(e) => setStrategyQ(e.target.value)} placeholder="Any strategy" />
+                </Field>
+                <Field label="Account">
+                  <Input
+                    value={accountQ}
+                    onChange={(e) => setAccountQ(e.target.value.toUpperCase())}
+                    placeholder="Any account"
+                    className="tabular"
+                  />
+                </Field>
+              </div>
             }
           />
-        ) : view === "daily" ? (
-          <DailyRollupView trades={trades} />
-        ) : (
-          <TradeHistoryTable trades={trades} />
-        )}
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+
+      <Card className="flex flex-col shrink-0">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle>Trades</CardTitle>
+            {!loading && !error && <Badge variant="muted">{trades.length}</Badge>}
+          </div>
+          <ToggleGroup
+            ariaLabel="Trade view"
+            value={view}
+            onChange={setView}
+            options={[
+              { value: "table", label: <ViewLabel icon={RiTableLine} text="Table" /> },
+              { value: "daily", label: <ViewLabel icon={RiCalendarLine} text="Daily" /> },
+              { value: "chart", label: <ViewLabel icon={RiLineChartLine} text="Chart" /> },
+            ]}
+          />
+        </CardHeader>
+
+        <div className={cn(view === "chart" ? "h-80 overflow-hidden" : "max-h-[640px] overflow-auto")}>
+          {view === "chart" ? (
+            chartError ? (
+              <EmptyState
+                icon={RiErrorWarningFill}
+                title="Equity curve unavailable"
+                description={chartError}
+                action={<Button onClick={() => setView("table")}>Back to table</Button>}
+              />
+            ) : chartLoading && chartTrades.length === 0 ? (
+              <ChartSkeleton />
+            ) : (
+              <EquityCurveChart
+                trades={chartTrades}
+                emptyHint={activeFilterCount > 0}
+              />
+            )
+          ) : error ? (
+            <EmptyState
+              icon={RiErrorWarningFill}
+              title="Trade history unavailable"
+              description={error}
+              action={<Button onClick={retry}>Retry</Button>}
+            />
+          ) : loading && trades.length === 0 ? (
+            <LoadingRows />
+          ) : trades.length === 0 ? (
+            <EmptyState
+              icon={RiPulseLine}
+              title={activeFilterCount > 0 ? "No trades match your filters" : "No trades yet"}
+              description={
+                activeFilterCount > 0
+                  ? "Try clearing filters or widening the symbol search."
+                  : "Trade rows will appear here as orders fill."
+              }
+              action={activeFilterCount > 0 ? <Button onClick={clearAll}>Clear filters</Button> : undefined}
+            />
+          ) : view === "daily" ? (
+            <DailyRollupView trades={trades} />
+          ) : (
+            <TradeHistoryTable trades={trades} />
+          )}
+        </div>
+      </Card>
+    </>
   );
 });
 
-// --- view toggle -------------------------------------------------------------
-
-function ViewToggle({ value, onChange }: { value: View; onChange: (v: View) => void }) {
-  const opts: { v: View; label: string; Icon: typeof TableIcon }[] = [
-    { v: "table", label: "Table", Icon: TableIcon },
-    { v: "daily", label: "Daily", Icon: CalendarDays },
-    { v: "chart", label: "Chart", Icon: LineChartIcon },
-  ];
+function ViewLabel({ icon: Icon, text }: { icon: typeof RiTableLine; text: string }) {
   return (
-    <div className="flex h-6 rounded-sm border border-separator-border overflow-hidden">
-      {opts.map((o, i) => (
-        <button
-          key={o.v}
-          onClick={() => onChange(o.v)}
-          aria-pressed={value === o.v}
-          className={cn(
-            "inline-flex items-center gap-1 px-2 text-caption-2-regular transition-colors whitespace-nowrap",
-            i > 0 && "border-l border-separator-border",
-            value === o.v
-              ? "bg-status-blue-background text-accent-500 font-medium"
-              : "text-text-secondary hover:bg-background-secondary-hover hover:text-text-primary"
-          )}
-        >
-          <o.Icon size={10} />
-          {o.label}
-        </button>
-      ))}
-    </div>
+    <span className="inline-flex items-center gap-1">
+      <Icon size={14} aria-hidden />
+      {text}
+    </span>
   );
 }
 
-// --- stats strip -------------------------------------------------------------
-
-function StatsStrip({ stats, loading }: { stats: TradeStats | null; loading: boolean }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center bg-background-primary-default border-b border-separator-border px-3 h-8 overflow-x-auto shrink-0">
-      <StatGroup>
-        <StatItem
-          label="Trades"
-          value={stats ? String(stats.total_trades) : null}
-          loading={loading}
-          primary
-        />
-      </StatGroup>
-      <StatGroup>
-        <StatItem
-          label="Win rate"
-          value={stats ? (stats.win_rate * 100).toFixed(1) + "%" : null}
-          valueClassName={
-            stats
-              ? stats.win_rate >= 0.5
-                ? "text-status-lime-text"
-                : stats.win_rate >= 0.3
-                ? "text-status-yellow-text"
-                : "text-status-rose-text"
-              : undefined
-          }
-          loading={loading}
-        />
-        <StatItem
-          label="Wins"
-          value={stats ? `${stats.winning_trades}/${stats.losing_trades}` : null}
-          loading={loading}
-          muted
-        />
-      </StatGroup>
-      <StatGroup>
-        <StatItem
-          label="Total P&L"
-          value={stats ? fmtCurrency(stats.total_pnl) : null}
-          valueClassName={stats ? pnlClass(stats.total_pnl) : undefined}
-          loading={loading}
-        />
-        <StatItem
-          label="Avg P&L"
-          value={stats ? fmtCurrency(stats.avg_pnl) : null}
-          valueClassName={stats ? pnlClass(stats.avg_pnl) : undefined}
-          loading={loading}
-        />
-      </StatGroup>
-      <StatGroup last>
-        <StatItem
-          label="Profit factor"
-          value={stats ? fmt(stats.profit_factor, 2) : null}
-          loading={loading}
-          muted
-        />
-      </StatGroup>
-    </div>
-  );
-}
-
-function StatGroup({ children, last }: { children: React.ReactNode; last?: boolean }) {
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-3 px-3 first:pl-0",
-        !last && "border-r border-separator-border"
-      )}
-    >
+    <div className="flex flex-col gap-1.5 min-w-0">
+      <span className="text-caption-1-medium text-text-tertiary">{label}</span>
       {children}
     </div>
   );
 }
 
-interface StatItemProps {
-  label: string;
-  value: string | null;
-  valueClassName?: string;
-  loading?: boolean;
-  primary?: boolean;
-  muted?: boolean;
-}
+// --- stats card ----------------------------------------------------------------
 
-function StatItem({ label, value, valueClassName, loading, primary, muted }: StatItemProps) {
+function StatsCard({ stats, loading }: { stats: TradeStats | null; loading: boolean }) {
+  const v = (fn: (s: TradeStats) => string) => (stats ? fn(stats) : "n/a");
+  const value = (fn: (s: TradeStats) => string) => (loading ? <Skeleton className="h-4 w-16" /> : v(fn));
   return (
-    <div className="flex items-baseline gap-1.5 shrink-0">
-      <span
-        className={cn(
-          "text-caption-2-regular",
-          muted ? "text-text-tertiary/70" : "text-text-tertiary"
-        )}
-      >
-        {label}
-      </span>
-      {loading ? (
-        <Skeleton className="h-3 w-14" />
-      ) : value === null ? (
-        <span className="tabular text-caption-1-regular font-medium text-text-tertiary">n/a</span>
-      ) : (
-        <span
-          className={cn(
-            "tabular tabular-nums font-medium",
-            primary ? "text-body-2-regular text-text-primary" : "text-caption-1-regular text-text-primary",
-            muted && !valueClassName && "text-text-secondary",
-            valueClassName
-          )}
-        >
-          {value}
-        </span>
-      )}
-    </div>
-  );
-}
-
-// --- filters -----------------------------------------------------------------
-
-function SearchInput({
-  value,
-  onChange,
-  placeholder,
-  width,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  width: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-1.5 h-6 px-2 rounded-sm border border-separator-border bg-background-secondary-default transition-colors",
-        value ? "border-accent-500" : "hover:bg-background-secondary-hover"
-      )}
-    >
-      <Search size={11} className="text-text-tertiary shrink-0" />
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={cn(
-          "bg-transparent text-caption-1-regular tabular text-text-primary placeholder:text-text-tertiary/60 outline-none",
-          width
-        )}
-      />
-      {value && (
-        <button
-          onClick={() => onChange("")}
-          className="text-text-tertiary hover:text-text-primary"
-          aria-label={`Clear ${placeholder.toLowerCase()} filter`}
-        >
-          <X size={10} />
-        </button>
-      )}
-    </div>
-  );
-}
-
-function FilterGroup<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: { v: T; label: string }[];
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
-      <div className="flex h-6 rounded-sm border border-separator-border overflow-hidden">
-        {options.map((o, i) => (
-          <button
-            key={o.v}
-            onClick={() => onChange(o.v)}
-            className={cn(
-              "px-2 text-caption-2-regular transition-colors whitespace-nowrap",
-              i > 0 && "border-l border-separator-border",
-              value === o.v
-                ? "bg-status-blue-background text-accent-500 font-medium"
-                : "text-text-secondary hover:bg-background-secondary-hover hover:text-text-primary"
-            )}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
+    <Card className="shrink-0">
+      <CardContent>
+        <StatGroup>
+          <Stat label="Trades" value={value((s) => String(s.total_trades))} />
+          <Stat
+            label="Win rate"
+            value={value((s) => (s.win_rate * 100).toFixed(1) + "%")}
+            tone={
+              stats
+                ? stats.win_rate >= 0.5
+                  ? "up"
+                  : stats.win_rate >= 0.3
+                  ? "warning"
+                  : "down"
+                : "default"
+            }
+          />
+          <Stat label="Wins and losses" value={value((s) => `${s.winning_trades} / ${s.losing_trades}`)} />
+          <Stat
+            label="Total P&L"
+            value={value((s) => fmtCurrency(s.total_pnl))}
+            tone={stats ? (stats.total_pnl > 0 ? "up" : stats.total_pnl < 0 ? "down" : "default") : "default"}
+          />
+          <Stat
+            label="Avg P&L"
+            value={value((s) => fmtCurrency(s.avg_pnl))}
+            tone={stats ? (stats.avg_pnl > 0 ? "up" : stats.avg_pnl < 0 ? "down" : "default") : "default"}
+          />
+          <Stat label="Profit factor" value={value((s) => fmt(s.profit_factor, 2))} />
+        </StatGroup>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -614,23 +505,23 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
       <TableCell className="text-text-tertiary whitespace-nowrap" title={time.abs}>
         {time.rel}
       </TableCell>
-      <TableCell className="font-medium">
+      <TableCell>
         <div className="inline-flex items-center gap-1.5">
           <ContractCell symbol={t.symbol} contract={contract} />
           <NoteIndicator note={contract.note} />
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
+        <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side === "BUY" ? "Buy" : t.side === "SELL" ? "Sell" : t.side}</Badge>
       </TableCell>
-      <TableCell className="text-right tabular">{fmt(t.quantity, 0)}</TableCell>
-      <TableCell className="text-right tabular">{fmt(t.price, 2)}</TableCell>
-      <TableCell className={cn("text-right tabular font-medium", pnl != null ? pnlClass(pnl) : "text-text-tertiary")}>
+      <TableCell className="text-right">{fmt(t.quantity, 0)}</TableCell>
+      <TableCell className="text-right">{fmt(t.price, 2)}</TableCell>
+      <TableCell className={cn("text-right", pnl != null ? pnlClass(pnl) : "text-text-tertiary")}>
         {pnl != null ? (
           <span className="inline-flex items-baseline gap-1 justify-end">
             {fmtCurrency(pnl)}
             {pnlPct != null && (
-              <span className="text-caption-2-regular text-text-tertiary">
+              <span className="text-caption-1-regular text-text-tertiary">
                 ({fmtPct(pnlPct)})
               </span>
             )}
@@ -666,18 +557,19 @@ function StatusBadge({ status }: { status: TradeStatus }) {
         return "default";
     }
   })();
-  return <Badge variant={variant}>{status.replace(/_/g, " ")}</Badge>;
+  const label = status.replace(/_/g, " ").toLowerCase();
+  return <Badge variant={variant}>{label.charAt(0).toUpperCase() + label.slice(1)}</Badge>;
 }
 
 // --- loading -----------------------------------------------------------------
 
 function LoadingRows() {
   return (
-    <div className="p-2 space-y-1.5">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <Skeleton key={i} className="h-7 w-full" />
-      ))}
-    </div>
+    <Table>
+      <TableBody>
+        <TableSkeletonRows rows={8} cols={8} widths={["w-20", "w-16", "w-10", "w-8", "w-14", "w-16", "w-20", "w-12"]} />
+      </TableBody>
+    </Table>
   );
 }
 
@@ -713,7 +605,7 @@ function EquityCurveChart({
   if (data.length === 0) {
     return (
       <EmptyState
-        icon={Activity}
+        icon={RiLineChartLine}
         title={emptyHint ? "No P&L to chart" : "Equity curve will appear here"}
         description={
           emptyHint
@@ -729,7 +621,7 @@ function EquityCurveChart({
   const gradId = "equity-curve-fill";
 
   return (
-    <div className="h-full w-full p-2">
+    <div className="h-full w-full p-3">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 12, right: 16, bottom: 8, left: 4 }}>
           <defs>
@@ -840,7 +732,7 @@ function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
   if (groups.length === 0) {
     return (
       <EmptyState
-        icon={CalendarDays}
+        icon={RiCalendarLine}
         title="No trades to group by day"
         description="Adjust filters or switch back to the table view."
       />
@@ -863,39 +755,40 @@ function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
                   return next;
                 })
               }
-              className="w-full flex items-center gap-3 px-3 py-1.5 text-caption-1-regular tabular hover:bg-background-secondary-hover transition-colors"
+              aria-expanded={open}
+              className="w-full flex items-center gap-3 px-4 h-9 text-body-2-medium tabular hover:bg-background-secondary-hover transition-colors"
             >
-              <span className="text-text-tertiary shrink-0">
-                {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+              <span className="text-foreground-icon-tertiary shrink-0">
+                {open ? <RiArrowDownSLine size={16} aria-hidden /> : <RiArrowRightSLine size={16} aria-hidden />}
               </span>
-              <span className="text-text-primary font-medium min-w-[110px] text-left">
+              <span className="text-text-primary min-w-[110px] text-left">
                 {g.label}
               </span>
-              <span className="text-text-tertiary text-caption-2-regular">
+              <span className="text-text-tertiary text-caption-1-regular">
                 {g.trades.length} trade{g.trades.length === 1 ? "" : "s"}
               </span>
-              <span className="text-text-tertiary text-caption-2-regular">
-                {g.buys}B / {g.sells}S
+              <span className="text-text-tertiary text-caption-1-regular">
+                {g.buys} buy {g.sells} sell
               </span>
               <span
                 className={cn(
-                  "text-caption-1-regular tabular ml-auto font-medium",
+                  "ml-auto",
                   g.netPnl === 0 ? "text-text-tertiary" : pnlClass(g.netPnl),
                 )}
-                title={`${g.wins} winning / ${g.losses} losing trades`}
+                title={`${g.wins} winning, ${g.losses} losing trades`}
               >
                 {g.netPnl === 0 ? "n/a" : fmtCurrency(g.netPnl)}
               </span>
               <span
-                className="text-caption-2-regular text-text-tertiary max-w-[160px] truncate hidden md:inline-block"
+                className="text-caption-1-regular text-text-tertiary max-w-[160px] truncate hidden md:inline-block"
                 title={g.symbols.join(", ")}
               >
-                {g.symbols.slice(0, 4).join(" · ")}
+                {g.symbols.slice(0, 4).join(", ")}
                 {g.symbols.length > 4 && ` +${g.symbols.length - 4}`}
               </span>
             </button>
             {open && (
-              <div className="bg-background-secondary-default border-t border-separator-border">
+              <div className="border-t border-separator-border">
                 <Table>
                   <TableBody>
                     {g.trades.map((t) => (
@@ -996,10 +889,10 @@ function NoteIndicator({ note }: { note: string | null }) {
   const preview = note.length > 200 ? note.slice(0, 200) + "…" : note;
   return (
     <span
-      className="inline-flex items-center text-accent-500/80 hover:text-accent-500 transition-colors cursor-help"
+      className="inline-flex items-center text-foreground-icon-tertiary hover:text-text-primary transition-colors cursor-help"
       title={preview}
     >
-      <MessageSquare size={10} />
+      <RiChat1Line size={14} aria-hidden />
     </span>
   );
 }
@@ -1015,20 +908,17 @@ function ContractCell({
     <span className="inline-flex items-baseline gap-1.5">
       <span className="text-text-primary">{symbol}</span>
       {contract.strike != null && contract.right && (
-        <span className="text-text-secondary tabular text-caption-1-regular">
+        <span className="text-text-secondary tabular text-caption-1-medium">
           {formatStrike(contract.strike)}{contract.right}
         </span>
       )}
       {exp && (
-        <span className="text-text-tertiary text-caption-2-regular tabular">{exp}</span>
+        <span className="text-text-tertiary text-caption-1-regular tabular">{exp}</span>
       )}
       {contract.isExpiration && contract.txType && (
-        <span
-          className="px-1 py-px rounded-sm bg-background-secondary-default text-text-tertiary text-caption-2-regular"
-          title={`Transaction type: ${contract.txType}`}
-        >
+        <Badge variant="muted" title={`Transaction type: ${contract.txType}`}>
           {shortTxLabel(contract.txType)}
-        </span>
+        </Badge>
       )}
     </span>
   );
@@ -1056,10 +946,10 @@ function fmtOptionExpiry(s: string): string {
 
 function shortTxLabel(tx: string): string {
   const u = tx.toUpperCase();
-  if (u.startsWith("EXPIR")) return "EXP";
-  if (u.startsWith("EXER")) return "EXR";
-  if (u.startsWith("ASSIGN")) return "ASN";
-  return u.slice(0, 3);
+  if (u.startsWith("EXPIR")) return "Expired";
+  if (u.startsWith("EXER")) return "Exercised";
+  if (u.startsWith("ASSIGN")) return "Assigned";
+  return tx.charAt(0).toUpperCase() + tx.slice(1).toLowerCase();
 }
 
 function fmtAxisDate(ms: number): string {
@@ -1070,8 +960,8 @@ function fmtAxisDate(ms: number): string {
 
 function ChartSkeleton() {
   return (
-    <div className="h-full w-full p-2">
-      <Skeleton className="h-full w-full" />
+    <div className="h-full w-full p-4">
+      <Skeleton className="h-full w-full rounded-2lg" />
     </div>
   );
 }

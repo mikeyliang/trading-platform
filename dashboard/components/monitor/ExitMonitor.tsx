@@ -8,26 +8,35 @@ import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { RiRefreshLine as RefreshCw } from "@remixicon/react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Stat, StatGroup } from "@/components/ui/stat";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton, TableSkeletonRows } from "@/components/ui/skeleton";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { RiRefreshLine as RefreshCw, RiShieldCheckLine as ShieldIcon, RiErrorWarningFill as ErrorIcon } from "@remixicon/react";
 
-const STATUS_META: Record<MonitorEntry["status"], { label: string; tone: string; dot: string }> = {
-  safe:    { label: "safe",         tone: "text-status-lime-text",         dot: "bg-status-lime-text" },
-  warning: { label: "near trigger", tone: "text-status-yellow-text",    dot: "bg-status-yellow-text" },
-  trigger: { label: "exit now",     tone: "text-status-rose-text",       dot: "bg-status-rose-text" },
-  unknown: { label: "no data",      tone: "text-text-tertiary", dot: "bg-foreground-icon-quaternary" },
+const STATUS_META: Record<MonitorEntry["status"], { label: string; tone: string; badge: "up" | "warning" | "down" | "muted" }> = {
+  safe:    { label: "Safe",         tone: "text-status-lime-text",   badge: "up" },
+  warning: { label: "Near trigger", tone: "text-status-yellow-text", badge: "warning" },
+  trigger: { label: "Exit now",     tone: "text-status-rose-text",   badge: "down" },
+  unknown: { label: "No data",      tone: "text-text-tertiary",      badge: "muted" },
 };
 
 export function ExitMonitor() {
   const [snap, setSnap] = useState<MonitorSnapshot | null>(null);
   const [jobs, setJobs] = useState<ScheduledJob[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     try {
       const s = await api.monitorState();
       setSnap(s);
-    } catch {
-      // keep last good
+      setError(null);
+    } catch (e) {
+      // keep last good snapshot; surface the failure only when we have nothing
+      setError(e instanceof Error ? e.message : "Could not reach the monitor");
     }
   };
 
@@ -43,9 +52,9 @@ export function ExitMonitor() {
       // Toast immediately on push, then refresh state so the row updates.
       const tone = entry.status === "trigger" ? "error" : "warning";
       const headline = entry.status === "trigger"
-        ? `EXIT NOW, ${entry.symbol} ${entry.short_strike}`
+        ? `Exit now, ${entry.symbol} ${entry.short_strike}`
         : `Near trigger, ${entry.symbol} ${entry.short_strike}`;
-      const body = `short Δ ${entry.current_delta?.toFixed(1)} · trigger ${entry.exit_delta}`;
+      const body = `Short delta ${entry.current_delta?.toFixed(1)}, trigger ${entry.exit_delta}`;
       if (tone === "error") toast.error(headline, { description: body });
       else toast(headline, { description: body });
       load();
@@ -61,62 +70,126 @@ export function ExitMonitor() {
     try {
       const s = await api.monitorRefresh();
       setSnap(s);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Refresh failed");
     } finally {
       setLoading(false);
     }
   };
 
+  const entries = Array.isArray(snap?.entries) ? snap!.entries : [];
+  const initialLoading = !snap && !error;
+
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Open positions, refreshed every 5 min"
-        title="Exit Monitor"
-        description="Watches every open credit spread. When the short leg's delta crosses the trade-type exit threshold, you'll see it here before you'd notice it on the chart."
+        title="Exit monitor"
+        description="Watches every open credit spread and flags it when the short leg's delta crosses the exit threshold for its trade type."
         actions={
-          <Button onClick={refresh} disabled={loading} size="sm" variant="default">
+          <Button onClick={refresh} disabled={loading} variant="default">
             <RefreshCw className={loading ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">{loading ? "Refreshing…" : "Refresh now"}</span>
+            {loading ? "Refreshing" : "Refresh now"}
           </Button>
         }
       />
 
-      <SummaryStrip snap={snap} />
+      <SummaryCard snap={snap} loading={initialLoading} />
 
-      {!snap || snap.entries.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="flex flex-col">
-          {snap.entries.map((e) => (
-            <Row key={e.spread_id} entry={e} />
-          ))}
-        </div>
-      )}
-
-      <Footer jobs={jobs} lastRun={snap?.last_run ?? null} />
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2 min-w-0">
+            <CardTitle>Open spreads</CardTitle>
+            {snap && <Badge variant="muted" className="tabular">{entries.length}</Badge>}
+          </div>
+          {error && snap && (
+            <Badge variant="down">
+              <ErrorIcon size={14} aria-hidden="true" />
+              Stale, last refresh failed
+            </Badge>
+          )}
+        </CardHeader>
+        <CardContent className="p-0">
+          {initialLoading ? (
+            <SpreadsTable>
+              <TableSkeletonRows rows={3} cols={8} widths={["w-24", "w-16", "w-16", "w-full", "w-10", "w-10", "w-10", "w-8"]} />
+            </SpreadsTable>
+          ) : error && !snap ? (
+            <div className="flex flex-col items-center gap-3 py-12">
+              <Badge variant="down">
+                <ErrorIcon size={14} aria-hidden="true" />
+                {error}
+              </Badge>
+              <Button variant="secondary" onClick={load}>
+                <RefreshCw />
+                Retry
+              </Button>
+            </div>
+          ) : entries.length === 0 ? (
+            <EmptyState
+              icon={ShieldIcon}
+              title="No open spreads to watch"
+              description="When you open a credit spread it appears here and the monitor tracks its delta every 5 minutes during market hours."
+            />
+          ) : (
+            <SpreadsTable>
+              {entries.map((e) => (
+                <Row key={e.spread_id} entry={e} />
+              ))}
+            </SpreadsTable>
+          )}
+        </CardContent>
+        <Footer jobs={jobs} lastRun={snap?.last_run ?? null} />
+      </Card>
     </PageShell>
   );
 }
 
-function SummaryStrip({ snap }: { snap: MonitorSnapshot | null }) {
-  if (!snap || typeof snap.count !== "number") return null;
-  const safe = snap.count - (snap.warning ?? 0) - (snap.triggered ?? 0);
-  const stats: [string, string, string?][] = [
-    ["watching",  snap.count.toString()],
-    ["safe",      safe.toString(), safe > 0 ? "text-status-lime-text" : undefined],
-    ["warning",   snap.warning.toString(), snap.warning > 0 ? "text-status-yellow-text" : undefined],
-    ["trigger",   snap.triggered.toString(), snap.triggered > 0 ? "text-status-rose-text" : undefined],
-  ];
+function SummaryCard({ snap, loading }: { snap: MonitorSnapshot | null; loading: boolean }) {
+  const hasCounts = !!snap && typeof snap.count === "number";
+  const safe = hasCounts ? snap!.count - (snap!.warning ?? 0) - (snap!.triggered ?? 0) : 0;
   return (
-    <div className="grid grid-cols-4 gap-x-4 md:gap-x-10 py-2">
-      {stats.map(([k, v, tone]) => (
-        <div key={k}>
-          <div className="text-caption-2-regular text-text-tertiary mb-1.5">{k}</div>
-          <div className={cn("text-title-2-regular md:text-title-1-regular font-semibold tabular", tone ?? "text-text-primary")}>
-            {v}
-          </div>
-        </div>
-      ))}
-    </div>
+    <Card>
+      <CardContent>
+        <StatGroup cols={4}>
+          {loading ? (
+            [0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-10" />
+              </div>
+            ))
+          ) : (
+            <>
+              <Stat label="Watching" value={hasCounts ? snap!.count : "n/a"} size="md" />
+              <Stat label="Safe" value={hasCounts ? safe : "n/a"} size="md" tone={safe > 0 ? "up" : "default"} />
+              <Stat label="Near trigger" value={hasCounts ? snap!.warning : "n/a"} size="md" tone={hasCounts && snap!.warning > 0 ? "warning" : "default"} />
+              <Stat label="Exit now" value={hasCounts ? snap!.triggered : "n/a"} size="md" tone={hasCounts && snap!.triggered > 0 ? "down" : "default"} />
+            </>
+          )}
+        </StatGroup>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SpreadsTable({ children }: { children: React.ReactNode }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>Spread</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="min-w-[220px]">Delta scale</TableHead>
+          <TableHead className="text-right">Short delta</TableHead>
+          <TableHead className="text-right">Exit at</TableHead>
+          <TableHead className="text-right">Headroom</TableHead>
+          <TableHead className="text-right">Contracts</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>{children}</TableBody>
+    </Table>
   );
 }
 
@@ -129,84 +202,53 @@ function Row({ entry }: { entry: MonitorEntry }) {
   const triggerPct = Math.min(100, (trigger / 50) * 100);
 
   return (
-    <div className="border-t border-separator-border py-3">
-      <div className="flex items-baseline justify-between gap-4 mb-5">
-        <div className="flex items-baseline gap-3 min-w-0">
-          <span className={cn("w-1.5 h-1.5 rounded-full translate-y-[-2px] shrink-0", meta.dot)} />
-          <div className="tabular text-headline-regular tabular text-text-primary truncate">
-            {entry.symbol} {entry.short_strike}<span className="text-text-tertiary"> / </span>{entry.long_strike}
-          </div>
-          <span className="text-text-tertiary text-caption-2-regular hidden sm:inline">{entry.spread_type}</span>
-        </div>
-        <div className={cn("text-caption-1-regular shrink-0", meta.tone)}>{meta.label}</div>
-      </div>
-
-      <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-2">
-        {/* delta scale */}
-        <div className="relative h-8 flex-1">
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-separator-border" />
-          {/* trigger threshold marker */}
+    <TableRow>
+      <TableCell className="whitespace-nowrap">
+        {entry.symbol} {entry.short_strike}
+        <span className="text-text-tertiary"> / </span>
+        {entry.long_strike}
+      </TableCell>
+      <TableCell className="text-text-secondary">{entry.spread_type}</TableCell>
+      <TableCell>
+        <Badge variant={meta.badge}>{meta.label}</Badge>
+      </TableCell>
+      <TableCell>
+        <div className="relative h-5" aria-label={`short delta ${current ?? "n/a"}, exit at ${trigger}`}>
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-background-tertiary-default" />
           <div
-            className="absolute top-1 bottom-1 w-px bg-status-rose-background"
+            className="absolute top-0.5 bottom-0.5 w-px bg-status-rose-text"
             style={{ left: `${triggerPct}%` }}
-            aria-label={`exit Δ ${trigger}`}
+            title={`exit at delta ${trigger}`}
           />
-          <div
-            className="absolute -top-0.5 text-caption-2-regular tabular text-status-rose-text/80 -translate-x-1/2"
-            style={{ left: `${triggerPct}%` }}
-          >
-            exit {trigger}
-          </div>
-          {/* current delta marker */}
           {current != null && (
-            <>
-              <div
-                className={cn(
-                  "absolute top-1/2 w-2.5 h-2.5 rounded-full ring-2 ring-bg",
-                  entry.status === "trigger" ? "bg-status-rose-text" : entry.status === "warning" ? "bg-status-yellow-text" : "bg-status-lime-text"
-                )}
-                style={{ left: `${pct}%`, transform: "translate(-50%, -50%)" }}
-              />
-              <div
-                className="absolute -bottom-0.5 text-caption-2-regular tabular text-text-secondary -translate-x-1/2"
-                style={{ left: `${pct}%` }}
-              >
-                Δ {current.toFixed(1)}
-              </div>
-            </>
+            <div
+              className={cn(
+                "absolute top-1/2 size-2.5 rounded-full ring-2 ring-background-primary-default",
+                entry.status === "trigger" ? "bg-status-rose-text" : entry.status === "warning" ? "bg-status-yellow-text" : "bg-status-lime-text"
+              )}
+              style={{ left: `${pct}%`, transform: "translate(-50%, -50%)" }}
+            />
           )}
         </div>
-
-        <div className="flex items-baseline justify-between md:justify-end gap-4 md:gap-3 text-caption-1-regular tabular shrink-0">
-          <span className="text-text-secondary">{entry.quantity}× contract{entry.quantity !== 1 ? "s" : ""}</span>
-          <span className="text-text-tertiary">·</span>
-          <span className="text-text-tertiary">
-            headroom <span className={cn(meta.tone, "font-medium")}>{entry.headroom != null ? entry.headroom.toFixed(1) : "n/a"}</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="py-16 text-center">
-      <p className="text-body-2-regular text-text-secondary">No open spreads to watch.</p>
-      <p className="text-caption-1-regular text-text-tertiary mt-2">
-        When you open a credit spread, it'll appear here and the monitor will track its delta every 5 minutes during market hours.
-      </p>
-    </div>
+      </TableCell>
+      <TableCell className={cn("text-right", meta.tone)}>{current != null ? current.toFixed(1) : "n/a"}</TableCell>
+      <TableCell className="text-right text-text-secondary">{trigger}</TableCell>
+      <TableCell className={cn("text-right", meta.tone)}>{entry.headroom != null ? entry.headroom.toFixed(1) : "n/a"}</TableCell>
+      <TableCell className="text-right text-text-secondary">{entry.quantity}</TableCell>
+    </TableRow>
   );
 }
 
 function Footer({ jobs, lastRun }: { jobs: ScheduledJob[]; lastRun: string | null }) {
+  const scheduled = Array.isArray(jobs) && jobs.length > 0;
   return (
-    <div className="border-t border-separator-border pt-4 flex items-baseline justify-between text-caption-2-regular text-text-tertiary">
-      <span>Last checked {lastRun ? new Date(lastRun).toLocaleTimeString() : "never"}</span>
-      <span className="text-caption-1-regular text-text-secondary">
-        {(Array.isArray(jobs) && jobs.length > 0) ? `Scheduled: ${jobs.map((j) => j.id).join(", ")}` : "No jobs scheduled"}
+    <CardFooter className="justify-between">
+      <span className="text-caption-1-medium text-text-tertiary tabular">
+        Last checked {lastRun ? new Date(lastRun).toLocaleTimeString() : "never"}
       </span>
-    </div>
+      <span className="text-caption-1-medium text-text-tertiary truncate">
+        {scheduled ? `Scheduled: ${jobs.map((j) => j.id).join(", ")}` : "No jobs scheduled"}
+      </span>
+    </CardFooter>
   );
 }

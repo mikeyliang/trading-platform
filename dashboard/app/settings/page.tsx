@@ -5,6 +5,9 @@ import { useHealth } from "@/lib/health";
 import { useStore } from "@/lib/store";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RiRefreshLine } from "@remixicon/react";
 import { cn, fmtCurrency } from "@/lib/utils";
 
 export default function SettingsPage() {
@@ -26,14 +29,12 @@ export default function SettingsPage() {
     <PageShell>
       <PageHeader
         title="Settings"
-        description="Runtime status, account binding, and session preferences."
+        description="Runtime status, account binding and session preferences. Values are read-only for now."
         actions={
-          <button
-            onClick={() => refetch()}
-            className="h-6 px-2 text-caption-1-regular rounded-sm bg-background-secondary-default hover:bg-background-tertiary-hover text-text-secondary border border-separator-border"
-          >
+          <Button variant="secondary" onClick={() => refetch()}>
+            <RiRefreshLine />
             Refresh
-          </button>
+          </Button>
         }
       />
 
@@ -41,8 +42,8 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Runtime</CardTitle>
-            <span className="text-caption-2-regular tabular tabular text-text-tertiary">
-              {lastCheckedAt ? new Date(lastCheckedAt).toLocaleTimeString() : "n/a"}
+            <span className="text-caption-1-regular tabular text-text-tertiary">
+              {lastCheckedAt ? `Checked ${new Date(lastCheckedAt).toLocaleTimeString()}` : "Not checked yet"}
             </span>
           </CardHeader>
           <CardContent className="p-0">
@@ -63,9 +64,9 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Account</CardTitle>
-            <span className={cn("text-caption-2-regular tabular tabular", account ? "text-text-secondary" : "text-text-tertiary")}>
-              {account ? "live" : "no binding"}
-            </span>
+            <Badge variant={account ? (mode === "LIVE" ? "warning" : "muted") : "outline"}>
+              {account ? (mode === "LIVE" ? "Live" : "Paper") : "No binding"}
+            </Badge>
           </CardHeader>
           <CardContent className="p-0">
             <Rows>
@@ -73,13 +74,13 @@ export default function SettingsPage() {
               <Row label="Buying power" value={account ? fmtCurrency(account.buying_power ?? 0) : "n/a"} mono />
               <Row label="Balance" value={account ? fmtCurrency(account.balance ?? 0) : "n/a"} mono />
               <Row
-                label="Unrealized PnL"
+                label="Unrealized P&L"
                 value={account ? fmtCurrency(account.unrealized_pnl ?? 0) : "n/a"}
                 valueClass={pnlColor(account?.unrealized_pnl ?? 0)}
                 mono
               />
               <Row
-                label="Realized PnL"
+                label="Realized P&L"
                 value={account ? fmtCurrency(account.realized_pnl ?? 0) : "n/a"}
                 valueClass={pnlColor(account?.realized_pnl ?? 0)}
                 mono
@@ -110,18 +111,13 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="p-0">
             <Rows>
-              <Row label="Command palette" value="⌘K" mono />
-              <Row label="AI co-pilot" value="⌘J" mono />
-              <Row label="Toggle chart" value="n/a" mono />
+              <Row label="Command palette" value={<Kbd>⌘K</Kbd>} />
+              <Row label="AI co-pilot" value={<Kbd>⌘J</Kbd>} />
+              <Row label="Toggle chart" value="n/a" />
             </Rows>
           </CardContent>
         </Card>
       </div>
-
-      <p className="text-caption-2-regular text-text-tertiary">
-        Persistent preferences (theme switching, custom layouts, API endpoint overrides) are not yet wired;
-        runtime values shown here are read-only.
-      </p>
     </PageShell>
   );
 }
@@ -142,18 +138,18 @@ function Row({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between px-3 h-7">
-      <span className="text-caption-1-regular text-text-tertiary">{label}</span>
-      <span
-        className={cn(
-          "text-caption-1-regular",
-          mono && "tabular tabular",
-          valueClass ?? "text-text-primary"
-        )}
-      >
-        {value}
-      </span>
+    <div className="flex items-center justify-between gap-3 px-4 h-9">
+      <span className="text-caption-1-medium text-text-tertiary">{label}</span>
+      <span className={cn("text-body-2-medium", mono && "tabular", valueClass ?? "text-text-primary")}>{value}</span>
     </div>
+  );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-flex items-center h-5 px-1.5 rounded-md bg-kbd-background text-kbd-foreground text-caption-1-medium tabular">
+      {children}
+    </kbd>
   );
 }
 

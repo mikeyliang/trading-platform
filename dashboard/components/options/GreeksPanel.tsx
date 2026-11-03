@@ -1,5 +1,7 @@
 "use client";
 
+import { RiArrowDownSLine } from "@remixicon/react";
+
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { CHART } from "@/lib/chartTheme";
@@ -211,11 +213,11 @@ function GreekCell({
   const shiftIsMeaningful = shift != null && Math.abs(shift) > Math.max(1e-4, Math.abs(baseline ?? 0) * 0.005);
 
   return (
-    <div className="rounded-md border border-separator-border bg-background-primary-default p-3 flex flex-col gap-2 relative overflow-hidden">
+    <div className="rounded-2lg bg-background-secondary-default p-3 flex flex-col gap-2 relative overflow-hidden">
       <div className={cn("absolute inset-0 opacity-50", c.bg)} style={{ maskImage: "linear-gradient(to bottom, black 0%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 100%)" }} />
       <div className="relative">
         <div className="flex items-baseline gap-2">
-          <span className={cn("text-title-1-regular font-semibold leading-none", c.text)}>{symbol}</span>
+          <span className={cn("text-title-2-semibold leading-none", c.text)}>{symbol}</span>
           <span className="text-caption-2-regular text-text-tertiary">{name}</span>
           {shiftIsMeaningful && (
             <span
@@ -229,13 +231,13 @@ function GreekCell({
             </span>
           )}
         </div>
-        <div className="mt-2 text-headline-regular font-medium tabular-nums text-text-primary">
+        <div className="mt-2 text-headline-semibold tabular text-text-primary">
           {raw != null ? rawFmt(raw) : "n/a"}
         </div>
-        <div className="text-caption-2-regular tabular-nums text-text-secondary">
+        <div className="text-caption-1-regular tabular text-text-secondary">
           {positional != null ? posFmt(positional) : "n/a"}
         </div>
-        <div className="h-1 rounded-full bg-background-secondary-default mt-2 overflow-hidden">
+        <div className="h-1 rounded-full bg-background-tertiary-default mt-2 overflow-hidden">
           <div
             className={cn("h-full rounded-full transition-colors duration-500", c.bar)}
             style={{ width: `${pct}%` }}
@@ -274,17 +276,17 @@ function ScenarioControls({
   const tRemDays = Math.max(0, dteDays - daysFwd);
 
   return (
-    <div className="rounded-md border border-separator-border bg-background-primary-default">
+    <div className="rounded-2lg bg-background-secondary-default overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center gap-2 px-3 h-7 border-b border-separator-border text-left hover:bg-background-secondary-hover transition-colors"
+        className="w-full flex items-center gap-2 px-3 h-9 border-b border-separator-border text-left hover:bg-background-secondary-hover transition-colors"
       >
-        <span className="text-caption-2-regular text-text-tertiary">
+        <span className="text-body-2-medium text-text-primary">
           What-if scenario
         </span>
         <span className="text-caption-2-regular tabular text-text-tertiary">
-          sliders drive Greeks via BS · default = baseline
+          sliders drive Greeks via Black-Scholes, default is baseline
         </span>
         {active && whatIf && (
           <span className={cn(
@@ -294,9 +296,11 @@ function ScenarioControls({
             P/L {whatIf.pnl >= 0 ? "+" : ""}${whatIf.pnl.toFixed(0)}
           </span>
         )}
-        <span className={cn("text-caption-2-regular text-text-tertiary transition-transform", active && "ml-2", open && "rotate-180")}>
-          ▾
-        </span>
+        <RiArrowDownSLine
+          size={16}
+          aria-hidden="true"
+          className={cn("text-foreground-icon-tertiary transition-transform", active && "ml-2", !active && "ml-auto", open && "rotate-180")}
+        />
       </button>
 
       {open && (
@@ -337,7 +341,7 @@ function ScenarioControls({
             label="Days fwd"
             accent={CHART.pnl.expiry}
             valueText={daysFwd === 0 ? "today" : daysFwd >= dteDays ? "expiry" : `+${daysFwd}d`}
-            subText={`${tRemDays}d to expiry · IV ${(newIv * 100).toFixed(0)}%`}
+            subText={`${tRemDays}d to expiry, IV ${(newIv * 100).toFixed(0)}%`}
             min={0} max={dteDays} step={1}
             value={daysFwd} onChange={setDaysFwd}
             isDefault={daysFwd === 0}
@@ -358,7 +362,7 @@ function ScenarioControls({
                 Reading the scenario
               </span>
               <span className="text-caption-1-regular text-text-secondary flex-1 min-w-0">
-                Greek values above swap to what they'd be at <b>${newSpot.toFixed(2)}</b>,
+                Greek values above swap to what they&apos;d be at <b>${newSpot.toFixed(2)}</b>,
                 IV <b>{(newIv * 100).toFixed(1)}%</b>, in <b>{daysFwd}d</b>.
                 ΔΔ chip = shift from baseline.
               </span>
@@ -449,10 +453,10 @@ function ScenarioSlider({
 function getDeltaHint(delta: number | null, isLong: boolean): string {
   if (delta == null) return "n/a";
   const abs = Math.abs(delta);
-  if (abs >= 0.7) return `Deep ITM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
-  if (abs >= 0.45) return `Near-ATM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
-  if (abs >= 0.25) return `OTM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
-  return `Far OTM · ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
+  if (abs >= 0.7) return `Deep ITM, ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
+  if (abs >= 0.45) return `Near ATM, ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
+  if (abs >= 0.25) return `OTM, ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
+  return `Far OTM, ~${(abs * 100).toFixed(0)}% prob. expire ITM`;
 }
 
 function getGammaHint(gamma: number | null, isLong: boolean): string {

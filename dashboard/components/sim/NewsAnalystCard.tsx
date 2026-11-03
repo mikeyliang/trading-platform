@@ -5,13 +5,24 @@ import { api, type NewsAnalystRead } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RiLoader4Line as Loader2, RiRefreshLine as RefreshCw } from "@remixicon/react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RiArrowRightSLine, RiErrorWarningFill, RiRefreshLine } from "@remixicon/react";
 
-const VERDICT_STYLE: Record<string, string> = {
-  bullish: "text-status-lime-text bg-status-lime-background border-status-lime-text",
-  bearish: "text-status-rose-text bg-status-rose-background border-status-rose-text",
-  mixed: "text-status-orange-text-400 bg-status-orange-background-400/10 border-amber-400/30",
-  neutral: "text-text-secondary bg-background-secondary-default border-separator-border",
+type BadgeVariant = React.ComponentProps<typeof Badge>["variant"];
+
+const VERDICT_VARIANT: Record<string, BadgeVariant> = {
+  bullish: "up",
+  bearish: "down",
+  mixed: "warning",
+  neutral: "muted",
+};
+
+const VERDICT_LABEL: Record<string, string> = {
+  bullish: "Bullish",
+  bearish: "Bearish",
+  mixed: "Mixed",
+  neutral: "Neutral",
 };
 
 /** Compact AI news read for one symbol, verdict chip, bias bar, for/against. */
@@ -41,47 +52,56 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
     <Card>
       <CardHeader>
         <CardTitle>AI news read</CardTitle>
-        <div className="ml-auto flex items-center gap-1.5">
-          {read && <span className="text-caption-2-regular text-text-tertiary truncate max-w-28">{read.model.split("/").pop()}</span>}
-          <button
+        <div className="flex items-center gap-2">
+          {read && (
+            <span className="text-caption-1-regular text-text-tertiary truncate max-w-28">
+              {read.model.split("/").pop()}
+            </span>
+          )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => load(symbol)}
             disabled={loading}
-            className="text-text-tertiary hover:text-text-secondary transition-colors"
-            title="refresh"
+            aria-label="Refresh news read"
           >
-            <RefreshCw size={10} className={cn(loading && "animate-spin")} />
-          </button>
+            <RiRefreshLine className={cn(loading && "animate-spin")} />
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2">
+      <CardContent className="flex flex-col gap-3">
         {loading && !read && (
-          <div className="flex items-center gap-2 text-caption-1-regular text-text-tertiary py-2">
-            <Loader2 size={12} className="animate-spin" /> reading headlines…
+          <div className="flex flex-col gap-2 py-1" role="status" aria-label="Reading headlines">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-1.5 w-full" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-4/5" />
           </div>
         )}
         {error && !loading && (
-          <p className="text-caption-2-regular text-status-rose-text">{error.includes("503") ? "OPENROUTER_API_KEY not configured" : error}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="down" className="gap-1">
+              <RiErrorWarningFill size={14} aria-hidden />
+              {error.includes("503") ? "No OpenRouter key configured" : "Read failed"}
+            </Badge>
+            <Button variant="secondary" size="sm" onClick={() => load(symbol)}>Retry</Button>
+          </div>
         )}
         {read && (
           <>
             <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "h-5 px-2 rounded border text-caption-2-regular flex items-center",
-                  VERDICT_STYLE[read.verdict] ?? VERDICT_STYLE.neutral
-                )}
-              >
-                {read.verdict}
-              </span>
-              <span className="text-caption-2-regular tabular text-text-tertiary">{read.confidence}% conf</span>
+              <Badge variant={VERDICT_VARIANT[read.verdict] ?? "muted"}>
+                {VERDICT_LABEL[read.verdict] ?? read.verdict}
+              </Badge>
+              <span className="text-caption-1-regular tabular text-text-tertiary">{read.confidence}% confidence</span>
               {read.cached && <Badge variant="muted">Cached</Badge>}
             </div>
 
             {/* bias bar: -1 .. +1 */}
-            <div className="relative h-1.5 rounded bg-background-secondary-default overflow-hidden">
-              <div className="absolute inset-y-0 left-1/2 w-px bg-separator-border" />
+            <div className="relative h-1.5 rounded-full bg-background-tertiary-default overflow-hidden" aria-hidden>
+              <div className="absolute inset-y-0 left-1/2 w-px bg-separator-border-strong" />
               <div
-                className={cn("absolute inset-y-0 rounded", read.bias_score >= 0 ? "bg-status-lime-background" : "bg-status-rose-background")}
+                className={cn("absolute inset-y-0 rounded-full", read.bias_score >= 0 ? "bg-status-lime-text" : "bg-status-rose-text")}
                 style={{
                   left: read.bias_score >= 0 ? "50%" : `${50 + read.bias_score * 50}%`,
                   width: `${Math.abs(read.bias_score) * 50}%`,
@@ -89,38 +109,39 @@ export function NewsAnalystCard({ symbol }: { symbol: string }) {
               />
             </div>
 
-            <p className="text-caption-1-regular leading-relaxed text-text-secondary">{read.summary}</p>
+            <p className="text-body-2-regular text-text-secondary">{read.summary}</p>
 
             {read.working_for.length > 0 && (
-              <div>
-                <div className="text-caption-2-regular text-status-lime-text/80 mb-0.5">Working for</div>
+              <div className="flex flex-col gap-1">
+                <div className="text-caption-1-medium text-status-lime-text">Working for</div>
                 {read.working_for.map((x, i) => (
-                  <p key={i} className="text-caption-2-regular text-text-tertiary leading-snug pl-2 border-l border-status-lime-text mb-0.5">{x}</p>
+                  <p key={i} className="text-caption-1-regular text-text-secondary pl-2 border-l-2 border-status-lime-text">{x}</p>
                 ))}
               </div>
             )}
             {read.working_against.length > 0 && (
-              <div>
-                <div className="text-caption-2-regular text-status-rose-text/80 mb-0.5">Working against</div>
+              <div className="flex flex-col gap-1">
+                <div className="text-caption-1-medium text-status-rose-text">Working against</div>
                 {read.working_against.map((x, i) => (
-                  <p key={i} className="text-caption-2-regular text-text-tertiary leading-snug pl-2 border-l border-status-rose-text mb-0.5">{x}</p>
+                  <p key={i} className="text-caption-1-regular text-text-secondary pl-2 border-l-2 border-status-rose-text">{x}</p>
                 ))}
               </div>
             )}
 
             {read.headlines.length > 0 && (
               <details className="group">
-                <summary className="text-caption-2-regular text-text-tertiary cursor-pointer hover:text-text-secondary list-none">
-                  {read.headlines.length} headlines ▸
+                <summary className="inline-flex items-center gap-1 text-caption-1-medium text-text-tertiary cursor-pointer hover:text-text-primary list-none select-none">
+                  <RiArrowRightSLine size={14} className="transition-transform group-open:rotate-90" aria-hidden />
+                  {read.headlines.length} headlines
                 </summary>
-                <div className="mt-1 flex flex-col gap-1 max-h-40 overflow-y-auto">
+                <div className="mt-2 flex flex-col gap-1.5 max-h-40 overflow-y-auto">
                   {read.headlines.map((h, i) => (
                     <a
                       key={i}
                       href={h.link}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-caption-2-regular leading-snug text-text-tertiary hover:text-accent-500 transition-colors"
+                      className="text-caption-1-regular text-text-secondary hover:text-accent-600 transition-colors"
                     >
                       {h.title}
                     </a>

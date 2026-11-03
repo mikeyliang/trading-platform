@@ -3,10 +3,30 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { RiBrainLine as Brain, RiRefreshLine as RefreshCw, RiErrorWarningFill as AlertCircle, RiCheckboxCircleFill as CheckCircle2, RiCloseCircleFill as XCircle, RiSparklingLine as Sparkles, RiStockLine as TrendingUp, RiNewspaperLine as Newspaper, RiCalculatorLine as Calculator, RiChat1Line as MessageSquare, RiShieldFlashLine as ShieldAlert, RiAuctionLine as Gavel } from "@remixicon/react";
+import {
+  RiBrainLine,
+  RiPlayFill,
+  RiLoader4Line,
+  RiErrorWarningFill,
+  RiCheckboxCircleFill,
+  RiCloseCircleFill,
+  RiSparklingLine,
+  RiStockLine,
+  RiNewspaperLine,
+  RiCalculatorLine,
+  RiChat1Line,
+  RiShieldFlashLine,
+  RiAuctionLine,
+  RiArrowDownSLine,
+  RiArrowRightSLine,
+  type RemixiconComponentType,
+} from "@remixicon/react";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton, Spinner } from "@/components/ui/skeleton";
 import {
   AgentConfigPanel,
   type AgentConfig,
@@ -45,55 +65,47 @@ type AnalyzeResult = {
 
 const SECTION_META: Record<
   AgentKey,
-  { label: string; icon: typeof Brain; color: string; description: string }
+  { label: string; icon: RemixiconComponentType; description: string }
 > = {
   market_report: {
-    label: "Market Analyst",
-    icon: TrendingUp,
-    color: "text-blue-400",
+    label: "Market analyst",
+    icon: RiStockLine,
     description: "Technical indicators, trend, momentum",
   },
   sentiment_report: {
-    label: "Sentiment Analyst",
-    icon: Sparkles,
-    color: "text-pink-400",
+    label: "Sentiment analyst",
+    icon: RiSparklingLine,
     description: "Reddit, StockTwits, social mood",
   },
   news_report: {
-    label: "News Analyst",
-    icon: Newspaper,
-    color: "text-yellow-400",
-    description: "Macro headlines + ticker news",
+    label: "News analyst",
+    icon: RiNewspaperLine,
+    description: "Macro headlines and ticker news",
   },
   fundamentals_report: {
-    label: "Fundamentals Analyst",
-    icon: Calculator,
-    color: "text-green-400",
+    label: "Fundamentals analyst",
+    icon: RiCalculatorLine,
     description: "Financials, earnings, valuation",
   },
   investment_debate_state: {
-    label: "Bull / Bear Debate",
-    icon: MessageSquare,
-    color: "text-purple-400",
+    label: "Bull and bear debate",
+    icon: RiChat1Line,
     description: "Researcher team, structured argumentation",
   },
   trader_investment_plan: {
-    label: "Trader Plan",
-    icon: Brain,
-    color: "text-accent-500",
-    description: "Position sizing + entry/exit rationale",
+    label: "Trader plan",
+    icon: RiBrainLine,
+    description: "Position sizing, entry and exit rationale",
   },
   risk_debate_state: {
-    label: "Risk Management",
-    icon: ShieldAlert,
-    color: "text-orange-400",
-    description: "Conservative / aggressive / neutral risk views",
+    label: "Risk management",
+    icon: RiShieldFlashLine,
+    description: "Conservative, aggressive and neutral risk views",
   },
   final_trade_decision: {
-    label: "Portfolio Manager Decision",
-    icon: Gavel,
-    color: "text-status-lime-text",
-    description: "Final approve / reject + rationale",
+    label: "Portfolio manager decision",
+    icon: RiAuctionLine,
+    description: "Final approve or reject with rationale",
   },
 };
 
@@ -301,11 +313,10 @@ export function AgentDebate() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Agents"
-        title="Multi-Agent Debate"
-        description="LLM analysts debate a ticker, market, sentiment, news, fundamentals, then bull/bear, trader, risk, and a final PM decision."
+        title="Multi-agent debate"
+        description="LLM analysts debate a ticker: market, sentiment, news and fundamentals, then bull and bear, trader, risk and a final PM decision."
         actions={
-          <div className="flex items-end gap-2 flex-wrap">
+          <div className="flex items-end gap-3 flex-wrap">
             <Field label="Ticker">
               <Input
                 value={pending}
@@ -314,7 +325,7 @@ export function AgentDebate() {
                   if (e.key === "Enter") runDebate();
                 }}
                 placeholder="RUT"
-                className="h-7 w-20 tabular"
+                className="w-24 tabular"
               />
             </Field>
             <Field label="As-of date">
@@ -322,23 +333,22 @@ export function AgentDebate() {
                 type="date"
                 value={tradeDate}
                 onChange={(e) => setTradeDate(e.target.value)}
-                className="h-7 tabular"
+                className="w-40 tabular"
               />
             </Field>
             <Button
               onClick={runDebate}
               disabled={loading || !status?.installed || !hasAnyLLMKey}
               variant="default"
-              size="sm"
             >
-              <RefreshCw className={loading ? "animate-spin" : ""} />
-              {loading ? "Debating…" : "Run debate"}
+              {loading ? <RiLoader4Line className="animate-spin" /> : <RiPlayFill />}
+              {loading ? "Debating" : "Run debate"}
             </Button>
           </div>
         }
       />
 
-      <StatusBanner status={status} hasAnyLLMKey={!!hasAnyLLMKey} />
+      <StatusCard status={status} hasAnyLLMKey={!!hasAnyLLMKey} />
 
       <AgentConfigPanel
         config={config}
@@ -351,34 +361,37 @@ export function AgentDebate() {
         <AgentStatusRail items={railItems} />
       )}
 
-      {result?.cached && (
-        <div className="text-caption-1-regular text-text-tertiary">
-          Cached (1hr TTL), re-runs are free.
-        </div>
-      )}
-
       {error && (
-        <div className="flex items-start gap-2 p-2 rounded border border-status-rose-text bg-status-rose-background text-caption-1-regular">
-          <AlertCircle size={12} className="text-status-rose-text shrink-0 mt-0.5" />
-          <div>
-            <div className="font-medium text-status-rose-text">Run failed</div>
-            <div className="text-text-secondary mt-0.5 tabular text-caption-1-regular">{error}</div>
-          </div>
-        </div>
+        <Card className="shrink-0">
+          <CardContent>
+            <div className="rounded-2lg bg-status-rose-background text-status-rose-text px-3 py-2 flex items-start gap-2 text-body-2-regular">
+              <RiErrorWarningFill size={16} className="shrink-0 mt-0.5" aria-hidden />
+              <div className="min-w-0">
+                <div className="text-body-2-medium">Run failed</div>
+                <div className="tabular break-words">{error}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {loading && (
-        <div className="p-3 rounded border border-separator-border bg-background-primary-default text-caption-1-regular text-text-tertiary text-center">
-          Running multi-agent debate. This takes 30 to 90 seconds depending on model and
-          rounds. Each analyst makes one or two LLM calls, then bull/bear debate runs
-          for up to max_debate_rounds.
-        </div>
+        <Card className="shrink-0">
+          <div role="status" aria-live="polite" className="flex flex-col items-center gap-2 py-10 px-6 text-center">
+            <Spinner size={18} />
+            <span className="text-body-medium text-text-primary">Running the debate</span>
+            <span className="text-body-2-regular text-text-tertiary max-w-md">
+              This takes 30 to 90 seconds depending on model and rounds. Each analyst makes one or two
+              LLM calls, then the bull and bear debate runs for up to the configured number of rounds.
+            </span>
+          </div>
+        </Card>
       )}
 
-      {result && <DecisionBanner result={result} />}
+      {result && <DecisionCard result={result} />}
 
       {result && (
-        <div className="grid gap-2">
+        <div className="flex flex-col gap-3 shrink-0">
           {SECTION_ORDER.map((key) => {
             if (!config.focused[key]) return null;
             const content = result.final_state[key];
@@ -422,83 +435,85 @@ function initStreamingStatus(): Record<
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-caption-1-medium text-text-tertiary">{label}</span>
       {children}
     </label>
   );
 }
 
-function StatusBanner({
+function StatusCard({
   status,
   hasAnyLLMKey,
 }: {
   status: AgentsStatus | null;
   hasAnyLLMKey: boolean;
 }) {
-  if (!status) {
-    return (
-      <div className="p-3 rounded border border-separator-border bg-background-secondary-default text-body-2-regular text-text-tertiary">
-        Checking TradingAgents availability…
-      </div>
-    );
-  }
-  if (!status.installed) {
-    return (
-      <div className="p-3 rounded border border-status-rose-text bg-status-rose-background text-body-2-regular flex items-start gap-2">
-        <XCircle size={16} className="text-status-rose-text shrink-0 mt-0.5" />
-        <div>
-          <div className="font-medium text-status-rose-text">TradingAgents not installed</div>
-          <div className="text-text-secondary mt-0.5">
-            Run <code className="text-caption-1-regular">pip install -e ../tradingagents</code>{" "}
-            in the api service to enable.
-          </div>
-        </div>
-      </div>
-    );
-  }
-  if (!hasAnyLLMKey) {
-    return (
-      <div className="p-3 rounded border border-status-yellow-text bg-status-yellow-background text-body-2-regular flex items-start gap-2">
-        <AlertCircle size={16} className="text-status-yellow-text shrink-0 mt-0.5" />
-        <div>
-          <div className="font-medium text-status-yellow-text">No LLM API key configured</div>
-          <div className="text-text-secondary mt-0.5">
-            Set <code className="text-caption-1-regular">OPENAI_API_KEY</code>,{" "}
-            <code className="text-caption-1-regular">ANTHROPIC_API_KEY</code>, or{" "}
-            <code className="text-caption-1-regular">GOOGLE_API_KEY</code> in{" "}
-            <code className="text-caption-1-regular">services/api/.env</code> and restart the API.
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const badge = !status
+    ? null
+    : !status.installed
+    ? <Badge variant="down">Not installed</Badge>
+    : !hasAnyLLMKey
+    ? <Badge variant="warning">No API key</Badge>
+    : <Badge variant="up">Ready</Badge>;
+
   return (
-    <div className="flex flex-wrap gap-2 text-caption-1-regular">
-      <KeyChip label="OpenAI" present={status.has_openai_key} />
-      <KeyChip label="Anthropic" present={status.has_anthropic_key} />
-      <KeyChip label="Google" present={status.has_google_key} />
-    </div>
+    <Card className="shrink-0">
+      <CardHeader>
+        <CardTitle>TradingAgents service</CardTitle>
+        {badge}
+      </CardHeader>
+      <CardContent>
+        {!status ? (
+          <div className="flex items-center gap-3" role="status" aria-label="Checking TradingAgents availability">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+        ) : !status.installed ? (
+          <div className="rounded-2lg bg-status-rose-background text-status-rose-text px-3 py-2 flex items-start gap-2 text-body-2-regular">
+            <RiErrorWarningFill size={16} className="shrink-0 mt-0.5" aria-hidden />
+            <div>
+              <div className="text-body-2-medium">TradingAgents is not installed</div>
+              <div>
+                Run <code className="tabular">pip install -e ../tradingagents</code> in the api service to enable it.
+              </div>
+            </div>
+          </div>
+        ) : !hasAnyLLMKey ? (
+          <div className="rounded-2lg bg-status-yellow-background text-status-yellow-text px-3 py-2 flex items-start gap-2 text-body-2-regular">
+            <RiErrorWarningFill size={16} className="shrink-0 mt-0.5" aria-hidden />
+            <div>
+              <div className="text-body-2-medium">No LLM API key configured</div>
+              <div>
+                Set <code className="tabular">OPENAI_API_KEY</code>, <code className="tabular">ANTHROPIC_API_KEY</code> or{" "}
+                <code className="tabular">GOOGLE_API_KEY</code> in <code className="tabular">services/api/.env</code> and restart the API.
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-caption-1-medium text-text-tertiary">Keys</span>
+            <KeyChip label="OpenAI" present={status.has_openai_key} />
+            <KeyChip label="Anthropic" present={status.has_anthropic_key} />
+            <KeyChip label="Google" present={status.has_google_key} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 function KeyChip({ label, present }: { label: string; present: boolean }) {
   return (
-    <span
-      className={cn(
-        "flex items-center gap-1 px-2 py-1 rounded border text-caption-1-regular",
-        present
-          ? "border-status-lime-text bg-status-lime-background text-status-lime-text"
-          : "border-separator-border bg-background-secondary-default text-text-tertiary"
-      )}
-    >
-      {present ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+    <Badge variant={present ? "up" : "muted"}>
+      {present ? <RiCheckboxCircleFill size={14} aria-hidden /> : <RiCloseCircleFill size={14} aria-hidden />}
       {label}
-    </span>
+    </Badge>
   );
 }
 
-function DecisionBanner({ result }: { result: AnalyzeResult }) {
+function DecisionCard({ result }: { result: AnalyzeResult }) {
   const decision = (result.decision || "").trim();
   const decisionLower = decision.toLowerCase();
   const tone = decisionLower.includes("buy")
@@ -508,32 +523,28 @@ function DecisionBanner({ result }: { result: AnalyzeResult }) {
     : "neutral";
 
   return (
-    <div
-      className={cn(
-        "p-5 rounded-lg border",
-        tone === "up"
-          ? "border-status-lime-text bg-status-lime-background"
-          : tone === "down"
-          ? "border-status-rose-text bg-status-rose-background"
-          : "border-separator-border bg-background-primary-default"
-      )}
-    >
-      <div className="text-caption-1-regular text-text-tertiary mb-1">
-        Final decision · {result.symbol} · {result.trade_date}
-      </div>
-      <div
-        className={cn(
-          "text-title-1-regular font-semibold",
-          tone === "up"
-            ? "text-status-lime-text"
-            : tone === "down"
-            ? "text-status-rose-text"
-            : "text-text-primary"
-        )}
-      >
-        {decision || "(no decision returned)"}
-      </div>
-    </div>
+    <Card className="shrink-0">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <CardTitle>Final decision</CardTitle>
+          <Badge variant="muted" className="tabular">{result.symbol}</Badge>
+          <span className="text-caption-1-regular tabular text-text-tertiary">{result.trade_date}</span>
+        </div>
+        {result.cached && <Badge variant="muted">Cached, 1h TTL</Badge>}
+      </CardHeader>
+      <CardContent>
+        <div
+          className={cn(
+            "rounded-2lg px-4 py-3 text-title-2-semibold",
+            tone === "up" && "bg-status-lime-background text-status-lime-text",
+            tone === "down" && "bg-status-rose-background text-status-rose-text",
+            tone === "neutral" && "bg-background-secondary-default text-text-primary"
+          )}
+        >
+          {decision || "No decision returned"}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -556,8 +567,7 @@ function ReportSection({
     sectionKey === "trader_investment_plan";
   const expanded = userExpanded ?? defaultExpanded;
 
-  const Icon = meta?.icon ?? Brain;
-  const accent = meta?.color ?? "text-text-secondary";
+  const Icon = meta?.icon ?? RiBrainLine;
   const label = meta?.label ?? sectionKey;
 
   // Debate states arrive as objects; render their string fields plainly.
@@ -567,36 +577,32 @@ function ReportSection({
       : JSON.stringify(content, null, 2);
 
   return (
-    <section
-      className={cn(
-        "rounded-lg border border-separator-border bg-background-primary-default overflow-hidden transition-colors",
-        visible ? "opacity-100 translate-y-0" : "opacity-40 translate-y-1"
-      )}
-    >
+    <Card className={cn("shrink-0 transition-opacity", visible ? "opacity-100" : "opacity-40")}>
       <button
+        type="button"
         onClick={() => setUserExpanded(!expanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-background-secondary-hover"
+        aria-expanded={expanded}
+        className="w-full flex items-center justify-between gap-3 px-4 h-11 hover:bg-background-secondary-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring"
       >
-        <div className="flex items-center gap-3">
-          <Icon size={18} className={accent} />
-          <div className="text-left">
-            <div className={cn("font-medium", accent)}>{label}</div>
-            {meta?.description && (
-              <div className="text-caption-1-regular text-text-tertiary">{meta.description}</div>
-            )}
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <Icon size={18} className="text-foreground-icon-secondary shrink-0" aria-hidden />
+          <span className="text-body-semibold text-text-primary truncate">{label}</span>
+          {meta?.description && (
+            <span className="text-caption-1-regular text-text-tertiary truncate hidden sm:inline">{meta.description}</span>
+          )}
         </div>
-        <span className="text-caption-1-regular text-text-tertiary">
+        <span className="inline-flex items-center gap-1 text-caption-1-medium text-text-tertiary shrink-0">
           {expanded ? "Hide" : "Show"}
+          {expanded ? <RiArrowDownSLine size={16} aria-hidden /> : <RiArrowRightSLine size={16} aria-hidden />}
         </span>
       </button>
       {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-separator-border">
-          <pre className="text-body-2-regular text-text-secondary whitespace-pre-wrap font-sans leading-relaxed">
+        <CardContent className="border-t border-separator-border">
+          <pre className="text-body-2-regular text-text-secondary whitespace-pre-wrap font-sans">
             {text}
           </pre>
-        </div>
+        </CardContent>
       )}
-    </section>
+    </Card>
   );
 }

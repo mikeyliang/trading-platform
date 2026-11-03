@@ -5,6 +5,9 @@ import { api, type DepthSnapshot, type DepthLevel } from "@/lib/api";
 import { StreamWebSocket } from "@/lib/ws-stream";
 import { cn, fmtCompact } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RiStackLine as Layers } from "@remixicon/react";
 
 interface Props {
@@ -58,49 +61,54 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
     );
   }, [snap]);
 
-  if (unavailable || (snap && !snap.available && (snap.bids ?? []).length === 0 && (snap.asks ?? []).length === 0)) {
-    return (
-      <EmptyState
-        icon={Layers}
-        title="No depth subscription"
-        description="Level 2 requires an IBKR market-depth bundle. For SPY/QQQ try NYSE ArcaBook ($3/mo non-pro); for NASDAQ-listed names try TotalView ($9/mo)."
-      />
-    );
-  }
+  const empty =
+    unavailable || (snap && !snap.available && (snap.bids ?? []).length === 0 && (snap.asks ?? []).length === 0);
 
   const imb = snap?.imbalance ?? null;
-  const imbColor = imb == null ? "text-text-tertiary" : imb > 0.15 ? "text-status-lime-text" : imb < -0.15 ? "text-status-rose-text" : "text-text-secondary";
+  const imbVariant = imb == null ? "muted" : imb > 0.15 ? "up" : imb < -0.15 ? "down" : "muted";
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between px-2 h-7 border-b border-separator-border text-caption-2-regular text-text-tertiary">
-        <span className="flex items-center gap-1.5">
-          <Layers size={10} className="text-accent-500" />
-          Depth · {symbol}
-          <span
-            className={cn(
-              "ml-1 inline-block w-1 h-1 rounded-full",
-              streaming ? "bg-status-lime-text" : "bg-foreground-icon-quaternary"
-            )}
-          />
-        </span>
-        {imb != null && (
-          <span className={cn("tabular", imbColor)}>
-            imb {imb >= 0 ? "+" : ""}{(imb * 100).toFixed(1)}%
-          </span>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 text-caption-2-regular tabular">
-        <BookSide side="bid" levels={snap?.bids ?? []} maxSize={maxSize} rows={rows} />
-        <BookSide side="ask" levels={snap?.asks ?? []} maxSize={maxSize} rows={rows} />
-      </div>
-
-      {snap && (
-        <div className="grid grid-cols-2 px-2 h-6 items-center text-caption-2-regular tabular border-t border-separator-border text-text-tertiary">
-          <span>bid Σ <span className="text-status-lime-text font-medium">{fmtCompact(snap.bid_size_total)}</span></span>
-          <span className="text-right">ask Σ <span className="text-status-rose-text font-medium">{fmtCompact(snap.ask_size_total)}</span></span>
+    <div className="flex flex-col h-full min-h-0">
+      <CardHeader>
+        <div className="flex items-center gap-2 min-w-0">
+          <CardTitle>Depth</CardTitle>
+          <span className="text-caption-1-medium text-text-tertiary tabular">{symbol}</span>
+          <Badge variant={streaming ? "up" : "muted"}>{streaming ? "Live" : "Snapshot"}</Badge>
         </div>
+        {imb != null && (
+          <Badge variant={imbVariant} className="tabular">
+            Imbalance {imb >= 0 ? "+" : ""}{(imb * 100).toFixed(1)}%
+          </Badge>
+        )}
+      </CardHeader>
+
+      {empty ? (
+        <EmptyState
+          icon={Layers}
+          title="No depth subscription"
+          description="Level 2 requires an IBKR market-depth bundle. For SPY/QQQ try NYSE ArcaBook ($3/mo non-pro); for NASDAQ-listed names try TotalView ($9/mo)."
+        />
+      ) : !snap ? (
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-4">
+          {Array.from({ length: rows * 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-3 w-full" />
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 h-8 items-center bg-background-secondary-default text-caption-1-medium text-text-tertiary border-b border-separator-border">
+            <div className="flex justify-between px-3"><span>Bid</span><span>Size</span></div>
+            <div className="flex justify-between px-3 border-l border-separator-border"><span>Size</span><span>Ask</span></div>
+          </div>
+          <div className="grid grid-cols-2 text-caption-1-regular tabular">
+            <BookSide side="bid" levels={snap.bids ?? []} maxSize={maxSize} rows={rows} />
+            <BookSide side="ask" levels={snap.asks ?? []} maxSize={maxSize} rows={rows} />
+          </div>
+          <div className="mt-auto grid grid-cols-2 px-3 h-8 items-center text-caption-1-medium tabular border-t border-separator-border bg-background-secondary-default text-text-tertiary">
+            <span>Bid total <span className="text-status-lime-text">{fmtCompact(snap.bid_size_total)}</span></span>
+            <span className="text-right">Ask total <span className="text-status-rose-text">{fmtCompact(snap.ask_size_total)}</span></span>
+          </div>
+        </>
       )}
     </div>
   );
@@ -119,7 +127,7 @@ function BookSide({
       {padded.slice(0, rows).map((lv, i) => (
         <div
           key={i}
-          className="relative h-[18px] flex items-center px-2"
+          className="relative h-6 flex items-center px-3 border-b border-separator-border"
         >
           {lv && (
             <span
@@ -131,10 +139,10 @@ function BookSide({
             />
           )}
           <span className={cn(
-            "relative z-10 flex w-full",
+            "relative z-10 flex w-full text-body-2-medium",
             side === "bid" ? "justify-between" : "flex-row-reverse justify-between"
           )}>
-            <span className={side === "bid" ? "text-status-lime-text font-medium" : "text-status-rose-text font-medium"}>
+            <span className={side === "bid" ? "text-status-lime-text" : "text-status-rose-text"}>
               {lv ? lv.price.toFixed(2) : "n/a"}
             </span>
             <span className="text-text-secondary">

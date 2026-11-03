@@ -48,7 +48,7 @@ export function MonitorMiniStrip() {
       const head = e.status === "trigger"
         ? `EXIT NOW, ${e.symbol} ${e.short_strike}`
         : `Near trigger, ${e.symbol} ${e.short_strike}`;
-      const body = `short Δ ${e.current_delta?.toFixed(1)} · trigger ${e.exit_delta}`;
+      const body = `Short delta ${e.current_delta?.toFixed(1)}, trigger ${e.exit_delta}`;
       if (e.status === "trigger") toast.error(head, { description: body });
       else toast(head, { description: body });
       load();

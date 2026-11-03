@@ -63,9 +63,9 @@ export function VolumeProfilePanel({ bins, volumes, poc, vah, val, lastPrice }: 
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between text-caption-2-regular text-text-tertiary px-0.5">
-        <span>vol · price</span>
-        <span className="tabular text-status-orange-text-400">POC {poc.toFixed(2)}</span>
+      <div className="flex items-center justify-between text-caption-1-medium text-text-tertiary">
+        <span>Volume by price</span>
+        <span className="tabular text-status-orange-text">POC {poc.toFixed(2)}</span>
       </div>
 
       <div className="flex gap-1.5">
@@ -76,7 +76,7 @@ export function VolumeProfilePanel({ bins, volumes, poc, vah, val, lastPrice }: 
               <div
                 className={cn(
                   "h-[70%] min-h-px rounded-r-[1px]",
-                  i === pocIdx ? "bg-status-orange-background-500/90" : r.inVA ? "bg-status-blue-background" : "bg-background-tertiary-default"
+                  i === pocIdx ? "bg-status-orange-text" : r.inVA ? "bg-status-blue-background" : "bg-background-tertiary-default"
                 )}
                 style={{ width: `${Math.max(r.frac * 100, 2)}%` }}
               />
@@ -84,18 +84,18 @@ export function VolumeProfilePanel({ bins, volumes, poc, vah, val, lastPrice }: 
           ))}
           {lastIdx != null && (
             <div
-              className="absolute inset-x-0 border-t border-dashed border-text-secondary/60 pointer-events-none"
+              className="absolute inset-x-0 border-t border-dashed border-separator-border-strong pointer-events-none"
               style={{ top: `${yPct(lastIdx)}%` }}
             />
           )}
         </div>
 
         {/* price axis, only the levels that matter */}
-        <div className="relative w-11 shrink-0 text-caption-2-regular tabular text-right" style={{ height: HEIGHT }}>
+        <div className="relative w-12 shrink-0 text-caption-1-regular tabular text-right" style={{ height: HEIGHT }}>
           {clearOf(0, [pocIdx, lastIdx]) &&
             axisLabel(0, rows[0].price.toFixed(2), "text-text-tertiary")}
           {(lastIdx == null || clearOf(pocIdx, [lastIdx])) &&
-            axisLabel(pocIdx, rows[pocIdx].price.toFixed(2), "text-status-orange-text-400")}
+            axisLabel(pocIdx, rows[pocIdx].price.toFixed(2), "text-status-orange-text")}
           {lastIdx != null && lastPrice != null &&
             axisLabel(lastIdx, lastPrice.toFixed(2), "text-text-primary")}
           {clearOf(rows.length - 1, [pocIdx, lastIdx]) &&
@@ -103,7 +103,7 @@ export function VolumeProfilePanel({ bins, volumes, poc, vah, val, lastPrice }: 
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-caption-2-regular tabular text-text-tertiary px-0.5">
+      <div className="flex items-center justify-between text-caption-1-regular tabular text-text-tertiary">
         <span>VAL {val.toFixed(2)}</span>
         <span>VAH {vah.toFixed(2)}</span>
       </div>

@@ -56,7 +56,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
               <button
                 type="button"
                 onClick={openCopilot}
-                className="flex items-center justify-center size-8 rounded-lg text-foreground-icon-secondary hover:text-accent-500-600 hover:bg-background-secondary-hover transition-colors"
+                className="flex items-center justify-center size-8 rounded-lg text-foreground-icon-secondary hover:text-accent-600 hover:bg-background-secondary-hover transition-colors"
                 aria-label="Open AI co-pilot"
               >
                 <RiSparklingLine className="size-5" />

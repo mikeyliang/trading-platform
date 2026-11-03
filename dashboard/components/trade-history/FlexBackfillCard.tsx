@@ -11,7 +11,14 @@
 // once the response lands.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RiErrorWarningFill as AlertCircle, RiCheckboxCircleFill as CheckCircle2, RiDatabase2Line as Database, RiLoader4Line as Loader2, RiRefreshLine as RefreshCw } from "@remixicon/react";
+import {
+  RiArrowRightSLine,
+  RiCheckboxBlankCircleLine,
+  RiCheckboxCircleFill,
+  RiErrorWarningFill,
+  RiLoader4Line,
+  RiRefreshLine,
+} from "@remixicon/react";
 import {
   api,
   type FlexBackfillResult,
@@ -19,6 +26,12 @@ import {
   type FlexJobState,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Stat, StatGroup } from "@/components/ui/stat";
+import { ToggleGroup } from "@/components/ui/toggle-group";
 
 const YEARS_OPTIONS = [1, 2, 3, 5];
 
@@ -153,148 +166,112 @@ export function FlexBackfillCard() {
     return Math.max(0, status.cooldown_sec - tick);
   }, [status?.cooldown_sec, tick]);
 
+  const blocked = pulling || cooldownLive > 0 || !status?.configured;
+
   return (
-    <div className="border border-separator-border bg-background-primary-default rounded-md">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-separator-border">
-        <Database size={13} className="text-text-tertiary" />
-        <span className="text-caption-1-regular text-text-secondary font-medium">
-          IBKR Flex backfill
-        </span>
-        {status && (
-          <ConfiguredBadge configured={status.configured} queryId={status.query_id} />
-        )}
-        <button
-          type="button"
+    <Card className="shrink-0">
+      <CardHeader>
+        <div className="flex items-center gap-2 min-w-0">
+          <CardTitle>IBKR Flex backfill</CardTitle>
+          {status && <ConfiguredBadge configured={status.configured} queryId={status.query_id} />}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={refreshStatus}
           disabled={statusLoading}
-          className="ml-auto inline-flex items-center justify-center h-5 w-5 rounded-sm text-text-tertiary hover:text-text-primary hover:bg-background-secondary-hover transition-colors"
-          title="Refresh status"
+          aria-label="Refresh status"
         >
-          <RefreshCw size={11} className={statusLoading ? "animate-spin" : ""} />
-        </button>
-      </div>
+          <RiRefreshLine className={statusLoading ? "animate-spin" : ""} />
+        </Button>
+      </CardHeader>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2 px-3 py-2.5">
-        <StatBlock
-          label="Rows from Flex"
-          value={status?.total_rows != null ? status.total_rows.toLocaleString() : "n/a"}
-        />
-        <StatBlock
-          label="Earliest"
-          value={status?.earliest ? fmtIsoDate(status.earliest) : "n/a"}
-        />
-        <StatBlock
-          label="Latest"
-          value={status?.latest ? fmtIsoDate(status.latest) : "n/a"}
-        />
-        <StatBlock
-          label="Accounts"
-          value={
-            status?.accounts?.length
-              ? status.accounts.map((a) => `${a.account_id} · ${a.rows}`).join(" · ")
-              : "n/a"
-          }
-          mono
-        />
-      </div>
+      <CardContent className="flex flex-col gap-3">
+        {statusLoading && !status ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" role="status" aria-label="Loading Flex status">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14" />)}
+          </div>
+        ) : (
+          <StatGroup cols={4}>
+            <Stat
+              label="Rows from Flex"
+              value={status?.total_rows != null ? status.total_rows.toLocaleString() : "n/a"}
+            />
+            <Stat label="Earliest" value={status?.earliest ? fmtIsoDate(status.earliest) : "n/a"} />
+            <Stat label="Latest" value={status?.latest ? fmtIsoDate(status.latest) : "n/a"} />
+            <Stat
+              label="Accounts"
+              value={
+                status?.accounts?.length ? (
+                  <span className="inline-flex items-baseline gap-3">
+                    {status.accounts.map((a) => (
+                      <span key={a.account_id}>
+                        {a.account_id} <span className="text-caption-1-regular text-text-tertiary">{a.rows.toLocaleString()} rows</span>
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  "n/a"
+                )
+              }
+            />
+          </StatGroup>
+        )}
 
-      {statusError && (
-        <NoteRow
-          tone="warn"
-          icon={<AlertCircle size={11} />}
-          text={`Couldn't load status: ${statusError}`}
-        />
-      )}
+        {statusError && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="down" className="gap-1 max-w-full">
+              <RiErrorWarningFill size={14} aria-hidden />
+              <span className="truncate">Status unavailable: {statusError}</span>
+            </Badge>
+            <Button variant="secondary" size="sm" onClick={refreshStatus}>Retry</Button>
+          </div>
+        )}
 
-      <div className="flex items-center gap-2 flex-wrap px-3 py-2 border-t border-separator-border bg-background-secondary-default">
-        <span className="text-caption-2-regular text-text-tertiary">Pull</span>
+        {/* Progress / result, visible during and after a backfill. */}
+        {pullError && <NoteTile tone="error" text={pullError} />}
+        {job?.status === "running" && <JobProgress job={job} />}
+        {lastResult && job?.status !== "running" && <BackfillResultStrip result={lastResult} />}
+      </CardContent>
+
+      <CardFooter className="h-auto min-h-11 py-2 flex-wrap">
+        <span className="text-caption-1-medium text-text-tertiary">Pull</span>
         <YearsToggle value={years} onChange={setYears} disabled={pulling} />
-        <span className="text-caption-2-regular text-text-tertiary">365-day slice{years > 1 ? "s" : ""}</span>
+        <span className="text-caption-1-regular text-text-tertiary">365-day slice{years > 1 ? "s" : ""}</span>
 
-        <label
-          className={cn(
-            "inline-flex items-center gap-1 h-6 px-2 rounded-sm border text-caption-2-regular cursor-pointer select-none transition-colors",
-            refresh
-              ? "border-accent-500 bg-status-blue-background text-accent-500"
-              : "border-separator-border bg-background-secondary-default text-text-secondary hover:bg-background-secondary-hover",
-            pulling && "cursor-not-allowed opacity-60",
-          )}
+        <Button
+          variant="secondary"
+          size="sm"
+          aria-pressed={refresh}
+          disabled={pulling}
+          onClick={() => setRefresh((v) => !v)}
           title="Overwrite existing rows on (source, external_id) conflict, useful to refresh timestamps after parser changes"
         >
-          <input
-            type="checkbox"
-            checked={refresh}
-            onChange={(e) => setRefresh(e.target.checked)}
-            disabled={pulling}
-            className="sr-only"
-          />
-          <span>Refresh existing</span>
-        </label>
+          {refresh ? <RiCheckboxCircleFill className="text-accent-600" /> : <RiCheckboxBlankCircleLine />}
+          Refresh existing
+        </Button>
 
-        <button
-          type="button"
+        <Button
+          variant="default"
           onClick={onBackfill}
-          disabled={pulling || cooldownLive > 0 || !status?.configured}
-          className={cn(
-            "ml-auto inline-flex items-center gap-1.5 h-6 px-3 rounded-sm text-caption-1-regular transition-colors",
-            pulling || cooldownLive > 0 || !status?.configured
-              ? "bg-background-secondary-default text-text-tertiary cursor-not-allowed"
-              : "bg-status-blue-background text-accent-500 hover:bg-status-blue-background",
-          )}
+          disabled={blocked}
+          className="ml-auto"
         >
           {pulling ? (
             <>
-              <Loader2 size={11} className="animate-spin" />
-              <span>Pulling…</span>
+              <RiLoader4Line className="animate-spin" />
+              Pulling
             </>
           ) : cooldownLive > 0 ? (
-            <span>Cooldown {fmtDuration(cooldownLive)}</span>
+            <span className="tabular">Cooldown {fmtDuration(cooldownLive)}</span>
           ) : !status?.configured ? (
-            <span>Not configured</span>
+            "Not configured"
           ) : (
-            <span>{refresh ? "Refresh" : "Backfill"} {years}y</span>
+            `${refresh ? "Refresh" : "Backfill"} ${years}y`
           )}
-        </button>
-      </div>
-
-      {/* Progress / result strip, visible during and after a backfill. */}
-      {(job?.status === "running" || lastResult || pullError) && (
-        <div className="px-3 py-2 border-t border-separator-border text-caption-1-regular tabular">
-          {pullError && (
-            <NoteRow
-              tone="error"
-              icon={<AlertCircle size={11} />}
-              text={pullError}
-            />
-          )}
-          {job?.status === "running" && (
-            <JobProgress job={job} />
-          )}
-          {lastResult && job?.status !== "running" && (
-            <BackfillResultStrip result={lastResult} />
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatBlock({
-  label, value, mono,
-}: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="flex flex-col gap-0.5 min-w-0">
-      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
-      <span
-        className={cn(
-          "text-caption-1-regular text-text-primary truncate",
-          mono ? "tabular text-caption-1-regular" : "tabular font-medium",
-        )}
-        title={value}
-      >
-        {value}
-      </span>
-    </div>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -302,19 +279,12 @@ function ConfiguredBadge({
   configured, queryId,
 }: { configured: boolean; queryId: string | null }) {
   if (!configured) {
-    return (
-      <span className="px-1.5 py-0.5 rounded-sm bg-status-yellow-background text-status-yellow-text text-caption-2-regular">
-        not configured
-      </span>
-    );
+    return <Badge variant="warning">Not configured</Badge>;
   }
   return (
-    <span
-      className="px-1.5 py-0.5 rounded-sm bg-status-lime-background text-status-lime-text text-caption-2-regular tabular"
-      title="IBKR Flex token + query id configured"
-    >
-      query {queryId ?? "n/a"}
-    </span>
+    <Badge variant="up" className="tabular" title="IBKR Flex token and query id configured">
+      Query {queryId ?? "n/a"}
+    </Badge>
   );
 }
 
@@ -322,25 +292,13 @@ function YearsToggle({
   value, onChange, disabled,
 }: { value: number; onChange: (n: number) => void; disabled: boolean }) {
   return (
-    <div className="flex h-6 rounded-sm border border-separator-border overflow-hidden">
-      {YEARS_OPTIONS.map((n, i) => (
-        <button
-          key={n}
-          type="button"
-          onClick={() => onChange(n)}
-          disabled={disabled}
-          className={cn(
-            "px-2 text-caption-2-regular tabular transition-colors",
-            i > 0 && "border-l border-separator-border",
-            value === n
-              ? "bg-status-blue-background text-accent-500 font-medium"
-              : "text-text-secondary hover:bg-background-secondary-hover hover:text-text-primary",
-            disabled && "cursor-not-allowed opacity-60",
-          )}
-        >
-          {n}y
-        </button>
-      ))}
+    <div className={cn(disabled && "opacity-60 pointer-events-none")}>
+      <ToggleGroup
+        ariaLabel="Years to pull"
+        value={String(value)}
+        onChange={(v) => onChange(Number(v))}
+        options={YEARS_OPTIONS.map((n) => ({ value: String(n), label: `${n}y` }))}
+      />
     </div>
   );
 }
@@ -354,22 +312,22 @@ function JobProgress({ job }: { job: FlexJobState }) {
   const pct = (done / total) * 100;
   const lastInfo = job.last_slice_info;
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-2 text-caption-1-regular text-text-secondary">
-        <Loader2 size={11} className="animate-spin text-accent-500" />
+    <div className="rounded-2lg bg-background-secondary-default p-3 flex flex-col gap-2" role="status" aria-live="polite">
+      <div className="flex items-center gap-3 text-caption-1-regular text-text-secondary tabular">
+        <RiLoader4Line size={14} className="animate-spin text-accent-600" aria-hidden />
         <span>
-          Slice <span className="text-text-primary tabular">{done}</span> / {total}
+          Slice <span className="text-text-primary">{done}</span> of {total}
         </span>
         {lastInfo?.from && lastInfo?.to && (
-          <span className="text-text-tertiary text-caption-2-regular">
-            {fmtCompactDate(lastInfo.from)} → {fmtCompactDate(lastInfo.to)}
+          <span className="text-text-tertiary">
+            {fmtCompactDate(lastInfo.from)} to {fmtCompactDate(lastInfo.to)}
           </span>
         )}
-        <span className="text-text-tertiary text-caption-2-regular ml-auto">job {job.id}</span>
+        <span className="text-text-tertiary ml-auto">Job {job.id}</span>
       </div>
-      <div className="relative h-1 w-full rounded-sm bg-background-secondary-default overflow-hidden">
+      <div className="relative h-1.5 w-full rounded-full bg-background-tertiary-default overflow-hidden">
         <div
-          className="absolute inset-y-0 left-0 bg-status-blue-background duration-500"
+          className="absolute inset-y-0 left-0 rounded-full bg-accent-600 transition-[width] duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -382,50 +340,45 @@ function BackfillResultStrip({ result }: { result: FlexBackfillResult }) {
     result.inserted > 0 || result.updated > 0 ? "good"
     : result.fetched > 0 ? "info"
     : "warn";
-  const Icon = tone === "good" ? CheckCircle2 : AlertCircle;
+  const Icon = tone === "good" ? RiCheckboxCircleFill : RiErrorWarningFill;
   return (
-    <div className="flex flex-col gap-1">
+    <div className="rounded-2lg bg-background-secondary-default p-3 flex flex-col gap-2">
       <div
         className={cn(
-          "inline-flex items-center gap-1.5 text-caption-1-regular flex-wrap",
+          "flex items-center gap-3 flex-wrap text-caption-1-regular tabular",
           tone === "good" && "text-status-lime-text",
           tone === "info" && "text-text-secondary",
           tone === "warn" && "text-status-yellow-text",
         )}
       >
-        <Icon size={11} />
+        <Icon size={14} aria-hidden />
+        <span>Fetched {(result.fetched ?? 0).toLocaleString()} ({result.trades} trades, {result.option_eae} EAE)</span>
+        <span>Inserted {(result.inserted ?? 0).toLocaleString()}</span>
+        {result.refresh && <span>Updated {(result.updated ?? 0).toLocaleString()}</span>}
         <span>
-          Fetched {(result.fetched ?? 0).toLocaleString()} ({result.trades} trades + {result.option_eae} EAE)
-          · inserted {(result.inserted ?? 0).toLocaleString()}
-          {result.refresh && (
-            <>
-              {" · "}updated {(result.updated ?? 0).toLocaleString()}
-            </>
-          )}
-          {" · "}skipped {(result.skipped ?? 0).toLocaleString()}
-          {result.skipped > 0 && !result.refresh && (
-            <span className="text-text-tertiary"> (dedup)</span>
-          )}
+          Skipped {(result.skipped ?? 0).toLocaleString()}
+          {result.skipped > 0 && !result.refresh && <span className="text-text-tertiary"> (dedup)</span>}
         </span>
       </div>
-      <details className="text-caption-2-regular text-text-tertiary">
-        <summary className="cursor-pointer hover:text-text-secondary select-none">
-          slices · {result.slices?.length ?? 0}
+      <details className="group text-caption-1-regular text-text-tertiary">
+        <summary className="inline-flex items-center gap-1 cursor-pointer hover:text-text-primary select-none list-none">
+          <RiArrowRightSLine size={14} className="transition-transform group-open:rotate-90" aria-hidden />
+          Slices ({result.slices?.length ?? 0})
         </summary>
-        <ul className="mt-1 ml-2 space-y-0.5 tabular">
+        <ul className="mt-2 flex flex-col gap-1 tabular">
           {result.slices.map((s, i) => (
-            <li key={i} className="flex items-center gap-2">
+            <li key={i} className="flex items-center gap-3">
               {s.from && s.to ? (
                 <span className="text-text-secondary">
-                  {fmtCompactDate(s.from)} → {fmtCompactDate(s.to)}
+                  {fmtCompactDate(s.from)} to {fmtCompactDate(s.to)}
                 </span>
               ) : s.info ? (
-                <span className="text-text-secondary italic">{s.info}</span>
+                <span className="text-text-secondary">{s.info}</span>
               ) : null}
               {s.error ? (
                 <span className="text-status-yellow-text">{s.error}</span>
               ) : s.trades != null ? (
-                <span className="text-status-lime-text">+{s.trades} trades{s.option_eae ? ` · +${s.option_eae} EAE` : ""}</span>
+                <span className="text-status-lime-text">+{s.trades} trades{s.option_eae ? `, +${s.option_eae} EAE` : ""}</span>
               ) : null}
             </li>
           ))}
@@ -435,19 +388,16 @@ function BackfillResultStrip({ result }: { result: FlexBackfillResult }) {
   );
 }
 
-function NoteRow({
-  tone, icon, text,
-}: { tone: "info" | "warn" | "error"; icon: React.ReactNode; text: string }) {
+function NoteTile({ tone, text }: { tone: "warn" | "error"; text: string }) {
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 text-caption-1-regular px-3 py-1.5 w-full",
-        tone === "info" && "text-text-secondary bg-background-secondary-default",
-        tone === "warn" && "text-status-yellow-text bg-status-yellow-background",
-        tone === "error" && "text-status-rose-text bg-status-rose-background",
+        "rounded-2lg px-3 py-2 flex items-start gap-2 text-body-2-regular",
+        tone === "warn" && "bg-status-yellow-background text-status-yellow-text",
+        tone === "error" && "bg-status-rose-background text-status-rose-text",
       )}
     >
-      {icon}
+      <RiErrorWarningFill size={16} className="shrink-0 mt-0.5" aria-hidden />
       <span>{text}</span>
     </div>
   );

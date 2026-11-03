@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { RiHistoryLine as History, RiSearchLine as Search, RiDeleteBinLine as Trash2, RiArrowRightUpLine as ArrowUpRight } from "@remixicon/react";
+import { RiHistoryLine, RiSearchLine, RiDeleteBinLine, RiArrowRightSLine } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export interface HistoryEntry {
   id: string;
@@ -82,92 +85,94 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
     });
   }, [history, query]);
 
-  if (history.length === 0) {
-    return (
-      <section className="rounded-lg border border-separator-border bg-background-primary-default p-4">
-        <div className="flex items-center gap-2 text-text-tertiary text-caption-1-regular">
-          <History size={12} />
-          <span>No prior debates yet. Runs save here automatically.</span>
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <section className="rounded-lg border border-separator-border bg-background-primary-default overflow-hidden">
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-separator-border">
-        <History size={14} className="text-text-secondary" />
-        <div className="text-body-2-regular font-medium text-text-secondary">
-          Conversation history
+    <Card className="shrink-0">
+      <CardHeader>
+        <div className="flex items-center gap-2 min-w-0">
+          <CardTitle>Prior runs</CardTitle>
+          <Badge variant="muted" className="tabular">
+            {filtered.length}
+            {query ? ` of ${history.length}` : ""}
+          </Badge>
         </div>
-        <span className="text-caption-1-regular text-text-tertiary">
-          {filtered.length}
-          {query ? ` of ${history.length}` : ""} runs
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="relative">
-            <Search
-              size={11}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"
-            />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search symbol, decision, text…"
-              className="h-7 w-56 pl-6 text-caption-1-regular"
-            />
+        {history.length > 0 && (
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <RiSearchLine
+                size={16}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground-icon-tertiary pointer-events-none"
+                aria-hidden
+              />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search runs"
+                aria-label="Search prior runs"
+                className="w-56 pl-8"
+              />
+            </div>
+            <Button variant="ghost" size="icon" onClick={onClear} aria-label="Clear history">
+              <RiDeleteBinLine />
+            </Button>
           </div>
-          <Button size="sm" variant="ghost" onClick={onClear} title="Clear history">
-            <Trash2 size={12} />
-          </Button>
-        </div>
-      </header>
-
-      <ul className="divide-y divide-separator-border max-h-72 overflow-y-auto">
-        {filtered.map((row) => {
-          const isCurrent = row.id === currentId;
-          const decision = (row.decision || "").trim();
-          const decisionLower = decision.toLowerCase();
-          const tone = decisionLower.includes("buy")
-            ? "text-status-lime-text"
-            : decisionLower.includes("sell")
-            ? "text-status-rose-text"
-            : "text-text-secondary";
-          return (
-            <li key={row.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(row)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-2 text-left text-caption-1-regular tabular hover:bg-background-secondary-hover transition-colors",
-                  isCurrent && "bg-background-secondary-default"
-                )}
-              >
-                <span className="font-medium text-text-primary w-16 truncate">
-                  {row.symbol}
-                </span>
-                <span className="text-text-tertiary w-24">{row.trade_date}</span>
-                <span className={cn("font-medium truncate flex-1", tone)}>
-                  {decision || "(no decision)"}
-                </span>
-                <span className="text-text-tertiary">
-                  {(row.duration_ms / 1000).toFixed(1)}s
-                </span>
-                <span className="text-text-tertiary/70">
-                  {formatRelative(row.ran_at)}
-                </span>
-                <ArrowUpRight size={11} className="text-text-tertiary" />
-              </button>
-            </li>
-          );
-        })}
-        {filtered.length === 0 && (
-          <li className="px-4 py-3 text-caption-1-regular text-text-tertiary">
-            No matches for &ldquo;{query}&rdquo;.
-          </li>
         )}
-      </ul>
-    </section>
+      </CardHeader>
+
+      {history.length === 0 ? (
+        <EmptyState
+          size="sm"
+          icon={RiHistoryLine}
+          title="No prior debates"
+          description="Runs save here automatically."
+        />
+      ) : (
+        <ul className="max-h-72 overflow-y-auto">
+          {filtered.map((row) => {
+            const isCurrent = row.id === currentId;
+            const decision = (row.decision || "").trim();
+            const decisionLower = decision.toLowerCase();
+            const variant = decisionLower.includes("buy")
+              ? "up"
+              : decisionLower.includes("sell")
+              ? "down"
+              : "muted";
+            return (
+              <li key={row.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(row)}
+                  aria-current={isCurrent ? "true" : undefined}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 h-9 text-left text-body-2-medium tabular border-b border-separator-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring",
+                    isCurrent ? "bg-background-secondary-default" : "hover:bg-background-secondary-hover"
+                  )}
+                >
+                  <span className="text-text-primary w-16 truncate">{row.symbol}</span>
+                  <span className="text-text-tertiary w-24 text-caption-1-regular">{row.trade_date}</span>
+                  <span className="flex-1 min-w-0 flex">
+                    <Badge variant={variant} className="max-w-full">
+                      <span className="truncate">{decision || "No decision"}</span>
+                    </Badge>
+                  </span>
+                  <span className="text-caption-1-regular text-text-tertiary">
+                    {(row.duration_ms / 1000).toFixed(1)}s
+                  </span>
+                  <span className="text-caption-1-regular text-text-tertiary w-16 text-right">
+                    {formatRelative(row.ran_at)}
+                  </span>
+                  <RiArrowRightSLine size={16} className="text-foreground-icon-tertiary shrink-0" aria-hidden />
+                </button>
+              </li>
+            );
+          })}
+          {filtered.length === 0 && (
+            <li>
+              <EmptyState size="sm" icon={RiSearchLine} title="No matches" description={`Nothing in prior runs matches "${query}".`} />
+            </li>
+          )}
+        </ul>
+      )}
+    </Card>
   );
 }
 

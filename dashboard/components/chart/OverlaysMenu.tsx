@@ -131,7 +131,7 @@ function OverlayRow({ toggle }: { toggle: OverlayToggle }) {
         <span className="text-caption-2-regular tabular text-text-tertiary">{toggle.hint}</span>
       )}
       {toggle.active && (
-        <Check size={11} className="text-accent-500-600 shrink-0" />
+        <Check size={11} className="text-accent-600 shrink-0" />
       )}
     </DropdownMenu.Item>
   );
