@@ -3,11 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0a0a0a;
-  --surface: #111111;
-  --surface-2: #1a1a1a;
-  --surface-3: #222222;
-  --border: #2c2c2c;
+  /* Mirrors the Tailwind palette in tailwind.config.ts. These used to drift
+     (#0a0a0a here vs #18181b in Tailwind), so the page behind the app shell,
+     scrollbars and chat code blocks rendered a different black than every
+     panel on top of them. Keep the two in lock-step. */
+  --bg: #18181b;
+  --surface: #1f1f23;
+  --surface-2: #28282d;
+  --surface-3: #313137;
+  --border: #38383f;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --accent: #3b82f6;
+  color-scheme: dark;
 }
 
 * {
@@ -19,7 +27,7 @@
 html,
 body {
   background-color: var(--bg);
-  color: #f4f4f5;
+  color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 13px;
   height: 100%;
@@ -35,11 +43,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2c2c2c;
+  background: var(--border);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3c3c3c;
+  background: #4a4a52;
 }
 
 /* number font for prices */
@@ -59,8 +67,8 @@ body {
 .prose-chat strong { color: #f4f4f5; font-weight: 600; }
 .prose-chat em { color: #d4d4d8; }
 .prose-chat code {
-  background: #1a1a1a;
-  border: 1px solid #2c2c2c;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0 4px;
   font-size: 11px;
@@ -68,8 +76,8 @@ body {
   color: #f4f4f5;
 }
 .prose-chat pre {
-  background: #0a0a0a;
-  border: 1px solid #2c2c2c;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 8px;
   margin: 0.5em 0;
@@ -86,7 +94,7 @@ body {
   padding-left: 1.25em;
 }
 .prose-chat li { margin: 0.15em 0; }
-.prose-chat a { color: #3b82f6; text-decoration: underline; }
+.prose-chat a { color: var(--accent); text-decoration: underline; }
 .prose-chat h1, .prose-chat h2, .prose-chat h3 {
   color: #f4f4f5;
   font-weight: 600;
@@ -95,11 +103,11 @@ body {
 }
 .prose-chat hr {
   border: 0;
-  border-top: 1px solid #2c2c2c;
+  border-top: 1px solid var(--border);
   margin: 0.75em 0;
 }
 .prose-chat blockquote {
-  border-left: 2px solid #2c2c2c;
+  border-left: 2px solid var(--border);
   padding-left: 0.75em;
   margin: 0.5em 0;
   color: #a1a1aa;
@@ -182,7 +190,7 @@ input[type="range"].pnl-scrub::-moz-range-track { background: transparent; }
   100% { background-position: 800px 0; }
 }
 .skeleton {
-  background-color: #1a1a1a;
+  background-color: var(--surface-2);
   background-image: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
@@ -193,4 +201,18 @@ input[type="range"].pnl-scrub::-moz-range-track { background: transparent; }
   background-repeat: no-repeat;
   animation: shimmer 1.6s ease-in-out infinite;
   border-radius: 4px;
+}
+
+/* Visible keyboard focus everywhere — the dense UI strips most outlines. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .animate-pulse,
+  .animate-ping {
+    animation: none;
+  }
 }

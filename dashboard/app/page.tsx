@@ -47,8 +47,11 @@ export default function DashboardPage() {
           
           {/* Mobile watchlist toggle */}
           <button
+            type="button"
             onClick={() => setWatchlistOpen(!watchlistOpen)}
-            className="md:hidden absolute top-2 right-2 z-30 p-1.5 bg-gray-800 text-white rounded-md"
+            aria-label={watchlistOpen ? "Hide watchlist" : "Show watchlist"}
+            aria-expanded={watchlistOpen}
+            className="md:hidden absolute top-2 right-2 z-30 p-1.5 rounded-md bg-surface-2 border border-border text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
           >
             <Menu size={16} />
           </button>
