@@ -27,7 +27,7 @@ interface AgentState {
   // Wall-clock when the agent started running. Used to compute live
   // elapsed time during "thinking" status.
   startedAt?: number;
-  // Wall-clock when it finished — used for "ran in 4.2s" badge.
+  // Wall-clock when it finished, used for "ran in 4.2s" badge.
   finishedAt?: number;
 }
 
@@ -95,7 +95,7 @@ const EMPTY_STATE: Record<AgentName, AgentState> = {
   synthesis: { status: "pending" },
 };
 
-// ── Context summaries — what data each agent sees ─────────────────────
+// ── Context summaries, what data each agent sees ─────────────────────
 function buildContextChips(name: AgentName, result: OptionAnalyzeResult): string[] {
   const u = result.underlying;
   const g = result.greeks;
@@ -183,7 +183,7 @@ export function AIRead({ result }: Props) {
       const rows = (await resp.json()) as RunHistoryRow[];
       setHistory(rows);
     } catch {
-      // History is nice-to-have — don't surface a failure.
+      // History is nice-to-have, don't surface a failure.
     }
   }, [result.symbol, result.strike, result.expiry, result.right]);
 
@@ -299,7 +299,7 @@ export function AIRead({ result }: Props) {
         setDurationMs(evt.duration_ms);
       } else if (evt.event === "heartbeat") {
         // Backend heartbeats fire every ~4s while parallel agents are
-        // still working — we don't need to react explicitly, the
+        // still working, we don't need to react explicitly, the
         // running cards keep their elapsed-time tickers via setInterval
         // already. The event still serves a real purpose at the HTTP
         // layer (keeps the connection alive through any proxies).
@@ -312,7 +312,7 @@ export function AIRead({ result }: Props) {
   // ── render ──────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-4">
-      {/* Pipeline header — horizontal flow with arrows */}
+      {/* Pipeline header, horizontal flow with arrows */}
       <PipelineHeader agents={agents} />
 
       {/* Run controls */}
@@ -391,7 +391,7 @@ export function AIRead({ result }: Props) {
   );
 }
 
-// ── Pipeline header — horizontal flow visualization ───────────────────
+// ── Pipeline header, horizontal flow visualization ───────────────────
 function PipelineHeader({ agents }: { agents: Record<AgentName, AgentState> }) {
   return (
     <div className="rounded-md border border-border bg-surface-2/30 p-3">
@@ -515,7 +515,7 @@ function AgentCard({
         <StatusBadge status={state.status} />
       </div>
 
-      {/* Context chips — what data the agent is reading */}
+      {/* Context chips, what data the agent is reading */}
       {contextChips.length > 0 && state.status !== "pending" && (
         <div className="px-3 pb-2 flex flex-wrap gap-1">
           {contextChips.map((chip, i) => (
@@ -569,7 +569,7 @@ function AgentCard({
         </div>
       )}
 
-      {/* Live "thinking" indicator — bar of three pulsing dots */}
+      {/* Live "thinking" indicator, bar of three pulsing dots */}
       {state.status === "running" && (
         <div className="px-3 pb-3 pt-1 flex items-center gap-1.5 border-t border-border/40">
           <span className="flex gap-1">
@@ -596,7 +596,7 @@ function AgentCard({
   );
 }
 
-// ── Synthesis body — structured render of the verdict / working / against /
+// ── Synthesis body, structured render of the verdict / working / against /
 //    trigger sections produced by the rebalanced synthesis prompt. Falls
 //    back to plain prose if the model didn't follow the section format
 //    (older runs, occasional free-model misbehavior).
@@ -613,7 +613,7 @@ function SynthesisBody({ text }: { text: string }) {
   const verdictTone = verdictToneOf(verdictWord);
   return (
     <div className="flex flex-col gap-2.5">
-      {/* Verdict — single colored pill + one-sentence rationale */}
+      {/* Verdict, single colored pill + one-sentence rationale */}
       <div className="flex items-baseline gap-2 flex-wrap">
         <span
           className={cn(
@@ -634,7 +634,7 @@ function SynthesisBody({ text }: { text: string }) {
       </div>
 
       {/* Working FOR + Working AGAINST sit side by side at md+ so the
-          trader sees the balance at a glance — not a wall of "risks". */}
+          trader sees the balance at a glance, not a wall of "risks". */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {working.length > 0 && (
           <SynthesisList items={working} tone="up" label="Working for it" />
@@ -807,7 +807,7 @@ function formatTime(iso: string): string {
   } catch { return iso; }
 }
 
-// ── Body builder — flattens the full OptionAnalyzeResult into the
+// ── Body builder, flattens the full OptionAnalyzeResult into the
 //    richest payload we can send to the agents. We pack everything that
 //    plausibly informs a trader's read: bid/ask, sigma ranges, per-model
 //    forecast breakdown, signal-inputs across both timeframes, recent
@@ -822,7 +822,7 @@ function buildRequestBody(result: OptionAnalyzeResult) {
   const sigma = result.sigma_ranges;
   const liq = result.liquidity;
   const vol = result.vol_context;
-  // Last ~25 bars from chart.bars — gives the model recent price
+  // Last ~25 bars from chart.bars, gives the model recent price
   // context without blowing up token count.
   const chartBars = result.chart?.bars ?? [];
   const recentBars = chartBars.slice(-25).map((b) => ({
@@ -924,7 +924,7 @@ function buildRequestBody(result: OptionAnalyzeResult) {
     max_profit: result.max_profit,
     max_loss: result.max_loss,
 
-    // rule-based scorer's existing read — the agents see what we
+    // rule-based scorer's existing read, the agents see what we
     // already concluded and can corroborate or contradict.
     advice_label: result.advice.label,
     advice_action: result.advice.action,

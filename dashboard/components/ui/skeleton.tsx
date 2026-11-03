@@ -16,7 +16,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 }
 
 
-// Lightweight inline spinner — sized by the parent text size via `currentColor`.
+// Lightweight inline spinner, sized by the parent text size via `currentColor`.
 export function Spinner({ className, size = 12 }: { className?: string; size?: number }) {
   return (
     <Loader2
@@ -45,7 +45,7 @@ export function LoadingBlock({ label, className }: { label?: string; className?:
 }
 
 // Skeleton rows shaped to fit inside a <Table>. Useful while initial fetch
-// is in flight — keeps row heights stable so the table doesn't jump when
+// is in flight, keeps row heights stable so the table doesn't jump when
 // the first real row arrives.
 export function TableSkeletonRows({
   rows = 4,

@@ -99,7 +99,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   const emaFastRef = useRef<ISeriesApi<"Line"> | null>(null);
   const emaSlowRef = useRef<ISeriesApi<"Line"> | null>(null);
   const vwapRef = useRef<ISeriesApi<"Line"> | null>(null);
-  // Disposal sentinel — any callback that fires after unmount (rAF resize,
+  // Disposal sentinel, any callback that fires after unmount (rAF resize,
   // pending fetch resolution, late WS message) must skip chart ops to avoid
   // "Object is disposed" from lightweight-charts after `chart.remove()`.
   const disposedRef = useRef(false);
@@ -110,30 +110,30 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   const [vwapOn, setVwapOn] = useState(false);
   const [rsiOn, setRsiOn] = useState(false);
   const [macdOn, setMacdOn] = useState(false);
-  // Volume bars at the bottom of the main pane — on by default since
+  // Volume bars at the bottom of the main pane, on by default since
   // the histogram is part of the chart's default visual frame.
   const [volumeOn, setVolumeOn] = useState(true);
-  // Default the strategy overlay ON — it's a no-op when there are no spreads
+  // Default the strategy overlay ON, it's a no-op when there are no spreads
   // or projection for the symbol, and the toggle is visible if anything renders.
   const [spreadsOn, setSpreadsOn] = useState(true);
-  // Spread Finder overlay — calls the backend scanner and draws the top
+  // Spread Finder overlay, calls the backend scanner and draws the top
   // candidate per trade type (RUT/Mars/MarsMax/Space). Off by default
   // because a fresh scan on the free Massive tier is rate-limited to
-  // 5/min — full chain hydration takes ~5 minutes. User opts in via the
+  // 5/min, full chain hydration takes ~5 minutes. User opts in via the
   // SCAN button. Once a scan runs, the result caches server-side for 10
   // min so repeat clicks are instant.
   const [scanOn, setScanOn] = useState(false);
   const [smiOn, setSmiOn] = useState(false);
-  // 3rd-Friday monthly OPEX guide lines — default ON for the index/ETF
+  // 3rd-Friday monthly OPEX guide lines, default ON for the index/ETF
   // tickers where this is the trading frame (RUT/SPY/IWM/SPX/QQQ/NDX/DIA).
   const [opexOn, setOpexOn] = useState(() => MONTHLY_OPEX_SYMBOLS.has(symbol));
-  // Fibonacci retracement levels — drawn from the loaded bars' high/low.
+  // Fibonacci retracement levels, drawn from the loaded bars' high/low.
   // Each level is a "floor"; short-strike rule (RUT/Mars) is ≥ 2 floors below
   // the current money level.
   const [fibOn, setFibOn] = useState(() => MONTHLY_OPEX_SYMBOLS.has(symbol));
   // Fib lookback window. 9m matches the middle of Jamal's 6-12mo zone.
   const [fibRange, setFibRange] = useState<FibRange>("9m");
-  // Trade markers — arrows on the candle series for executed trades on
+  // Trade markers, arrows on the candle series for executed trades on
   // this symbol, click-to-journal. Default ON so the visual is there
   // without users having to remember a toggle; cheap render when there
   // are no trades.
@@ -144,7 +144,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     trades: TradeHistoryRecord[];
     anchor: { x: number; y: number };
   } | null>(null);
-  // Selected Rule One strategy — drives Fib target styling and the info card.
+  // Selected Rule One strategy, drives Fib target styling and the info card.
   // Defaults to the first applicable strategy for the symbol.
   const applicableStrategies = useMemo<StrategySpec[]>(() => {
     if (symbol === "RUT" || symbol === "IWM") {
@@ -214,7 +214,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     bars: barsState,
   });
 
-  // Daily bars: 10 years — enough for the 12-year Mars backtest reference and
+  // Daily bars: 10 years, enough for the 12-year Mars backtest reference and
   // multi-year fib views. Intraday timeframes are wider too now that we run
   // on IBKR + WS push (no rate-limit pressure on history).
   const daysForTimeframe =
@@ -299,7 +299,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
     enabled: cycleSupported,
   });
 
-  // Horizontal price lines at each strategy's short strike — the line
+  // Horizontal price lines at each strategy's short strike, the line
   // that matters for entry, breakeven, and the exit-delta trigger.
   useShortStrikeOverlay({
     candleSeries: candleRef,
@@ -339,7 +339,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   });
 
   // When the symbol changes, re-default the overlays based on symbol type.
-  // SCAN stays off across symbol changes — too expensive to fire automatically
+  // SCAN stays off across symbol changes, too expensive to fire automatically
   // on the free tier (see scanOn comment above).
   useEffect(() => {
     setOpexOn(MONTHLY_OPEX_SYMBOLS.has(symbol));
@@ -357,7 +357,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       const barsPromise = api.bars(symbol, tf, days);
       const indPromise = api.indicators(symbol, tf, days).catch(() => null);
 
-      // Render candles as soon as bars arrive — don't make the user wait
+      // Render candles as soon as bars arrive, don't make the user wait
       // for SMI/RSI/MACD compute before they can see prices.
       const barsResp = await barsPromise;
       const bars = barsResp.bars;
@@ -402,7 +402,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       const chgPct = (chg / first.open) * 100;
       setOhlcv({ o: last.open, h: last.high, l: last.low, c: last.close, v: last.volume, chg, chgPct });
 
-      // Drop the spinner now — the chart is interactive. Indicator overlays
+      // Drop the spinner now, the chart is interactive. Indicator overlays
       // arrive in a moment without holding up the user.
       setLoading(false);
 
@@ -490,7 +490,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
         try {
           chart.applyOptions({ width: w, height: h });
         } catch {
-          // chart disposed between rAF schedule + execute — safe to swallow.
+          // chart disposed between rAF schedule + execute, safe to swallow.
         }
       });
     });
@@ -520,14 +520,14 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
 
   // Crosshair hover → live OHLCV readout. Re-binds when bars change so the
   // prior-bar lookup (for chg/chgPct) reflects the current dataset. Index by
-  // time for O(1) lookup — param.seriesData is keyed by series ref.
+  // time for O(1) lookup, param.seriesData is keyed by series ref.
   useEffect(() => {
     const chart = chartRef.current;
     const candle = candleRef.current;
     if (!chart || !candle || !barsState || barsState.length === 0) return;
 
     // The old hover's timestamp may not exist in the new dataset (timeframe
-    // or symbol switched) — clear so the header doesn't show stale numbers.
+    // or symbol switched), clear so the header doesn't show stale numbers.
     setHover(null);
 
     const indexByTime = new Map<number, number>();
@@ -567,14 +567,14 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       try {
         chart.unsubscribeCrosshairMove(handler);
       } catch {
-        // chart disposed — safe to swallow.
+        // chart disposed, safe to swallow.
       }
     };
   }, [barsState]);
 
   // Trade-marker click: map a chart click to the bucket of trades at
   // that bar, open a popover for journaling. Lightweight-charts doesn't
-  // surface "did I click a marker" — we look up the bar time the click
+  // surface "did I click a marker", we look up the bar time the click
   // resolves to and check our bucket map.
   useEffect(() => {
     const chart = chartRef.current;
@@ -602,7 +602,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       try {
         chart.unsubscribeClick(clickHandler);
       } catch {
-        // chart disposed — ignore.
+        // chart disposed, ignore.
       }
     };
   }, [tradesOn, tradeMarkers]);
@@ -635,12 +635,12 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
       try {
         chart.unsubscribeCrosshairMove(handler);
       } catch {
-        // chart disposed — ignore.
+        // chart disposed, ignore.
       }
     };
   }, [tradesOn, tradeMarkers.bucketAt]);
 
-  // Close the popover when the symbol changes — the trades it pointed at
+  // Close the popover when the symbol changes, the trades it pointed at
   // are no longer relevant.
   useEffect(() => {
     setActivePopover(null);
@@ -666,7 +666,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
             open: b.open, high: b.high, low: b.low, close: b.close,
           });
         } catch {
-          // series was just disposed — drop the tick.
+          // series was just disposed, drop the tick.
         }
       }
     });
@@ -751,7 +751,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
             ))}
           </div>
 
-          {/* Trade-marker visibility badge — zero-friction signal that
+          {/* Trade-marker visibility badge, zero-friction signal that
               tells you (without dev tools) how many of your trades are
               currently pinned on the chart. ?  on hover gives a quick
               breakdown of trades found vs markers rendered. */}
@@ -765,7 +765,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
                   ? "border-warning/30 bg-warning/10 text-warning"
                   : "border-border/40 bg-surface-2/40 text-text-muted",
               )}
-              title={`Trades fetched for ${symbol}: ${tradeMarkers.trades.length}. Markers rendered: ${tradeMarkers.renderedCount}. If counts differ, marker times don't match any loaded bar — try a wider timeframe.`}
+              title={`Trades fetched for ${symbol}: ${tradeMarkers.trades.length}. Markers rendered: ${tradeMarkers.renderedCount}. If counts differ, marker times don't match any loaded bar, try a wider timeframe.`}
             >
               <Activity size={10} />
               {tradeMarkers.renderedCount > 0
@@ -778,7 +778,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
         </div>
       </div>
 
-      {/* market-data entitlement notice — names the missing IBKR
+      {/* market-data entitlement notice, names the missing IBKR
           subscription when the index can't be charted live. */}
       {dataNotice && (
         <div className="flex items-start gap-2 px-3 py-1 border-b border-border/60 bg-warning/10 text-xs leading-tight text-warning shrink-0">
@@ -832,10 +832,10 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           </div>
         )}
 
-        {/* Trade-marker hover tooltip — compact, read-only. Click a marker
+        {/* Trade-marker hover tooltip, compact, read-only. Click a marker
             for the full detail + journal popover. */}
         {hoverBucket && hoverBucket.trades.length > 0 && (() => {
-          // Header date — render in UTC so Flex's midnight-UTC fills don't
+          // Header date, render in UTC so Flex's midnight-UTC fills don't
           // slip to the previous calendar day in western timezones.
           const d0 = new Date(hoverBucket.trades[0].timestamp);
           const dayLabel = Number.isNaN(d0.getTime())
@@ -887,7 +887,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           );
         })()}
 
-        {/* Top-left overlay stack — cycle card on top, spread cards below. */}
+        {/* Top-left overlay stack, cycle card on top, spread cards below. */}
         <div className="absolute top-4 left-4 z-20 flex flex-col gap-3 pointer-events-auto max-w-[300px]">
           <RuleOneCycleCard symbol={symbol} />
           {spreadsOn && openSpreads.map((s) => {
@@ -1318,7 +1318,7 @@ function buildOverlayGroups(args: {
         hint: `Δ≤${s.maxDelta} · ${s.arocTarget}%`,
         active: args.currentStrategy?.id === s.id,
         onToggle: () => args.setStrategyId(s.id),
-        title: `${s.name} — Δ≤${s.maxDelta}, AROC ${s.arocTarget}%, exit Δ${s.exitDelta}`,
+        title: `${s.name}, Δ≤${s.maxDelta}, AROC ${s.arocTarget}%, exit Δ${s.exitDelta}`,
       })),
     });
   }

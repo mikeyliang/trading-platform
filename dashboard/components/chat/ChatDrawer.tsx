@@ -384,7 +384,7 @@ function parseAssistantContent(content: string): Segment[] {
         segments.push({ type: "text", text: "```params\n" + raw + "\n```" });
       }
     }
-    // if not closed yet (still streaming), skip — wait for next render
+    // if not closed yet (still streaming), skip, wait for next render
     lastIndex = match.index + match[0].length;
   }
   const tail = content.slice(lastIndex);
@@ -450,7 +450,7 @@ function ProposalCard({ proposal }: { proposal: ParamProposal }) {
         {applied ? (
           <>
             <Check />
-            Applied — open Backtest
+            Applied, open Backtest
           </>
         ) : (
           <>

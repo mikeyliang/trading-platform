@@ -125,9 +125,9 @@ export function SpreadFinder() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Options · monthly spread scanner"
+        eyebrow="Options"
         title="Spread Finder"
-        description="Mars · Mars Max · Space · RUT — same trade types as Picker, ranked side-by-side."
+        description="Mars · Mars Max · Space · RUT, same trade types as Picker, ranked side-by-side."
         actions={
           <div className="flex items-end gap-2 flex-wrap">
             <Field label="Symbol">

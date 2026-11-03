@@ -3,7 +3,7 @@
 import type { SimStats } from "@/lib/api";
 import { cn, fmtCurrency } from "@/lib/utils";
 
-/** Dense stat grid — one row of small labeled cells, IBKR-style. */
+/** Dense stat grid, one row of small labeled cells, IBKR-style. */
 export function SimStatsGrid({ stats }: { stats: SimStats }) {
   const cells: { label: string; value: string; tone?: "up" | "down" | "muted" }[] = [
     {

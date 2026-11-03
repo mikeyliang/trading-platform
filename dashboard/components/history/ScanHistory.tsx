@@ -41,7 +41,7 @@ export function ScanHistory() {
       <PageHeader
         eyebrow="Scan history"
         title="Past Picker runs"
-        description="Every scan — daily 09:30 ET, monthly pre-flight, and manual runs. Filter to see what trade type's been hitting."
+        description="Every scan, daily 09:30 ET, monthly pre-flight, and manual runs. Filter to see what trade type's been hitting."
         actions={
           <div className="flex items-center gap-0.5 flex-wrap">
             {TRADE_FILTERS.map((f) => (

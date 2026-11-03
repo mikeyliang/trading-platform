@@ -44,7 +44,7 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
     const yMn = minV - padY;
     const yMx = maxV + padY;
 
-    // x is "elapsed days from now" — so leftmost = today, rightmost = expiry.
+    // x is "elapsed days from now", so leftmost = today, rightmost = expiry.
     // data[0].days_remaining is the largest (full DTE); data[N-1] = 0.
     const fullDte = data.length ? data[0].days_remaining : 0;
     const xMn = 0;
@@ -164,7 +164,7 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
           </text>
         ))}
 
-        {/* ±1σ envelope — gradient fill, matches forecast cone visual */}
+        {/* ±1σ envelope, gradient fill, matches forecast cone visual */}
         <path d={envelope} fill="url(#pnl-decay-grad)" />
 
         {/* curves */}
@@ -172,7 +172,7 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
         <path d={upPath} stroke={CHART.up} strokeWidth="1.2" fill="none" opacity={0.85} strokeDasharray="3 3" />
         <path d={flatPath} stroke={CHART.text} strokeWidth="1.8" fill="none" />
 
-        {/* Today anchor — halo + dot, mirrors the cone's last-close anchor */}
+        {/* Today anchor, halo + dot, mirrors the cone's last-close anchor */}
         {data.length > 0 && (() => {
           const x0 = xOf(0);
           const y0 = yOf(data[0].pnl_flat);
@@ -184,7 +184,7 @@ export function PnlDecayChart({ data, height = 210 }: Props) {
           );
         })()}
 
-        {/* Terminal labels at expiry — match the forecast cone's right-edge
+        {/* Terminal labels at expiry, match the forecast cone's right-edge
             labels. Vertically de-overlap if labels cluster. */}
         {data.length > 0 && (() => {
           const last = data[data.length - 1];

@@ -12,7 +12,7 @@ export function StatusFooter() {
   const { ib, ws, api } = useConnectionStatus();
   const [now, setNow] = useState<Date | null>(null);
 
-  // Avoid hydration mismatch — only mount the clock after the client renders.
+  // Avoid hydration mismatch, only mount the clock after the client renders.
   useEffect(() => {
     setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -140,7 +140,7 @@ function marketSession(d: Date | null): { label: string; state: string; open: bo
   const isWeekend = wd === "Sat" || wd === "Sun";
   if (isWeekend) return { label: "Market", state: "closed", open: false };
 
-  // Regular: 09:30–16:00 ET. Pre: 04:00–09:30. After: 16:00–20:00.
+  // Regular: 09:30 to 16:00 ET. Pre: 04:00 to 09:30. After: 16:00 to 20:00.
   if (m >= 570 && m < 960) return { label: "Market", state: "open", open: true };
   if (m >= 240 && m < 570) return { label: "Pre-market", state: "open", open: true };
   if (m >= 960 && m < 1200) return { label: "After hours", state: "open", open: true };

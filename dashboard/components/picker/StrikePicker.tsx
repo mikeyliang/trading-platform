@@ -66,7 +66,7 @@ export function StrikePicker() {
 
   useEffect(() => {
     api.spreadSpecs().then(setSpecs).catch(() => setSpecs(null));
-    // Try the most recent cached scan first — covers the daily 09:30 ET
+    // Try the most recent cached scan first, covers the daily 09:30 ET
     // scheduled run AND any prior manual scan. Falls back to the preflight
     // cache if no scan rows exist yet (cold start).
     api.scansLatest().then((rec) => {
@@ -113,7 +113,7 @@ export function StrikePicker() {
     runScan(pending);
   };
 
-  // Top pick per trade type — already passing all checks.
+  // Top pick per trade type, already passing all checks.
   const picks = useMemo<Record<TradeType, SpreadCandidate | null>>(() => {
     const out = { rut: null, mars: null, marsmax: null, space: null } as Record<TradeType, SpreadCandidate | null>;
     if (!scan) return out;
@@ -128,7 +128,7 @@ export function StrikePicker() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Options · monthly bull-put"
+        eyebrow="Options"
         title="Strike Picker"
         description="One chart, four trade types. Pick the short strike that gives the most premium without crossing the next fib level."
         actions={
@@ -265,7 +265,7 @@ function PreflightStrip({
         <span className="text-xs text-text-secondary">
           {ranAt
             ? `last ran ${ranAt.toLocaleDateString()} at ${ranAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-            : "never run — fires automatically 09:05 ET on the monthly"}
+            : "never run, fires automatically 09:05 ET on the monthly"}
         </span>
       </div>
       <button
@@ -440,7 +440,7 @@ function UnderlyingMap({
   const yMin = lo - pad;
   const yMax = hi + pad;
 
-  // SVG geometry — tall + narrow looks chart-like and clean.
+  // SVG geometry, tall + narrow looks chart-like and clean.
   const H = 460;
   const W = 640;
   const padTop = 24;
@@ -448,7 +448,7 @@ function UnderlyingMap({
   const usableH = H - padTop - padBot;
   const priceToY = (p: number) => padTop + (1 - (p - yMin) / (yMax - yMin)) * usableH;
 
-  // Fib level decoration — money line + next-floor reference.
+  // Fib level decoration, money line + next-floor reference.
   const fibSortedDesc = [...fibs].sort((a, b) => b - a);
   const moneyIdx = spot != null ? fibSortedDesc.findIndex((p) => p <= spot) : -1;
 

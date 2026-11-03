@@ -15,7 +15,7 @@ interface SparklineProps {
 }
 
 /**
- * Inline SVG sparkline. Pure presentational — no event handlers, no resize
+ * Inline SVG sparkline. Pure presentational, no event handlers, no resize
  * observers. Designed for table cells, list rows, and small cards.
  */
 export function Sparkline({

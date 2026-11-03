@@ -20,7 +20,7 @@ interface Props {
 /** Open interest by strike, calls vs puts. Bars mirror around a centre axis
  *  so call/put concentration is read at a glance. We also surface put/call
  *  OI ratio and the max-pain strike (the strike where total option-holder
- *  P&L is minimised at expiry — often a magnet on big-OI weeks). */
+ *  P&L is minimised at expiry, often a magnet on big-OI weeks). */
 export function OpenInterestByStrike({ symbol }: Props) {
   const [chain, setChain] = useState<OptionsChain | null>(null);
   const [expiry, setExpiry] = useState<string>("");

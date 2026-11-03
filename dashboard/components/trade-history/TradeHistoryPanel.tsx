@@ -59,7 +59,7 @@ const ACCESSORS: Record<SortKey, (t: TradeHistoryRecord) => string | number | nu
 const NUMERIC: SortKey[] = ["timestamp", "qty", "price", "pnl"];
 
 const PAGE_SIZE = 200;
-// API caps page_size at 500 — large enough for an equity curve in any
+// API caps page_size at 500, large enough for an equity curve in any
 // realistic session, and lets us avoid multi-page chart fetches.
 const CHART_PAGE_SIZE = 500;
 const REFRESH_MS = 30_000;
@@ -87,7 +87,7 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
 
   // Server-side filters: symbol / side / strategy / asset / account / tx
   // go to the API so paging is accurate and stats reflect the filtered set.
-  // Resetting page state is unnecessary — we always pull the first page
+  // Resetting page state is unnecessary, we always pull the first page
   // and cap at PAGE_SIZE.
   useEffect(() => {
     let cancelled = false;
@@ -715,7 +715,7 @@ function EquityCurveChart({
         title={emptyHint ? "No P&L to chart" : "Equity curve will appear here"}
         description={
           emptyHint
-            ? "No realized P&L in the filtered set — try widening filters or switch back to the table."
+            ? "No realized P&L in the filtered set, try widening filters or switch back to the table."
             : "Once trades close with realized P&L the equity curve will plot here."
         }
       />
@@ -814,13 +814,13 @@ interface DayGroup {
   sells: number;
   wins: number;
   losses: number;
-  /** Distinct symbols traded that day — sized to hint diversification. */
+  /** Distinct symbols traded that day, sized to hint diversification. */
   symbols: string[];
 }
 
 function DailyRollupView({ trades }: { trades: TradeHistoryRecord[] }) {
   const groups = useMemo(() => groupByDay(trades), [trades]);
-  // Open the most recent day by default — the rest are collapsed so the
+  // Open the most recent day by default, the rest are collapsed so the
   // page loads compactly. User clicks to expand others.
   const [openKeys, setOpenKeys] = useState<Set<string>>(() => {
     if (groups.length === 0) return new Set();
@@ -966,7 +966,7 @@ interface ContractMeta {
   expiry: string | null;       // yyyymmdd or yyyy-mm-dd
   right: "C" | "P" | null;
   account: string | null;
-  note: string | null;         // metadata.note — set via the chart-marker journal
+  note: string | null;         // metadata.note, set via the chart-marker journal
 }
 
 function readContractMeta(t: TradeHistoryRecord): ContractMeta {

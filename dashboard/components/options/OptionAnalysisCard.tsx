@@ -28,14 +28,14 @@ interface Props {
 const VISIBLE_BARS_DEFAULT = 60;
 
 /**
- * Option-contract chart — same visual language as the main TradingChart so
+ * Option-contract chart, same visual language as the main TradingChart so
  * the analyzer page feels like one product, not two.
  *
  *  - Top OHLCV-style header with hover-driven option mid / change pill /
  *    EMA9 / EMA21 / RV30. Replaces the previous thin one-line strip.
  *  - Price pane uses *delta candles*: each bar is open=prev-close,
  *    close=current synthetic price. No wicks (the BS-replay has no
- *    intra-bar high/low) — body alone shows the bar-over-bar move,
+ *    intra-bar high/low), body alone shows the bar-over-bar move,
  *    coloured up/down. Much denser than the previous line + matches the
  *    underlying chart's bar look.
  *  - A change-magnitude histogram parks at the bottom 18% of the price
@@ -47,7 +47,7 @@ const VISIBLE_BARS_DEFAULT = 60;
  *
  * IMPORTANT (still surfaced in the header tooltip): prices are a
  * Black-Scholes replay using the option's *current* IV, not historical
- * mids — it's "what this option would have been worth as the underlying
+ * mids, it's "what this option would have been worth as the underlying
  * moved, if IV stayed where it is now."
  */
 export function OptionAnalysisCard({ result }: Props) {
@@ -113,7 +113,7 @@ export function OptionAnalysisCard({ result }: Props) {
               <div className="font-medium">Option price & indicators</div>
               {isReal ? (
                 <div>
-                  Real <em>IBKR option bars</em> ({oc.bar_size} MIDPOINT) — the
+                  Real <em>IBKR option bars</em> ({oc.bar_size} MIDPOINT), the
                   contract&apos;s actual quoted price history. IBKR serves option
                   history intraday only (no daily bars), capped at ~81 days back.
                 </div>
@@ -139,7 +139,7 @@ export function OptionAnalysisCard({ result }: Props) {
         </span>
       </div>
 
-      {/* TradingChart-style OHLCV strip — hover-driven, falls back to last bar. */}
+      {/* TradingChart-style OHLCV strip, hover-driven, falls back to last bar. */}
       <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-border/60 bg-surface shrink-0 flex-wrap">
         <div className="flex items-baseline gap-2">
           <span className="font-medium text-sm text-text-primary">
@@ -154,7 +154,7 @@ export function OptionAnalysisCard({ result }: Props) {
               className="text-2xs px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-300/90 cursor-help"
               title={
                 `Real IBKR option bars (${oc.bar_size} MIDPOINT). ${N} bars of the ` +
-                "contract's actual quoted price history — IBKR serves option history " +
+                "contract's actual quoted price history, IBKR serves option history " +
                 "intraday only (no daily bars), so this is the finest/longest real " +
                 "series available, ~81 days back."
               }
@@ -168,15 +168,15 @@ export function OptionAnalysisCard({ result }: Props) {
                 "Modeled, not traded history. This contract has no real IBKR bars, so " +
                 "the series is a Black-Scholes replay of the underlying's moves" +
                 (result.vol_context?.iv_source === "calibrated_to_mark"
-                  ? ` at IV ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}% — calibrated so the right edge equals the live mark $${fmt(result.option.mid ?? display.px)}` +
+                  ? ` at IV ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}%, calibrated so the right edge equals the live mark $${fmt(result.option.mid ?? display.px)}` +
                     (result.vol_context.market_iv
                       ? ` (IBKR model IV ${((result.vol_context.market_iv) * 100).toFixed(1)}%)`
                       : "")
                   : result.vol_context?.iv_source === "ibkr_model"
                   ? ` at IBKR's model IV ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}% (no live quote to calibrate against)`
                   : result.vol_context?.iv_source === "realized_vol"
-                  ? ` at realized vol ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}% — no quote or IBKR IV available, using RV30 as the proxy`
-                  : " at a default 35% IV — no market data available")
+                  ? ` at realized vol ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}%, no quote or IBKR IV available, using RV30 as the proxy`
+                  : " at a default 35% IV, no market data available")
               }
             >
               modeled
@@ -337,7 +337,7 @@ function Panes({
     });
     priceChartRef.current = priceChart;
 
-    // Vol subpane — RV30 over time with a horizontal reference line at
+    // Vol subpane, RV30 over time with a horizontal reference line at
     // the current IV. This is the closest we get to "IV over time"
     // without paid historical-IV data: realized vol IS the underlying's
     // moving statistical analog of IV, so its trajectory tells you
@@ -365,7 +365,7 @@ function Panes({
     });
     macdChartRef.current = macdChart;
 
-    // Delta candles — open = previous close, close = current synthetic
+    // Delta candles, open = previous close, close = current synthetic
     // price. No wicks (we don't have intra-bar high/low for the BS
     // replay), so high = max(o,c), low = min(o,c). The body alone tells
     // the bar's directional story.
@@ -380,7 +380,7 @@ function Panes({
       priceLineStyle: LineStyle.Dotted,
     });
 
-    // Change-magnitude histogram — |c - o|, signed by direction. Stands
+    // Change-magnitude histogram, |c - o|, signed by direction. Stands
     // in for volume so the bottom of the price pane reads "movement,
     // bar by bar" the same way TradingChart's volume strip does.
     changeHistRef.current = priceChart.addHistogramSeries({
@@ -407,7 +407,7 @@ function Panes({
     });
 
     // RV30 lives on its own subpane (volChart) now. Solid line at full
-    // weight — this is the chart that answers "is today's IV high or
+    // weight, this is the chart that answers "is today's IV high or
     // low vs realized?". Y-axis values are percentage points (× 100).
     volSeriesRef.current = volChart.addLineSeries({
       color: CHART.forecast.meanrev,
@@ -416,7 +416,7 @@ function Panes({
       lastValueVisible: true,
       priceFormat: { type: "price", precision: 1, minMove: 0.1 },
     });
-    // Current IV as a horizontal reference line — the user can see at
+    // Current IV as a horizontal reference line, the user can see at
     // a glance whether RV30 has been above or below the option's IV
     // through the visible window.
     const ivPct = currentIv * 100;
@@ -668,7 +668,7 @@ function Panes({
 
   return (
     <>
-      {/* Price pane — dominant, with contract label watermark. shrink-0
+      {/* Price pane, dominant, with contract label watermark. shrink-0
           so flex-column parents don't squash it to 0 on mount. */}
       <div className="relative bg-bg shrink-0" style={{ height: 440 }}>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-0">
@@ -688,7 +688,7 @@ function Panes({
         ]}
         rightTone={tonedRv30VsIv(rv30[rv30.length - 1], currentIv)}
         containerRef={volContainerRef}
-        title="True historical IV needs paid data (not available). RV30 — realized volatility of the underlying over the trailing 30 bars — is the standard proxy. When RV30 line is below the dashed IV reference, today's IV is rich vs what the underlying has actually been doing (sellers' favor). When above, IV is cheap (buyers' favor)."
+        title="True historical IV needs paid data (not available). RV30, realized volatility of the underlying over the trailing 30 bars, is the standard proxy. When RV30 line is below the dashed IV reference, today's IV is rich vs what the underlying has actually been doing (sellers' favor). When above, IV is cheap (buyers' favor)."
       />
       <Subpane
         label="RSI"
@@ -749,7 +749,7 @@ function Subpane({
   );
 }
 
-// "RV30 65% / IV 24% (rich)" — same right-side readout pattern as the
+// "RV30 65% / IV 24% (rich)", same right-side readout pattern as the
 // other subpane headers. Tone signals the trader's edge: when IV ≫ RV
 // option premium is rich (good for sellers, bad for buyers).
 function tonedRv30VsIv(rv30: number | undefined, currentIv: number) {

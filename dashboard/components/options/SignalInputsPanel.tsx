@@ -10,7 +10,7 @@ interface Props {
 }
 
 /**
- * "Inputs to verdict" — exposes every signal the algorithm consumed so the
+ * "Inputs to verdict", exposes every signal the algorithm consumed so the
  * user can audit the call. Each row is one signal: name + live value +
  * one-word interpretation + a dot indicating whether it's currently
  * scoring (●), neutral (○), or pushing against the position (◇).
@@ -238,10 +238,10 @@ export function SignalInputsPanel({ result }: Props) {
           hint={
             <div className="flex flex-col gap-1">
               <div className="font-medium mb-0.5">Signal disposition</div>
-              <div><span className="text-up">●</span> aligned — pushes score toward keep/hold</div>
-              <div><span className="text-down">●</span> against — pushes score toward close</div>
-              <div><span className="text-warning">●</span> caution — flags a risk but doesn't change direction</div>
-              <div><span className="text-text-muted">○</span> neutral — no scoring effect right now</div>
+              <div><span className="text-up">●</span> aligned, pushes score toward keep/hold</div>
+              <div><span className="text-down">●</span> against, pushes score toward close</div>
+              <div><span className="text-warning">●</span> caution, flags a risk but doesn't change direction</div>
+              <div><span className="text-text-muted">○</span> neutral, no scoring effect right now</div>
             </div>
           }
         />

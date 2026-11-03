@@ -22,7 +22,7 @@ const STATUS_DOT: Record<MonitorEntry["status"], string> = {
 };
 
 /**
- * Compact strip — top of the Picker/Finder — that surfaces the exit monitor
+ * Compact strip, top of the Picker/Finder, that surfaces the exit monitor
  * for any open spreads so the user is alerted in-place when a short-leg Δ
  * crosses the trade-type exit threshold, instead of having to detour to
  * /monitor/exit. Renders nothing when no spreads are being watched.
@@ -46,8 +46,8 @@ export function MonitorMiniStrip() {
       if (msg.type !== "monitor_alert" || !msg.data) return;
       const e = msg.data as MonitorEntry;
       const head = e.status === "trigger"
-        ? `EXIT NOW — ${e.symbol} ${e.short_strike}`
-        : `Near trigger — ${e.symbol} ${e.short_strike}`;
+        ? `EXIT NOW, ${e.symbol} ${e.short_strike}`
+        : `Near trigger, ${e.symbol} ${e.short_strike}`;
       const body = `short Δ ${e.current_delta?.toFixed(1)} · trigger ${e.exit_delta}`;
       if (e.status === "trigger") toast.error(head, { description: body });
       else toast(head, { description: body });

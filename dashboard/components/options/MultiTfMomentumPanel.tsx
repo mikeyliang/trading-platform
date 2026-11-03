@@ -12,10 +12,10 @@ interface Props {
 /**
  * Multi-timeframe momentum matrix. Each column is a chart timeframe, each
  * row is an indicator. Cell color encodes "is this signal aligned with
- * the user's position direction?" — green = aligned, red = against,
+ * the user's position direction?", green = aligned, red = against,
  * muted = neutral. The bottom row is a per-TF consensus trend label.
  *
- * The TFs shown match the option's expiration relevance — a 0DTE option
+ * The TFs shown match the option's expiration relevance, a 0DTE option
  * gets emphasis on intraday TFs; a 240DTE option emphasizes 4h/1d. The
  * recommended primary TF is highlighted in the column header.
  */
@@ -35,7 +35,7 @@ export function MultiTfMomentumPanel({ result }: Props) {
   const bearishPos = (isLong && right === "P") || (!isLong && right === "C");
 
   // Per-cell coloring: encode whether the signal value pushes the position's verdict
-  // toward keep/hold (green) or close (red) — same logic family as SignalInputsPanel
+  // toward keep/hold (green) or close (red), same logic family as SignalInputsPanel
   // so the colors mean the same thing across the page.
   const toneFor = (
     name: "rsi" | "macd" | "smi" | "vwap" | "ema" | "trend",
@@ -156,7 +156,7 @@ export function MultiTfMomentumPanel({ result }: Props) {
                 <span className="text-down">red</span> = against, <span className="text-warning">yellow</span> = caution.
               </div>
               <div>
-                Recommended primary TF is highlighted in the header — picked
+                Recommended primary TF is highlighted in the header, picked
                 from your option&apos;s DTE so a 0DTE shows 5m emphasis, a
                 240DTE shows 1d.
               </div>

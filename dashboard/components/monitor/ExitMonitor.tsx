@@ -43,8 +43,8 @@ export function ExitMonitor() {
       // Toast immediately on push, then refresh state so the row updates.
       const tone = entry.status === "trigger" ? "error" : "warning";
       const headline = entry.status === "trigger"
-        ? `EXIT NOW — ${entry.symbol} ${entry.short_strike}`
-        : `Near trigger — ${entry.symbol} ${entry.short_strike}`;
+        ? `EXIT NOW, ${entry.symbol} ${entry.short_strike}`
+        : `Near trigger, ${entry.symbol} ${entry.short_strike}`;
       const body = `short Δ ${entry.current_delta?.toFixed(1)} · trigger ${entry.exit_delta}`;
       if (tone === "error") toast.error(headline, { description: body });
       else toast(headline, { description: body });
@@ -69,7 +69,7 @@ export function ExitMonitor() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Open positions · auto-refresh every 5 min"
+        eyebrow="Open positions, refreshed every 5 min"
         title="Exit Monitor"
         description="Watches every open credit spread. When the short leg's delta crosses the trade-type exit threshold, you'll see it here before you'd notice it on the chart."
         actions={
@@ -98,8 +98,8 @@ export function ExitMonitor() {
 }
 
 function SummaryStrip({ snap }: { snap: MonitorSnapshot | null }) {
-  if (!snap) return null;
-  const safe = snap.count - snap.warning - snap.triggered;
+  if (!snap || typeof snap.count !== "number") return null;
+  const safe = snap.count - (snap.warning ?? 0) - (snap.triggered ?? 0);
   const stats: [string, string, string?][] = [
     ["watching",  snap.count.toString()],
     ["safe",      safe.toString(), safe > 0 ? "text-up" : undefined],
@@ -203,9 +203,9 @@ function EmptyState() {
 function Footer({ jobs, lastRun }: { jobs: ScheduledJob[]; lastRun: string | null }) {
   return (
     <div className="border-t border-border/40 pt-4 flex items-baseline justify-between text-2xs text-text-muted">
-      <span>last checked {lastRun ? new Date(lastRun).toLocaleTimeString() : "—"}</span>
-      <span className="lowercase tracking-normal text-xs text-text-secondary normal-case">
-        {jobs.map((j) => j.id).join(" · ")} scheduled
+      <span>Last checked {lastRun ? new Date(lastRun).toLocaleTimeString() : "never"}</span>
+      <span className="text-xs text-text-secondary">
+        {(Array.isArray(jobs) ? jobs : []).map((j) => j.id).join(", ")} scheduled
       </span>
     </div>
   );

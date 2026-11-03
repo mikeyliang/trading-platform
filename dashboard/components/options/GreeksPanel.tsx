@@ -12,7 +12,7 @@ interface Props {
   vega: number | null;
   isLong: boolean;
   quantity: number;
-  /** Optional scenario context — when supplied, a "What-if" panel opens
+  /** Optional scenario context, when supplied, a "What-if" panel opens
    *  below the Greeks grid with sliders for spot Δ%, IV Δ%, and days
    *  forward. All three drive analytic BS Greeks + position P&L. */
   scenario?: {
@@ -66,7 +66,7 @@ export function GreeksPanel({
   const isScenarioActive = scenarioOpen && (spotPct !== 0 || ivPct !== 0 || daysFwd !== 0);
 
   // What-if Greeks + P/L. We compute analytic Greeks at the scenario
-  // point so users see how Δ/Γ/Θ/ν all shift together — this is the
+  // point so users see how Δ/Γ/Θ/ν all shift together, this is the
   // value of the slider over a static table that just changes price.
   const whatIf = useMemo(() => {
     if (!scenario) return null;
@@ -85,7 +85,7 @@ export function GreeksPanel({
 
   // Per-contract values for the headline (raw IB Greeks are per-share).
   // When scenario is ACTIVE, swap in the what-if values so the cards
-  // reflect the slider state — the headline is whatever the user is
+  // reflect the slider state, the headline is whatever the user is
   // exploring, not the baseline.
   const baseDelta = isScenarioActive && whatIf ? whatIf.g.delta : delta;
   const baseGamma = isScenarioActive && whatIf ? whatIf.g.gamma : gamma;
@@ -204,7 +204,7 @@ function GreekCell({
     amber: { bar: "bg-amber-400", text: "text-amber-400", bg: "bg-amber-400/10" },
   };
   const c = accentClasses[accent];
-  // ΔΔ — how much the Greek moved under the current scenario sliders.
+  // ΔΔ, how much the Greek moved under the current scenario sliders.
   // Shown as a small chip beside the headline so the magnitude of the
   // what-if change is obvious without mental math.
   const shift = baseline != null && raw != null ? raw - baseline : null;
@@ -458,19 +458,19 @@ function getDeltaHint(delta: number | null, isLong: boolean): string {
 function getGammaHint(gamma: number | null, isLong: boolean): string {
   if (gamma == null) return "—";
   const abs = Math.abs(gamma);
-  if (abs > 0.05) return isLong ? "High gamma — Δ moves fast with spot" : "High gamma — short side, watch volatility";
-  if (abs > 0.02) return "Moderate gamma — typical near-ATM behavior";
-  return "Low gamma — Δ stable across price moves";
+  if (abs > 0.05) return isLong ? "High gamma, Δ moves fast with spot" : "High gamma, short side, watch volatility";
+  if (abs > 0.02) return "Moderate gamma, typical near-ATM behavior";
+  return "Low gamma, Δ stable across price moves";
 }
 
 function getThetaHint(theta: number | null, isLong: boolean): string {
   if (theta == null) return "—";
-  if (isLong) return theta < -0.05 ? "Heavy decay — time is against you" : "Mild decay — manageable";
-  return theta > 0.05 ? "Strong decay collection — time is with you" : "Mild decay benefit";
+  if (isLong) return theta < -0.05 ? "Heavy decay, time is against you" : "Mild decay, manageable";
+  return theta > 0.05 ? "Strong decay collection, time is with you" : "Mild decay benefit";
 }
 
 function getVegaHint(vega: number | null, isLong: boolean): string {
   if (vega == null) return "—";
-  if (isLong) return vega > 0.2 ? "IV-sensitive — rising IV helps you" : "Low IV exposure";
-  return vega > 0.2 ? "Rising IV hurts a short — watch earnings/events" : "Low IV exposure";
+  if (isLong) return vega > 0.2 ? "IV-sensitive, rising IV helps you" : "Low IV exposure";
+  return vega > 0.2 ? "Rising IV hurts a short, watch earnings/events" : "Low IV exposure";
 }

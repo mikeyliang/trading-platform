@@ -48,7 +48,7 @@ export default function PerformancePage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Account · live"
+        eyebrow="Account"
         title="Performance"
         description="IBKR account snapshot, open positions mark-to-market, recent fills."
       />

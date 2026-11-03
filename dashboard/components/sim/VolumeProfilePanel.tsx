@@ -12,7 +12,7 @@ interface Props {
   lastPrice?: number;
 }
 
-const HEIGHT = 200; // px — all bins always fit, no scrolling
+const HEIGHT = 200; // px, all bins always fit, no scrolling
 
 /** Compact horizontal volume-by-price histogram. All bins render in a fixed
  *  height; price labels only at the key levels (high / POC / last / low). */
@@ -90,7 +90,7 @@ export function VolumeProfilePanel({ bins, volumes, poc, vah, val, lastPrice }: 
           )}
         </div>
 
-        {/* price axis — only the levels that matter */}
+        {/* price axis, only the levels that matter */}
         <div className="relative w-11 shrink-0 text-2xs tabular text-right" style={{ height: HEIGHT }}>
           {clearOf(0, [pocIdx, lastIdx]) &&
             axisLabel(0, rows[0].price.toFixed(2), "text-text-muted")}

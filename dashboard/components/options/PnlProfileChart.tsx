@@ -11,13 +11,13 @@ import {
 } from "@/lib/bs";
 
 interface Props {
-  /** Live underlying price — drives the spot marker and centres the axis. */
+  /** Live underlying price, drives the spot marker and centres the axis. */
   spot: number;
   /** Break-even at expiry. Annotated on the zero line. */
   breakeven: number;
   /** Strike. Annotated as a vertical line. */
   strike: number;
-  /** ±1σ band from the backend forecast — drawn as a shaded vertical band. */
+  /** ±1σ band from the backend forecast, drawn as a shaded vertical band. */
   sigma1Low: number | null;
   sigma1High: number | null;
   /** ±2σ (unused but kept in the API for future widening). */
@@ -26,14 +26,14 @@ interface Props {
   /** Static max/min reference lines. */
   maxProfit: number | null;
   maxLoss: number | null;
-  /** Position + contract details — fed to the Black-Scholes pricer. */
+  /** Position + contract details, fed to the Black-Scholes pricer. */
   iv: number;
   dteYears: number;
   right: "C" | "P";
   entryPrice: number;
   quantity: number;
   isLong: boolean;
-  /** POP / P(ITM) — chip displayed in the top-right corner. */
+  /** POP / P(ITM), chip displayed in the top-right corner. */
   pop?: number | null;
   probItm?: number | null;
   height?: number;
@@ -89,7 +89,7 @@ export function PnlProfileChart({
   }), [spot, strike, dteYears, iv, right, isLong, entryPrice, quantity]);
 
   // Price axis. Base window is ±range around spot, but ALWAYS widen so the
-  // strike and breakeven (with margin) are on-screen — otherwise a far-OTM/ITM
+  // strike and breakeven (with margin) are on-screen, otherwise a far-OTM/ITM
   // contract renders as a flat mystery line with the payoff kink off-screen.
   const prices = useMemo(() => {
     const half = Math.max(0.01, range) * spot;
@@ -371,10 +371,10 @@ export function PnlProfileChart({
             stroke={CHART.pnl.loss} strokeOpacity={0.25} strokeDasharray="2 6" />
         )}
 
-        {/* Expiry intrinsic — faded dashed reference */}
+        {/* Expiry intrinsic, faded dashed reference */}
         <path d={expiryPath} stroke={CHART.pnl.expiry} strokeOpacity={0.4}
           strokeWidth="1.5" strokeDasharray="5 4" fill="none" />
-        {/* Live curve — bright, bold, foreground */}
+        {/* Live curve, bright, bold, foreground */}
         <path d={livePath} stroke={CHART.pnl.today} strokeWidth="2.5" fill="none" />
 
         {/* Strike marker */}
@@ -396,7 +396,7 @@ export function PnlProfileChart({
           </g>
         )}
 
-        {/* Spot marker (subtle — the cursor is the hero) */}
+        {/* Spot marker (subtle, the cursor is the hero) */}
         {spot >= xMin && spot <= xMax && (
           <g>
             <line x1={xOf(spot)} x2={xOf(spot)} y1={PAD_T} y2={H - PAD_B}
@@ -432,7 +432,7 @@ export function PnlProfileChart({
         drag anywhere on the chart to read P/L at any price
       </p>
 
-      {/* ── Scenario controls — Date is the hero, IV + Range secondary ── */}
+      {/* ── Scenario controls, Date is the hero, IV + Range secondary ── */}
       <div className="mt-2 pt-3 border-t border-border/40 flex flex-col gap-3.5 px-1">
         <ScenarioSlider
           label="Date" accent={CHART.pnl.today}
@@ -549,7 +549,7 @@ function ScenarioSlider({
         />
       </div>
 
-      {/* preset labels — clickable, aligned under their ticks */}
+      {/* preset labels, clickable, aligned under their ticks */}
       {presets && presets.length > 0 && (
         <div className="relative h-3">
           {presets.map((p) => {

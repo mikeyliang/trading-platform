@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useHealth } from "@/lib/health";
 import { useStore } from "@/lib/store";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
@@ -9,6 +10,14 @@ import { cn, fmtCurrency } from "@/lib/utils";
 export default function SettingsPage() {
   const { health, account, lastCheckedAt, apiReachable, refetch } = useHealth();
   const { wsConnected, activeSymbol, activeTimeframe } = useStore();
+  const [theme, setTheme] = useState("Dark");
+  useEffect(() => {
+    const read = () => setTheme(document.documentElement.classList.contains("dark") ? "Dark" : "Light");
+    read();
+    const obs = new MutationObserver(read);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
 
   const mode = (health?.mode ?? "—").toUpperCase();
   const ibOk = !!health?.ib_connected;
@@ -75,7 +84,8 @@ export default function SettingsPage() {
                 valueClass={pnlColor(account?.realized_pnl ?? 0)}
                 mono
               />
-              <Row label="Trades · win-rate" value={account ? `${account.total_trades} · ${(account.win_rate * 100).toFixed(1)}%` : "—"} mono />
+              <Row label="Trades" value={account ? String(account.total_trades) : "n/a"} mono />
+              <Row label="Win rate" value={account ? `${Number(account.win_rate).toFixed(1)}%` : "n/a"} mono />
             </Rows>
           </CardContent>
         </Card>
@@ -88,8 +98,8 @@ export default function SettingsPage() {
             <Rows>
               <Row label="Active symbol" value={activeSymbol} mono />
               <Row label="Active timeframe" value={activeTimeframe} mono />
-              <Row label="Theme" value="Dark · Terminal" />
-              <Row label="Density" value="Compact (IBKR-style)" />
+              <Row label="Theme" value={theme} />
+              <Row label="Density" value="Compact" />
             </Rows>
           </CardContent>
         </Card>
@@ -109,7 +119,7 @@ export default function SettingsPage() {
       </div>
 
       <p className="text-2xs text-text-muted">
-        Persistent preferences (theme switching, custom layouts, API endpoint overrides) are not yet wired —
+        Persistent preferences (theme switching, custom layouts, API endpoint overrides) are not yet wired;
         runtime values shown here are read-only.
       </p>
     </PageShell>

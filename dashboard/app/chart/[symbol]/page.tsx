@@ -16,8 +16,8 @@ const TradingChart = dynamic(
 );
 
 /**
- * Stock-detail view. Same composition as the dashboard home (`/`) — stats
- * bar, chart, positions, watchlist — but parameterized on the URL symbol
+ * Stock-detail view. Same composition as the dashboard home (`/`), stats
+ * bar, chart, positions, watchlist, but parameterized on the URL symbol
  * so a stock search lands here and the trader still sees their book.
  *
  * Positions panel is pre-filtered to the searched symbol; the user can

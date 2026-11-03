@@ -28,7 +28,7 @@ interface ChainRow {
 }
 
 export function OptionChain() {
-  // Allow ?symbol=X to seed the chain — consolidated from the old
+  // Allow ?symbol=X to seed the chain, consolidated from the old
   // /options/[symbol] route, which now redirects here.
   const params = useSearchParams();
   const initial = (params?.get("symbol") || DEFAULT_SYMBOL).toUpperCase();
@@ -42,7 +42,7 @@ export function OptionChain() {
   const [earnings, setEarnings] = useState<EarningsInfo | null>(null);
   const [showPicks, setShowPicks] = useState(true);
 
-  // Earnings date (IBKR WSH) — fetched per symbol, independent of expiry.
+  // Earnings date (IBKR WSH), fetched per symbol, independent of expiry.
   // source="unavailable" just means we hide the badge; never a hard error.
   useEffect(() => {
     let alive = true;
@@ -97,7 +97,7 @@ export function OptionChain() {
     return rows.slice(lo, hi);
   }, [rows, atmStrike]);
 
-  // Rank the loaded chain for the active expiry — surfaces a best call to buy
+  // Rank the loaded chain for the active expiry, surfaces a best call to buy
   // and a best put to sell, plus the strikes to highlight in the table.
   const ranking = useMemo(() => rankContracts(chain, expiry), [chain, expiry]);
 
@@ -130,7 +130,7 @@ export function OptionChain() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Options · chain"
+        eyebrow="Options"
         title={`${symbol} option chain`}
         description={chain?.underlying_price
           ? `Spot ${chain.underlying_price.toFixed(2)} · ${rows.length} strikes loaded`
@@ -545,10 +545,10 @@ function PickCard({
         </div>
       </div>
 
-      {/* Score meter — visual 0..100 bar with a 50-baseline tick. */}
+      {/* Score meter, visual 0..100 bar with a 50-baseline tick. */}
       <ScoreMeter score={pick.score} tone={tone} />
 
-      {/* Component breakdown strip — what drove the score. */}
+      {/* Component breakdown strip, what drove the score. */}
       <BreakdownStrip breakdown={pick.breakdown} />
 
       {/* Action chip + contract identity. */}
@@ -576,7 +576,7 @@ function PickCard({
         breakeven={pick.breakeven}
       />
 
-      {/* Numeric stat strip — IBKR-style tabular row. */}
+      {/* Numeric stat strip, IBKR-style tabular row. */}
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-2xs text-text-muted tabular">
         <span>Δ {pick.absDelta.toFixed(2)}</span>
         {pick.row.iv != null && <span>IV {(pick.row.iv * 100).toFixed(0)}%</span>}
@@ -585,7 +585,7 @@ function PickCard({
         {pick.row.oi != null && <span>OI {pick.row.oi}</span>}
       </div>
 
-      {/* Reasons — split into positive vs negative chips so the user can
+      {/* Reasons, split into positive vs negative chips so the user can
           scan what's helping vs hurting without re-reading sentences. */}
       {(positives.length > 0 || negatives.length > 0 || neutrals.length > 0) && (
         <div className="flex flex-wrap gap-1">
@@ -637,7 +637,7 @@ function ScoreMeter({
         className={cn("absolute inset-y-0 left-0", tone.bar)}
         style={{ width: `${pct}%` }}
       />
-      {/* 50-baseline tick — shows whether the score is above/below "neutral". */}
+      {/* 50-baseline tick, shows whether the score is above/below "neutral". */}
       <div className="absolute inset-y-0 left-1/2 w-px bg-border/70" />
     </div>
   );
@@ -703,7 +703,7 @@ function ReasonChip({ sign, text }: { sign: ReasonSignType; text: string }) {
 
 type ReasonSignType = 1 | 0 | -1;
 
-// Alternates — top picks 2-4, rendered as one-line rows so the user can
+// Alternates, top picks 2-4, rendered as one-line rows so the user can
 // jump straight to a runner-up without scrolling the chain.
 function Alternates({
   picks, symbol, expiry,

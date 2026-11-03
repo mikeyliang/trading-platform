@@ -11,12 +11,12 @@ import {
 } from "@/lib/bs";
 
 interface Props {
-  /** Live underlying — anchors the price axis and strike-snap presets. */
+  /** Live underlying, anchors the price axis and strike-snap presets. */
   spot: number;
   /** Current implied vol from the ATM contract (used as the baseline IV
    *  the IV slider multiplies on). */
   iv: number;
-  /** Days to expiry — drives the time slider's upper bound. */
+  /** Days to expiry, drives the time slider's upper bound. */
   dteDays: number;
   /** Symbol + expiry for the header label only. */
   symbol: string;
@@ -271,7 +271,7 @@ export function StrategyPnlChart({
   const expiryPath = useMemo(() => linePath(expiryCurve), [prices, expiryCurve, xOf, yOf]);
 
   // Profit/loss fills under the expiry curve (the canonical strategy
-  // shape — what the trader is buying). Live curve is rendered as a
+  // shape, what the trader is buying). Live curve is rendered as a
   // separate line on top so the user sees today vs. expiry.
   const { profitArea, lossArea } = useMemo(() => {
     const build = (test: (v: number) => boolean) => {
@@ -433,9 +433,9 @@ export function StrategyPnlChart({
         <path d={profitArea} fill="url(#strat-profit)" />
         <path d={lossArea} fill="url(#strat-loss)" />
 
-        {/* expiry curve — the canonical shape */}
+        {/* expiry curve, the canonical shape */}
         <path d={expiryPath} stroke={CHART.pnl.expiry} strokeWidth="2.5" fill="none" />
-        {/* live curve — today / sliders, lighter dashed */}
+        {/* live curve, today / sliders, lighter dashed */}
         <path d={livePath} stroke={CHART.forecast.cone} strokeWidth="1.5"
               strokeDasharray="4 3" fill="none" strokeOpacity={0.85} />
 
@@ -482,7 +482,7 @@ export function StrategyPnlChart({
         ))}
       </svg>
 
-      {/* controls — dense single-line rows, tracks aligned across rows */}
+      {/* controls, dense single-line rows, tracks aligned across rows */}
       <div className="flex flex-col gap-1 pt-2.5 border-t border-border/40">
         <StratSlider
           label="Date" accent={CHART.pnl.expiry}

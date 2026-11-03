@@ -376,7 +376,7 @@ function VerdictTimeline({
       <EmptyState
         icon={Brain}
         title="No AI runs yet"
-        description="Open a contract in the Analyzer and run the AI agents — verdicts land here, building a portfolio-wide log you can revisit without re-spending tokens."
+        description="Open a contract in the Analyzer and run the AI agents, verdicts land here, building a portfolio-wide log you can revisit without re-spending tokens."
       />
     );
   }

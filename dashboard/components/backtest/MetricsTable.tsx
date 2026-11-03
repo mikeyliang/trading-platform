@@ -20,7 +20,7 @@ interface DerivedMetrics {
   worstTrade: number;
   avgTradePnl: number;
   expectancy: number;
-  // bar-level (not annualised) — for completeness when the equity curve is
+  // bar-level (not annualised), for completeness when the equity curve is
   // short or daily granularity is unclear.
   rfFreeNote: string;
 }
@@ -163,7 +163,7 @@ export function MetricsTable({ result }: Props) {
               : derived.sortino < 0
               ? "down"
               : "default",
-          info: "Return / downside-only stdev — penalises only losing bars.",
+          info: "Return / downside-only stdev, penalises only losing bars.",
         },
         {
           label: "Calmar",

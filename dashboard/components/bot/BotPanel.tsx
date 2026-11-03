@@ -63,7 +63,7 @@ export function BotPanel() {
         setNewsGate(s.config.news_gate);
       }
     } catch {
-      /* api down — keep last snapshot */
+      /* api down, keep last snapshot */
     }
   }, []);
 
@@ -454,7 +454,7 @@ export function BotPanel() {
               {decisions.length === 0 && (
                 <p className="text-xs text-text-muted px-3 py-2">
                   {logFilter === "all"
-                    ? "no activity yet — every entry, exit, and news block lands here"
+                    ? "no activity yet, every entry, exit, and news block lands here"
                     : "nothing in this filter"}
                 </p>
               )}

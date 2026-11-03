@@ -159,9 +159,6 @@ function NavItem({
           : "text-text-muted hover:text-text-primary hover:bg-surface-2/60"
       )}
     >
-      {active && (
-        <span aria-hidden className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-5 w-0.5 bg-text-primary" />
-      )}
       <Icon size={16} />
       <span className="text-2xs leading-none font-medium">{label}</span>
     </Link>

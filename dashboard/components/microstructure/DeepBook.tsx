@@ -53,8 +53,8 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
     if (!snap) return 1;
     return Math.max(
       1,
-      ...snap.bids.map((b) => b.size),
-      ...snap.asks.map((a) => a.size),
+      ...(snap.bids ?? []).map((b) => b.size),
+      ...(snap.asks ?? []).map((a) => a.size),
     );
   }, [snap]);
 

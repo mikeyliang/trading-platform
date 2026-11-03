@@ -6,7 +6,7 @@
 //
 // The Flex backfill endpoint is long-running (each 365d slice is a fresh
 // IBKR report build + poll, ~15-45s per slice). We POST once and let the
-// browser hold the connection — there's no job queue yet. While we wait,
+// browser hold the connection, there's no job queue yet. While we wait,
 // the card stays in a "Pulling…" state and the per-slice log streams in
 // once the response lands.
 
@@ -219,7 +219,7 @@ export function FlexBackfillCard() {
               : "border-border bg-surface-2/40 text-text-secondary hover:bg-surface-2",
             pulling && "cursor-not-allowed opacity-60",
           )}
-          title="Overwrite existing rows on (source, external_id) conflict — useful to refresh timestamps after parser changes"
+          title="Overwrite existing rows on (source, external_id) conflict, useful to refresh timestamps after parser changes"
         >
           <input
             type="checkbox"
@@ -257,7 +257,7 @@ export function FlexBackfillCard() {
         </button>
       </div>
 
-      {/* Progress / result strip — visible during and after a backfill. */}
+      {/* Progress / result strip, visible during and after a backfill. */}
       {(job?.status === "running" || lastResult || pullError) && (
         <div className="px-3 py-2 border-t border-border/40 text-xs tabular">
           {pullError && (
@@ -349,7 +349,7 @@ function JobProgress({ job }: { job: FlexJobState }) {
   const total = Math.max(1, job.slice_count);
   // Done slices = current_slice - 1 if a slice is in flight, else
   // current_slice. We don't know which, so use current_slice as a proxy
-  // for "slices touched so far" — close enough for a progress bar.
+  // for "slices touched so far", close enough for a progress bar.
   const done = Math.min(total, job.current_slice);
   const pct = (done / total) * 100;
   const lastInfo = job.last_slice_info;

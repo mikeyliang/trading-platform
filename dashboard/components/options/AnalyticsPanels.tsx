@@ -5,7 +5,7 @@ import type { OptionAnalyzeResult } from "@/lib/api";
 
 /** Four dense panels that complement the chart and Greeks: probability,
  *  expected move, IV vs realized vol context, and contract liquidity.
- *  Each panel is information-first — no decoration, all numbers tabular. */
+ *  Each panel is information-first, no decoration, all numbers tabular. */
 
 export function ProbabilityPanel({ result }: { result: OptionAnalyzeResult }) {
   const { pop, prob_itm, prob_touch } = result.probability;

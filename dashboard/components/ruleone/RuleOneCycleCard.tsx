@@ -22,7 +22,7 @@ const SUPPORTED = new Set(["RUT", "IWM", "SPX", "SPY"]);
 // Matches MonitorMiniStrip / ExitMonitor cadence. Cycle data is option-chain
 // driven so spot moves matter most around third-Friday entry day.
 const REFRESH_MS = 60_000;
-// How often the "refreshed Xm ago" label re-renders (no fetch — just display).
+// How often the "refreshed Xm ago" label re-renders (no fetch, just display).
 const TICK_MS = 15_000;
 
 export function RuleOneCycleCard({ symbol }: Props) {

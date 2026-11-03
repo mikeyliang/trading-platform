@@ -88,7 +88,7 @@ export function StrategyCard({ strategy, onUpdate }: { strategy: StrategyInfo; o
         });
       }
     } else {
-      // not running yet — just remember; will apply on next start
+      // not running yet, just remember; will apply on next start
       strategy.params = params as any;
       toast("Params saved", { description: "Will apply when you start the strategy." });
     }

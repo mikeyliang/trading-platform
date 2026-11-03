@@ -73,7 +73,7 @@ export interface SortState<K extends string = string> {
 /**
  * Header cell that toggles sort state. Click cycles asc → desc → asc on the
  * same column; clicking a new column adopts the column's `defaultDirection`
- * (numeric columns default to desc — most users want "biggest first").
+ * (numeric columns default to desc, most users want "biggest first").
  */
 interface SortableTableHeadProps<K extends string>
   extends Omit<React.ThHTMLAttributes<HTMLTableCellElement>, "onClick"> {

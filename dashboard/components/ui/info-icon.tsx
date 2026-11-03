@@ -6,7 +6,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 
 interface InfoIconProps {
-  /** Tooltip content — short explanation. Strings or rich nodes both fine. */
+  /** Tooltip content, short explanation. Strings or rich nodes both fine. */
   hint: React.ReactNode;
   /** Override icon size in px. Default 9. */
   size?: number;
@@ -18,7 +18,7 @@ interface InfoIconProps {
 
 /**
  * Tiny `ⓘ` glyph that reveals a tooltip on hover. Use to demote
- * always-visible hint text into on-demand explanations — keeps the visible
+ * always-visible hint text into on-demand explanations, keeps the visible
  * UI dense without sacrificing learnability.
  *
  * Pair with a label:
@@ -47,7 +47,7 @@ export function InfoIcon({ hint, size = 9, side = "top", className }: InfoIconPr
 }
 
 /**
- * Tooltip-wrapped label — visible text stays terse, hover surfaces the
+ * Tooltip-wrapped label, visible text stays terse, hover surfaces the
  * explanation. Cheaper than InfoIcon when you don't need a dedicated dot;
  * the whole label becomes the hover target.
  */

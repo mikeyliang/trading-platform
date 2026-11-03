@@ -11,7 +11,7 @@ import { TimeAndSales } from "@/components/microstructure/TimeAndSales";
 import { VolumeProfile } from "@/components/microstructure/VolumeProfile";
 import { OpenInterestByStrike } from "@/components/microstructure/OpenInterest";
 
-/** Market microstructure page — the four "where did real activity happen"
+/** Market microstructure page, the four "where did real activity happen"
  *  views grouped together. Single symbol selector, dense four-quadrant grid
  *  (depth + tape on top, volume profile + OI on bottom). */
 function MicrostructureContent() {

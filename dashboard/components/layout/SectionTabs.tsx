@@ -16,7 +16,7 @@ export interface SectionTab {
 export function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-0.5 px-3 md:px-6 h-10 border-b border-border/40 bg-bg shrink-0 overflow-x-auto">
+    <nav className="flex items-center gap-1 px-1 md:px-4 h-10 border-b border-border bg-surface shrink-0 overflow-x-auto">
       {tabs.map((t) => {
         const active = pathname === t.href || pathname.startsWith(t.href + "/");
         return (
@@ -25,7 +25,7 @@ export function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
             href={t.href}
             prefetch
             className={cn(
-              "relative px-3 h-7 flex items-center text-xs tabular tracking-normal rounded-sm transition-colors shrink-0",
+              "relative px-1 mx-2 h-10 flex items-center text-xs font-medium transition-colors shrink-0",
               active
                 ? "text-text-primary"
                 : "text-text-muted hover:text-text-secondary"
@@ -33,7 +33,7 @@ export function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
           >
             {t.label}
             {active && (
-              <span className="absolute inset-x-2 -bottom-[5px] h-[2px] rounded-full bg-accent" />
+              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-text-primary" />
             )}
           </Link>
         );

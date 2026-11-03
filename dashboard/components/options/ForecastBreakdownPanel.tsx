@@ -14,7 +14,7 @@ interface Props {
  * side-by-side per horizon, plus the consensus and how much the members
  * agree. Lets the user judge whether the headline forecast number is
  * "all four models say up" or "one says +5%, another says -5% and we
- * averaged them" — very different levels of confidence.
+ * averaged them", very different levels of confidence.
  *
  * Per-model accuracy badges read from the persistent calibration store
  * (populated as forecasts get scored over time).
@@ -139,7 +139,7 @@ export function ForecastBreakdownPanel({ result }: Props) {
               <td className="px-3 py-1.5">
                 <HintLabel
                   className="text-text-muted"
-                  hint="Per-horizon ensemble agreement (0..100%) — how closely members agree on direction/magnitude. Below 50% means soft signal. If calibration data exists, 'cov' shows what fraction of past native bands actually contained the realized outcome (ideally ≈80%)."
+                  hint="Per-horizon ensemble agreement (0..100%), how closely members agree on direction/magnitude. Below 50% means soft signal. If calibration data exists, 'cov' shows what fraction of past native bands actually contained the realized outcome (ideally ≈80%)."
                 >
                   Agreement
                 </HintLabel>

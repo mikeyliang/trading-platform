@@ -5,7 +5,7 @@
 // can capture context while the price action is still on screen.
 //
 // Notes are persisted into ``metadata.note`` on the trade row via
-// ``PUT /api/trade-history/{id}`` — we splat the existing metadata so
+// ``PUT /api/trade-history/{id}``, we splat the existing metadata so
 // other Flex/IBKR fields (account, ib_exec_id, option contract, …)
 // aren't blown away by the update.
 
@@ -18,7 +18,7 @@ interface Props {
   trades: TradeHistoryRecord[];
   /** Pixel position of the click within the chart container. */
   anchor: { x: number; y: number };
-  /** Bounding rect of the chart container — used to clamp positioning. */
+  /** Bounding rect of the chart container, used to clamp positioning. */
   container: { width: number; height: number };
   onClose: () => void;
   /** Called after a successful save so the parent can re-fetch trades. */
@@ -199,7 +199,7 @@ function JournalEditor({
   const [err, setErr] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Focus the textarea when the popover mounts — natural flow is open
+  // Focus the textarea when the popover mounts, natural flow is open
   // marker → start typing the note.
   useEffect(() => {
     inputRef.current?.focus();
@@ -222,7 +222,7 @@ function JournalEditor({
     }
   };
 
-  // ⌘/Ctrl-Enter saves — the keyboard shortcut journals expect.
+  // ⌘/Ctrl-Enter saves, the keyboard shortcut journals expect.
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && dirty && !saving) {
       e.preventDefault();

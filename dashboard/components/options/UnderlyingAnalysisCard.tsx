@@ -85,7 +85,7 @@ export function UnderlyingAnalysisCard({
   }
   const tfs = chart.supported_timeframes;
 
-  // Forecast horizon picker — drives the projection cone.
+  // Forecast horizon picker, drives the projection cone.
   const fe = result.forecast_ensemble;
   const availableHorizons = useMemo(
     () =>
@@ -240,7 +240,7 @@ export function UnderlyingAnalysisCard({
 }
 
 // ---------------------------------------------------------------------------
-// PaneStack — the four stacked lightweight-charts panes + the forecast cone
+// PaneStack, the four stacked lightweight-charts panes + the forecast cone
 // SVG band + the synced hover readout.
 // ---------------------------------------------------------------------------
 
@@ -324,7 +324,7 @@ function PaneStack({
   const [initError, setInitError] = useState<string | null>(null);
 
   // Executed trades for this underlying, rendered as arrow markers on the
-  // candle series — same hook + popover the main TradingChart uses, so
+  // candle series, same hook + popover the main TradingChart uses, so
   // option/stock trades on `symbolWatermark` (the underlying ticker) line
   // up on the analyzer's price pane too. Click a marker to journal it.
   const tradeMarkers = useTradeMarkers({
@@ -482,7 +482,7 @@ function PaneStack({
         crosshairMarkerVisible: true,
       });
     }
-    // p10/p90 lines intentionally NOT drawn as separate series — the
+    // p10/p90 lines intentionally NOT drawn as separate series, the
     // gradient band on the SVG overlay defines the cone edges by itself.
     // Drawing them as dashed cyan lines on top made the projection look
     // noisy and competed with the per-member colored lines.
@@ -691,7 +691,7 @@ function PaneStack({
     }));
     candleSeriesRef.current.setData(candleData);
 
-    // Volume — fade the bars to ~30% so they don't drown the candles.
+    // Volume, fade the bars to ~30% so they don't drown the candles.
     volSeriesRef.current?.setData(
       bars.map((b) => ({
         time: b.time as UTCTimestamp,
@@ -874,7 +874,7 @@ function PaneStack({
       const valid = points.every((p) => p.x != null && p.yHi != null && p.yLo != null);
       if (!valid) { overlayEl.innerHTML = ""; return; }
 
-      // Band path — p90 along the top, p10 back to the anchor.
+      // Band path, p90 along the top, p10 back to the anchor.
       const topPath = points.map((p, i) =>
         `${i === 0 ? "M" : "L"}${p.x!.toFixed(2)},${p.yHi!.toFixed(2)}`,
       ).join(" ");
@@ -942,7 +942,7 @@ function PaneStack({
           +${futureTimes.length}d horizon
         </text>` : "";
 
-      // No-change reference — horizontal dotted line at last close,
+      // No-change reference, horizontal dotted line at last close,
       // extending across the projection band only. Makes each member's
       // direction legible at a glance: above this line = predicts up.
       const noChangeRef = `
@@ -1008,17 +1008,17 @@ function PaneStack({
     };
   }, [tradeMarkers.bucketAt]);
 
-  // Drop the popover when the underlying changes — its trades no longer apply.
+  // Drop the popover when the underlying changes, its trades no longer apply.
   useEffect(() => {
     setActivePopover(null);
   }, [symbolWatermark]);
 
   return (
     <>
-      {/* ── Price pane — dominant, with symbol watermark behind the
+      {/* ── Price pane, dominant, with symbol watermark behind the
             candles (mirrors the main TradingChart's chart-canvas region).
             Height reduced from 560 → 400 so the analyzer page doesn't
-            scroll forever — the three subpanes already add 300+ px of
+            scroll forever, the three subpanes already add 300+ px of
             indicator context below. */}
       <div className="relative bg-bg border-t border-border shrink-0" style={{ height: 400 }}>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-0">
@@ -1028,7 +1028,7 @@ function PaneStack({
         </div>
         <div ref={priceContainerRef} className="absolute inset-0 z-10" />
         <div ref={coneOverlayRef} className="pointer-events-none absolute inset-0 z-20" />
-        {/* Trade-marker badge — count of this underlying's executions pinned
+        {/* Trade-marker badge, count of this underlying's executions pinned
             on the timeline. Off-range trades (outside the loaded bars) are
             fetched but can't render, so we distinguish the two states. */}
         {(tradeMarkers.renderedCount > 0 || tradeMarkers.trades.length > 0) && (
@@ -1072,7 +1072,7 @@ function PaneStack({
         )}
       </div>
 
-      {/* ── Subpanes — each block mirrors the SMI subpane in TradingChart:
+      {/* ── Subpanes, each block mirrors the SMI subpane in TradingChart:
             border-t, bg-bg, h-6 header strip with label · params · legend,
             chart canvas below. Same look across all three sub-panes. */}
       <Subpane
@@ -1121,7 +1121,7 @@ function PaneStack({
 }
 
 // ---------------------------------------------------------------------------
-// Subpane — verbatim copy of the SMI subpane block in TradingChart so the
+// Subpane, verbatim copy of the SMI subpane block in TradingChart so the
 // analyzer's RSI / MACD / SMI panes read as part of the same family.
 // ---------------------------------------------------------------------------
 function Subpane({
@@ -1182,7 +1182,7 @@ function tonedDelta(a: number, b: number) {
 }
 
 // ---------------------------------------------------------------------------
-// Top OHLCV value cell — matches TradingChart's `<Val>`.
+// Top OHLCV value cell, matches TradingChart's `<Val>`.
 // ---------------------------------------------------------------------------
 function OhlcVal({
   n,
@@ -1203,7 +1203,7 @@ function OhlcVal({
 }
 
 // ---------------------------------------------------------------------------
-// Forecast readout — only shown when crosshair is in the projection band.
+// Forecast readout, only shown when crosshair is in the projection band.
 // ---------------------------------------------------------------------------
 function ForecastReadout({
   fcStep,

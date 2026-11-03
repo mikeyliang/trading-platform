@@ -24,7 +24,7 @@ export interface OverlayGroup {
 }
 
 /**
- * Chart-toolbar overlays menu — single button trigger, popover with grouped
+ * Chart-toolbar overlays menu, single button trigger, popover with grouped
  * row toggles. Row layout (vs the old chip grid) gives icons + descriptions
  * proper room and makes the active state more legible.
  */

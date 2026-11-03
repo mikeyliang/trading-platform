@@ -88,7 +88,7 @@ const SECTION_META: Record<
     label: "Bull / Bear Debate",
     icon: MessageSquare,
     color: "text-purple-400",
-    description: "Researcher team — structured argumentation",
+    description: "Researcher team, structured argumentation",
   },
   trader_investment_plan: {
     label: "Trader Plan",
@@ -316,7 +316,7 @@ export function AgentDebate() {
       <PageHeader
         eyebrow="Agents"
         title="Multi-Agent Debate"
-        description="LLM analysts debate a ticker — market, sentiment, news, fundamentals — then bull/bear, trader, risk, and a final PM decision."
+        description="LLM analysts debate a ticker, market, sentiment, news, fundamentals, then bull/bear, trader, risk, and a final PM decision."
         actions={
           <div className="flex items-end gap-2 flex-wrap">
             <Field label="Ticker">
@@ -366,7 +366,7 @@ export function AgentDebate() {
 
       {result?.cached && (
         <div className="text-xs text-text-muted">
-          Cached (1hr TTL) — re-runs are free.
+          Cached (1hr TTL), re-runs are free.
         </div>
       )}
 

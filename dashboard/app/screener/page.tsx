@@ -21,7 +21,7 @@ import { FilterBar } from "@/components/ui/filter-bar";
 import { cn, fmtCompact } from "@/lib/utils";
 import { ArrowUpDown, Target } from "lucide-react";
 
-// Curated universe — same anchor list as the logo map, expanded slightly
+// Curated universe, same anchor list as the logo map, expanded slightly
 const UNIVERSE = [
   "AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "AVGO", "ORCL",
   "CRM", "ADBE", "NFLX", "CSCO", "AMD", "INTC", "QCOM", "IBM", "TXN", "MU",
@@ -141,7 +141,7 @@ export default function ScreenerPage() {
         }
       />
 
-      {/* filters — search always visible, advanced behind disclosure, active filters as chips */}
+      {/* filters, search always visible, advanced behind disclosure, active filters as chips */}
       <FilterBar
         search={{ value: query, onChange: setQuery, placeholder: "Symbol or name…" }}
         chips={[

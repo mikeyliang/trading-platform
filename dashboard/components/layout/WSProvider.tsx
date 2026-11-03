@@ -27,10 +27,10 @@ export function WSProvider({ children }: { children: React.ReactNode }) {
         if (snap.account !== undefined && snap.account !== null) setAccount(snap.account);
         if (snap.positions) setPositions(snap.positions);
       }
-      // Single-position deltas — broadcast on every IB fill / mark update.
+      // Single-position deltas, broadcast on every IB fill / mark update.
       if (msg.type === "position" && msg.data) {
         const p = msg.data as Position;
-        // Merge by symbol — replace existing or append.
+        // Merge by symbol, replace existing or append.
         useStore.setState((s) => {
           const idx = s.positions.findIndex((x) => x.symbol === p.symbol);
           if (idx === -1) return { positions: [...s.positions, p] };

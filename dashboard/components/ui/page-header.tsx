@@ -9,24 +9,24 @@ interface PageHeaderProps {
   className?: string;
 }
 
-// Compact, IBKR-style page header. Single tight strip — no big marketing block.
+// Compact, IBKR-style page header. Single tight strip, no big marketing block.
 export function PageHeader({ title, eyebrow, description, actions, className }: PageHeaderProps) {
   const compact = !eyebrow && !description;
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 border-b border-border/40",
+        "flex items-center justify-between gap-3 border-b border-border",
         compact ? "pb-1.5" : "pb-2 items-end",
         className
       )}
     >
       <div className="min-w-0">
         {eyebrow && (
-          <div className="eyebrow mb-0.5">
+          <div className="caption mb-0.5">
             {eyebrow}
           </div>
         )}
-        <h1 className="text-sm font-semibold text-text-primary leading-tight">
+        <h1 className="text-base font-semibold text-text-primary leading-tight">
           {title}
         </h1>
         {description && <p className="text-xs text-text-muted mt-0.5">{description}</p>}
@@ -36,7 +36,7 @@ export function PageHeader({ title, eyebrow, description, actions, className }: 
   );
 }
 
-// Dense default — was p-4/gap-4, now p-3/gap-3 to push more data on-screen.
+// Dense default, was p-4/gap-4, now p-3/gap-3 to push more data on-screen.
 export function PageShell({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn("flex flex-col gap-3 p-3 h-full overflow-y-auto", className)}>

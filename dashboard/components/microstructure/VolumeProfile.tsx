@@ -20,7 +20,7 @@ interface Props {
 }
 
 /** Horizontal volume-by-price histogram. POC (busiest band) is highlighted
- *  and the value area (70% of volume around POC) is shaded — that's the band
+ *  and the value area (70% of volume around POC) is shaded, that's the band
  *  inside which most real activity actually transacted. */
 export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 20 }: Props) {
   const [tf, setTf] = useState(defaultTimeframe);

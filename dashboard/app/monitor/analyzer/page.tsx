@@ -171,7 +171,7 @@ function AnalyzerContent() {
   const [copied, setCopied] = useState(false);
   const copyAISnapshot = async () => {
     if (!result) return;
-    // A compact JSON payload + the human narrative — anything else an LLM
+    // A compact JSON payload + the human narrative, anything else an LLM
     // agent needs is reachable from the analyze endpoint by symbol/strike/expiry.
     const snapshot = {
       position: {
@@ -272,7 +272,7 @@ function AnalyzerContent() {
         {/* Expiry */}
         <BarSeg label="Exp">
           <Select value={expiry} onValueChange={setExpiry} disabled={!chain || chain.expirations.length === 0}>
-            <SelectTrigger className="h-7 w-[112px] tabular text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectTrigger className="h-7 w-[112px] tabular text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>
               {(chain?.expirations || []).map((e) => (
                 <SelectItem key={e} value={e} className="tabular text-xs">{fmtExp(e)}</SelectItem>
@@ -295,7 +295,7 @@ function AnalyzerContent() {
               title="Lower strike"
             ><ChevronLeft size={12} aria-hidden="true" /></button>
             <Select value={strike != null ? String(strike) : ""} onValueChange={(v: string) => setStrike(Number(v))} disabled={strikes.length === 0}>
-              <SelectTrigger className="h-7 w-[88px] tabular text-xs border-l-0 border-r-0 rounded-none"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger className="h-7 w-[88px] tabular text-xs border-l-0 border-r-0 rounded-none"><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent>
                 {strikes.map((s) => {
                   const atm = spot != null && Math.abs(s - spot) === Math.min(...strikes.map((k) => Math.abs(k - spot!)));
@@ -322,14 +322,14 @@ function AnalyzerContent() {
         <BarSeg label="Side">
           <div className="flex h-7 rounded-md border border-border overflow-hidden">
             <button onClick={() => setRight("C")}
-              className={cn("px-2.5 text-xs font-semibold transition-colors", right === "C" ? "bg-up/15 text-up" : "text-text-muted hover:bg-surface-2")}>CALL</button>
+              className={cn("px-2.5 text-xs font-medium transition-colors", right === "C" ? "bg-up/15 text-up" : "text-text-muted hover:bg-surface-2")}>Call</button>
             <button onClick={() => setRight("P")}
-              className={cn("px-2.5 text-xs font-semibold border-l border-border transition-colors", right === "P" ? "bg-down/15 text-down" : "text-text-muted hover:bg-surface-2")}>PUT</button>
+              className={cn("px-2.5 text-xs font-medium border-l border-border transition-colors", right === "P" ? "bg-down/15 text-down" : "text-text-muted hover:bg-surface-2")}>Put</button>
           </div>
         </BarSeg>
 
         {/* Qty */}
-        <BarSeg label="Qty ±">
+        <BarSeg label="Qty">
           <Input type="number" value={qty} onChange={(e) => setQty(Number(e.target.value || 0))}
             className="h-7 w-16 tabular text-xs px-2" title="± = long / short" />
         </BarSeg>
@@ -341,7 +341,7 @@ function AnalyzerContent() {
         </BarSeg>
 
         {/* Actions */}
-        <div className="ml-auto flex items-center gap-2 px-3 py-1.5">
+        <div className="ml-auto flex items-center gap-2 px-3 py-1.5 empty:hidden">
           {loading && <Loader2 size={14} className="animate-spin text-text-muted" />}
           {result && (
             <Button variant="outline" size="sm" onClick={copyAISnapshot} title="Copy LLM-ready position snapshot">
@@ -401,7 +401,7 @@ function AnalysisBody({
   const tone =
     advice.score >= 40 ? "up" : advice.score <= -40 ? "down" : Math.abs(advice.score) >= 15 ? "warning" : "muted";
   const TrendIcon = advice.score >= 0 ? TrendingUp : TrendingDown;
-  // Concrete action verdict (ADD/HOLD/SPEC/TRIM/EXIT) — the single most
+  // Concrete action verdict (ADD/HOLD/SPEC/TRIM/EXIT), the single most
   // actionable element; colored independently of the raw score so EXIT/TRIM
   // read red/amber even when the score is only mildly negative.
   const action = advice.action ?? null;
@@ -435,7 +435,7 @@ function AnalysisBody({
   const ivPctOfRv = result.vol_context.iv_to_rv_ratio;
 
   // POP and expected move pulled up into the state strip so probability is
-  // visible without scrolling — used to live in the right-hand side rail.
+  // visible without scrolling, used to live in the right-hand side rail.
   const pop = result.probability.pop;
   const popPct = pop != null ? `${(pop * 100).toFixed(0)}%` : "—";
   const popTone = pop == null ? undefined : pop >= 0.6 ? "up" : pop >= 0.4 ? "warning" : "down";
@@ -446,15 +446,15 @@ function AnalysisBody({
     <>
       {/* ── HERO ─────────────────────────────────────────────────────────
           Verdict + headline metrics in one band. Layout:
-            row 1 — big prominent SCORE, label pill, narrative, position tag
-            row 2 — fixed 4/8-column metric grid (stable across widths)
+            row 1, big prominent SCORE, label pill, narrative, position tag
+            row 2, fixed 4/8-column metric grid (stable across widths)
           The score is the dominant element on the page; reading "+42" or
           "-46" should answer "should I keep this trade?" at a glance.
           `shrink-0` keeps the band from collapsing under flex pressure
-          when the page is tall — that was the root cause of "the section
+          when the page is tall, that was the root cause of "the section
           above P/L profile has small height". */}
       <div className="relative rounded-md border border-border bg-surface overflow-hidden shrink-0">
-        {/* Side rule — tone color, full-height. */}
+        {/* Side rule, tone color, full-height. */}
         <div className={cn(
           "absolute left-0 top-0 bottom-0 w-1",
           tone === "up" && "bg-up",
@@ -466,7 +466,7 @@ function AnalysisBody({
         {/* Verdict row: score + label + scale on the left, narrative right. */}
         <div className="flex items-start gap-4 pl-5 pr-4 pt-3 pb-3">
           <div className="shrink-0 flex flex-col gap-1.5 w-[232px]">
-            {/* Action verdict — the headline, in plain words (no "SPEC"). */}
+            {/* Action verdict, the headline, in plain words (no "SPEC"). */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className={cn(
                 "text-[20px] leading-none font-bold",
@@ -480,17 +480,17 @@ function AnalysisBody({
               {advice.conviction && (
                 <span
                   className="px-1.5 py-0.5 rounded-sm text-2xs font-semibold bg-surface-2 text-text-muted"
-                  title="How much to trust this call — from signal strength + model agreement."
+                  title="How much to trust this call, from signal strength + model agreement."
                 >
                   {advice.conviction} conviction
                 </span>
               )}
             </div>
 
-            {/* Reasoning — full sentence, never clipped. */}
+            {/* Reasoning, full sentence, never clipped. */}
             <p className="text-xs leading-snug text-text-secondary">{labelExplanation}</p>
 
-            {/* Signal meter — the score made legible: where it sits between
+            {/* Signal meter, the score made legible: where it sits between
                 "close it" and "keep it", with the number spelled out. */}
             <div
               className="relative w-full h-1 bg-surface-2 rounded-full overflow-hidden mt-0.5"
@@ -526,7 +526,7 @@ function AnalysisBody({
           </p>
         </div>
 
-        {/* Headline metrics — one divided terminal strip; scrolls on narrow. */}
+        {/* Headline metrics, one divided terminal strip; scrolls on narrow. */}
         <div className="flex divide-x divide-border/60 border-t border-border/40 overflow-x-auto">
           <HeroMetric label="Spot" value={`$${result.spot.toFixed(2)}`}
             hint="Live underlying price." />
@@ -538,7 +538,7 @@ function AnalysisBody({
           <HeroMetric label="IV"
             value={`${(result.option.iv * 100).toFixed(1)}%`}
             tone={ivPctOfRv != null && ivPctOfRv >= 1.3 ? "down" : ivPctOfRv != null && ivPctOfRv <= 0.8 ? "up" : undefined}
-            hint={ivPctOfRv != null ? `${ivPctOfRv.toFixed(2)}× RV30 — ${ivPctOfRv >= 1.3 ? "rich" : ivPctOfRv <= 0.8 ? "cheap" : "fair"}` : "Implied volatility"} />
+            hint={ivPctOfRv != null ? `${ivPctOfRv.toFixed(2)}× RV30, ${ivPctOfRv >= 1.3 ? "rich" : ivPctOfRv <= 0.8 ? "cheap" : "fair"}` : "Implied volatility"} />
           <HeroMetric label="DTE" value={`${result.dte}d`}
             tone={result.dte <= 7 ? "down" : result.dte <= 21 ? "warning" : undefined}
             hint="Days to expiration. ≤7d = gamma+theta zone." />
@@ -555,11 +555,11 @@ function AnalysisBody({
             hint={emAbs != null ? `±$${emAbs.toFixed(2)} by expiry` : "Expected 1σ move"} />
           <HeroMetric label="Delta"
             value={result.greeks.delta != null ? result.greeks.delta.toFixed(3) : "—"}
-            hint="Delta — option move per $1 move in the underlying (per share)." />
+            hint="Delta, option move per $1 move in the underlying (per share)." />
           <HeroMetric label="Theta"
             value={result.greeks.theta != null ? result.greeks.theta.toFixed(3) : "—"}
             tone={result.greeks.theta != null && (result.is_long ? result.greeks.theta < 0 : result.greeks.theta > 0) ? "down" : undefined}
-            hint="Theta — daily time decay (per share)." />
+            hint="Theta, daily time decay (per share)." />
           <HeroMetric label="Max profit"
             value={result.max_profit != null && isFinite(result.max_profit) ? fmtCurrency(result.max_profit) : "∞"}
             tone="up" hint="Maximum profit on the position." />
@@ -569,7 +569,7 @@ function AnalysisBody({
         </div>
       </div>
 
-      {/* ── PRIMARY VIEW — P/L · Underlying · Option behind one tab strip ──
+      {/* ── PRIMARY VIEW, P/L · Underlying · Option behind one tab strip ──
           Was three full-width stacked sections (a long scroll). Now one
           switcher: each tab keeps its chart + interpretation rail side by
           side, but the page only renders one at a time. */}
@@ -685,7 +685,7 @@ function AnalysisBody({
               </div>
             </div>
           </TabsContent>
-          {/* Greeks — full per-contract breakdown */}
+          {/* Greeks, full per-contract breakdown */}
           <TabsContent value="greeks" className="p-3">
             <GreeksPanel
               delta={result.greeks.delta}
@@ -736,7 +736,7 @@ function AnalysisBody({
   );
 }
 
-// A card's own header strip — title + optional hint, matching the rail
+// A card's own header strip, title + optional hint, matching the rail
 // panels' header rows. Keeps every block self-contained instead of relying
 // on floating dividers between them.
 function CardBar({ title, hint }: { title: string; hint?: React.ReactNode }) {
@@ -748,7 +748,7 @@ function CardBar({ title, hint }: { title: string; hint?: React.ReactNode }) {
   );
 }
 
-// ─── HeroMetric — single grid cell in the hero band. Label stacks above
+// ─── HeroMetric, single grid cell in the hero band. Label stacks above
 //     the value vertically so wide and narrow values both align. Tone
 //     color applies to the value only; label stays muted. The hint lives
 //     in the title attribute so the cell stays a single number on screen.
@@ -778,7 +778,7 @@ function HeroMetric({
   );
 }
 
-// ─── AnalyticsTabs — bottom-of-page secondary detail. Greeks / decay /
+// ─── AnalyticsTabs, bottom-of-page secondary detail. Greeks / decay /
 //     multi-TF / vol / liquidity / scenarios / forecast breakdown live
 //     here behind a single tab strip so the page top-fold stays focused
 //     on the verdict + chart. Scales: adding a new analytic = adding a
@@ -864,7 +864,7 @@ function rrRatio(maxP: number | null, maxL: number | null): string {
 
 function AnalysisSkeleton() {
   // Shape-matches AnalysisBody so layout doesn't shift when the real data arrives.
-  // Uses the `.skeleton` class (defined in globals.css) — a subtle horizontal
+  // Uses the `.skeleton` class (defined in globals.css), a subtle horizontal
   // shimmer sweep, not an opacity pulse, so it reads as "data incoming" without
   // the screen breathing in your face.
   return (

@@ -40,7 +40,7 @@ export function OkwTracker() {
 
   const load = async () => {
     const r = await api.okwTrades({ status: statusFilter || undefined, limit: 200 });
-    setTrades(r.trades);
+    setTrades(Array.isArray(r?.trades) ? r.trades : []);
     setSummary(await api.okwSummary().catch(() => null));
   };
 
@@ -49,7 +49,7 @@ export function OkwTracker() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="OKW · trade tracker"
+        eyebrow="OKW"
         title="Trade tracker"
         description="Log placed RUT / Mars / Mars Max / Space spreads. Mirrors Jamal's Options Kelly Workbook columns."
         actions={

@@ -12,7 +12,7 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-/** Dense cross-run comparison — every completed run side by side. */
+/** Dense cross-run comparison, every completed run side by side. */
 export function SimCompareTable({ runs, selectedId, onSelect }: Props) {
   const completed = runs
     .filter((r) => r.aggregate)

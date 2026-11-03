@@ -8,7 +8,7 @@ body { margin: 0; background: var(--color-paper); color: var(--color-ink); font-
 ::selection { background: var(--color-accent-2); color: var(--color-accent-2-ink); }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; }
 a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.16em; }
-h1, h2, h3 { margin: 0; font-family: var(--font-display); font-synthesis: none; overflow-wrap: break-word; min-width: 0; text-wrap: balance; }
+h1, h2, h3 { margin: 0; font-family: var(--font-body); font-synthesis: none; overflow-wrap: break-word; min-width: 0; text-wrap: balance; }
 p { margin: 0; text-wrap: pretty; }
 img, video { max-width: 100%; height: auto; display: block; }
 svg { display: block; }

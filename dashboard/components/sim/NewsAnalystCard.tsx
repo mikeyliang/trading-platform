@@ -14,7 +14,7 @@ const VERDICT_STYLE: Record<string, string> = {
   neutral: "text-text-secondary bg-surface-2 border-border",
 };
 
-/** Compact AI news read for one symbol — verdict chip, bias bar, for/against. */
+/** Compact AI news read for one symbol, verdict chip, bias bar, for/against. */
 export function NewsAnalystCard({ symbol }: { symbol: string }) {
   const [read, setRead] = useState<NewsAnalystRead | null>(null);
   const [loading, setLoading] = useState(false);

@@ -48,7 +48,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
 
   const [loaded, setLoaded] = useState({ positions: false, spreads: false, trades: false });
 
-  // Filter state — reset when the parent re-feeds a different symbol prop.
+  // Filter state, reset when the parent re-feeds a different symbol prop.
   const [symbolQ, setSymbolQ] = useState(initialSymbol.toUpperCase());
   const [side, setSide] = useState<SideFilter>("all");
   const [kind, setKind] = useState<KindFilter>("all");
@@ -158,7 +158,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
         </TabsList>
 
         <div className="ml-auto flex items-center flex-wrap gap-x-3 gap-y-1 py-1">
-        {/* Symbol search — magnifier + input + inline clear */}
+        {/* Symbol search, magnifier + input + inline clear */}
         <div className={cn(
           "flex items-center gap-1.5 h-6 px-2 rounded-md border bg-surface-2/60 transition-colors",
           symbolQ ? "border-accent/60" : "border-border/60 hover:border-border"
@@ -287,7 +287,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
  * Labeled segmented control: a small uppercase label sits to the left of a
  * row of segment buttons. The label tells the user what dimension is being
  * filtered (Side, Type…) so segment values don't have to carry that meaning
- * by themselves — no more "stk/opt/leg" cipher.
+ * by themselves, no more "stk/opt/leg" cipher.
  *
  * The first option (typically "Any") is the no-filter state; it stays in
  * the segmented control rather than being implicit so the off-state is
@@ -354,7 +354,7 @@ const TRADE_HEADERS = ["Symbol", "Side", "Qty", "Price", "P&L", "Strategy", "Tim
 /**
  * Loading state for tabular data. Matches the real table chrome (sticky
  * header, column count, row density) so the layout doesn't shift when data
- * arrives. Renders a fixed batch of skeleton rows — enough to fill a
+ * arrives. Renders a fixed batch of skeleton rows, enough to fill a
  * typical viewport without overflowing if data lands quickly.
  */
 function TableSkeleton({ cols, headers, rows = 6 }: { cols: number; headers: readonly string[]; rows?: number }) {
@@ -486,7 +486,7 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
               onClick={() => router.push(positionHref(p))}
               className={cn(
                 "cursor-pointer group relative",
-                // Subtle left accent on hover — signals "row is the click target"
+                // Subtle left accent on hover, signals "row is the click target"
                 // without shifting layout. Uses box-shadow inset so the row stays
                 // the same height.
                 "hover:shadow-[inset_2px_0_0_0_rgb(var(--c-accent))]",
@@ -530,8 +530,8 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                   {p.mark_source && p.mark_source !== "live" && (
                     <span
                       title={p.mark_source === "modeled"
-                        ? "Modeled mark — Black-Scholes theoretical; no live quote available"
-                        : "Stale mark — last good quote; this refresh missed"}
+                        ? "Modeled mark, Black-Scholes theoretical; no live quote available"
+                        : "Stale mark, last good quote; this refresh missed"}
                       className={cn(
                         "inline-flex items-center h-4 px-1.5 text-2xs font-medium cap",
                         p.mark_source === "modeled"

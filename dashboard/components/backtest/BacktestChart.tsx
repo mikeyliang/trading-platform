@@ -127,7 +127,7 @@ export function BacktestChart({ result }: Props) {
         }
       }
 
-      // Trade markers — entry up arrow, exit down arrow with PnL
+      // Trade markers, entry up arrow, exit down arrow with PnL
       const markers: SeriesMarker<Time>[] = [];
       for (const t of result.trades) {
         const entryTs = Math.floor(new Date(t.entry_time).getTime() / 1000);

@@ -25,7 +25,7 @@ interface Props {
 
 // Equity-curve area chart with a synchronized drawdown subpane underneath.
 // The drawdown series is computed from the running peak so the chart works
-// for any equity_curve payload — server doesn't have to send it pre-computed.
+// for any equity_curve payload, server doesn't have to send it pre-computed.
 export function EquityCurveChart({
   equity,
   initialCapital,
