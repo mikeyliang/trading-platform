@@ -55,7 +55,13 @@ export function OptionAnalysisCard({ result }: Props) {
   // `prices` is canonical; fall back to the legacy synthetic_prices field.
   const ocPrices = oc?.prices ?? oc?.synthetic_prices ?? [];
   if (!oc || ocPrices.length === 0) return null;
+  return <OptionAnalysisCardBody result={result} oc={oc} ocPrices={ocPrices} />;
+}
 
+type OptionChartData = NonNullable<OptionAnalyzeResult["option_chart"]>;
+
+// Hooks live here, below the empty guard, so their order never changes.
+function OptionAnalysisCardBody({ result, oc, ocPrices }: Props & { oc: OptionChartData; ocPrices: number[] }) {
   const isReal = oc.source === "ibkr";
   const N = ocPrices.length;
   // Real bars carry their own timestamps; the modeled replay aligns to the

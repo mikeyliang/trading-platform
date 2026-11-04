@@ -240,7 +240,7 @@ export function SignalInputsPanel({ result }: Props) {
               <div className="font-medium mb-0.5">Signal disposition</div>
               <div><span className="text-status-lime-text">●</span> aligned, pushes score toward keep/hold</div>
               <div><span className="text-status-rose-text">●</span> against, pushes score toward close</div>
-              <div><span className="text-status-yellow-text">●</span> caution, flags a risk but doesn't change direction</div>
+              <div><span className="text-status-yellow-text">●</span> caution, flags a risk but doesn&apos;t change direction</div>
               <div><span className="text-text-tertiary">○</span> neutral, no scoring effect right now</div>
             </div>
           }

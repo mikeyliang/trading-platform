@@ -141,7 +141,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
                 />
               </div>
               <p className="text-caption-2-regular text-text-tertiary leading-relaxed">
-                Sizing is the lesser of Kelly% × bankroll and Rule One's 33% bankroll cap, divided
+                Sizing is the lesser of Kelly% × bankroll and Rule One&apos;s 33% bankroll cap, divided
                 by max loss per contract. Break-even at expiration:{" "}
                 <span className="text-text-secondary tabular">{fmt(m.breakeven, 2)}</span>.
               </p>
