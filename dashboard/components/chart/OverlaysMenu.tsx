@@ -51,7 +51,7 @@ export function OverlaysMenu({ groups }: { groups: OverlayGroup[] }) {
               {activeCount}
             </span>
           )}
-          <ChevronDown size={11} className="opacity-60" />
+          <ChevronDown size={14} className="opacity-60" />
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
@@ -131,7 +131,7 @@ function OverlayRow({ toggle }: { toggle: OverlayToggle }) {
         <span className="text-caption-2-regular tabular text-text-tertiary">{toggle.hint}</span>
       )}
       {toggle.active && (
-        <Check size={11} className="text-accent-600 shrink-0" />
+        <Check size={14} className="text-accent-600 shrink-0" />
       )}
     </DropdownMenu.Item>
   );

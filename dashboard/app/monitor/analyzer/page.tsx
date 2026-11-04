@@ -21,7 +21,7 @@ import { Skeleton, Spinner } from "@/components/ui/skeleton";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Logo } from "@/components/ui/logo";
 import { cn, fmtCurrency } from "@/lib/utils";
-import { RiArrowRightLine as ArrowRight, RiBrainLine as Brain, RiArrowLeftSLine as ChevronLeft, RiArrowRightSLine as ChevronRight, RiClipboardLine as Clipboard, RiFileListLine as ClipboardCheck, RiSearchLine as Search, RiSparklingLine as Sparkles, RiArrowRightDownLine as TrendingDown } from "@remixicon/react";
+import { RiArrowRightLine as ArrowRight, RiBrainLine as Brain, RiArrowLeftSLine as ChevronLeft, RiArrowRightSLine as ChevronRight, RiClipboardLine as Clipboard, RiFileListLine as ClipboardCheck, RiSearchLine as Search, RiBrainLine as Sparkles, RiArrowRightDownLine as TrendingDown } from "@remixicon/react";
 import { PnlProfileChart } from "@/components/options/PnlProfileChart";
 import { PnlDecayChart } from "@/components/options/PnlDecayChart";
 import { GreeksPanel } from "@/components/options/GreeksPanel";

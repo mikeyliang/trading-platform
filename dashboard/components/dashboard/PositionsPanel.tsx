@@ -21,6 +21,7 @@ import {
   useTableSort,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ToggleGroup } from "@/components/ui/toggle-group";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Logo } from "@/components/ui/logo";
 
@@ -160,26 +161,26 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
         <div className="ml-auto flex items-center flex-wrap gap-x-3 gap-y-1 py-1">
         {/* Symbol search, magnifier + input + inline clear */}
         <div className={cn(
-          "flex items-center gap-1.5 h-6 px-2 rounded-md border bg-background-secondary-default transition-colors",
-          symbolQ ? "border-accent-500" : "border-separator-border hover:border-separator-border"
+          "flex items-center gap-1.5 h-7 px-2 rounded-lg bg-background-tertiary-default ring-2 ring-inset transition-[box-shadow,background-color]",
+          symbolQ ? "ring-border-focus-ring bg-background-primary-default" : "ring-transparent focus-within:ring-border-focus-ring focus-within:bg-background-primary-default"
         )}>
-          <Search size={11} className="text-text-tertiary shrink-0" aria-hidden />
+          <Search size={14} className="text-foreground-icon-tertiary shrink-0" aria-hidden />
           <input
             id="positions-symbol-filter"
             value={symbolQ}
             onChange={(e) => setSymbolQ(e.target.value.toUpperCase())}
             placeholder="Symbol"
             aria-label="Filter by symbol"
-            className="w-16 bg-transparent text-caption-1-regular tabular leading-normal text-text-primary placeholder:text-text-tertiary outline-none"
+            className="w-16 bg-transparent text-body-2-regular tabular text-text-primary placeholder:text-text-tertiary outline-none"
           />
           {symbolQ && (
             <button
               type="button"
               onClick={() => setSymbolQ("")}
-              className="text-text-tertiary hover:text-text-primary"
+              className="text-foreground-icon-tertiary hover:text-text-primary"
               aria-label="Clear symbol filter"
             >
-              <X size={10} />
+              <X size={14} />
             </button>
           )}
         </div>
@@ -211,9 +212,9 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           <button
             type="button"
             onClick={clearAll}
-            className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-caption-2-regular text-text-secondary hover:text-text-primary hover:bg-background-secondary-hover transition-colors"
+            className="inline-flex items-center gap-1 h-7 px-2 rounded-lg text-caption-1-medium text-text-secondary hover:text-text-primary hover:bg-background-secondary-hover transition-colors"
           >
-            <X size={10} />
+            <X size={14} />
             Clear {activeFilterCount}
           </button>
         )}
@@ -303,25 +304,8 @@ function FilterGroup<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-2" role="group" aria-label={label}>
-      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
-      <div className="flex h-7 p-0.5 bg-background-secondary-default">
-        {options.map((o) => (
-          <button
-            key={o.v}
-            type="button"
-            aria-pressed={value === o.v}
-            onClick={() => onChange(o.v)}
-            className={cn(
-              "px-2.5 text-caption-2-regular font-medium transition-colors whitespace-nowrap leading-none",
-              value === o.v
-                ? "bg-background-primary-default text-text-primary shadow-thumb"
-                : "text-text-secondary hover:text-text-primary"
-            )}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
+      <span className="text-caption-1-medium text-text-tertiary">{label}</span>
+      <ToggleGroup size="xs" ariaLabel={label} value={value} onChange={onChange} options={options.map((o) => ({ value: o.v, label: o.label }))} />
     </div>
   );
 }
@@ -533,10 +517,10 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                         ? "Modeled mark, Black-Scholes theoretical; no live quote available"
                         : "Stale mark, last good quote; this refresh missed"}
                       className={cn(
-                        "inline-flex items-center h-4 px-1.5 text-caption-2-regular font-medium cap",
+                        "inline-flex items-center h-5 px-1.5 rounded-md text-caption-1-medium",
                         p.mark_source === "modeled"
                           ? "bg-status-yellow-background text-status-yellow-text"
-                          : "bg-background-secondary-default text-text-tertiary",
+                          : "bg-background-tertiary-default text-text-secondary",
                       )}
                     >
                       {p.mark_source === "modeled" ? "model" : "stale"}
@@ -577,7 +561,7 @@ function KindPill({ kind }: { kind: PositionKind }) {
   return (
     <span
       className={cn(
-        "text-caption-2-regular px-2 h-5 inline-flex items-center bg-background-secondary-default cap",
+        "text-caption-1-medium px-1.5 h-5 rounded-md inline-flex items-center bg-background-tertiary-default",
         styles[kind],
       )}
     >

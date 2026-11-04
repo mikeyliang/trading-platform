@@ -184,7 +184,7 @@ export function BacktestPanel() {
             className="flex items-center gap-1.5 text-caption-2-regular text-text-tertiary hover:text-text-secondary transition-colors mt-1"
           >
             <ChevronDown
-              size={11}
+              size={14}
               className={cn("transition-transform", showAdvanced && "rotate-180")}
             />
             Parameters

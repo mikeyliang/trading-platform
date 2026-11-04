@@ -167,7 +167,7 @@ export function RuleOneScreener({ underlying, prefill, defaultBankroll }: Props)
       ) : (
         <Card>
           <CardContent className="p-3 text-caption-1-regular text-text-tertiary flex items-center gap-2">
-            <Info size={12} />
+            <Info size={14} />
             Enter spot, both strikes (short &gt; long), credit, and short delta to evaluate.
           </CardContent>
         </Card>
@@ -235,7 +235,7 @@ function CheckRow({
         <span className={cn("tabular", applicable ? (ok ? "text-status-lime-text" : "text-status-rose-text") : "text-text-tertiary")}>
           {fmt(value, value > 99 ? 0 : 1)}{suffix}
         </span>
-        {applicable && (ok ? <Check size={10} className="text-status-lime-text" /> : <X size={10} className="text-status-rose-text" />)}
+        {applicable && (ok ? <Check size={14} className="text-status-lime-text" /> : <X size={14} className="text-status-rose-text" />)}
       </span>
     </div>
   );

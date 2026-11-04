@@ -125,7 +125,7 @@ function FieldRow({
         {field.description && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Info size={11} className="text-text-tertiary shrink-0 cursor-help" />
+              <Info size={14} className="text-text-tertiary shrink-0 cursor-help" />
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-xs">
               {field.description}

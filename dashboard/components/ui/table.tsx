@@ -113,12 +113,12 @@ function SortableTableHead<K extends string>({
         <span>{children}</span>
         {active ? (
           direction === "asc" ? (
-            <ChevronUp size={12} className="shrink-0" />
+            <ChevronUp size={14} className="shrink-0" />
           ) : (
-            <ChevronDown size={12} className="shrink-0" />
+            <ChevronDown size={14} className="shrink-0" />
           )
         ) : (
-          <ChevronsUpDown size={12} className="shrink-0 opacity-0 group-hover/th:opacity-40" />
+          <ChevronsUpDown size={14} className="shrink-0 opacity-0 group-hover/th:opacity-40" />
         )}
       </button>
     </TableHead>

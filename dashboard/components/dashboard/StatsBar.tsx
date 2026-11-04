@@ -176,7 +176,7 @@ function positionsHint(b: BookSummary): string {
   if (b.stock) parts.push(`${b.stock} stk`);
   if (b.nearestDte !== null && b.nearestExpiry) {
     const d = parseYmd(b.nearestExpiry)!;
-    parts.push(`exp ${d.getMonth() + 1}/${d.getDate()} (${b.nearestDte}d)`);
+    parts.push(`${b.nearestDte}d to ${d.getMonth() + 1}/${d.getDate()}`);
   }
   return parts.join(", ");
 }

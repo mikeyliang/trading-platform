@@ -87,7 +87,7 @@ export function TradeMarkerPopover({
           aria-label="Close"
           className="ml-auto inline-flex items-center justify-center h-5 w-5 rounded-sm text-text-tertiary hover:text-text-primary hover:bg-background-secondary-hover"
         >
-          <X size={11} />
+          <X size={14} />
         </button>
       </div>
 
@@ -265,7 +265,7 @@ function JournalEditor({
               : "bg-status-blue-background text-accent-500 hover:bg-status-blue-background",
           )}
         >
-          {saving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? "Saving" : "Save"}
         </button>
       </div>

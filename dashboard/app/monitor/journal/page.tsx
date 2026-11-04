@@ -440,7 +440,7 @@ function Editor({
             className="inline-flex items-center gap-1 h-5 px-1.5 rounded-md text-caption-1-medium bg-status-blue-background text-status-blue-text hover:bg-status-rose-background hover:text-status-rose-text"
           >
             #{t}
-            <XIcon size={12} aria-hidden="true" />
+            <XIcon size={14} aria-hidden="true" />
           </button>
         ))}
         <Input

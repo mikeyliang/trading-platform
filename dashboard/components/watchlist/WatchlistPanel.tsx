@@ -142,7 +142,7 @@ export function WatchlistPanel() {
       <ScrollArea className="flex-1">
         {Object.entries(grouped).map(([sector, stocks]) => (
           <div key={sector}>
-            <div className="px-3 h-6 flex items-center gap-2 caption bg-background-primary-default backdrop-blur sticky top-0 z-10 border-b border-separator-border">
+            <div className="px-3 h-7 flex items-center gap-2 text-caption-1-medium text-text-tertiary bg-background-secondary-default sticky top-0 z-10 border-b border-separator-border">
               <span className="truncate">{sector}</span>
               <span className="tabular">{stocks.length}</span>
             </div>
@@ -161,7 +161,6 @@ export function WatchlistPanel() {
                     active ? "bg-status-blue-background" : "hover:bg-background-secondary-hover"
                   )}
                 >
-                  {active && <span aria-hidden className="absolute left-0 inset-y-1.5 w-0.5 rounded-r-full bg-accent-500" />}
                   <Link
                     href={`/chart/${item.symbol}`}
                     aria-current={active ? "true" : undefined}
@@ -169,17 +168,17 @@ export function WatchlistPanel() {
                   >
                     <Logo symbol={item.symbol} size={18} />
                     <div className="flex flex-col min-w-0 flex-1 leading-tight">
-                      <span className="text-caption-1-regular tabular font-medium text-text-primary">
+                      <span className="text-body-2-medium tabular text-text-primary">
                         {item.symbol}
                       </span>
-                      <span className="tabular text-caption-2-regular text-text-tertiary">
+                      <span className="tabular text-caption-1-regular text-text-tertiary">
                         {last != null ? fmt(last, 2) : "n/a"}
                       </span>
                     </div>
                     <WatchlistSparkline symbol={item.symbol} width={44} height={18} />
                     <span
                       className={cn(
-                        "tabular text-caption-1-regular font-medium leading-none shrink-0 w-14 text-right",
+                        "tabular text-body-2-medium shrink-0 w-14 text-right",
                         dir === "up" ? "text-status-lime-text" : dir === "down" ? "text-status-rose-text" : "text-text-tertiary"
                       )}
                     >
@@ -192,7 +191,7 @@ export function WatchlistPanel() {
                     className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 w-5 h-5 rounded-sm flex items-center justify-center text-text-tertiary hover:text-status-rose-text hover:bg-status-rose-background transition-colors"
                     aria-label={`Remove ${item.symbol} from watchlist`}
                   >
-                    <X size={11} />
+                    <X size={14} />
                   </button>
                 </div>
               );

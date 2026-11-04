@@ -123,8 +123,8 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 // accent gradient so it matches the selected row.
 function Wordmark() {
   return (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-linear-to-b from-accent-500 to-accent-600 shadow-nav-selected">
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="text-white">
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background-tertiary-default">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="text-text-primary">
         <rect x="2" y="8" width="3" height="6" rx="1" fill="currentColor" />
         <rect x="6.5" y="5" width="3" height="9" rx="1" fill="currentColor" />
         <rect x="11" y="2" width="3" height="12" rx="1" fill="currentColor" />

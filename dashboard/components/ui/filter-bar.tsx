@@ -33,11 +33,11 @@ export function FilterBar({
   return (
     <div
       className={cn(
-        "rounded-2lg bg-background-secondary-default flex flex-col",
+        "flex flex-col",
         className
       )}
     >
-      <div className="flex items-center gap-2 p-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         {search && (
           <div className="relative flex-1 min-w-[180px]">
             <Search
@@ -48,7 +48,7 @@ export function FilterBar({
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
               placeholder={search.placeholder ?? "Search..."}
-              className="pl-8 bg-background-primary-default"
+              className="pl-8"
             />
           </div>
         )}
@@ -85,7 +85,7 @@ export function FilterBar({
         </div>
       </div>
       {advanced && open && (
-        <div className="px-3 py-3 border-t border-separator-border animate-fade-in">{advanced}</div>
+        <div className="pt-3 mt-3 border-t border-separator-border animate-fade-in">{advanced}</div>
       )}
     </div>
   );

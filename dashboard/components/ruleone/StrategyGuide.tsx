@@ -41,7 +41,7 @@ export function StrategyGuideButton({ className }: { className?: string }) {
           )}
           title="Rule One strategy guide, entry gates, exit rules, decision tree"
         >
-          <BookOpen size={11} />
+          <BookOpen size={14} />
           Guide
         </button>
       </DialogTrigger>

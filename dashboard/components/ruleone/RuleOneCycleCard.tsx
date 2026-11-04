@@ -100,7 +100,7 @@ export function RuleOneCycleCard({ symbol }: Props) {
           <span className="text-caption-2-regular text-text-tertiary">· {cycle.cycle_label}</span>
         )}
         {loading && (
-          <Loader2 size={10} className="ml-auto animate-spin text-text-tertiary" />
+          <Loader2 size={14} className="ml-auto animate-spin text-text-tertiary" />
         )}
       </header>
 

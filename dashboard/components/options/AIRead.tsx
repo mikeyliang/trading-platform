@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RiSparklingLine as Sparkles, RiLoader4Line as Loader2, RiCheckboxCircleFill as CheckCircle2, RiCloseCircleFill as XCircle, RiHistoryLine as History, RiNewspaperLine as Newspaper, RiStockLine as TrendingUp, RiMoneyDollarCircleLine as CircleDollarSign, RiBrainLine as Brain, RiHourglassLine as Hourglass, RiArrowRightLine as ArrowRight, RiArrowRightSLine as ChevronRight } from "@remixicon/react";
+import { RiBrainLine as Sparkles, RiLoader4Line as Loader2, RiCheckboxCircleFill as CheckCircle2, RiCloseCircleFill as XCircle, RiHistoryLine as History, RiNewspaperLine as Newspaper, RiStockLine as TrendingUp, RiMoneyDollarCircleLine as CircleDollarSign, RiBrainLine as Brain, RiHourglassLine as Hourglass, RiArrowRightLine as ArrowRight, RiArrowRightSLine as ChevronRight } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
 import { type OptionAnalyzeResult } from "@/lib/api";
 import { resolveApiBase } from "@/lib/api-base";
@@ -352,7 +352,7 @@ export function AIRead({ result }: Props) {
       {history.length > 0 && (
         <div className="pt-3 border-t border-separator-border">
           <div className="flex items-center gap-2 mb-2">
-            <History size={12} className="text-text-tertiary" />
+            <History size={14} className="text-text-tertiary" />
             <span className="text-caption-2-regular text-text-tertiary font-medium">
               Recent runs on this contract
             </span>
@@ -440,13 +440,13 @@ function PipelineNode({
           style={active ? { color: meta.accent } : undefined}
         >
           {active ? (
-            <Loader2 size={12} className="animate-spin text-accent-500" />
+            <Loader2 size={14} className="animate-spin text-accent-500" />
           ) : done ? (
             <CheckCircle2 size={14} className="text-status-lime-text" />
           ) : failed ? (
             <XCircle size={14} className="text-status-rose-text" />
           ) : (
-            <Icon size={12} className="text-text-tertiary" />
+            <Icon size={14} className="text-text-tertiary" />
           )}
         </div>
         <span className={cn(
@@ -460,7 +460,7 @@ function PipelineNode({
         <span className="text-text-tertiary/40 text-[14px] leading-none">+</span>
       )}
       {connect === "to-synth" && (
-        <ChevronRight size={12} className="text-text-tertiary/60 ml-1 mr-1" />
+        <ChevronRight size={14} className="text-text-tertiary/60 ml-1 mr-1" />
       )}
     </div>
   );
@@ -773,7 +773,7 @@ function StatusBadge({ status }: { status: AgentStatus }) {
   if (status === "running") {
     return (
       <span className="text-caption-2-regular text-accent-500 inline-flex items-center gap-1">
-        <Loader2 size={10} className="animate-spin" />
+        <Loader2 size={14} className="animate-spin" />
         thinking
       </span>
     );
@@ -781,14 +781,14 @@ function StatusBadge({ status }: { status: AgentStatus }) {
   if (status === "complete") {
     return (
       <span className="text-caption-2-regular text-status-lime-text inline-flex items-center gap-1">
-        <CheckCircle2 size={10} />
+        <CheckCircle2 size={14} />
         done
       </span>
     );
   }
   return (
     <span className="text-caption-2-regular text-status-rose-text inline-flex items-center gap-1">
-      <XCircle size={10} />
+      <XCircle size={14} />
       failed
     </span>
   );

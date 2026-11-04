@@ -45,7 +45,7 @@ export function StatGroup({ children, className, cols }: StatGroupProps) {
     ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
     : { gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" };
   return (
-    <div style={colStyle} className={cn("grid gap-3 [&>*]:rounded-2lg [&>*]:bg-background-secondary-default [&>*]:p-3", className)}>
+    <div style={colStyle} className={cn("grid gap-y-3 [&>*]:px-4 [&>*]:border-l [&>*]:border-separator-border-strong [&>*:first-child]:pl-0 [&>*:first-child]:border-l-0", className)}>
       {children}
     </div>
   );

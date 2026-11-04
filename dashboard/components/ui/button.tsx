@@ -22,7 +22,7 @@ const buttonVariants = cva(
         outline:
           "bg-background-primary-default text-text-primary border border-separator-border-button-default shadow-xs hover:bg-background-primary-hover hover:border-separator-border-button-hover active:bg-background-primary-active disabled:bg-background-primary-disabled disabled:text-text-tertiary disabled:shadow-none",
         ghost:
-          "bg-button-ghost-background text-button-ghost-foreground hover:bg-button-ghost-hover active:bg-button-ghost-active disabled:text-button-ghost-disabled-foreground",
+          "bg-transparent text-text-secondary hover:bg-background-secondary-hover hover:text-text-primary active:bg-background-tertiary-default disabled:text-text-tertiary [&_svg]:text-foreground-icon-secondary hover:[&_svg]:text-foreground-icon-primary",
         destructive: "bg-button-danger text-text-white shadow-xs disabled:text-foreground-disabled-danger disabled:shadow-none",
         success: "bg-status-lime-background text-status-lime-text hover:brightness-95 disabled:opacity-50",
         link: "text-accent-600 underline-offset-4 hover:underline px-0",

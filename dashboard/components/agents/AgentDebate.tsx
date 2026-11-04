@@ -10,7 +10,6 @@ import {
   RiErrorWarningFill,
   RiCheckboxCircleFill,
   RiCloseCircleFill,
-  RiSparklingLine,
   RiStockLine,
   RiNewspaperLine,
   RiCalculatorLine,
@@ -74,7 +73,7 @@ const SECTION_META: Record<
   },
   sentiment_report: {
     label: "Sentiment analyst",
-    icon: RiSparklingLine,
+    icon: RiBrainLine,
     description: "Reddit, StockTwits, social mood",
   },
   news_report: {

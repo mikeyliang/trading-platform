@@ -5,7 +5,7 @@ import { cn, fmt, fmtPct, pnlClass } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Kbd } from "@/components/base/kbd/kbd";
-import { RiMenuLine, RiSearchLine, RiSparklingLine } from "@remixicon/react";
+import { RiMenuLine, RiSearchLine, RiChat3Line } from "@remixicon/react";
 import { useChatAvailable } from "@/lib/chat-availability";
 import { useHealth } from "@/lib/health";
 import { ConnectionPill } from "@/components/layout/ConnectionPill";
@@ -56,10 +56,10 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
               <button
                 type="button"
                 onClick={openCopilot}
-                className="flex items-center justify-center size-8 rounded-lg text-foreground-icon-secondary hover:text-accent-600 hover:bg-background-secondary-hover transition-colors"
+                className="flex items-center justify-center size-8 rounded-lg text-foreground-icon-secondary hover:text-foreground-icon-primary hover:bg-background-secondary-hover transition-colors"
                 aria-label="Open AI co-pilot"
               >
-                <RiSparklingLine className="size-5" />
+                <RiChat3Line className="size-5" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Co-pilot, ⌘J</TooltipContent>

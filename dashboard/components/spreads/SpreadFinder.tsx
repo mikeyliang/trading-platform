@@ -224,7 +224,7 @@ export function SpreadFinder() {
           onClick={() => setShowAll((v) => !v)}
           className="self-start inline-flex items-center gap-1 text-caption-1-regular text-text-tertiary hover:text-text-secondary"
         >
-          <ChevronDown size={11} className={cn("transition-transform", showAll && "rotate-180")} />
+          <ChevronDown size={14} className={cn("transition-transform", showAll && "rotate-180")} />
           {showAll ? "Hide" : "Show"} all {allCandidates.length} candidates
         </button>
       )}
@@ -528,7 +528,7 @@ function AllCandidates({
                 <td className={cn("px-3 py-2 text-right", cand.passes.kelly ? "text-text-primary" : "text-status-rose-text/80")}>{cand.kelly_pct.toFixed(0)}</td>
                 <td className={cn("px-3 py-2 text-right", cand.passes.adj_distance ? "text-text-secondary" : "text-status-rose-text/80")}>{cand.adj_distance_pct.toFixed(1)}%</td>
                 <td className="px-3 py-2 text-center">
-                  {allPass ? <CheckCircle2 size={12} className="inline text-status-lime-text" /> : <XCircle size={12} className="inline text-status-rose-text/60" />}
+                  {allPass ? <CheckCircle2 size={14} className="inline text-status-lime-text" /> : <XCircle size={14} className="inline text-status-rose-text/60" />}
                 </td>
               </tr>
             );

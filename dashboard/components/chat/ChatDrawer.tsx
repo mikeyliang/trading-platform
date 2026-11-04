@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   RiCloseLine,
   RiSendPlaneFill,
-  RiSparklingLine,
+  RiChat3Line,
   RiStopFill,
   RiFileCopyLine,
   RiCheckLine,
@@ -215,7 +215,7 @@ export function ChatDrawer() {
         >
           {/* header */}
           <div className="flex items-center gap-2 px-4 h-11 border-b border-separator-border shrink-0">
-            <RiSparklingLine size={18} className="text-accent-600 shrink-0" aria-hidden />
+            <RiChat3Line size={18} className="text-foreground-icon-secondary shrink-0" aria-hidden />
             <DialogTitle className="text-body-semibold text-text-primary">Co-pilot</DialogTitle>
             <span
               aria-hidden
@@ -481,7 +481,7 @@ function EmptyChat({ available, onPick }: { available: boolean; onPick: (s: stri
   if (!available) {
     return (
       <EmptyState
-        icon={RiSparklingLine}
+        icon={RiChat3Line}
         title="Chat is disabled"
         description="Add ANTHROPIC_API_KEY to .env and restart the api container."
       />
@@ -498,7 +498,7 @@ function EmptyChat({ available, onPick }: { available: boolean; onPick: (s: stri
   return (
     <div className="flex flex-col gap-3 py-4">
       <EmptyState
-        icon={RiSparklingLine}
+        icon={RiChat3Line}
         title="Ask the co-pilot"
         description="Strategies, params or the last backtest. It sees your current page, positions and watchlist."
         className="py-4"

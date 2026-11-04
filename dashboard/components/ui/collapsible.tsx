@@ -28,7 +28,7 @@ export function Collapsible({
           className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left hover:bg-background-secondary-hover transition-colors"
         >
           <ChevronDown
-            size={12}
+            size={14}
             className={cn(
               "text-text-tertiary shrink-0 transition-transform",
               open ? "rotate-0" : "-rotate-90"

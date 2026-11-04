@@ -492,7 +492,7 @@ function SideCell({
 }) {
   const value = useCellValue(row, field);
   const textAlign = align === "left" ? "text-left" : "text-right";
-  const star = mark ? <Star size={12} className="text-accent-500 shrink-0" aria-label="Top pick" /> : null;
+  const star = mark ? <Star size={14} className="text-accent-500 shrink-0" aria-label="Top pick" /> : null;
   return (
     <td
       className={cn(

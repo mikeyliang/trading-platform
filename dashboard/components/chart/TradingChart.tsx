@@ -681,7 +681,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
   return (
     <div className="flex flex-col w-full h-full bg-background-primary-default" style={height ? { height } : undefined}>
       {/* header strip */}
-      <div className="flex items-center gap-3 md:gap-5 px-4 min-h-11 py-1 border-b border-separator-border bg-background-primary-default shrink-0 flex-wrap">
+      <div className="flex items-center gap-4 px-4 h-11 border-b border-separator-border bg-background-primary-default shrink-0 overflow-hidden">
         <div className="flex items-baseline gap-2">
           <span className="tabular font-medium text-body-2-regular text-text-primary">{symbol}</span>
           {display && (
@@ -707,7 +707,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           )}
         </div>
         {display && (
-          <div className="hidden md:flex items-center gap-3 text-caption-2-regular tabular text-text-tertiary">
+          <div className="hidden 2xl:flex items-center gap-3 text-caption-1-regular tabular text-text-tertiary">
             <span>O <Val n={display.o} /></span>
             <span>H <Val n={display.h} tone="up" /></span>
             <span>L <Val n={display.l} tone="down" /></span>
@@ -716,11 +716,11 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           </div>
         )}
 
-        <div className="ml-auto flex items-center gap-2 flex-wrap">
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => chartRef.current?.timeScale().resetTimeScale()}
-            className="h-6 px-2 text-caption-2-regular rounded-md text-text-secondary hover:text-text-primary hover:bg-background-secondary-hover transition-colors"
+            className="hidden xl:inline-flex h-7 px-2 items-center text-caption-1-medium rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-secondary-hover transition-colors"
             title="Reset zoom"
           >
             Reset zoom
@@ -739,7 +739,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
 
           <span className="w-px h-4 bg-separator-border" />
 
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 rounded-2lg bg-background-tertiary-default p-0.5">
             {TIMEFRAMES.map((tf) => (
               <ToolbarChip
                 key={tf}
@@ -758,16 +758,16 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           {tradesOn && (
             <span
               className={cn(
-                "ml-2 inline-flex items-center gap-1 h-6 px-2 rounded-md text-caption-2-regular tabular border",
+                "hidden lg:inline-flex items-center gap-1 h-5 px-1.5 rounded-md text-caption-1-medium tabular",
                 tradeMarkers.renderedCount > 0
-                  ? "border-status-lime-text bg-status-lime-background text-status-lime-text"
+                  ? "bg-status-lime-background text-status-lime-text"
                   : tradeMarkers.trades.length > 0
-                  ? "border-status-yellow-text bg-status-yellow-background text-status-yellow-text"
-                  : "border-separator-border bg-background-secondary-default text-text-tertiary",
+                  ? "bg-status-yellow-background text-status-yellow-text"
+                  : "bg-background-tertiary-default text-text-secondary",
               )}
               title={`Trades fetched for ${symbol}: ${tradeMarkers.trades.length}. Markers rendered: ${tradeMarkers.renderedCount}. If counts differ, marker times don't match any loaded bar, try a wider timeframe.`}
             >
-              <Activity size={10} />
+              <Activity size={14} />
               {tradeMarkers.renderedCount > 0
                 ? `${tradeMarkers.renderedCount} trades`
                 : tradeMarkers.trades.length > 0
@@ -787,7 +787,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
           </span>
           {dataNotice.subscription ? (
             <span className="text-text-secondary">
-              · {symbol} needs an IBKR market-data subscription
+              {symbol} needs an IBKR market-data subscription
               {dataNotice.subscription.hint ? (
                 <>: <span className="text-text-primary">{dataNotice.subscription.hint}</span></>
               ) : null}
@@ -1151,10 +1151,8 @@ function ToolbarChip({
       onClick={onClick}
       title={title}
       className={cn(
-        "h-6 px-2 text-caption-1-regular tabular rounded-md transition-colors",
-        active
-          ? "text-text-primary bg-background-secondary-default font-medium"
-          : "text-text-secondary hover:text-text-primary hover:bg-background-secondary-hover"
+        "h-6 px-2 text-caption-1-medium tabular rounded-md transition-[background-color,color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+        active ? "bg-segmented-control-selected-background text-text-primary shadow-2xs" : "text-text-secondary hover:text-text-primary"
       )}
     >
       {children}
@@ -1207,7 +1205,7 @@ function OverlayHeader({
       <span className={cn("w-1 h-1 rounded-full translate-y-[-1px]", dot)} />
       <span className="text-caption-2-regular font-medium text-text-secondary">{label}</span>
       {hint && (
-        <span className="text-caption-2-regular text-text-tertiary">· {hint}</span>
+        <span className="text-caption-2-regular text-text-tertiary">{hint}</span>
       )}
       {trail && <span className="ml-auto text-caption-2-regular">{trail}</span>}
     </div>

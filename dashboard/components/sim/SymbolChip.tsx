@@ -17,7 +17,7 @@ export function SymbolChip({ symbol, onRemove }: { symbol: string; onRemove?: ()
           aria-label={`Remove ${symbol}`}
           className="inline-flex size-4 items-center justify-center rounded-sm text-foreground-icon-tertiary hover:bg-background-tertiary-hover hover:text-text-primary transition-colors outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring"
         >
-          <RiCloseLine size={12} aria-hidden />
+          <RiCloseLine size={14} aria-hidden />
         </button>
       )}
     </Badge>
