@@ -87,7 +87,7 @@ export function ExitMonitor() {
         title="Exit monitor"
         description="Watches every open credit spread and flags it when the short leg's delta crosses the exit threshold for its trade type."
         actions={
-          <Button onClick={refresh} disabled={loading} variant="default">
+          <Button onClick={refresh} disabled={loading} variant="secondary">
             <RefreshCw className={loading ? "animate-spin" : ""} />
             {loading ? "Refreshing" : "Refresh now"}
           </Button>
