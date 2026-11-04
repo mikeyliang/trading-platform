@@ -224,8 +224,8 @@ function ForecastTrackCard({
             <Skeleton className="h-3 w-1/2" />
           </div>
         ) : !hasScored ? (
-          <div className="flex items-start gap-3 rounded-2lg bg-background-secondary-default p-3 text-body-2-regular text-text-secondary">
-            <Clock size={18} className="text-status-yellow-text mt-0.5 shrink-0" aria-hidden="true" />
+          <div className="flex items-start gap-2 text-body-2-regular text-text-secondary">
+            <Clock size={16} className="text-status-yellow-text mt-0.5 shrink-0" aria-hidden="true" />
             <div>
               <span className="text-text-primary text-body-2-medium">{c?.pending ?? 0} forecasts logged, accumulating.</span>{" "}
               Each prediction is scored against the realised close once its horizon elapses

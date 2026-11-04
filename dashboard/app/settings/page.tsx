@@ -64,9 +64,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Account</CardTitle>
-            <Badge variant={account ? (mode === "LIVE" ? "warning" : "muted") : "outline"}>
-              {account ? (mode === "LIVE" ? "Live" : "Paper") : "No binding"}
-            </Badge>
+            {!account && <Badge variant="outline">No binding</Badge>}
           </CardHeader>
           <CardContent className="p-0">
             <Rows>
