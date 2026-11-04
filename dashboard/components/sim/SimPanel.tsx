@@ -373,8 +373,8 @@ export function SimPanel() {
               )}
               {runDetail.error && (
                 <CardContent className="pt-0">
-                  <div className="rounded-2lg bg-status-rose-background text-status-rose-text px-3 py-2 flex items-start gap-2 text-body-2-regular">
-                    <RiErrorWarningFill size={16} className="shrink-0 mt-0.5" aria-hidden />
+                  <div className="flex items-start gap-2 text-body-2-regular text-text-secondary">
+                    <RiErrorWarningFill size={16} className="shrink-0 mt-0.5 text-status-rose-text" aria-hidden />
                     <span>{runDetail.error}</span>
                   </div>
                 </CardContent>
@@ -385,7 +385,7 @@ export function SimPanel() {
                   <div
                     role="radiogroup"
                     aria-label="Symbol"
-                    className="inline-flex items-center gap-0.5 rounded-2lg bg-background-tertiary-default p-0.5"
+                    className="inline-flex items-center gap-0.5 rounded-2lg bg-segmented-control-background p-0.5"
                   >
                     {symbolTabs.map((t) => {
                       const active = activeSymbol === t.symbol;
@@ -398,7 +398,7 @@ export function SimPanel() {
                           onClick={() => t.stats && setActiveSymbol(t.symbol)}
                           disabled={!t.stats}
                           className={cn(
-                            "inline-flex items-center gap-1.5 h-6 px-2.5 rounded-md text-body-2-medium tabular whitespace-nowrap transition-[background-color,color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring",
+                            "inline-flex items-center gap-1.5 h-6 px-2.5 rounded-md text-body-2-medium tabular whitespace-nowrap transition-[background-color,color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
                             active
                               ? "bg-segmented-control-selected-background text-text-primary shadow-2xs"
                               : "text-text-secondary hover:text-text-primary",
@@ -601,7 +601,7 @@ function RunRow({
       onClick={onSelect}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
       className={cn(
-        "w-full text-left px-4 py-2 border-b border-separator-border group transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring",
+        "w-full text-left px-4 py-2 border-b border-separator-border group transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring",
         selected ? "bg-background-secondary-default" : "hover:bg-background-secondary-hover"
       )}
     >

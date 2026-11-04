@@ -331,7 +331,7 @@ export function AIRead({ result }: Props) {
       </div>
 
       {error && (
-        <div className="rounded-md border border-status-rose-text bg-status-rose-background px-3 py-2 text-caption-1-regular text-status-rose-text">
+        <div className="flex items-start gap-2 text-caption-1-regular text-text-secondary"><XCircle size={14} className="shrink-0 mt-px text-status-rose-text" aria-hidden />
           {error}
         </div>
       )}

@@ -295,13 +295,10 @@ export function OptionChain() {
             title="Chain failed to load"
             description="IBKR did not answer the chain request. Retry once the gateway is back."
             action={
-              <div className="flex items-center gap-2">
-                <Badge variant="down">Error</Badge>
-                <Button variant="secondary" size="sm" onClick={retry}>
-                  <Refresh />
-                  Retry
-                </Button>
-              </div>
+              <Button variant="secondary" size="sm" onClick={retry}>
+                <Refresh />
+                Retry
+              </Button>
             }
           />
         )}
@@ -371,7 +368,7 @@ function ExpiryTabs({
               onClick={() => onChoose(e)}
               className={cn(
                 "shrink-0 inline-flex items-baseline gap-1 h-7 px-2.5 rounded-md tabular text-body-2-medium transition-[background-color,color,box-shadow] duration-150",
-                "outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring",
+                "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
                 isActive
                   ? "bg-segmented-control-selected-background text-text-primary shadow-2xs"
                   : "text-text-secondary hover:text-text-primary"

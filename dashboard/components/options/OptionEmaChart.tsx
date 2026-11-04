@@ -111,7 +111,7 @@ export function OptionEmaChart({ prices, ema9, ema21, title, height = 200 }: Pro
               <span className="text-text-primary font-medium">${hover.price?.toFixed(2)}</span>
               <span className="ml-2 text-green-500">E9</span>{" "}
               <span className="text-text-primary">${hover.e9?.toFixed(2)}</span>
-              <span className="ml-2 text-status-orange-text-400">E21</span>{" "}
+              <span className="ml-2 text-status-orange-text">E21</span>{" "}
               <span className="text-text-primary">${hover.e21?.toFixed(2)}</span>
             </>
           ) : (
@@ -210,7 +210,7 @@ export function OptionEmaChart({ prices, ema9, ema21, title, height = 200 }: Pro
           <span className="inline-block w-2.5 h-0.5 bg-green-500" /> EMA9
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-2.5 h-0.5 bg-status-orange-background-400" /> EMA21
+          <span className="inline-block w-2.5 h-0.5 bg-status-orange-text" /> EMA21
         </span>
       </div>
     </div>

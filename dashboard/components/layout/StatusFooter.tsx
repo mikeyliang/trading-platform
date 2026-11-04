@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useHealth } from "@/lib/health";
-import { cn, fmtCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useConnectionStatus, type ConnState } from "@/lib/connection";
 
 // Status strip pinned to the bottom of every page: connection state, data
-// stream, account mode, market session, Eastern clock, last refresh.
+// stream, market session, Eastern clock, last refresh. Mode and account
+// figures live in the header and stats band, not here.
 export function StatusFooter() {
-  const { health, account, lastCheckedAt } = useHealth();
+  const { lastCheckedAt } = useHealth();
   const { ib, ws, api } = useConnectionStatus();
   const [now, setNow] = useState<Date | null>(null);
 
@@ -19,8 +20,6 @@ export function StatusFooter() {
     return () => clearInterval(id);
   }, []);
 
-  const mode = (health?.mode ?? "paper").toUpperCase();
-  const modeLabel = mode === "LIVE" ? "Live" : "Paper";
   const session = marketSession(now);
 
   return (
@@ -31,23 +30,6 @@ export function StatusFooter() {
       <StatusDot state={ib} label={ibLabel(ib)} />
       <StatusDot state={ws} label={wsLabel(ws)} />
       <StatusDot state={api} label={apiLabel(api)} />
-      <Sep />
-      <span className={cn("font-medium", mode === "LIVE" ? "text-status-yellow-text" : "text-text-secondary")}>
-        {modeLabel}
-      </span>
-
-      {account && (
-        <span className="hidden md:flex items-center gap-3">
-          <Sep />
-          <span>
-            NLV <span className="text-text-secondary tabular">{fmtCurrency(account.equity ?? 0)}</span>
-          </span>
-          <span>
-            BP <span className="text-text-secondary tabular">{fmtCurrency(account.buying_power ?? 0)}</span>
-          </span>
-        </span>
-      )}
-
       <span className="ml-auto flex items-center gap-3">
         <span className="flex items-center gap-1.5">
           <span

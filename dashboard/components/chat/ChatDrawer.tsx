@@ -208,7 +208,7 @@ export function ChatDrawer() {
           }}
           className={cn(
             "fixed right-3 top-3 bottom-3 z-50 w-[calc(100%-24px)] max-w-md flex flex-col overflow-hidden outline-none",
-            "rounded-3xl border border-separator-border-button-default bg-background-primary-default shadow-dropdown",
+            "rounded-3xl border border-border-button-default bg-background-primary-default shadow-dropdown",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-right-8",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-right-8 duration-200"
           )}
@@ -275,7 +275,7 @@ export function ChatDrawer() {
                 className={cn(
                   "flex-1 min-w-0 resize-none rounded-2lg bg-background-tertiary-default px-2.5 py-1.5 text-body-2-regular text-text-primary",
                   "placeholder:text-text-tertiary outline-none ring-2 ring-inset ring-transparent transition-[background-color,box-shadow] duration-150",
-                  "hover:bg-background-tertiary-hover focus:bg-background-primary-default focus:ring-border-button-default-focus-ring",
+                  "hover:bg-background-tertiary-hover focus:bg-background-primary-default focus:ring-border-focus-ring",
                   "disabled:cursor-not-allowed disabled:text-input-disabled-text disabled:bg-background-primary-disabled"
                 )}
               />
@@ -352,7 +352,7 @@ function Message({ message }: { message: ChatMessage }) {
           <button
             type="button"
             onClick={copy}
-            className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 size-6 rounded-md bg-background-primary-default border border-separator-border-button-default shadow-xs flex items-center justify-center text-foreground-icon-tertiary hover:text-text-primary transition-colors outline-none"
+            className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 size-6 rounded-md bg-background-primary-default border border-border-button-default shadow-xs flex items-center justify-center text-foreground-icon-tertiary hover:text-text-primary transition-colors outline-none"
             aria-label={copied ? "Copied" : "Copy"}
           >
             {copied ? <RiCheckLine size={14} aria-hidden /> : <RiFileCopyLine size={14} aria-hidden />}

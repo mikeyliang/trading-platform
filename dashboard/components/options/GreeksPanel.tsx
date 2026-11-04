@@ -203,7 +203,7 @@ function GreekCell({
     violet: { bar: "bg-violet-400", text: "text-violet-400", bg: "bg-violet-400/10" },
     green: { bar: "bg-status-lime-text", text: "text-status-lime-text", bg: "bg-status-lime-background" },
     red: { bar: "bg-status-rose-text", text: "text-status-rose-text", bg: "bg-status-rose-background" },
-    amber: { bar: "bg-status-orange-background-400", text: "text-status-orange-text-400", bg: "bg-status-orange-background-400/10" },
+    amber: { bar: "bg-status-orange-text", text: "text-status-orange-text", bg: "bg-status-orange-background" },
   };
   const c = accentClasses[accent];
   // ΔΔ, how much the Greek moved under the current scenario sliders.

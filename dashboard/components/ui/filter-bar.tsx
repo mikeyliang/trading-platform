@@ -72,7 +72,7 @@ export function FilterBar({
               type="button"
               onClick={() => setOpen((v) => !v)}
               className={cn(
-                "inline-flex items-center gap-1 h-8 rounded-lg border border-separator-border-button-default bg-background-primary-default hover:bg-background-primary-hover text-body-2-medium text-text-primary px-2.5 shadow-xs transition-colors",
+                "inline-flex items-center gap-1 h-8 rounded-lg border border-border-button-default bg-background-primary-default hover:bg-background-primary-hover text-body-2-medium text-text-primary px-2.5 shadow-xs transition-colors",
                 open && "text-text-primary"
               )}
               aria-expanded={open}

@@ -313,7 +313,7 @@ export function AgentDebate() {
     <PageShell>
       <PageHeader
         title="Multi-agent debate"
-        description="LLM analysts debate a ticker: market, sentiment, news and fundamentals, then bull and bear, trader, risk and a final PM decision."
+        description="Eight LLM analysts debate one ticker and end with a portfolio manager decision."
         actions={
           <div className="flex items-end gap-3 flex-wrap">
             <Field label="Ticker">
@@ -448,13 +448,8 @@ function StatusCard({
   status: AgentsStatus | null;
   hasAnyLLMKey: boolean;
 }) {
-  const badge = !status
-    ? null
-    : !status.installed
-    ? <Badge variant="down">Not installed</Badge>
-    : !hasAnyLLMKey
-    ? <Badge variant="warning">No API key</Badge>
-    : <Badge variant="up">Ready</Badge>;
+  // The body already explains a problem; the header chip only says when all is well.
+  const badge = status && status.installed && hasAnyLLMKey ? <Badge variant="up">Ready</Badge> : null;
 
   return (
     <Card className="shrink-0">
@@ -470,20 +465,20 @@ function StatusCard({
             <Skeleton className="h-5 w-24" />
           </div>
         ) : !status.installed ? (
-          <div className="rounded-2lg bg-status-rose-background text-status-rose-text px-3 py-2 flex items-start gap-2 text-body-2-regular">
-            <RiErrorWarningFill size={16} className="shrink-0 mt-0.5" aria-hidden />
+          <div className="flex items-start gap-2 text-body-2-regular text-text-secondary">
+            <RiErrorWarningFill size={16} className="shrink-0 mt-0.5 text-status-rose-text" aria-hidden />
             <div>
-              <div className="text-body-2-medium">TradingAgents is not installed</div>
+              <div className="text-body-2-medium text-text-primary">TradingAgents is not installed</div>
               <div>
                 Run <code className="tabular">pip install -e ../tradingagents</code> in the api service to enable it.
               </div>
             </div>
           </div>
         ) : !hasAnyLLMKey ? (
-          <div className="rounded-2lg bg-status-yellow-background text-status-yellow-text px-3 py-2 flex items-start gap-2 text-body-2-regular">
-            <RiErrorWarningFill size={16} className="shrink-0 mt-0.5" aria-hidden />
+          <div className="flex items-start gap-2 text-body-2-regular text-text-secondary">
+            <RiErrorWarningFill size={16} className="shrink-0 mt-0.5 text-status-yellow-text" aria-hidden />
             <div>
-              <div className="text-body-2-medium">No LLM API key configured</div>
+              <div className="text-body-2-medium text-text-primary">No LLM API key configured</div>
               <div>
                 Set <code className="tabular">OPENAI_API_KEY</code>, <code className="tabular">ANTHROPIC_API_KEY</code> or{" "}
                 <code className="tabular">GOOGLE_API_KEY</code> in <code className="tabular">services/api/.env</code> and restart the API.
@@ -581,7 +576,7 @@ function ReportSection({
         type="button"
         onClick={() => setUserExpanded(!expanded)}
         aria-expanded={expanded}
-        className="w-full flex items-center justify-between gap-3 px-4 h-11 hover:bg-background-secondary-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring"
+        className="w-full flex items-center justify-between gap-3 px-4 h-11 hover:bg-background-secondary-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring"
       >
         <div className="flex items-center gap-3 min-w-0">
           <Icon size={18} className="text-foreground-icon-secondary shrink-0" aria-hidden />

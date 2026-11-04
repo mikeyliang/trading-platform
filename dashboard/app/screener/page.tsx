@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, type Fundamentals } from "@/lib/api";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,17 +184,7 @@ export default function ScreenerPage() {
       />
 
       {/* Filters: search always visible, advanced behind disclosure, active filters as chips */}
-      <Card className="shrink-0">
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              <FilterOff />
-              Clear
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent className="p-3">
+      <div className="shrink-0">
           <FilterBar
             search={{ value: query, onChange: setQuery, placeholder: "Symbol or name" }}
             chips={[
@@ -269,14 +259,18 @@ export default function ScreenerPage() {
               </div>
             }
           />
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Results */}
       <Card className="shrink-0">
         <CardHeader>
           <CardTitle>Results</CardTitle>
-          <span className="text-caption-1-medium text-text-tertiary">Sorted by market cap unless you pick a column</span>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <FilterOff />
+              Clear filters
+            </Button>
+          )}
         </CardHeader>
         <Table>
           <TableHeader>

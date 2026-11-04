@@ -739,7 +739,7 @@ function TradingChartImpl({ symbol, initialTimeframe = "15m", height, showIndica
 
           <span className="w-px h-4 bg-separator-border" />
 
-          <div className="flex items-center gap-0.5 rounded-2lg bg-background-tertiary-default p-0.5">
+          <div className="flex items-center gap-0.5 rounded-2lg bg-segmented-control-background p-0.5">
             {TIMEFRAMES.map((tf) => (
               <ToolbarChip
                 key={tf}

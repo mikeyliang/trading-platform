@@ -26,7 +26,7 @@ export function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
             prefetch
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative px-2.5 h-10 flex items-center transition-colors shrink-0 rounded-t-md outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring",
+              "relative px-2.5 h-10 flex items-center transition-colors shrink-0 rounded-t-md outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring",
               active ? "text-body-2-medium text-accent-600" : "text-body-2-regular text-text-secondary hover:text-text-primary"
             )}
           >

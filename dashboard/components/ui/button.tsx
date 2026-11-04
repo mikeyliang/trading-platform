@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-1 whitespace-nowrap select-none transition-[background-color,border-color,color,box-shadow] duration-150",
-    "outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background-primary-default",
+    "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background-primary-default",
     "disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
   ].join(" "),
   {
@@ -18,9 +18,9 @@ const buttonVariants = cva(
       variant: {
         default: "bg-button-primary text-text-white shadow-xs disabled:text-button-primary-disabled-foreground disabled:shadow-none",
         secondary:
-          "bg-background-primary-default text-text-primary border border-separator-border-button-default shadow-xs hover:bg-background-primary-hover hover:border-separator-border-button-hover active:bg-background-primary-active disabled:bg-background-primary-disabled disabled:text-text-tertiary disabled:shadow-none",
+          "bg-background-primary-default text-text-primary border border-border-button-default shadow-xs hover:bg-background-primary-hover hover:border-border-button-hover active:bg-background-primary-active disabled:bg-background-primary-disabled disabled:text-text-tertiary disabled:shadow-none",
         outline:
-          "bg-background-primary-default text-text-primary border border-separator-border-button-default shadow-xs hover:bg-background-primary-hover hover:border-separator-border-button-hover active:bg-background-primary-active disabled:bg-background-primary-disabled disabled:text-text-tertiary disabled:shadow-none",
+          "bg-background-primary-default text-text-primary border border-border-button-default shadow-xs hover:bg-background-primary-hover hover:border-border-button-hover active:bg-background-primary-active disabled:bg-background-primary-disabled disabled:text-text-tertiary disabled:shadow-none",
         ghost:
           "bg-transparent text-text-secondary hover:bg-background-secondary-hover hover:text-text-primary active:bg-background-tertiary-default disabled:text-text-tertiary [&_svg]:text-foreground-icon-secondary hover:[&_svg]:text-foreground-icon-primary",
         destructive: "bg-button-danger text-text-white shadow-xs disabled:text-foreground-disabled-danger disabled:shadow-none",

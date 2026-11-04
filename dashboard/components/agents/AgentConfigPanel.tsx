@@ -99,7 +99,7 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-3 px-4 h-11 hover:bg-background-secondary-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring"
+        className="w-full flex items-center justify-between gap-3 px-4 h-11 hover:bg-background-secondary-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring"
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-body-semibold text-text-primary">Agent configuration</span>
@@ -154,7 +154,7 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
                     type="button"
                     aria-pressed={on}
                     onClick={() => toggleAgent(key)}
-                    className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring"
+                    className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
                   >
                     <Badge variant={on ? "accent" : "muted"} className="h-6 px-2 cursor-pointer">
                       {AGENT_LABELS[key]}

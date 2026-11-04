@@ -10,7 +10,7 @@ export function Toaster() {
       toastOptions={{
         classNames: {
           toast:
-            "!bg-background-primary-default !border-separator-border-button-default !text-text-primary !shadow-dropdown !rounded-2lg !text-body-2-regular",
+            "!bg-background-primary-default !border-border-button-default !text-text-primary !shadow-dropdown !rounded-2lg !text-body-2-regular",
           title: "!text-text-primary !text-body-2-medium",
           description: "!text-text-secondary !text-caption-1-regular",
           success: "[&_svg]:!text-status-lime-text",

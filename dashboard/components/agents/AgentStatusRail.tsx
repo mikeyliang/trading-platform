@@ -43,12 +43,12 @@ export function AgentStatusRail({ items }: Props) {
               <li
                 key={item.key}
                 data-status={item.status}
-                className="rounded-2lg bg-background-secondary-default px-3 h-10 flex items-center gap-2 min-w-0"
+                className="rounded-2lg bg-background-secondary-default px-3 h-9 flex items-center gap-2 min-w-0"
               >
                 <span className={cn("size-2 rounded-full shrink-0", meta.dot)} aria-hidden />
                 <span className="text-body-2-medium text-text-primary truncate flex-1">{item.label}</span>
                 <span className={cn("text-caption-1-medium whitespace-nowrap tabular", meta.text)}>
-                  {meta.label}
+                  {item.status === "idle" ? <span className="sr-only">{meta.label}</span> : meta.label}
                   {item.status === "done" && item.durationMs != null && (
                     <span className="text-text-tertiary"> {(item.durationMs / 1000).toFixed(1)}s</span>
                   )}

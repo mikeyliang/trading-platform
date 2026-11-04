@@ -35,7 +35,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
       <button
         type="button"
         onClick={openPalette}
-        className="flex items-center gap-2 h-8 w-full max-w-[280px] px-2.5 rounded-2lg bg-background-secondary-default hover:bg-background-secondary-hover transition-colors text-text-tertiary outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring"
+        className="flex items-center gap-2 h-8 w-full max-w-[280px] px-2.5 rounded-2lg bg-background-secondary-default hover:bg-background-secondary-hover transition-colors text-text-tertiary outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
         aria-label="Open command palette"
       >
         <RiSearchLine className="size-[18px] shrink-0 text-foreground-icon-tertiary" />

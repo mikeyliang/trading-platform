@@ -298,7 +298,7 @@ function Toggle({ on, onClick, swatch, children }: {
       type="button"
       aria-pressed={on}
       className={cn(
-        "px-2 h-6 rounded-md text-caption-1-medium transition-colors flex items-center gap-1.5 outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring",
+        "px-2 h-6 rounded-md text-caption-1-medium transition-colors flex items-center gap-1.5 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
         on ? "bg-background-tertiary-default text-text-primary" : "text-text-tertiary hover:text-text-primary"
       )}
     >

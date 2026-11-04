@@ -182,15 +182,12 @@ export function BotPanel() {
             {/* sim gate */}
             <div
               className={cn(
-                "rounded-2lg px-3 py-2 flex items-start gap-2 text-caption-1-regular",
-                gate?.validated
-                  ? "bg-status-lime-background text-status-lime-text"
-                  : "bg-status-yellow-background text-status-yellow-text"
+                "flex items-start gap-2 text-caption-1-regular text-text-secondary"
               )}
             >
               {gate?.validated
-                ? <RiShieldCheckFill size={16} className="mt-px shrink-0" aria-hidden />
-                : <RiShieldFlashFill size={16} className="mt-px shrink-0" aria-hidden />}
+                ? <RiShieldCheckFill size={16} className="mt-px shrink-0 text-status-lime-text" aria-hidden />
+                : <RiShieldFlashFill size={16} className="mt-px shrink-0 text-status-yellow-text" aria-hidden />}
               {gate?.validated && gate.run ? (
                 <span>
                   Validated by sim <span className="tabular">{gate.run.id}</span>, profit factor{" "}
@@ -366,8 +363,8 @@ export function BotPanel() {
           )}
           {snap?.last_error && (
             <CardContent className="pt-0">
-              <div className="rounded-2lg bg-status-rose-background text-status-rose-text px-3 py-2 flex items-start gap-2 text-body-2-regular">
-                <RiErrorWarningFill size={16} className="shrink-0 mt-0.5" aria-hidden />
+              <div className="flex items-start gap-2 text-body-2-regular text-text-secondary">
+                <RiErrorWarningFill size={16} className="shrink-0 mt-0.5 text-status-rose-text" aria-hidden />
                 <span>Last cycle error: {snap.last_error}</span>
               </div>
             </CardContent>

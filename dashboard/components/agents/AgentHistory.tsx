@@ -143,7 +143,7 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
                   onClick={() => onSelect(row)}
                   aria-current={isCurrent ? "true" : undefined}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 h-9 text-left text-body-2-medium tabular border-b border-separator-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-button-default-focus-ring",
+                    "w-full flex items-center gap-3 px-4 h-9 text-left text-body-2-medium tabular border-b border-separator-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring",
                     isCurrent ? "bg-background-secondary-default" : "hover:bg-background-secondary-hover"
                   )}
                 >

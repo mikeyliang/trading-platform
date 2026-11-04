@@ -78,7 +78,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     <aside
       aria-label="Primary"
       className={cn(
-        "w-[220px] shrink-0 flex flex-col gap-2 p-3 rounded-3xl border border-separator-border-button-default bg-background-secondary-default shadow-sidebar",
+        "w-[220px] shrink-0 flex flex-col gap-2 p-3 rounded-3xl border border-border-button-default bg-background-secondary-default shadow-sidebar",
         "fixed inset-y-3 left-3 z-40 transform transition-transform duration-200",
         mobileOpen ? "translate-x-0" : "-translate-x-[calc(100%+12px)]",
         "md:static md:inset-auto md:translate-x-0 md:transition-none md:h-full"
@@ -91,13 +91,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         className="flex items-center gap-2.5 rounded-2lg p-2 hover:bg-background-secondary-hover transition-colors"
       >
         <Wordmark />
-        <span className="flex min-w-0 flex-col">
-          <span className="text-body-medium text-text-primary leading-5 truncate">Trading Terminal</span>
-          <span className="flex items-center gap-1.5 text-caption-1-regular text-text-tertiary leading-4">
-            <span aria-hidden className={cn("size-1.5 rounded-full", connected ? "bg-status-lime-text" : "bg-foreground-icon-quaternary")} />
-            {connected ? "IBKR connected" : "IBKR offline"}
-          </span>
-        </span>
+        <span className="text-body-medium text-text-primary leading-5 truncate">Trading Terminal</span>
       </Link>
 
       <nav className="flex-1 flex flex-col gap-4 pt-2 overflow-y-auto">
@@ -148,7 +142,7 @@ function NavItem({ href, icon: Icon, label, active, onNavigate }: NavEntry & { a
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
       className={cn(
-        "flex items-center gap-2 rounded-2lg p-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring",
+        "flex items-center gap-2 rounded-2lg p-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
         active ? "bg-linear-to-b from-accent-500 to-accent-600 shadow-nav-selected" : "hover:bg-background-secondary-hover"
       )}
     >

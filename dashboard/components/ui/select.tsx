@@ -16,7 +16,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-8 w-full items-center justify-between gap-2 rounded-2lg bg-background-tertiary-default px-2.5 text-body-2-regular text-text-primary outline-none ring-2 ring-inset ring-transparent transition-[background-color,box-shadow] hover:bg-background-tertiary-hover focus-visible:ring-border-button-default-focus-ring data-[state=open]:bg-background-primary-default data-[state=open]:ring-border-button-default-focus-ring disabled:cursor-not-allowed disabled:text-text-tertiary [&>span]:line-clamp-1",
+      "flex h-8 w-full items-center justify-between gap-2 rounded-2lg bg-background-tertiary-default px-2.5 text-body-2-regular text-text-primary outline-none ring-2 ring-inset ring-transparent transition-[background-color,box-shadow] hover:bg-background-tertiary-hover focus-visible:ring-border-focus-ring data-[state=open]:bg-background-primary-default data-[state=open]:ring-border-focus-ring disabled:cursor-not-allowed disabled:text-text-tertiary [&>span]:line-clamp-1",
       className
     )}
     {...props}
@@ -38,7 +38,7 @@ const SelectContent = React.forwardRef<
       ref={ref}
       position={position}
       className={cn(
-        "relative z-50 max-h-72 min-w-[8rem] overflow-hidden rounded-2lg border border-separator-border-button-default bg-background-primary-default shadow-dropdown",
+        "relative z-50 max-h-72 min-w-[8rem] overflow-hidden rounded-2lg border border-border-button-default bg-background-primary-default shadow-dropdown",
         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
         "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
         position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",

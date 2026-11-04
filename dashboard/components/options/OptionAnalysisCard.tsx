@@ -163,7 +163,7 @@ export function OptionAnalysisCard({ result }: Props) {
             </span>
           ) : (
             <span
-              className="text-caption-2-regular px-1 py-0.5 rounded bg-status-orange-background-500/10 text-status-orange-text-300/90 cursor-help"
+              className="text-caption-2-regular px-1 py-0.5 rounded bg-status-orange-background text-status-orange-text cursor-help"
               title={
                 "Modeled, not traded history. This contract has no real IBKR bars, so " +
                 "the series is a Black-Scholes replay of the underlying's moves" +

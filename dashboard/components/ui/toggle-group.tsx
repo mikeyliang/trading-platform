@@ -32,7 +32,7 @@ export function ToggleGroup<T extends string = string>({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className={cn("inline-flex items-center gap-0.5 rounded-2lg bg-background-tertiary-default p-0.5", className)}
+      className={cn("inline-flex items-center gap-0.5 rounded-2lg bg-segmented-control-background p-0.5", className)}
     >
       {options.map((opt) => {
         const active = opt.value === value;
@@ -45,7 +45,7 @@ export function ToggleGroup<T extends string = string>({
             title={opt.title}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "inline-flex items-center justify-center rounded-md transition-[background-color,color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-border-button-default-focus-ring",
+              "inline-flex items-center justify-center rounded-md transition-[background-color,color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
               seg,
               active
                 ? "bg-segmented-control-selected-background text-text-primary shadow-2xs"
