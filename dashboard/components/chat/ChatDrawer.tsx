@@ -214,7 +214,7 @@ export function ChatDrawer() {
           )}
         >
           {/* header */}
-          <div className="flex items-center gap-2 px-4 h-11 border-b border-separator-border shrink-0">
+          <div className="flex items-center gap-2 px-4 h-11 border-b border-separator-border-strong shrink-0">
             <RiChat3Line size={18} className="text-foreground-icon-secondary shrink-0" aria-hidden />
             <DialogTitle className="text-body-semibold text-text-primary">Co-pilot</DialogTitle>
             <span
@@ -252,7 +252,7 @@ export function ChatDrawer() {
           </div>
 
           {/* composer */}
-          <div className="border-t border-separator-border p-3 shrink-0 flex flex-col gap-2">
+          <div className="border-t border-separator-border-strong p-3 shrink-0 flex flex-col gap-2">
             <div className="flex items-end gap-2">
               <textarea
                 ref={inputRef}
