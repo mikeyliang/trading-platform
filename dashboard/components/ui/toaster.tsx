@@ -6,19 +6,18 @@ export function Toaster() {
   return (
     <SonnerToaster
       position="bottom-right"
-      theme="dark"
       duration={3000}
       toastOptions={{
         classNames: {
           toast:
-            "!bg-surface !border-border !text-text-primary !shadow-xl !text-xs",
-          title: "!text-text-primary !text-xs !font-medium",
-          description: "!text-text-secondary !text-[11px]",
-          success: "!border-up/30",
-          error: "!border-down/30",
-          warning: "!border-warning/30",
-          actionButton: "!bg-accent !text-white !text-[11px]",
-          cancelButton: "!bg-surface-2 !text-text-secondary !text-[11px]",
+            "!bg-background-primary-default !border-border-button-default !text-text-primary !shadow-dropdown !rounded-2lg !text-body-2-regular",
+          title: "!text-text-primary !text-body-2-medium",
+          description: "!text-text-secondary !text-caption-1-regular",
+          success: "[&_svg]:!text-status-lime-text",
+          error: "[&_svg]:!text-status-rose-text",
+          warning: "[&_svg]:!text-status-yellow-text",
+          actionButton: "!bg-button-primary !text-text-white !text-caption-1-semibold !rounded-md",
+          cancelButton: "!bg-background-secondary-default !text-text-secondary !text-caption-1-semibold !rounded-md",
         },
       }}
     />

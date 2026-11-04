@@ -14,6 +14,8 @@ interface Props {
   /** Persist height under this key in localStorage. */
   storageKey?: string;
   className?: string;
+  /** Pixel gap between the panes; the drag handle sits inside it. */
+  gap?: number;
 }
 
 /**
@@ -27,6 +29,7 @@ export function ResizableSplit({
   minPx = 80,
   storageKey,
   className,
+  gap = 4,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number>(() => {
@@ -84,20 +87,17 @@ export function ResizableSplit({
           setDragging(true);
         }}
         onDoubleClick={() => setHeight(defaultBottomHeight)}
-        className={cn(
-          "relative h-1 shrink-0 cursor-row-resize group",
-          "before:absolute before:inset-x-0 before:-top-1 before:-bottom-1 before:content-['']",
-          dragging ? "bg-accent/60" : "bg-border hover:bg-accent/40 transition-colors"
-        )}
+        style={{ height: gap }}
+        className="relative shrink-0 cursor-row-resize group flex items-center justify-center"
         role="separator"
         aria-orientation="horizontal"
         aria-label="Drag to resize"
-        title="Drag to resize · double-click to reset"
+        title="Drag to resize, double-click to reset"
       >
         <span
           className={cn(
-            "absolute left-1/2 -translate-x-1/2 -top-0.5 h-2 w-10 rounded-full",
-            "bg-border group-hover:bg-accent/30 transition-colors"
+            "h-1 w-10 rounded-full transition-colors",
+            dragging ? "bg-accent-500" : "bg-background-tertiary-default group-hover:bg-accent-500"
           )}
         />
       </div>

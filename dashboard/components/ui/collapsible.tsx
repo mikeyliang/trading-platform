@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { ChevronDown } from "lucide-react";
+import { RiArrowDownSLine as ChevronDown } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 
 interface CollapsibleProps {
@@ -20,21 +20,21 @@ export function Collapsible({
 }: CollapsibleProps) {
   const [open, setOpen] = React.useState(defaultOpen);
   return (
-    <div className={cn("rounded-md border border-border bg-surface", className)}>
-      <div className="flex items-center justify-between border-b border-border">
+    <div className={cn("rounded-md border border-separator-border bg-background-primary-default", className)}>
+      <div className="flex items-center justify-between border-b border-separator-border">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left hover:bg-surface-2 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left hover:bg-background-secondary-hover transition-colors"
         >
           <ChevronDown
-            size={12}
+            size={14}
             className={cn(
-              "text-text-muted shrink-0 transition-transform",
+              "text-text-tertiary shrink-0 transition-transform",
               open ? "rotate-0" : "-rotate-90"
             )}
           />
-          <div className="text-xs font-medium text-text-secondary uppercase tracking-wider truncate">
+          <div className="text-caption-1-regular font-medium text-text-secondary truncate">
             {title}
           </div>
         </button>
@@ -65,14 +65,14 @@ export function Section({
   children,
 }: SectionProps) {
   return (
-    <section className={cn("rounded-md border border-border bg-surface", className)}>
-      <header className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border">
+    <section className={cn("rounded-md border border-separator-border bg-background-primary-default", className)}>
+      <header className="flex items-center justify-between gap-3 px-3 py-2 border-b border-separator-border">
         <div className="min-w-0">
-          <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider truncate">
+          <h3 className="text-caption-1-regular font-medium text-text-secondary truncate">
             {title}
           </h3>
           {description && (
-            <p className="text-[11px] text-text-muted mt-0.5 truncate">{description}</p>
+            <p className="text-caption-1-regular text-text-tertiary mt-0.5 truncate">{description}</p>
           )}
         </div>
         {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}

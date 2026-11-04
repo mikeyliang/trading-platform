@@ -15,9 +15,9 @@ const TRADE_FILTERS = [
 
 const TRADE_TONE: Record<string, string> = {
   rut:     "text-text-secondary",
-  mars:    "text-accent",
-  marsmax: "text-warning",
-  space:   "text-up",
+  mars:    "text-accent-500",
+  marsmax: "text-status-yellow-text",
+  space:   "text-status-lime-text",
 };
 
 export function ScanHistory() {
@@ -41,7 +41,7 @@ export function ScanHistory() {
       <PageHeader
         eyebrow="Scan history"
         title="Past Picker runs"
-        description="Every scan — daily 09:30 ET, monthly pre-flight, and manual runs. Filter to see what trade type's been hitting."
+        description="Every scan, daily 09:30 ET, monthly pre-flight, and manual runs. Filter to see what trade type's been hitting."
         actions={
           <div className="flex items-center gap-0.5 flex-wrap">
             {TRADE_FILTERS.map((f) => (
@@ -50,10 +50,10 @@ export function ScanHistory() {
                 type="button"
                 onClick={() => setFilter(f.value)}
                 className={cn(
-                  "h-7 px-2.5 text-[11px] tabular rounded-sm transition-colors",
+                  "h-7 px-2.5 text-caption-1-regular tabular rounded-sm transition-colors",
                   filter === f.value
-                    ? "text-text-primary bg-surface-2"
-                    : "text-text-muted hover:text-text-secondary hover:bg-surface-2/60"
+                    ? "text-text-primary bg-background-secondary-default"
+                    : "text-text-tertiary hover:text-text-secondary hover:bg-background-secondary-hover"
                 )}
               >
                 {f.label}
@@ -69,8 +69,8 @@ export function ScanHistory() {
 
       {!loading && scans.length === 0 && (
         <div className="py-16 text-center">
-          <p className="text-sm text-text-secondary">No scans recorded yet.</p>
-          <p className="text-xs text-text-muted mt-2">
+          <p className="text-body-2-regular text-text-secondary">No scans recorded yet.</p>
+          <p className="text-caption-1-regular text-text-tertiary mt-2">
             Open the Picker and run a scan, or wait for the 09:30 ET daily job.
           </p>
         </div>
@@ -78,9 +78,9 @@ export function ScanHistory() {
 
       {!loading && scans.length > 0 && (
         <div className="overflow-x-auto -mx-1">
-          <table className="w-full text-[11px] tabular">
+          <table className="w-full text-caption-1-regular tabular">
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-text-muted">
+              <tr className="text-caption-2-regular text-text-tertiary">
                 <th className="px-3 py-2 text-left font-medium">When</th>
                 <th className="px-3 py-2 text-left font-medium">Scope</th>
                 <th className="px-3 py-2 text-left font-medium">Sym</th>
@@ -140,12 +140,12 @@ function SummaryStrip({ stats }: { stats: Stats }) {
       />
       <Metric
         label="Best AROC"
-        value={stats.bestAroc != null ? `${stats.bestAroc.toFixed(0)}%` : "—"}
+        value={stats.bestAroc != null ? `${stats.bestAroc.toFixed(0)}%` : "n/a"}
         tone={stats.bestAroc != null ? "up" : undefined}
       />
       <Metric
         label="Most-picked"
-        value={topType ? topType[0].toUpperCase() : "—"}
+        value={topType ? topType[0].toUpperCase() : "n/a"}
         sub={topType ? `${topType[1]}×` : undefined}
         tone={topType ? "accent" : undefined}
       />
@@ -166,17 +166,17 @@ function Metric({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">{label}</div>
+      <div className="text-caption-2-regular text-text-tertiary mb-1.5">{label}</div>
       <div className="flex items-baseline gap-2">
         <span
           className={cn(
-            "text-xl md:text-2xl font-semibold tabular tracking-tight",
-            tone === "up" ? "text-up" : tone === "accent" ? "text-accent" : "text-text-primary",
+            "text-title-2-regular md:text-title-1-regular font-semibold tabular",
+            tone === "up" ? "text-status-lime-text" : tone === "accent" ? "text-accent-500" : "text-text-primary",
           )}
         >
           {value}
         </span>
-        {sub && <span className="text-xs text-text-muted tabular">{sub}</span>}
+        {sub && <span className="text-caption-1-regular text-text-tertiary tabular">{sub}</span>}
       </div>
     </div>
   );
@@ -186,33 +186,33 @@ function Row({ scan }: { scan: ScanRecord }) {
   const ran = scan.ran_at ? new Date(scan.ran_at) : null;
   const dateStr = ran
     ? `${ran.toLocaleDateString(undefined, { month: "short", day: "numeric" })} · ${ran.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-    : "—";
+    : "n/a";
   const reco = scan.recommendation;
-  const tone = reco ? (TRADE_TONE[reco] ?? "text-text-secondary") : "text-text-muted";
+  const tone = reco ? (TRADE_TONE[reco] ?? "text-text-secondary") : "text-text-tertiary";
   const cand = scan.payload?.recommendation?.candidate;
 
   return (
-    <tr className="border-t border-border/30 hover:bg-surface-2/30 transition-colors">
+    <tr className="border-t border-separator-border hover:bg-background-secondary-hover transition-colors">
       <td className="px-3 py-2.5 text-text-secondary tabular whitespace-nowrap">{dateStr}</td>
-      <td className="px-3 py-2.5 text-text-muted text-[10px] uppercase tracking-wider whitespace-nowrap">{scan.scope ?? "—"}</td>
-      <td className="px-3 py-2.5 text-text-secondary">{scan.symbol ?? "—"}</td>
-      <td className={cn("px-3 py-2.5 uppercase text-[10px] tracking-wider", tone)}>
-        {reco ?? "—"}
+      <td className="px-3 py-2.5 text-text-tertiary text-caption-2-regular whitespace-nowrap">{scan.scope ?? "n/a"}</td>
+      <td className="px-3 py-2.5 text-text-secondary">{scan.symbol ?? "n/a"}</td>
+      <td className={cn("px-3 py-2.5 text-caption-2-regular", tone)}>
+        {reco ?? "n/a"}
       </td>
-      <td className="px-3 py-2.5 text-right font-mono text-text-primary">
-        {cand ? <>{cand.short_strike}<span className="text-text-muted">/</span>{cand.long_strike}</> : "—"}
+      <td className="px-3 py-2.5 text-right tabular text-text-primary">
+        {cand ? <>{cand.short_strike}<span className="text-text-tertiary">/</span>{cand.long_strike}</> : "n/a"}
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary whitespace-nowrap">
-        {cand ? <>{formatExpiry(cand.expiry)} <span className="text-text-muted">· {cand.dte}d</span></> : "—"}
+        {cand ? <>{formatExpiry(cand.expiry)} <span className="text-text-tertiary">· {cand.dte}d</span></> : "n/a"}
       </td>
-      <td className={cn("px-3 py-2.5 text-right", cand ? "text-up" : "text-text-muted")}>
-        {cand ? `${cand.aroc_pct.toFixed(0)}%` : "—"}
-      </td>
-      <td className="px-3 py-2.5 text-right text-text-secondary">
-        {cand ? cand.kelly_pct.toFixed(0) : "—"}
+      <td className={cn("px-3 py-2.5 text-right", cand ? "text-status-lime-text" : "text-text-tertiary")}>
+        {cand ? `${cand.aroc_pct.toFixed(0)}%` : "n/a"}
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary">
-        {cand ? (cand.short_delta * 100).toFixed(0) : "—"}
+        {cand ? cand.kelly_pct.toFixed(0) : "n/a"}
+      </td>
+      <td className="px-3 py-2.5 text-right text-text-secondary">
+        {cand ? (cand.short_delta * 100).toFixed(0) : "n/a"}
       </td>
     </tr>
   );
@@ -222,7 +222,7 @@ function SkeletonList() {
   return (
     <div className="flex flex-col gap-2 animate-pulse">
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="h-24 rounded bg-surface-2/40" />
+        <div key={i} className="h-24 rounded bg-background-secondary-default" />
       ))}
     </div>
   );

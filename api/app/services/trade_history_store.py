@@ -10,7 +10,7 @@ import json
 import logging
 import math
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from . import db
 
@@ -113,6 +113,28 @@ async def bulk_insert_trades(payloads: List[Dict[str, Any]]) -> int:
     except Exception as e:  # noqa: BLE001
         logger.warning("bulk_insert_trades failed: %s", e)
         return 0
+
+
+async def existing_exec_ids(exec_ids: List[str]) -> Optional[Set[str]]:
+    """IBKR exec ids (``metadata_->>'exec_id'``) already logged, out of the
+    given candidates. None when the database is unavailable, so the caller
+    can tell "nothing known" from "could not check"."""
+    if not exec_ids:
+        return set()
+    pool = db.pool()
+    if pool is None:
+        return None
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT metadata_->>'exec_id' AS exec_id FROM trade_history "
+                "WHERE metadata_->>'exec_id' = ANY($1::text[])",
+                list(exec_ids),
+            )
+        return {r["exec_id"] for r in rows if r["exec_id"]}
+    except Exception as e:  # noqa: BLE001
+        logger.warning("existing_exec_ids failed: %s", e)
+        return None
 
 
 async def bulk_insert_external_trades(payloads: List[Dict[str, Any]]) -> Dict[str, int]:

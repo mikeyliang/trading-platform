@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Sparkles, Loader2, CheckCircle2, XCircle, History, Newspaper, TrendingUp,
-  CircleDollarSign, Brain, Hourglass, ArrowRight, ChevronRight,
-} from "lucide-react";
+import { RiBrainLine as Sparkles, RiLoader4Line as Loader2, RiCheckboxCircleFill as CheckCircle2, RiCloseCircleFill as XCircle, RiHistoryLine as History, RiNewspaperLine as Newspaper, RiStockLine as TrendingUp, RiMoneyDollarCircleLine as CircleDollarSign, RiBrainLine as Brain, RiHourglassLine as Hourglass, RiArrowRightLine as ArrowRight, RiArrowRightSLine as ChevronRight } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
 import { type OptionAnalyzeResult } from "@/lib/api";
 import { resolveApiBase } from "@/lib/api-base";
@@ -27,7 +24,7 @@ interface AgentState {
   // Wall-clock when the agent started running. Used to compute live
   // elapsed time during "thinking" status.
   startedAt?: number;
-  // Wall-clock when it finished — used for "ran in 4.2s" badge.
+  // Wall-clock when it finished, used for "ran in 4.2s" badge.
   finishedAt?: number;
 }
 
@@ -95,7 +92,7 @@ const EMPTY_STATE: Record<AgentName, AgentState> = {
   synthesis: { status: "pending" },
 };
 
-// ── Context summaries — what data each agent sees ─────────────────────
+// ── Context summaries, what data each agent sees ─────────────────────
 function buildContextChips(name: AgentName, result: OptionAnalyzeResult): string[] {
   const u = result.underlying;
   const g = result.greeks;
@@ -107,27 +104,27 @@ function buildContextChips(name: AgentName, result: OptionAnalyzeResult): string
       ];
     case "underlying":
       return [
-        `RSI ${u?.rsi?.toFixed(0) ?? "—"}`,
+        `RSI ${u?.rsi?.toFixed(0) ?? "n/a"}`,
         `EMA 9/21/200 stack`,
-        `5d forecast ${result.forecast_ensemble?.ensemble.horizons["5"]?.expected_return_pct?.toFixed(1) ?? "—"}%`,
-        `${(result.forecast_ensemble?.agreement["5"] ?? 0) * 100 < 1 ? "—" : ((result.forecast_ensemble?.agreement["5"] ?? 0) * 100).toFixed(0) + "% agreement"}`,
-      ].filter((c) => !c.includes("—"));
+        `5d forecast ${result.forecast_ensemble?.ensemble.horizons["5"]?.expected_return_pct?.toFixed(1) ?? "n/a"}%`,
+        `${(result.forecast_ensemble?.agreement["5"] ?? 0) * 100 < 1 ? "n/a" : ((result.forecast_ensemble?.agreement["5"] ?? 0) * 100).toFixed(0) + "% agreement"}`,
+      ].filter((c) => !c.includes("n/a"));
     case "option":
       return [
         `IV ${(result.option.iv * 100).toFixed(1)}%`,
         result.vol_context?.iv_to_rv_ratio
           ? `IV/RV ${result.vol_context.iv_to_rv_ratio.toFixed(2)}×`
           : "",
-        `Δ ${g?.delta?.toFixed(3) ?? "—"}`,
+        `Δ ${g?.delta?.toFixed(3) ?? "n/a"}`,
         `${result.dte}d DTE`,
-        `liquidity ${result.liquidity?.grade ?? "—"}`,
-      ].filter((c) => c && !c.endsWith("—"));
+        `liquidity ${result.liquidity?.grade ?? "n/a"}`,
+      ].filter((c) => c && !c.endsWith("n/a"));
     case "decay":
       return [
         result.decay_profile
           ? `${result.decay_profile.length} P/L-over-time points`
           : "decay_profile unavailable",
-        `θ ${g?.theta?.toFixed(4) ?? "—"}/day`,
+        `θ ${g?.theta?.toFixed(4) ?? "n/a"}/day`,
         `${result.dte}d to expiry`,
         result.max_loss != null
           ? `max loss ${fmtCurrency(result.max_loss)}`
@@ -183,7 +180,7 @@ export function AIRead({ result }: Props) {
       const rows = (await resp.json()) as RunHistoryRow[];
       setHistory(rows);
     } catch {
-      // History is nice-to-have — don't surface a failure.
+      // History is nice-to-have, don't surface a failure.
     }
   }, [result.symbol, result.strike, result.expiry, result.right]);
 
@@ -299,7 +296,7 @@ export function AIRead({ result }: Props) {
         setDurationMs(evt.duration_ms);
       } else if (evt.event === "heartbeat") {
         // Backend heartbeats fire every ~4s while parallel agents are
-        // still working — we don't need to react explicitly, the
+        // still working, we don't need to react explicitly, the
         // running cards keep their elapsed-time tickers via setInterval
         // already. The event still serves a real purpose at the HTTP
         // layer (keeps the connection alive through any proxies).
@@ -312,7 +309,7 @@ export function AIRead({ result }: Props) {
   // ── render ──────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-4">
-      {/* Pipeline header — horizontal flow with arrows */}
+      {/* Pipeline header, horizontal flow with arrows */}
       <PipelineHeader agents={agents} />
 
       {/* Run controls */}
@@ -323,18 +320,18 @@ export function AIRead({ result }: Props) {
             : <><Sparkles size={14} /> {hasAnyOutput ? "Re-run pipeline" : "Run AI agents"}</>}
         </Button>
         {durationMs != null && (
-          <span className="text-[10px] uppercase tracking-wider text-text-muted tabular">
+          <span className="text-caption-2-regular text-text-tertiary tabular">
             ran in {(durationMs / 1000).toFixed(1)}s
-            {runId != null && <span className="ml-2">· run #{runId}</span>}
+            {runId != null && <span className="ml-2 pl-2 border-l border-separator-border">run #{runId}</span>}
           </span>
         )}
-        <span className="ml-auto text-[10px] uppercase tracking-wider text-text-muted">
-          5 agents · 4 in parallel → synthesis
+        <span className="ml-auto text-caption-2-regular text-text-tertiary">
+          5 agents, 4 in parallel, then synthesis
         </span>
       </div>
 
       {error && (
-        <div className="rounded-md border border-down/30 bg-down/5 px-3 py-2 text-[11px] text-down">
+        <div className="flex items-start gap-2 text-caption-1-regular text-text-secondary"><XCircle size={14} className="shrink-0 mt-px text-status-rose-text" aria-hidden />
           {error}
         </div>
       )}
@@ -353,10 +350,10 @@ export function AIRead({ result }: Props) {
 
       {/* History */}
       {history.length > 0 && (
-        <div className="pt-3 border-t border-border/40">
+        <div className="pt-3 border-t border-separator-border">
           <div className="flex items-center gap-2 mb-2">
-            <History size={12} className="text-text-muted" />
-            <span className="text-[10px] uppercase tracking-wider text-text-muted font-medium">
+            <History size={14} className="text-text-tertiary" />
+            <span className="text-caption-2-regular text-text-tertiary font-medium">
               Recent runs on this contract
             </span>
           </div>
@@ -369,14 +366,14 @@ export function AIRead({ result }: Props) {
                     type="button"
                     onClick={() => loadRun(row)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-2 py-1.5 rounded text-left text-[11px] tabular transition-colors hover:bg-surface-2",
-                      isCurrent && "bg-surface-2",
+                      "w-full flex items-center gap-3 px-2 py-1.5 rounded text-left text-caption-1-regular tabular transition-colors hover:bg-background-secondary-hover",
+                      isCurrent && "bg-background-secondary-default",
                     )}
                   >
-                    <span className="text-text-muted">#{row.id}</span>
+                    <span className="text-text-tertiary">#{row.id}</span>
                     <span className="text-text-secondary">{formatTime(row.ran_at)}</span>
                     {row.duration_ms != null && (
-                      <span className="ml-auto text-text-muted">
+                      <span className="ml-auto text-text-tertiary">
                         {(row.duration_ms / 1000).toFixed(1)}s
                       </span>
                     )}
@@ -391,10 +388,10 @@ export function AIRead({ result }: Props) {
   );
 }
 
-// ── Pipeline header — horizontal flow visualization ───────────────────
+// ── Pipeline header, horizontal flow visualization ───────────────────
 function PipelineHeader({ agents }: { agents: Record<AgentName, AgentState> }) {
   return (
-    <div className="rounded-md border border-border bg-surface-2/30 p-3">
+    <div className="rounded-md border border-separator-border bg-background-secondary-default p-3">
       <div className="flex items-center gap-1 flex-wrap">
         {/* Parallel batch (in a row) */}
         <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
@@ -410,8 +407,8 @@ function PipelineHeader({ agents }: { agents: Record<AgentName, AgentState> }) {
         {/* Synthesis at the end */}
         <PipelineNode name="synthesis" state={agents.synthesis} connect={null} />
       </div>
-      <div className="mt-2 text-[9px] uppercase tracking-wider text-text-muted/80 leading-tight">
-        4 parallel reads → coordinator synthesizes a verdict
+      <div className="mt-2 text-caption-2-regular text-text-tertiary/80 leading-tight">
+        4 parallel reads, then the coordinator synthesizes a verdict
       </div>
     </div>
   );
@@ -434,36 +431,36 @@ function PipelineNode({
       <div className="flex flex-col items-center gap-1 min-w-[58px]">
         <div
           className={cn(
-            "w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all",
-            active && "border-accent shadow-[0_0_0_3px_rgba(59,130,246,0.18)]",
-            done && "border-up bg-up/10",
-            failed && "border-down bg-down/10",
-            !active && !done && !failed && "border-border bg-surface",
+            "w-7 h-7 rounded-full border flex items-center justify-center transition-colors",
+            active && "border-accent-500 ring-2 ring-border-focus-ring",
+            done && "border-status-lime-text bg-status-lime-background",
+            failed && "border-status-rose-text bg-status-rose-background",
+            !active && !done && !failed && "border-separator-border bg-background-primary-default",
           )}
           style={active ? { color: meta.accent } : undefined}
         >
           {active ? (
-            <Loader2 size={12} className="animate-spin text-accent" />
+            <Loader2 size={14} className="animate-spin text-accent-500" />
           ) : done ? (
-            <CheckCircle2 size={14} className="text-up" />
+            <CheckCircle2 size={14} className="text-status-lime-text" />
           ) : failed ? (
-            <XCircle size={14} className="text-down" />
+            <XCircle size={14} className="text-status-rose-text" />
           ) : (
-            <Icon size={12} className="text-text-muted" />
+            <Icon size={14} className="text-text-tertiary" />
           )}
         </div>
         <span className={cn(
-          "text-[9px] uppercase tracking-wider leading-none",
-          active ? "text-accent" : done ? "text-up" : failed ? "text-down" : "text-text-muted",
+          "text-caption-2-regular leading-none",
+          active ? "text-accent-500" : done ? "text-status-lime-text" : failed ? "text-status-rose-text" : "text-text-tertiary",
         )}>
           {meta.shortLabel}
         </span>
       </div>
       {connect === "and" && (
-        <span className="text-text-muted/40 text-[14px] leading-none">+</span>
+        <span className="text-text-tertiary/40 text-[14px] leading-none">+</span>
       )}
       {connect === "to-synth" && (
-        <ChevronRight size={12} className="text-text-muted/60 ml-1 mr-1" />
+        <ChevronRight size={14} className="text-text-tertiary/60 ml-1 mr-1" />
       )}
     </div>
   );
@@ -487,11 +484,11 @@ function AgentCard({
   return (
     <div
       className={cn(
-        "rounded-md border bg-surface-2/30 overflow-hidden transition-colors",
-        state.status === "running" && "border-accent/40 bg-accent/[0.03]",
-        state.status === "complete" && "border-border",
-        state.status === "error" && "border-down/40",
-        state.status === "pending" && "border-border/60 opacity-70",
+        "rounded-md border bg-background-secondary-default overflow-hidden transition-colors",
+        state.status === "running" && "border-accent-500 bg-accent-500/[0.03]",
+        state.status === "complete" && "border-separator-border",
+        state.status === "error" && "border-status-rose-text",
+        state.status === "pending" && "border-separator-border opacity-70",
       )}
     >
       {/* Header row: icon + label + status badge + elapsed */}
@@ -499,29 +496,29 @@ function AgentCard({
         <Icon size={14} style={{ color: meta.accent }} className="shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
-            <span className="text-[11px] font-semibold text-text-primary">
+            <span className="text-caption-1-regular font-semibold text-text-primary">
               {meta.label}
             </span>
-            <span className="text-[10px] text-text-muted truncate">
+            <span className="text-caption-2-regular text-text-tertiary truncate">
               {meta.desc}
             </span>
           </div>
         </div>
         {elapsed != null && (
-          <span className="text-[10px] tabular text-text-muted shrink-0">
+          <span className="text-caption-2-regular tabular text-text-tertiary shrink-0">
             {(elapsed / 1000).toFixed(1)}s
           </span>
         )}
         <StatusBadge status={state.status} />
       </div>
 
-      {/* Context chips — what data the agent is reading */}
+      {/* Context chips, what data the agent is reading */}
       {contextChips.length > 0 && state.status !== "pending" && (
         <div className="px-3 pb-2 flex flex-wrap gap-1">
           {contextChips.map((chip, i) => (
             <span
               key={i}
-              className="text-[9px] tabular px-1.5 py-0.5 rounded-sm bg-surface-2/80 text-text-muted border border-border/40"
+              className="text-caption-2-regular tabular px-1.5 py-0.5 rounded-sm bg-background-secondary-default text-text-tertiary border border-separator-border"
             >
               {chip}
             </span>
@@ -531,22 +528,22 @@ function AgentCard({
 
       {/* Output (only when complete) */}
       {state.status === "complete" && state.output && (
-        <div className="px-3 pb-3 pt-1 border-t border-border/40">
+        <div className="px-3 pb-3 pt-1 border-t border-separator-border">
           {name === "synthesis" ? (
             <SynthesisBody text={state.output} />
           ) : (
-            <p className="text-[12px] leading-relaxed text-text-secondary whitespace-pre-line">
+            <p className="text-caption-1-regular leading-relaxed text-text-secondary whitespace-pre-line">
               {state.output}
             </p>
           )}
           {state.headlines && state.headlines.length > 0 && (
             <details className="mt-2">
-              <summary className="text-[10px] uppercase tracking-wider text-text-muted cursor-pointer hover:text-text-secondary transition-colors">
+              <summary className="text-caption-2-regular text-text-tertiary cursor-pointer hover:text-text-secondary transition-colors">
                 {state.headlines.length} headlines fed into this read
               </summary>
               <ul className="mt-1.5 flex flex-col gap-0.5">
                 {state.headlines.map((h, i) => (
-                  <li key={i} className="text-[10px] tabular text-text-muted">
+                  <li key={i} className="text-caption-2-regular tabular text-text-tertiary">
                     <a
                       href={h.link}
                       target="_blank"
@@ -555,48 +552,48 @@ function AgentCard({
                     >
                       {h.title}
                     </a>
-                    <span className="ml-2">— {h.source}</span>
+                    <span className="ml-2 text-text-tertiary">({h.source})</span>
                   </li>
                 ))}
               </ul>
             </details>
           )}
           {state.model && (
-            <div className="mt-1.5 text-[9px] uppercase tracking-wider text-text-muted/70">
+            <div className="mt-1.5 text-caption-2-regular text-text-tertiary/70">
               {state.model}
             </div>
           )}
         </div>
       )}
 
-      {/* Live "thinking" indicator — bar of three pulsing dots */}
+      {/* Live "thinking" indicator, bar of three pulsing dots */}
       {state.status === "running" && (
-        <div className="px-3 pb-3 pt-1 flex items-center gap-1.5 border-t border-border/40">
+        <div className="px-3 pb-3 pt-1 flex items-center gap-1.5 border-t border-separator-border">
           <span className="flex gap-1">
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="w-1 h-1 rounded-full bg-accent animate-pulse"
+                className="w-1 h-1 rounded-full bg-accent-500 animate-pulse"
                 style={{ animationDelay: `${i * 150}ms` }}
               />
             ))}
           </span>
-          <span className="text-[10px] tabular text-text-muted">
+          <span className="text-caption-2-regular tabular text-text-tertiary">
             reading context · waiting for OpenRouter response…
           </span>
         </div>
       )}
 
       {state.status === "error" && state.error && (
-        <div className="px-3 pb-3 pt-1 border-t border-border/40">
-          <code className="text-[10px] tabular text-down/90 break-all">{state.error}</code>
+        <div className="px-3 pb-3 pt-1 border-t border-separator-border">
+          <code className="text-caption-2-regular tabular text-status-rose-text/90 break-all">{state.error}</code>
         </div>
       )}
     </div>
   );
 }
 
-// ── Synthesis body — structured render of the verdict / working / against /
+// ── Synthesis body, structured render of the verdict / working / against /
 //    trigger sections produced by the rebalanced synthesis prompt. Falls
 //    back to plain prose if the model didn't follow the section format
 //    (older runs, occasional free-model misbehavior).
@@ -604,7 +601,7 @@ function SynthesisBody({ text }: { text: string }) {
   const sections = parseSynthesisSections(text);
   if (!sections) {
     return (
-      <p className="text-[12px] leading-relaxed text-text-secondary whitespace-pre-line">
+      <p className="text-caption-1-regular leading-relaxed text-text-secondary whitespace-pre-line">
         {text}
       </p>
     );
@@ -613,28 +610,28 @@ function SynthesisBody({ text }: { text: string }) {
   const verdictTone = verdictToneOf(verdictWord);
   return (
     <div className="flex flex-col gap-2.5">
-      {/* Verdict — single colored pill + one-sentence rationale */}
+      {/* Verdict, single colored pill + one-sentence rationale */}
       <div className="flex items-baseline gap-2 flex-wrap">
         <span
           className={cn(
-            "px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider font-semibold leading-none",
-            verdictTone === "up" && "bg-up/15 text-up",
-            verdictTone === "down" && "bg-down/15 text-down",
-            verdictTone === "warning" && "bg-warning/15 text-warning",
-            verdictTone === "muted" && "bg-surface-2 text-text-secondary",
+            "px-1.5 py-0.5 rounded text-caption-2-regular font-semibold leading-none",
+            verdictTone === "up" && "bg-status-lime-background text-status-lime-text",
+            verdictTone === "down" && "bg-status-rose-background text-status-rose-text",
+            verdictTone === "warning" && "bg-status-yellow-background text-status-yellow-text",
+            verdictTone === "muted" && "bg-background-secondary-default text-text-secondary",
           )}
         >
           {verdictWord}
         </span>
         {verdictRest && (
-          <span className="text-[12px] text-text-secondary leading-snug">
+          <span className="text-caption-1-regular text-text-secondary leading-snug">
             {verdictRest}
           </span>
         )}
       </div>
 
       {/* Working FOR + Working AGAINST sit side by side at md+ so the
-          trader sees the balance at a glance — not a wall of "risks". */}
+          trader sees the balance at a glance, not a wall of "risks". */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {working.length > 0 && (
           <SynthesisList items={working} tone="up" label="Working for it" />
@@ -645,11 +642,11 @@ function SynthesisBody({ text }: { text: string }) {
       </div>
 
       {trigger && (
-        <div className="rounded-sm border-l-2 border-accent bg-accent/[0.04] px-2 py-1.5">
-          <div className="text-[9px] uppercase tracking-wider text-accent font-semibold mb-0.5">
+        <div className="rounded-sm border-l-2 border-accent-500 bg-accent-500/[0.04] px-2 py-1.5">
+          <div className="text-caption-2-regular text-accent-500 font-semibold mb-0.5">
             Trigger
           </div>
-          <div className="text-[11px] text-text-secondary tabular leading-snug">
+          <div className="text-caption-1-regular text-text-secondary tabular leading-snug">
             {trigger}
           </div>
         </div>
@@ -669,15 +666,15 @@ function SynthesisList({
     <div
       className={cn(
         "rounded-sm border-l-2 px-2 py-1.5",
-        tone === "up" && "border-up bg-up/[0.04]",
-        tone === "down" && "border-down bg-down/[0.04]",
+        tone === "up" && "border-status-lime-text bg-status-lime-text/[0.04]",
+        tone === "down" && "border-status-rose-text bg-status-rose-text/[0.04]",
       )}
     >
       <div
         className={cn(
-          "text-[9px] uppercase tracking-wider font-semibold mb-1",
-          tone === "up" && "text-up",
-          tone === "down" && "text-down",
+          "text-caption-2-regular font-semibold mb-1",
+          tone === "up" && "text-status-lime-text",
+          tone === "down" && "text-status-rose-text",
         )}
       >
         {label}
@@ -686,9 +683,9 @@ function SynthesisList({
         {items.map((it, i) => (
           <li
             key={i}
-            className="text-[11px] text-text-secondary leading-snug tabular flex gap-1.5"
+            className="text-caption-1-regular text-text-secondary leading-snug tabular flex gap-1.5"
           >
-            <span className="text-text-muted">·</span>
+            <span className="text-text-tertiary">·</span>
             <span>{it}</span>
           </li>
         ))}
@@ -738,7 +735,7 @@ function parseSynthesisSections(raw: string): ParsedSynthesis | null {
   const verdictRaw = slices["verdict"] ?? "";
   // First word of the verdict body is the action keyword.
   const verdictMatch = verdictRaw.match(/^([A-Za-z]+)\b[\s:.,—-]*([\s\S]*)$/);
-  const verdictWord = (verdictMatch?.[1] ?? "").trim() || "—";
+  const verdictWord = (verdictMatch?.[1] ?? "").trim() || "n/a";
   const verdictRest = (verdictMatch?.[2] ?? "").trim();
 
   const working = splitBullets(slices["working for it"] ?? "");
@@ -771,27 +768,27 @@ function verdictToneOf(word: string): "up" | "down" | "warning" | "muted" {
 
 function StatusBadge({ status }: { status: AgentStatus }) {
   if (status === "pending") {
-    return <span className="text-[9px] uppercase tracking-wider text-text-muted">queued</span>;
+    return <span className="text-caption-2-regular text-text-tertiary">queued</span>;
   }
   if (status === "running") {
     return (
-      <span className="text-[9px] uppercase tracking-wider text-accent inline-flex items-center gap-1">
-        <Loader2 size={10} className="animate-spin" />
+      <span className="text-caption-2-regular text-accent-500 inline-flex items-center gap-1">
+        <Loader2 size={14} className="animate-spin" />
         thinking
       </span>
     );
   }
   if (status === "complete") {
     return (
-      <span className="text-[9px] uppercase tracking-wider text-up inline-flex items-center gap-1">
-        <CheckCircle2 size={10} />
+      <span className="text-caption-2-regular text-status-lime-text inline-flex items-center gap-1">
+        <CheckCircle2 size={14} />
         done
       </span>
     );
   }
   return (
-    <span className="text-[9px] uppercase tracking-wider text-down inline-flex items-center gap-1">
-      <XCircle size={10} />
+    <span className="text-caption-2-regular text-status-rose-text inline-flex items-center gap-1">
+      <XCircle size={14} />
       failed
     </span>
   );
@@ -807,7 +804,7 @@ function formatTime(iso: string): string {
   } catch { return iso; }
 }
 
-// ── Body builder — flattens the full OptionAnalyzeResult into the
+// ── Body builder, flattens the full OptionAnalyzeResult into the
 //    richest payload we can send to the agents. We pack everything that
 //    plausibly informs a trader's read: bid/ask, sigma ranges, per-model
 //    forecast breakdown, signal-inputs across both timeframes, recent
@@ -822,7 +819,7 @@ function buildRequestBody(result: OptionAnalyzeResult) {
   const sigma = result.sigma_ranges;
   const liq = result.liquidity;
   const vol = result.vol_context;
-  // Last ~25 bars from chart.bars — gives the model recent price
+  // Last ~25 bars from chart.bars, gives the model recent price
   // context without blowing up token count.
   const chartBars = result.chart?.bars ?? [];
   const recentBars = chartBars.slice(-25).map((b) => ({
@@ -924,7 +921,7 @@ function buildRequestBody(result: OptionAnalyzeResult) {
     max_profit: result.max_profit,
     max_loss: result.max_loss,
 
-    // rule-based scorer's existing read — the agents see what we
+    // rule-based scorer's existing read, the agents see what we
     // already concluded and can corroborate or contradict.
     advice_label: result.advice.label,
     advice_action: result.advice.action,

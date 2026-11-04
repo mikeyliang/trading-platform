@@ -5,7 +5,7 @@ import { toast } from "@/components/ui/toaster";
 import { useConnectionStatus, type ConnState } from "@/lib/connection";
 
 // Fires sonner toasts when a connection line transitions. Stays silent at app
-// start — only reports state changes once a line has been observed up or
+// start, only reports state changes once a line has been observed up or
 // down, so opening the dashboard doesn't spam the corner.
 export function ConnectionToasts() {
   const { ib, ws, api } = useConnectionStatus();
@@ -17,17 +17,17 @@ export function ConnectionToasts() {
     prev.current = { ib, ws, api };
 
     handle("IBKR", previous?.ib, ib, "ib", wasDown.current,
-      "Gateway connection restored — market data resuming.",
-      "IBKR gateway dropped — automatically retrying.",
+      "Gateway connection restored, market data resuming.",
+      "IBKR gateway dropped, automatically retrying.",
       "IBKR gateway is offline. Log in via VNC (port 5900) to reconnect.");
     handle("Stream", previous?.ws, ws, "ws", wasDown.current,
       "Live data stream reconnected.",
-      "Live stream dropped — automatically retrying.",
-      "Live stream offline — falling back to REST polling.");
+      "Live stream dropped, automatically retrying.",
+      "Live stream offline. Falling back to REST polling.");
     handle("API", previous?.api, api, "api", wasDown.current,
       "Trading API back online.",
-      "Trading API unreachable — retrying.",
-      "Trading API offline — backend may be down.");
+      "Trading API unreachable, retrying.",
+      "Trading API offline, backend may be down.");
   }, [ib, ws, api]);
 
   return null;

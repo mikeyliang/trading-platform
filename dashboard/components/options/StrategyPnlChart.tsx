@@ -11,12 +11,12 @@ import {
 } from "@/lib/bs";
 
 interface Props {
-  /** Live underlying — anchors the price axis and strike-snap presets. */
+  /** Live underlying, anchors the price axis and strike-snap presets. */
   spot: number;
   /** Current implied vol from the ATM contract (used as the baseline IV
    *  the IV slider multiplies on). */
   iv: number;
-  /** Days to expiry — drives the time slider's upper bound. */
+  /** Days to expiry, drives the time slider's upper bound. */
   dteDays: number;
   /** Symbol + expiry for the header label only. */
   symbol: string;
@@ -271,7 +271,7 @@ export function StrategyPnlChart({
   const expiryPath = useMemo(() => linePath(expiryCurve), [prices, expiryCurve, xOf, yOf]);
 
   // Profit/loss fills under the expiry curve (the canonical strategy
-  // shape — what the trader is buying). Live curve is rendered as a
+  // shape, what the trader is buying). Live curve is rendered as a
   // separate line on top so the user sees today vs. expiry.
   const { profitArea, lossArea } = useMemo(() => {
     const build = (test: (v: number) => boolean) => {
@@ -344,17 +344,17 @@ export function StrategyPnlChart({
     <div className="flex flex-col gap-3">
       {/* preset chooser */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">Strategy</span>
+        <span className="text-caption-2-regular text-text-tertiary">Strategy</span>
         <div className="flex items-center gap-1 flex-wrap">
           {PRESETS.map((p) => (
             <button
               key={p.key} type="button"
               onClick={() => setPresetKey(p.key)}
               className={cn(
-                "px-2 py-1 rounded text-[10px] tabular border transition-colors",
+                "px-2 py-1 rounded text-caption-2-regular tabular border transition-colors",
                 p.key === presetKey
-                  ? "border-accent bg-accent/15 text-accent font-semibold"
-                  : "border-border text-text-muted hover:text-text-secondary hover:border-text-muted/50",
+                  ? "border-accent-500 bg-status-blue-background text-accent-500 font-semibold"
+                  : "border-separator-border text-text-tertiary hover:text-text-secondary hover:border-foreground-icon-quaternary/50",
               )}
               title={p.desc}
             >
@@ -362,14 +362,14 @@ export function StrategyPnlChart({
             </button>
           ))}
         </div>
-        <span className="ml-auto text-[10px] tabular text-text-muted">
+        <span className="ml-auto text-caption-2-regular tabular text-text-tertiary">
           {symbol} · {fmtExp(expiry)} · {dteDays}d
         </span>
       </div>
-      <p className="text-[10px] text-text-muted italic -mt-1">{preset.desc}</p>
+      <p className="text-caption-2-regular text-text-tertiary italic -mt-1">{preset.desc}</p>
 
       {/* readouts */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] tabular">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-caption-1-regular tabular">
         <SummaryCell
           label="Max profit"
           value={isFinite(summary.maxP) ? fmtPnl(summary.maxP) : "∞"}
@@ -388,13 +388,13 @@ export function StrategyPnlChart({
         <SummaryCell
           label={summary.bes.length === 1 ? "Breakeven" : "Breakevens"}
           value={summary.bes.length === 0
-            ? "—"
+            ? "n/a"
             : summary.bes.map((b) => `$${b.toFixed(2)}`).join(" · ")}
         />
       </div>
 
       {/* chart */}
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block">
+      <svg aria-hidden="true" width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block">
         <defs>
           <linearGradient id="strat-profit" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={CHART.pnl.profit} stopOpacity="0.40" />
@@ -433,9 +433,9 @@ export function StrategyPnlChart({
         <path d={profitArea} fill="url(#strat-profit)" />
         <path d={lossArea} fill="url(#strat-loss)" />
 
-        {/* expiry curve — the canonical shape */}
+        {/* expiry curve, the canonical shape */}
         <path d={expiryPath} stroke={CHART.pnl.expiry} strokeWidth="2.5" fill="none" />
-        {/* live curve — today / sliders, lighter dashed */}
+        {/* live curve, today / sliders, lighter dashed */}
         <path d={livePath} stroke={CHART.forecast.cone} strokeWidth="1.5"
               strokeDasharray="4 3" fill="none" strokeOpacity={0.85} />
 
@@ -482,8 +482,8 @@ export function StrategyPnlChart({
         ))}
       </svg>
 
-      {/* controls — dense single-line rows, tracks aligned across rows */}
-      <div className="flex flex-col gap-1 pt-2.5 border-t border-border/40">
+      {/* controls, dense single-line rows, tracks aligned across rows */}
+      <div className="flex flex-col gap-1 pt-2.5 border-t border-separator-border">
         <StratSlider
           label="Date" accent={CHART.pnl.expiry}
           valueText={dateLabel}
@@ -530,38 +530,38 @@ export function StrategyPnlChart({
       </div>
 
       {/* legs editor */}
-      <div className="rounded-md border border-border bg-surface overflow-hidden">
-        <div className="flex items-center gap-2 px-3 h-7 border-b border-border/60">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">Legs</span>
-          <span className="text-[10px] tabular text-text-muted">
-            edit strike / action / qty / entry — curves recompute live
+      <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden">
+        <div className="flex items-center gap-2 px-3 h-7 border-b border-separator-border">
+          <span className="text-caption-2-regular text-text-tertiary">Legs</span>
+          <span className="text-caption-2-regular tabular text-text-tertiary">
+            edit strike, action, qty or entry; curves recompute live
           </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-[11px] tabular">
+          <table className="w-full text-caption-1-regular tabular">
             <thead>
-              <tr className="text-text-muted">
-                <th className="text-left px-2 py-1 font-normal text-[9px] uppercase tracking-wider">#</th>
-                <th className="text-left px-2 py-1 font-normal text-[9px] uppercase tracking-wider">Action</th>
-                <th className="text-left px-2 py-1 font-normal text-[9px] uppercase tracking-wider">Right</th>
-                <th className="text-right px-2 py-1 font-normal text-[9px] uppercase tracking-wider">Strike</th>
-                <th className="text-right px-2 py-1 font-normal text-[9px] uppercase tracking-wider">Entry $</th>
-                <th className="text-right px-2 py-1 font-normal text-[9px] uppercase tracking-wider">Qty</th>
+              <tr className="text-text-tertiary">
+                <th className="text-left px-2 py-1 font-normal text-caption-2-regular">#</th>
+                <th className="text-left px-2 py-1 font-normal text-caption-2-regular">Action</th>
+                <th className="text-left px-2 py-1 font-normal text-caption-2-regular">Right</th>
+                <th className="text-right px-2 py-1 font-normal text-caption-2-regular">Strike</th>
+                <th className="text-right px-2 py-1 font-normal text-caption-2-regular">Entry $</th>
+                <th className="text-right px-2 py-1 font-normal text-caption-2-regular">Qty</th>
               </tr>
             </thead>
             <tbody>
               {legs.map((l, i) => (
-                <tr key={i} className="border-t border-border/30">
-                  <td className="px-2 py-1 text-text-muted">{i + 1}</td>
+                <tr key={i} className="border-t border-separator-border">
+                  <td className="px-2 py-1 text-text-tertiary">{i + 1}</td>
                   <td className="px-2 py-1">
                     <button
                       type="button"
                       onClick={() => updateLeg(i, { action: l.action === "BUY" ? "SELL" : "BUY" })}
                       className={cn(
-                        "px-2 py-0.5 rounded text-[10px] font-semibold border transition-colors",
+                        "px-2 py-0.5 rounded text-caption-2-regular font-semibold border transition-colors",
                         l.action === "BUY"
-                          ? "border-up/40 text-up bg-up/10"
-                          : "border-down/40 text-down bg-down/10",
+                          ? "border-status-lime-text text-status-lime-text bg-status-lime-background"
+                          : "border-status-rose-text text-status-rose-text bg-status-rose-background",
                       )}
                     >
                       {l.action}
@@ -571,7 +571,7 @@ export function StrategyPnlChart({
                     <button
                       type="button"
                       onClick={() => updateLeg(i, { isCall: !l.isCall })}
-                      className="px-2 py-0.5 rounded text-[10px] font-semibold border border-border text-text-secondary hover:bg-surface-2"
+                      className="px-2 py-0.5 rounded text-caption-2-regular font-semibold border border-separator-border text-text-secondary hover:bg-background-secondary-hover"
                     >
                       {l.isCall ? "CALL" : "PUT"}
                     </button>
@@ -582,7 +582,7 @@ export function StrategyPnlChart({
                       value={l.strike}
                       onChange={(e) => updateLeg(i, { strike: Number(e.target.value) })}
                       onBlur={(e) => updateLeg(i, { strike: snapStrike(Number(e.target.value), strikes) })}
-                      className="w-20 bg-surface-2 border border-border rounded px-1 py-0.5 text-right tabular text-[11px]"
+                      className="w-20 bg-background-secondary-default border border-separator-border rounded px-1 py-0.5 text-right tabular text-caption-1-regular"
                     />
                   </td>
                   <td className="px-2 py-1 text-right">
@@ -590,7 +590,7 @@ export function StrategyPnlChart({
                       type="number" step={0.01} min={0}
                       value={l.entry}
                       onChange={(e) => updateLeg(i, { entry: Math.max(0, Number(e.target.value)) })}
-                      className="w-20 bg-surface-2 border border-border rounded px-1 py-0.5 text-right tabular text-[11px]"
+                      className="w-20 bg-background-secondary-default border border-separator-border rounded px-1 py-0.5 text-right tabular text-caption-1-regular"
                     />
                   </td>
                   <td className="px-2 py-1 text-right">
@@ -598,7 +598,7 @@ export function StrategyPnlChart({
                       type="number" step={1} min={1}
                       value={l.qty ?? 1}
                       onChange={(e) => updateLeg(i, { qty: Math.max(1, Number(e.target.value)) })}
-                      className="w-16 bg-surface-2 border border-border rounded px-1 py-0.5 text-right tabular text-[11px]"
+                      className="w-16 bg-background-secondary-default border border-separator-border rounded px-1 py-0.5 text-right tabular text-caption-1-regular"
                     />
                   </td>
                 </tr>
@@ -618,12 +618,12 @@ function SummaryCell({
   tone?: "up" | "down";
 }) {
   return (
-    <div className="rounded-md border border-border bg-surface px-2.5 py-1.5 flex flex-col gap-0.5 min-w-0">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+    <div className="rounded-md border border-separator-border bg-background-primary-default px-2.5 py-1.5 flex flex-col gap-0.5 min-w-0">
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       <span className={cn(
-        "text-[13px] font-semibold tabular truncate",
-        tone === "up" && "text-up",
-        tone === "down" && "text-down",
+        "text-body-2-regular font-semibold tabular truncate",
+        tone === "up" && "text-status-lime-text",
+        tone === "down" && "text-status-rose-text",
         !tone && "text-text-primary",
       )}>{value}</span>
     </div>
@@ -649,12 +649,12 @@ function StratSlider({
   const isActivePreset = (pv: number) => Math.abs(value - pv) < step / 2;
   return (
     <div className="flex items-center gap-3 h-[26px]">
-      <span className="w-9 shrink-0 text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="w-9 shrink-0 text-caption-2-regular text-text-tertiary">{label}</span>
       <div className="w-[104px] shrink-0 flex items-baseline gap-1.5 overflow-hidden">
-        <span className="text-[13px] tabular font-semibold leading-none" style={{ color: accent }}>
+        <span className="text-body-2-regular tabular font-semibold leading-none" style={{ color: accent }}>
           {valueText}
         </span>
-        <span className="text-[10px] tabular text-text-muted leading-none truncate">{subText}</span>
+        <span className="text-caption-2-regular tabular text-text-tertiary leading-none truncate">{subText}</span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
@@ -672,10 +672,10 @@ function StratSlider({
             <button
               key={p.label} type="button" onClick={() => onChange(p.value)}
               className={cn(
-                "px-1.5 h-[18px] rounded text-[10px] tabular border leading-none transition-colors",
+                "px-1.5 h-[18px] rounded text-caption-2-regular tabular border leading-none transition-colors",
                 active
-                  ? "border-transparent text-bg font-semibold"
-                  : "border-border text-text-muted hover:text-text-secondary hover:border-text-muted/50",
+                  ? "border-transparent text-background-full font-semibold"
+                  : "border-separator-border text-text-tertiary hover:text-text-secondary hover:border-foreground-icon-quaternary/50",
               )}
               style={active ? { backgroundColor: accent } : undefined}
             >
@@ -689,8 +689,8 @@ function StratSlider({
         tabIndex={isDefault ? -1 : 0}
         aria-hidden={isDefault}
         className={cn(
-          "w-8 shrink-0 text-right text-[10px] uppercase tracking-wider transition-colors",
-          isDefault ? "invisible pointer-events-none" : "text-text-muted hover:text-text-primary",
+          "w-8 shrink-0 text-right text-caption-2-regular transition-colors",
+          isDefault ? "invisible pointer-events-none" : "text-text-tertiary hover:text-text-primary",
         )}
       >
         reset

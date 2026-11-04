@@ -5,7 +5,7 @@ import type { OptionAnalyzeResult } from "@/lib/api";
 
 /** Four dense panels that complement the chart and Greeks: probability,
  *  expected move, IV vs realized vol context, and contract liquidity.
- *  Each panel is information-first — no decoration, all numbers tabular. */
+ *  Each panel is information-first, no decoration, all numbers tabular. */
 
 export function ProbabilityPanel({ result }: { result: OptionAnalyzeResult }) {
   const { pop, prob_itm, prob_touch } = result.probability;
@@ -13,13 +13,13 @@ export function ProbabilityPanel({ result }: { result: OptionAnalyzeResult }) {
   const emPct = result.sigma_ranges.expected_move_pct;
   return (
     <Panel title="Probability · risk-neutral">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-[11px] tabular">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-caption-1-regular tabular">
         <Stat label="POP at expiry" value={pct(pop)} tone={tonePOP(pop, result.is_long)} />
         <Stat label="P(ITM)" value={pct(prob_itm)} />
         <Stat label="P(touch BE)" value={pct(prob_touch)} hint="rough Brownian estimate" />
         <Stat
           label="Expected 1σ move"
-          value={em != null && emPct != null ? `±$${em.toFixed(2)} (${emPct.toFixed(1)}%)` : "—"}
+          value={em != null && emPct != null ? `±$${em.toFixed(2)} (${emPct.toFixed(1)}%)` : "n/a"}
           hint="by expiry, per IV"
         />
       </div>
@@ -33,7 +33,7 @@ export function VolContextPanel({ result }: { result: OptionAnalyzeResult }) {
   const rv90 = result.vol_context.realized_vol_90d;
   const ratio = result.vol_context.iv_to_rv_ratio;
   const verdict =
-    ratio == null ? "—" :
+    ratio == null ? "n/a" :
     ratio >= 1.4 ? "rich" :
     ratio >= 1.1 ? "elevated" :
     ratio >= 0.9 ? "fair" :
@@ -45,13 +45,13 @@ export function VolContextPanel({ result }: { result: OptionAnalyzeResult }) {
     "muted";
   return (
     <Panel title="Volatility · IV vs realised">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-[11px] tabular">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-caption-1-regular tabular">
         <Stat label="Implied vol" value={pctNum(iv)} />
         <Stat label="Realised 30d" value={pctNum(rv30)} />
         <Stat label="Realised 90d" value={pctNum(rv90)} />
         <Stat
           label="IV / RV ratio"
-          value={ratio != null ? `${ratio.toFixed(2)}× · ${verdict}` : "—"}
+          value={ratio != null ? `${ratio.toFixed(2)}× · ${verdict}` : "n/a"}
           tone={verdictTone as any}
           hint={
             verdict === "rich" ? "options pricing more vol than underlying produces" :
@@ -73,20 +73,20 @@ export function LiquidityPanel({ result }: { result: OptionAnalyzeResult }) {
     "down";
   return (
     <Panel title="Liquidity · this contract">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-[11px] tabular">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-2 text-caption-1-regular tabular">
         <Stat
           label="Bid / Ask"
-          value={l.bid != null && l.ask != null ? `$${l.bid.toFixed(2)} / $${l.ask.toFixed(2)}` : "—"}
+          value={l.bid != null && l.ask != null ? `$${l.bid.toFixed(2)} / $${l.ask.toFixed(2)}` : "n/a"}
         />
         <Stat
           label="Spread"
-          value={l.spread != null && l.spread_pct != null ? `$${l.spread.toFixed(2)} (${l.spread_pct.toFixed(1)}%)` : "—"}
+          value={l.spread != null && l.spread_pct != null ? `$${l.spread.toFixed(2)} (${l.spread_pct.toFixed(1)}%)` : "n/a"}
           tone={gradeTone as any}
         />
         <Stat label="Volume (today)" value={fmtInt(l.volume)} />
         <Stat label="Open interest" value={fmtInt(l.open_interest)} />
         <Stat label="Grade" value={l.grade.toUpperCase()} tone={gradeTone as any} />
-        <Stat label="Last print" value={l.last != null ? `$${l.last.toFixed(2)}` : "—"} />
+        <Stat label="Last print" value={l.last != null ? `$${l.last.toFixed(2)}` : "n/a"} />
       </div>
     </Panel>
   );
@@ -125,13 +125,13 @@ export function ScenarioMatrixPanel({ result }: { result: OptionAnalyzeResult })
   return (
     <Panel title="Scenario matrix · PnL by spot × time">
       <div className="overflow-x-auto">
-        <table className="w-full text-[11px] tabular">
+        <table className="w-full text-caption-1-regular tabular">
           <thead>
-            <tr className="text-text-muted border-b border-border/40">
-              <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-wider">When</th>
+            <tr className="text-text-tertiary border-b border-separator-border">
+              <th className="text-left px-3 py-1.5 font-normal text-caption-2-regular">When</th>
               {cols.map((c) => (
                 <th key={c.label} className={cn(
-                  "text-right px-2 py-1.5 font-normal text-[10px]",
+                  "text-right px-2 py-1.5 font-normal text-caption-2-regular",
                   c.pct === 0 && "text-text-secondary font-medium"
                 )}>{c.label}</th>
               ))}
@@ -139,15 +139,15 @@ export function ScenarioMatrixPanel({ result }: { result: OptionAnalyzeResult })
           </thead>
           <tbody>
             {rows.map((r, ri) => (
-              <tr key={r.label} className={cn("border-b border-border/15", ri === rows.length - 1 && "border-b-0")}>
+              <tr key={r.label} className={cn("border-b border-separator-border", ri === rows.length - 1 && "border-b-0")}>
                 <td className="px-3 py-1 text-text-secondary">{r.label}</td>
                 {r.data.map((v, i) => (
                   <td
                     key={i}
                     className={cn(
                       "px-2 py-1 text-right font-medium",
-                      v > 0 ? "text-up" : v < 0 ? "text-down" : "text-text-muted",
-                      cols[i].pct === 0 && "bg-surface-2/40"
+                      v > 0 ? "text-status-lime-text" : v < 0 ? "text-status-rose-text" : "text-text-tertiary",
+                      cols[i].pct === 0 && "bg-background-secondary-default"
                     )}
                   >
                     {fmtPnl(v)}
@@ -168,9 +168,9 @@ function Panel({
   title, children,
 }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-md border border-border bg-surface overflow-hidden">
-      <div className="flex items-center gap-2 px-3 h-7 border-b border-border/60">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">{title}</span>
+    <div className="rounded-md border border-separator-border bg-background-primary-default overflow-hidden">
+      <div className="flex items-center gap-2 px-3 h-7 border-b border-separator-border">
+        <span className="text-caption-2-regular text-text-tertiary">{title}</span>
       </div>
       {children}
     </div>
@@ -186,15 +186,15 @@ function Stat({
   tone?: "up" | "down" | "warning" | "muted";
 }) {
   const toneCls =
-    tone === "up" ? "text-up" :
-    tone === "down" ? "text-down" :
-    tone === "warning" ? "text-warning" :
+    tone === "up" ? "text-status-lime-text" :
+    tone === "down" ? "text-status-rose-text" :
+    tone === "warning" ? "text-status-yellow-text" :
     "text-text-primary";
   return (
     <div className="flex flex-col">
-      <span className="text-[9px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       <span className={cn("font-medium tabular", toneCls)}>{value}</span>
-      {hint && <span className="text-[9px] text-text-muted italic">{hint}</span>}
+      {hint && <span className="text-caption-2-regular text-text-tertiary italic">{hint}</span>}
     </div>
   );
 }
@@ -202,15 +202,15 @@ function Stat({
 // ─── format helpers ─────────────────────────────────────────────────────────
 
 function pct(v: number | null): string {
-  if (v == null) return "—";
+  if (v == null) return "n/a";
   return `${(v * 100).toFixed(0)}%`;
 }
 function pctNum(v: number | null): string {
-  if (v == null) return "—";
+  if (v == null) return "n/a";
   return `${(v * 100).toFixed(1)}%`;
 }
 function fmtInt(v: number | null): string {
-  if (v == null) return "—";
+  if (v == null) return "n/a";
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
   return v.toFixed(0);

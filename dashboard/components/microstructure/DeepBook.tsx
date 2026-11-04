@@ -5,7 +5,10 @@ import { api, type DepthSnapshot, type DepthLevel } from "@/lib/api";
 import { StreamWebSocket } from "@/lib/ws-stream";
 import { cn, fmtCompact } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Layers } from "lucide-react";
+import { CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RiStackLine as Layers } from "@remixicon/react";
 
 interface Props {
   symbol: string;
@@ -53,54 +56,59 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
     if (!snap) return 1;
     return Math.max(
       1,
-      ...snap.bids.map((b) => b.size),
-      ...snap.asks.map((a) => a.size),
+      ...(snap.bids ?? []).map((b) => b.size),
+      ...(snap.asks ?? []).map((a) => a.size),
     );
   }, [snap]);
 
-  if (unavailable || (snap && !snap.available && snap.bids.length === 0 && snap.asks.length === 0)) {
-    return (
-      <EmptyState
-        icon={Layers}
-        title="No depth subscription"
-        description="Level 2 requires an IBKR market-depth bundle. For SPY/QQQ try NYSE ArcaBook ($3/mo non-pro); for NASDAQ-listed names try TotalView ($9/mo)."
-      />
-    );
-  }
+  const empty =
+    unavailable || (snap && !snap.available && (snap.bids ?? []).length === 0 && (snap.asks ?? []).length === 0);
 
   const imb = snap?.imbalance ?? null;
-  const imbColor = imb == null ? "text-text-muted" : imb > 0.15 ? "text-up" : imb < -0.15 ? "text-down" : "text-text-secondary";
+  const imbVariant = imb == null ? "muted" : imb > 0.15 ? "up" : imb < -0.15 ? "down" : "muted";
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between px-2 h-7 border-b border-border/60 text-[10px] uppercase tracking-wider text-text-muted">
-        <span className="flex items-center gap-1.5">
-          <Layers size={10} className="text-accent" />
-          Depth · {symbol}
-          <span
-            className={cn(
-              "ml-1 inline-block w-1 h-1 rounded-full",
-              streaming ? "bg-up" : "bg-text-muted"
-            )}
-          />
-        </span>
-        {imb != null && (
-          <span className={cn("tabular", imbColor)}>
-            imb {imb >= 0 ? "+" : ""}{(imb * 100).toFixed(1)}%
-          </span>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 text-[10px] tabular">
-        <BookSide side="bid" levels={snap?.bids ?? []} maxSize={maxSize} rows={rows} />
-        <BookSide side="ask" levels={snap?.asks ?? []} maxSize={maxSize} rows={rows} />
-      </div>
-
-      {snap && (
-        <div className="grid grid-cols-2 px-2 h-6 items-center text-[9px] tabular border-t border-border/60 text-text-muted">
-          <span>bid Σ <span className="text-up font-medium">{fmtCompact(snap.bid_size_total)}</span></span>
-          <span className="text-right">ask Σ <span className="text-down font-medium">{fmtCompact(snap.ask_size_total)}</span></span>
+    <div className="flex flex-col h-full min-h-0">
+      <CardHeader>
+        <div className="flex items-center gap-2 min-w-0">
+          <CardTitle>Depth</CardTitle>
+          <span className="text-caption-1-medium text-text-tertiary tabular">{symbol}</span>
+          <Badge variant={streaming ? "up" : "muted"}>{streaming ? "Live" : "Snapshot"}</Badge>
         </div>
+        {imb != null && (
+          <Badge variant={imbVariant} className="tabular">
+            Imbalance {imb >= 0 ? "+" : ""}{(imb * 100).toFixed(1)}%
+          </Badge>
+        )}
+      </CardHeader>
+
+      {empty ? (
+        <EmptyState
+          icon={Layers}
+          title="No depth subscription"
+          description="Level 2 requires an IBKR market-depth bundle. For SPY/QQQ try NYSE ArcaBook ($3/mo non-pro); for NASDAQ-listed names try TotalView ($9/mo)."
+        />
+      ) : !snap ? (
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-4">
+          {Array.from({ length: rows * 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-3 w-full" />
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 h-8 items-center bg-background-secondary-default text-caption-1-medium text-text-tertiary border-b border-separator-border">
+            <div className="flex justify-between px-3"><span>Bid</span><span>Size</span></div>
+            <div className="flex justify-between px-3 border-l border-separator-border"><span>Size</span><span>Ask</span></div>
+          </div>
+          <div className="grid grid-cols-2 text-caption-1-regular tabular">
+            <BookSide side="bid" levels={snap.bids ?? []} maxSize={maxSize} rows={rows} />
+            <BookSide side="ask" levels={snap.asks ?? []} maxSize={maxSize} rows={rows} />
+          </div>
+          <div className="mt-auto grid grid-cols-2 px-3 h-8 items-center text-caption-1-medium tabular border-t border-separator-border bg-background-secondary-default text-text-tertiary">
+            <span>Bid total <span className="text-status-lime-text">{fmtCompact(snap.bid_size_total)}</span></span>
+            <span className="text-right">Ask total <span className="text-status-rose-text">{fmtCompact(snap.ask_size_total)}</span></span>
+          </div>
+        </>
       )}
     </div>
   );
@@ -115,27 +123,27 @@ function BookSide({
   while (padded.length < rows) padded.push(null);
 
   return (
-    <div className={cn("flex flex-col", side === "ask" && "border-l border-border/60")}>
+    <div className={cn("flex flex-col", side === "ask" && "border-l border-separator-border")}>
       {padded.slice(0, rows).map((lv, i) => (
         <div
           key={i}
-          className="relative h-[18px] flex items-center px-2"
+          className="relative h-6 flex items-center px-3 border-b border-separator-border"
         >
           {lv && (
             <span
               className={cn(
                 "absolute inset-y-0",
-                side === "bid" ? "right-0 bg-up/12" : "left-0 bg-down/12"
+                side === "bid" ? "right-0 bg-status-lime-background" : "left-0 bg-status-rose-background"
               )}
               style={{ width: `${Math.max(2, (lv.size / maxSize) * 100)}%` }}
             />
           )}
           <span className={cn(
-            "relative z-10 flex w-full",
+            "relative z-10 flex w-full text-body-2-medium",
             side === "bid" ? "justify-between" : "flex-row-reverse justify-between"
           )}>
-            <span className={side === "bid" ? "text-up font-medium" : "text-down font-medium"}>
-              {lv ? lv.price.toFixed(2) : "—"}
+            <span className={side === "bid" ? "text-status-lime-text" : "text-status-rose-text"}>
+              {lv ? lv.price.toFixed(2) : "n/a"}
             </span>
             <span className="text-text-secondary">
               {lv ? fmtCompact(lv.size) : ""}

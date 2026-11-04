@@ -1,7 +1,7 @@
 import { SectionTabs } from "@/components/layout/SectionTabs";
 
 // /monitor/analyzer stays as a route (PositionsPanel deep-links to it) but
-// isn't a primary tab — it's a detail view, opened by clicking a position.
+// isn't a primary tab, it's a detail view, opened by clicking a position.
 const MONITOR_TABS = [
   { href: "/monitor/exit",        label: "Exit" },
   { href: "/monitor/tracker",     label: "Tracker" },

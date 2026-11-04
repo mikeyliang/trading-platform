@@ -13,28 +13,44 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import {
-  LayoutDashboard,
-  Settings,
-  BarChart3,
-  Notebook,
-  Activity,
-  Filter,
-  LineChart,
-  CandlestickChart,
-  Layers,
-  ArrowRight,
-} from "lucide-react";
+  RiDashboardLine,
+  RiSettings4Line,
+  RiBarChartBoxLine,
+  RiFileListLine,
+  RiBookOpenLine,
+  RiPulseLine,
+  RiEqualizerLine,
+  RiLineChartLine,
+  RiStockLine,
+  RiStackLine,
+  RiArrowRightLine,
+  RiLightbulbLine,
+  RiCalculatorLine,
+  RiFlaskLine,
+  RiRobot2Line,
+  RiHistoryLine,
+  RiLayoutColumnLine,
+  RiBrainLine,
+} from "@remixicon/react";
 import { api } from "@/lib/api";
 import type { WatchlistItem } from "@/types";
 
 const PAGES = [
-  { label: "Dashboard",   href: "/",                    icon: LayoutDashboard, keywords: "home overview" },
-  { label: "Exit",        href: "/monitor/exit",        icon: Activity,        keywords: "monitor open spreads delta trigger" },
-  { label: "Tracker",     href: "/monitor/tracker",     icon: Notebook,        keywords: "okw log positions" },
-  { label: "Performance", href: "/monitor/performance", icon: BarChart3,       keywords: "analytics equity curve sharpe drawdown" },
-  { label: "Journal",     href: "/monitor/journal",     icon: Notebook,        keywords: "notes reflection review" },
-  { label: "Screener",    href: "/screener",            icon: Filter,          keywords: "filter sector market cap pe dividend" },
-  { label: "Settings",    href: "/settings",            icon: Settings,        keywords: "configuration" },
+  { label: "Home",        href: "/",                    icon: RiDashboardLine, keywords: "dashboard overview board" },
+  { label: "Exit",        href: "/monitor/exit",        icon: RiPulseLine,        keywords: "monitor open spreads delta trigger" },
+  { label: "Tracker",     href: "/monitor/tracker",     icon: RiFileListLine,        keywords: "okw log positions" },
+  { label: "Performance", href: "/monitor/performance", icon: RiBarChartBoxLine,       keywords: "analytics equity curve sharpe drawdown" },
+  { label: "Insights",    href: "/monitor/insights",    icon: RiLightbulbLine,       keywords: "patterns review lessons" },
+  { label: "Journal",     href: "/monitor/journal",     icon: RiBookOpenLine,        keywords: "notes reflection review mood" },
+  { label: "Analyzer",    href: "/monitor/analyzer",    icon: RiCalculatorLine,      keywords: "options position spread payoff greeks" },
+  { label: "Agents",      href: "/agents",              icon: RiBrainLine,  keywords: "debate ai bull bear verdict" },
+  { label: "Screener",    href: "/screener",            icon: RiEqualizerLine,          keywords: "filter sector market cap pe dividend rule one" },
+  { label: "Depth",       href: "/microstructure",      icon: RiStackLine,          keywords: "order book microstructure volume profile" },
+  { label: "Chain",       href: "/trade/chain",         icon: RiLayoutColumnLine,          keywords: "options chain strikes expiry" },
+  { label: "Simulate",    href: "/backtest",            icon: RiFlaskLine,    keywords: "backtest strategy presets runs" },
+  { label: "Bot",         href: "/bot",                 icon: RiRobot2Line,             keywords: "automation paper trading decisions" },
+  { label: "History",     href: "/trade/history",       icon: RiHistoryLine,           keywords: "trades fills flex backfill analysis" },
+  { label: "Settings",    href: "/settings",            icon: RiSettings4Line,        keywords: "configuration theme account" },
 ];
 
 const SUGGESTED_SYMBOLS = ["SPY", "QQQ", "IWM", "RUT", "AAPL", "NVDA", "TSLA", "MSFT"];
@@ -87,8 +103,7 @@ export function CommandPalette() {
       <CommandInput
         value={query}
         onValueChange={setQuery}
-        placeholder="Search symbols or jump to a page…"
-        className="text-sm"
+        placeholder="Search symbols or jump to a page"
       />
       <CommandList className="max-h-[400px] overflow-y-auto">
         <CommandEmpty>No results. Press Enter to open as a chart.</CommandEmpty>
@@ -104,18 +119,18 @@ export function CommandPalette() {
               value={`${typedSymbol} ${query} open chart symbol`}
               onSelect={() => go(`/chart/${typedSymbol}`)}
             >
-              <ArrowRight size={12} className="mr-2 text-accent" />
-              <span className="font-medium mr-2">{typedSymbol}</span>
-              <span className="text-text-muted truncate">chart</span>
+              <RiArrowRightLine size={16} className="mr-2 text-accent-600 shrink-0" aria-hidden />
+              <span className="text-body-2-medium mr-2 tabular">{typedSymbol}</span>
+              <span className="text-text-tertiary truncate">Chart</span>
               <CommandShortcut>↵</CommandShortcut>
             </CommandItem>
             <CommandItem
               value={`${typedSymbol} ${query} open chain options`}
               onSelect={() => go(`/options/${typedSymbol}`)}
             >
-              <Layers size={12} className="mr-2 text-text-muted" />
-              <span className="font-medium mr-2">{typedSymbol}</span>
-              <span className="text-text-muted truncate">options chain</span>
+              <RiStackLine size={16} className="mr-2 text-foreground-icon-tertiary shrink-0" aria-hidden />
+              <span className="text-body-2-medium mr-2 tabular">{typedSymbol}</span>
+              <span className="text-text-tertiary truncate">Options chain</span>
             </CommandItem>
           </CommandGroup>
         )}
@@ -127,7 +142,7 @@ export function CommandPalette() {
               value={`${p.label} ${p.keywords}`}
               onSelect={() => go(p.href)}
             >
-              <p.icon size={12} className="mr-2 text-text-muted" />
+              <p.icon size={16} className="mr-2 text-foreground-icon-tertiary shrink-0" aria-hidden />
               {p.label}
             </CommandItem>
           ))}
@@ -143,10 +158,10 @@ export function CommandPalette() {
                   value={`${w.symbol} ${w.name} chart`}
                   onSelect={() => go(`/chart/${w.symbol}`)}
                 >
-                  <CandlestickChart size={12} className="mr-2 text-text-muted" />
-                  <span className="font-medium mr-2">{w.symbol}</span>
-                  <span className="text-text-muted truncate">{w.name}</span>
-                  <CommandShortcut>chart</CommandShortcut>
+                  <RiStockLine size={16} className="mr-2 text-foreground-icon-tertiary shrink-0" aria-hidden />
+                  <span className="text-body-2-medium mr-2 tabular">{w.symbol}</span>
+                  <span className="text-text-tertiary truncate">{w.name}</span>
+                  <CommandShortcut>Chart</CommandShortcut>
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -161,9 +176,9 @@ export function CommandPalette() {
               value={`${s} chart quick`}
               onSelect={() => go(`/chart/${s}`)}
             >
-              <LineChart size={12} className="mr-2 text-text-muted" />
-              <span className="font-medium">{s}</span>
-              <CommandShortcut>chart</CommandShortcut>
+              <RiLineChartLine size={16} className="mr-2 text-foreground-icon-tertiary shrink-0" aria-hidden />
+              <span className="text-body-2-medium tabular">{s}</span>
+              <CommandShortcut>Chart</CommandShortcut>
             </CommandItem>
           ))}
         </CommandGroup>
@@ -176,8 +191,9 @@ export function CommandPalette() {
               value={`${s} options chain`}
               onSelect={() => go(`/options/${s}`)}
             >
-              <Layers size={12} className="mr-2 text-text-muted" />
-              {s} chain
+              <RiStackLine size={16} className="mr-2 text-foreground-icon-tertiary shrink-0" aria-hidden />
+              <span className="text-body-2-medium tabular mr-2">{s}</span>
+              <span className="text-text-tertiary">Options chain</span>
             </CommandItem>
           ))}
         </CommandGroup>

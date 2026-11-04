@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
 from ..config import settings
+from ..ws.trades import trades_channel
 
 from .ib_client_base import ResilientIBClient
 

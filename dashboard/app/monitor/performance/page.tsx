@@ -7,20 +7,43 @@ import { useHealth } from "@/lib/health";
 import type { Position, Trade } from "@/types";
 import { cn, fmtCurrency, fmtPct, pnlClass } from "@/lib/utils";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Stat, StatGroup } from "@/components/ui/stat";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton, TableSkeletonRows } from "@/components/ui/skeleton";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Logo } from "@/components/ui/logo";
-import { Link as LinkIcon } from "lucide-react";
+import {
+  RiLinkM as LinkIcon,
+  RiBriefcaseLine as PositionsIcon,
+  RiExchangeLine as FillsIcon,
+  RiErrorWarningFill as ErrorIcon,
+  RiRefreshLine as RefreshCw,
+} from "@remixicon/react";
 
 export default function PerformancePage() {
-  const { account } = useHealth();
+  const { account, initialLoad } = useHealth();
   // Positions are WS-pushed via the store; REST safety net runs in
   // PositionsPanel and StatsBar already. We don't double-poll here.
   const positions = useStore((s) => s.positions);
 
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [tradesLoaded, setTradesLoaded] = useState(false);
+  const [tradesError, setTradesError] = useState<string | null>(null);
+  const loadTrades = () =>
+    api
+      .trades()
+      .then((t) => {
+        setTrades(t);
+        setTradesError(null);
+      })
+      .catch((e) => setTradesError(e instanceof Error ? e.message : "Could not load fills"))
+      .finally(() => setTradesLoaded(true));
   useEffect(() => {
-    const load = () => api.trades().then(setTrades).catch(() => undefined);
-    load();
-    const id = setInterval(load, 30000);
+    loadTrades();
+    const id = setInterval(loadTrades, 30000);
     return () => clearInterval(id);
   }, []);
 
@@ -48,12 +71,12 @@ export default function PerformancePage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Account · live"
         title="Performance"
-        description="IBKR account snapshot, open positions mark-to-market, recent fills."
+        description="IBKR account snapshot, open positions marked to market, and recent fills."
       />
 
-      <HeroStats
+      <AccountCard
+        loading={initialLoad && !account}
         equity={account?.equity ?? null}
         buyingPower={account?.buying_power ?? null}
         realized={account?.realized_pnl ?? null}
@@ -62,29 +85,71 @@ export default function PerformancePage() {
         shortExp={shortExposure}
       />
 
-      <Section title="Positions" trail={`${positions.length} open`}>
-        {positions.length === 0 ? (
-          <Empty hint="No open positions. The IBKR position stream populates this in real time." />
-        ) : (
-          <PositionsTable positions={positions} />
-        )}
-      </Section>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2 min-w-0">
+            <CardTitle>Positions</CardTitle>
+            <Badge variant="muted" className="tabular">{positions.length}</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {positions.length === 0 ? (
+            <EmptyState
+              icon={PositionsIcon}
+              title="No open positions"
+              description="The IBKR position stream fills this in real time."
+            />
+          ) : (
+            <PositionsTable positions={positions} />
+          )}
+        </CardContent>
+      </Card>
 
-      <Section title="Fills" trail={`${trades.length} recent`}>
-        {trades.length === 0 ? (
-          <Empty hint="No fills yet for the current IBKR session. Closed positions and order fills will appear here." />
-        ) : (
-          <FillsTable trades={trades} />
-        )}
-      </Section>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2 min-w-0">
+            <CardTitle>Fills</CardTitle>
+            {tradesLoaded && <Badge variant="muted" className="tabular">{trades.length}</Badge>}
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {!tradesLoaded ? (
+            <FillsTable>
+              <TableSkeletonRows rows={3} cols={7} />
+            </FillsTable>
+          ) : tradesError ? (
+            <div className="flex flex-col items-center gap-3 py-12">
+              <Badge variant="down">
+                <ErrorIcon size={14} aria-hidden="true" />
+                {tradesError}
+              </Badge>
+              <Button variant="secondary" onClick={loadTrades}>
+                <RefreshCw />
+                Retry
+              </Button>
+            </div>
+          ) : trades.length === 0 ? (
+            <EmptyState
+              icon={FillsIcon}
+              title="No fills yet"
+              description="Closed positions and order fills for the current IBKR session appear here."
+            />
+          ) : (
+            <FillsTable>
+              {trades.map((t) => <FillRow key={`${t.timestamp}-${t.symbol}`} t={t} />)}
+            </FillsTable>
+          )}
+        </CardContent>
+      </Card>
     </PageShell>
   );
 }
 
-// ─── Hero ─────────────────────────────────────────────────────────────────────
-function HeroStats({
-  equity, buyingPower, realized, unrealized, longExp, shortExp,
+// ─── Account stats ────────────────────────────────────────────────────────────
+function AccountCard({
+  loading, equity, buyingPower, realized, unrealized, longExp, shortExp,
 }: {
+  loading: boolean;
   equity: number | null;
   buyingPower: number | null;
   realized: number | null;
@@ -92,181 +157,162 @@ function HeroStats({
   longExp: number;
   shortExp: number;
 }) {
+  const r = realized ?? 0;
   return (
-    <div className="grid grid-cols-2 md:grid-cols-6 gap-x-4 gap-y-2 py-1">
-      <Big label="Equity"
-           value={equity != null ? fmtCurrency(equity) : "—"} />
-      <Big label="Buying power"
-           value={buyingPower != null ? fmtCurrency(buyingPower) : "—"}
-           muted />
-      <Big label="Unrealized"
-           value={unrealized !== 0 ? fmtCurrency(unrealized) : "$0"}
-           tone={unrealized > 0 ? "up" : unrealized < 0 ? "down" : undefined} />
-      <Big label="Realized"
-           value={realized != null ? fmtCurrency(realized) : "$0"}
-           tone={(realized ?? 0) > 0 ? "up" : (realized ?? 0) < 0 ? "down" : undefined} />
-      <Big label="Long exp"
-           value={longExp ? fmtCurrency(longExp) : "—"}
-           muted />
-      <Big label="Short exp"
-           value={shortExp ? fmtCurrency(shortExp) : "—"}
-           muted />
-    </div>
+    <Card>
+      <CardContent>
+        <StatGroup cols={6}>
+          {loading ? (
+            [0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            ))
+          ) : (
+            <>
+              <Stat label="Equity" value={equity != null ? fmtCurrency(equity) : "n/a"} size="md" />
+              <Stat label="Buying power" value={buyingPower != null ? fmtCurrency(buyingPower) : "n/a"} size="md" tone="muted" />
+              <Stat
+                label="Unrealized P&L"
+                value={signed(unrealized)}
+                size="md"
+                tone={unrealized > 0 ? "up" : unrealized < 0 ? "down" : "default"}
+              />
+              <Stat
+                label="Realized P&L"
+                value={realized != null ? signed(r) : "n/a"}
+                size="md"
+                tone={r > 0 ? "up" : r < 0 ? "down" : "default"}
+              />
+              <Stat label="Long exposure" value={longExp ? fmtCurrency(longExp) : "n/a"} size="md" tone="muted" />
+              <Stat label="Short exposure" value={shortExp ? fmtCurrency(shortExp) : "n/a"} size="md" tone="muted" />
+            </>
+          )}
+        </StatGroup>
+      </CardContent>
+    </Card>
   );
 }
 
-function Big({ label, value, tone, muted }: { label: string; value: string; tone?: "up" | "down"; muted?: boolean }) {
-  return (
-    <div>
-      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">{label}</div>
-      <div className={cn(
-        "text-base md:text-lg font-semibold tabular tracking-tight",
-        tone === "up" ? "text-up" : tone === "down" ? "text-down" : muted ? "text-text-secondary" : "text-text-primary"
-      )}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-// ─── Section header ───────────────────────────────────────────────────────────
-function Section({ title, trail, children }: { title: string; trail?: string; children: React.ReactNode }) {
-  return (
-    <section className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between border-b border-border/40 pb-1.5">
-        <h2 className="text-[11px] uppercase tracking-wider text-text-secondary">{title}</h2>
-        {trail && <span className="text-[10px] text-text-muted tabular">{trail}</span>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Empty({ hint }: { hint: string }) {
-  return <div className="py-3 text-[11px] text-text-muted">{hint}</div>;
+function signed(v: number): string {
+  return v > 0 ? `+${fmtCurrency(v)}` : fmtCurrency(v);
 }
 
 // ─── Positions table ──────────────────────────────────────────────────────────
 function PositionsTable({ positions }: { positions: Position[] }) {
   return (
-    <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
-        <thead className="text-[10px] uppercase tracking-wider text-text-muted">
-          <tr>
-            <th className="px-2 py-1 text-left font-medium">Symbol</th>
-            <th className="px-2 py-1 text-right font-medium">Qty</th>
-            <th className="px-2 py-1 text-right font-medium">Avg</th>
-            <th className="px-2 py-1 text-right font-medium">Mark</th>
-            <th className="px-2 py-1 text-right font-medium">Δ vs avg</th>
-            <th className="px-2 py-1 text-right font-medium">Mkt value</th>
-            <th className="px-2 py-1 text-right font-medium">Unrealized</th>
-            <th className="px-2 py-1 text-right font-medium">%</th>
-            <th className="px-2 py-1"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {positions.map((p) => {
-            const mkt = (p.current_price ?? 0) * (p.quantity ?? 0);
-            const delta = (p.current_price ?? 0) - (p.avg_price ?? 0);
-            return (
-              <tr key={p.symbol} className="border-t border-border/30 hover:bg-surface-2/30 transition-colors">
-                <td className="px-2 py-1.5">
-                  <div className="flex items-center gap-2">
-                    <Logo symbol={p.symbol} size={16} />
-                    <a
-                      href={`/chart/${p.symbol}`}
-                      className="font-medium text-text-primary hover:underline"
-                    >
-                      {p.symbol}
-                    </a>
-                  </div>
-                </td>
-                <td className={cn(
-                  "px-2 py-1.5 text-right",
-                  (p.quantity ?? 0) >= 0 ? "text-text-secondary" : "text-down"
-                )}>
-                  {(p.quantity ?? 0).toLocaleString()}
-                </td>
-                <td className="px-2 py-1.5 text-right text-text-secondary">
-                  ${p.avg_price?.toFixed(2) ?? "—"}
-                </td>
-                <td className="px-2 py-1.5 text-right text-text-primary">
-                  ${p.current_price?.toFixed(2) ?? "—"}
-                </td>
-                <td className={cn("px-2 py-1.5 text-right", pnlClass(delta))}>
-                  {delta >= 0 ? "+" : ""}{delta.toFixed(2)}
-                </td>
-                <td className="px-2 py-1.5 text-right text-text-secondary">
-                  {fmtCurrency(mkt)}
-                </td>
-                <td className={cn("px-2 py-1.5 text-right font-medium", pnlClass(p.unrealized_pnl ?? 0))}>
-                  {fmtCurrency(p.unrealized_pnl ?? 0)}
-                </td>
-                <td className={cn("px-2 py-1.5 text-right", pnlClass(p.unrealized_pnl_pct ?? 0))}>
-                  {fmtPct(p.unrealized_pnl_pct ?? 0)}
-                </td>
-                <td className="px-2 py-1.5 text-right">
-                  <a href={`/chart/${p.symbol}`} className="text-text-muted hover:text-accent inline-flex" title="Open chart">
-                    <LinkIcon size={12} />
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>Symbol</TableHead>
+          <TableHead className="text-right">Qty</TableHead>
+          <TableHead className="text-right">Avg</TableHead>
+          <TableHead className="text-right">Mark</TableHead>
+          <TableHead className="text-right">Change vs avg</TableHead>
+          <TableHead className="text-right">Market value</TableHead>
+          <TableHead className="text-right">Unrealized</TableHead>
+          <TableHead className="text-right">Return</TableHead>
+          <TableHead className="w-10" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {positions.map((p, i) => {
+          const mkt = (p.current_price ?? 0) * (p.quantity ?? 0);
+          const delta = (p.current_price ?? 0) - (p.avg_price ?? 0);
+          const qty = p.quantity ?? 0;
+          return (
+            <TableRow key={`${p.symbol}-${i}`}>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Logo symbol={p.symbol} size={16} />
+                  <a href={`/chart/${p.symbol}`} className="text-text-primary hover:underline">
+                    {p.symbol}
                   </a>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                </div>
+              </TableCell>
+              <TableCell className={cn("text-right", qty >= 0 ? "text-text-secondary" : "text-status-rose-text")}>
+                {qty.toLocaleString()}
+              </TableCell>
+              <TableCell className="text-right text-text-secondary">
+                {p.avg_price != null ? `$${p.avg_price.toFixed(2)}` : "n/a"}
+              </TableCell>
+              <TableCell className="text-right">
+                {p.current_price != null ? `$${p.current_price.toFixed(2)}` : "n/a"}
+              </TableCell>
+              <TableCell className={cn("text-right", pnlClass(delta))}>
+                {delta >= 0 ? "+" : ""}{delta.toFixed(2)}
+              </TableCell>
+              <TableCell className="text-right text-text-secondary">{fmtCurrency(mkt)}</TableCell>
+              <TableCell className={cn("text-right", pnlClass(p.unrealized_pnl ?? 0))}>
+                {signed(p.unrealized_pnl ?? 0)}
+              </TableCell>
+              <TableCell className={cn("text-right", pnlClass(p.unrealized_pnl_pct ?? 0))}>
+                {fmtPct(p.unrealized_pnl_pct ?? 0)}
+              </TableCell>
+              <TableCell className="text-right">
+                <a
+                  href={`/chart/${p.symbol}`}
+                  className="inline-flex text-foreground-icon-tertiary hover:text-text-primary"
+                  title="Open chart"
+                  aria-label={`Open ${p.symbol} chart`}
+                >
+                  <LinkIcon size={16} />
+                </a>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }
 
 // ─── Fills table ──────────────────────────────────────────────────────────────
-function FillsTable({ trades }: { trades: Trade[] }) {
+function FillsTable({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
-        <thead className="text-[10px] uppercase tracking-wider text-text-muted">
-          <tr>
-            <th className="px-2 py-1 text-left font-medium">When</th>
-            <th className="px-2 py-1 text-left font-medium">Symbol</th>
-            <th className="px-2 py-1 text-left font-medium">Side</th>
-            <th className="px-2 py-1 text-right font-medium">Qty</th>
-            <th className="px-2 py-1 text-right font-medium">Price</th>
-            <th className="px-2 py-1 text-right font-medium">P&L</th>
-            <th className="px-2 py-1 text-left font-medium">Strategy</th>
-          </tr>
-        </thead>
-        <tbody>
-          {trades.map((t) => {
-            const d = new Date(t.timestamp);
-            const pnl = t.pnl ?? 0;
-            return (
-              <tr key={`${t.timestamp}-${t.symbol}`} className="border-t border-border/30 hover:bg-surface-2/30">
-                <td className="px-2 py-1.5 text-text-secondary whitespace-nowrap">
-                  {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                  {" "}
-                  <span className="text-text-muted">
-                    {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </td>
-                <td className="px-2 py-1.5">
-                  <a href={`/chart/${t.symbol}`} className="font-medium text-text-primary hover:underline">{t.symbol}</a>
-                </td>
-                <td className={cn("px-2 py-1.5 uppercase text-[10px] tracking-wider",
-                  t.side === "BUY" ? "text-up" : "text-down"
-                )}>{t.side}</td>
-                <td className="px-2 py-1.5 text-right text-text-secondary">{t.quantity.toLocaleString()}</td>
-                <td className="px-2 py-1.5 text-right text-text-secondary">${t.price.toFixed(2)}</td>
-                <td className={cn("px-2 py-1.5 text-right", pnlClass(pnl))}>
-                  {t.pnl != null ? fmtCurrency(pnl) : "—"}
-                </td>
-                <td className="px-2 py-1.5 text-text-muted text-[10px] uppercase tracking-wider">
-                  {t.strategy ?? "—"}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>When</TableHead>
+          <TableHead>Symbol</TableHead>
+          <TableHead>Side</TableHead>
+          <TableHead className="text-right">Qty</TableHead>
+          <TableHead className="text-right">Price</TableHead>
+          <TableHead className="text-right">P&L</TableHead>
+          <TableHead>Strategy</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>{children}</TableBody>
+    </Table>
+  );
+}
+
+function FillRow({ t }: { t: Trade }) {
+  const d = new Date(t.timestamp);
+  const pnl = t.pnl ?? 0;
+  const buy = t.side === "BUY";
+  return (
+    <TableRow>
+      <TableCell className="text-text-secondary whitespace-nowrap">
+        {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+        {" "}
+        <span className="text-text-tertiary">
+          {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        </span>
+      </TableCell>
+      <TableCell>
+        <a href={`/chart/${t.symbol}`} className="text-text-primary hover:underline">{t.symbol}</a>
+      </TableCell>
+      <TableCell>
+        <Badge variant={buy ? "up" : "down"}>{buy ? "Buy" : "Sell"}</Badge>
+      </TableCell>
+      <TableCell className="text-right text-text-secondary">{t.quantity.toLocaleString()}</TableCell>
+      <TableCell className="text-right text-text-secondary">${t.price.toFixed(2)}</TableCell>
+      <TableCell className={cn("text-right", pnlClass(pnl))}>
+        {t.pnl != null ? signed(pnl) : "n/a"}
+      </TableCell>
+      <TableCell className="text-text-tertiary">{t.strategy ?? "n/a"}</TableCell>
+    </TableRow>
   );
 }

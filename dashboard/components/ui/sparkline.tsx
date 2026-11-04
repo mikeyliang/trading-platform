@@ -15,7 +15,7 @@ interface SparklineProps {
 }
 
 /**
- * Inline SVG sparkline. Pure presentational — no event handlers, no resize
+ * Inline SVG sparkline. Pure presentational, no event handlers, no resize
  * observers. Designed for table cells, list rows, and small cards.
  */
 export function Sparkline({
@@ -57,8 +57,9 @@ export function Sparkline({
   });
 
   const positive = values[values.length - 1] >= values[0];
-  const lineColor = stroke ?? (auto ? (positive ? "#22c55e" : "#ef4444") : "#71717a");
-  const fillColor = fill ?? (auto ? (positive ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)") : "rgba(113,113,122,0.1)");
+  // Theme tokens, so the line reads on both surfaces.
+  const lineColor = stroke ?? (auto ? (positive ? "var(--color-up)" : "var(--color-down)") : "var(--color-text-muted)");
+  const fillColor = fill ?? (auto ? (positive ? "color-mix(in srgb, var(--color-up) 12%, transparent)" : "color-mix(in srgb, var(--color-down) 12%, transparent)") : "color-mix(in srgb, var(--color-text-muted) 10%, transparent)");
 
   const path = points.map(([x, y], i) => (i === 0 ? `M${x},${y}` : `L${x},${y}`)).join(" ");
   const area = `${path} L${width},${height} L0,${height} Z`;

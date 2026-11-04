@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { OptionChain } from "@/components/trade/OptionChain";
 
 export const metadata = {
-  title: "Chain · Trade",
+  title: "Option chain",
 };
 
 export default function ChainPage() {

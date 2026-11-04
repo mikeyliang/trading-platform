@@ -456,7 +456,7 @@ class IBNode:
         if not self.is_connected:
             return []
         try:
-            return await self._strategy.request_bars(symbol, timeframe, days)
+            return await self._strategy.fetch_bars(symbol, timeframe, days)
         except Exception as e:  # noqa: BLE001
             logger.warning("historical bars %s/%s failed: %s", symbol, timeframe, e)
             return []
@@ -785,8 +785,9 @@ if NT_IB_AVAILABLE:
             }
             self._ibnode._on_bar(symbol, payload)
 
-        async def request_bars(self, symbol: str, timeframe: str, days: int) -> List[Dict[str, Any]]:
-            """Request historical bars and collect them via on_historical_data."""
+        async def fetch_bars(self, symbol: str, timeframe: str, days: int) -> List[Dict[str, Any]]:
+            """Request historical bars and collect them via on_historical_data.
+            Named apart from Strategy.request_bars(bar_type), which it calls."""
             instrument_id = InstrumentId.from_str(f"{symbol}.{IB_VENUE}")
             bar_type = BarType.from_str(f"{instrument_id}-{_nt_bar_spec(timeframe)}-EXTERNAL")
             collected: List[Dict[str, Any]] = []

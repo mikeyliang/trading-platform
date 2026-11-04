@@ -2,18 +2,21 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+// BoardUI Chip, caption variant (components/base/badges/chip.tsx), under the
+// desk's semantic names. up / down / warning are for data and connection
+// state, accent marks the selected or live thing, muted is neutral metadata.
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider border transition-colors",
+  "inline-flex items-center justify-center gap-1 rounded-md px-1.5 h-5 text-caption-1-medium whitespace-nowrap",
   {
     variants: {
       variant: {
-        default: "bg-surface-3 text-text-secondary border-border",
-        outline: "bg-transparent text-text-secondary border-border",
-        up: "bg-up/10 text-up border-up/30",
-        down: "bg-down/10 text-down border-down/30",
-        warning: "bg-warning/10 text-warning border-warning/30",
-        accent: "bg-accent/10 text-accent border-accent/30",
-        muted: "bg-surface-2 text-text-muted border-transparent",
+        default: "bg-background-secondary-default text-text-primary",
+        outline: "bg-transparent text-text-secondary shadow-[inset_0_0_0_1px_var(--color-border-button-default)]",
+        up: "bg-status-lime-background text-status-lime-text",
+        down: "bg-status-rose-background text-status-rose-text",
+        warning: "bg-status-yellow-background text-status-yellow-text",
+        accent: "bg-status-blue-background text-status-blue-text",
+        muted: "bg-background-tertiary-default text-text-secondary",
       },
     },
     defaultVariants: {
@@ -22,10 +25,14 @@ const badgeVariants = cva(
   }
 );
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badgeVariants> {}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+function Badge({ className, variant, children, ...props }: BadgeProps) {
+  return (
+    <span className={cn(badgeVariants({ variant }), className)} {...props}>
+      {children}
+    </span>
+  );
 }
 
 export { Badge, badgeVariants };

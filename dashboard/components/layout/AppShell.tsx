@@ -7,6 +7,9 @@ import { Header } from "@/components/layout/Header";
 import { StatusFooter } from "@/components/layout/StatusFooter";
 import { NotConnectedBanner } from "@/components/layout/NotConnectedBanner";
 
+// Page frame: the floating sidebar and the page column sit on the full
+// background with a 12px gutter all round. The page column owns the top row,
+// the scrolling content and the status strip.
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -16,21 +19,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <>
+    <div className="flex h-full w-full gap-3 p-3">
       <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          className="md:hidden fixed inset-0 z-30 bg-black/50 animate-fade-in"
+          className="md:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-[2px] animate-fade-in"
           aria-hidden="true"
         />
       )}
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 gap-3">
         <Header onMenuClick={() => setMobileOpen(true)} />
         <NotConnectedBanner />
         <main className="flex-1 overflow-auto min-h-0">{children}</main>
         <StatusFooter />
       </div>
-    </>
+    </div>
   );
 }

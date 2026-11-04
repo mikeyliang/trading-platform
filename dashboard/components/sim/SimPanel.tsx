@@ -10,10 +10,14 @@ import {
   type SimRunSummary,
 } from "@/lib/api";
 import { cn, fmtCurrency, fmtPct, pnlClass } from "@/lib/utils";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Stat, StatGroup } from "@/components/ui/stat";
+import { Spinner } from "@/components/ui/skeleton";
+import { ToggleGroup } from "@/components/ui/toggle-group";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
@@ -21,8 +25,15 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toaster";
-import { Loader2, Play, Trash2, X } from "lucide-react";
+import {
+  RiDeleteBinLine,
+  RiErrorWarningFill,
+  RiFlaskLine,
+  RiLoader4Line,
+  RiPlayFill,
+} from "@remixicon/react";
 import { NewsAnalystCard } from "./NewsAnalystCard";
+import { SymbolChip } from "./SymbolChip";
 import { SimCompareTable } from "./SimCompareTable";
 import { SimStatsGrid } from "./SimStatsGrid";
 import { VolumeProfilePanel } from "./VolumeProfilePanel";
@@ -37,6 +48,9 @@ function isoDaysAgo(days: number): string {
   const d = new Date(Date.now() - days * 86_400_000);
   return d.toISOString().slice(0, 10);
 }
+
+const fmtStamp = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 export function SimPanel() {
   // ── config state ──
@@ -57,6 +71,7 @@ export function SimPanel() {
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [chartPayload, setChartPayload] = useState<SimChartPayload | null>(null);
   const [chartLoading, setChartLoading] = useState(false);
+  const [chartNonce, setChartNonce] = useState(0);
   const [view, setView] = useState<"detail" | "compare">("detail");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -71,7 +86,7 @@ export function SimPanel() {
   }, []);
 
   useEffect(() => {
-    api.simPresets().then((p) => setPresets(p.presets)).catch(() => {});
+    api.simPresets().then((p) => setPresets(Array.isArray(p?.presets) ? p.presets : [])).catch(() => {});
     refreshRuns().then((rs) => {
       if (rs.length && !selectedRunId) setSelectedRunId(rs[0].id);
     });
@@ -105,7 +120,8 @@ export function SimPanel() {
     try {
       const d = await api.simRun(id);
       setRunDetail(d);
-      const okSymbols = Object.keys(d.results).filter((s) => d.results[s]?.stats);
+      const results = d.results ?? {};
+      const okSymbols = Object.keys(results).filter((s) => results[s]?.stats);
       setActiveSymbol((cur) => (cur && okSymbols.includes(cur) ? cur : okSymbols[0] ?? null));
     } catch {
       setRunDetail(null);
@@ -127,7 +143,7 @@ export function SimPanel() {
       .then(setChartPayload)
       .catch(() => setChartPayload(null))
       .finally(() => setChartLoading(false));
-  }, [selectedRunId, activeSymbol, runDetail?.status]);
+  }, [selectedRunId, activeSymbol, runDetail?.status, chartNonce]);
 
   const addSymbol = () => {
     const s = symbolInput.trim().toUpperCase();
@@ -143,7 +159,7 @@ export function SimPanel() {
         initial_capital: capital, preset,
       });
       toast.success("Simulation started", {
-        description: `${symbols.length} symbol(s) · ${timeframe} · NautilusTrader`,
+        description: `${symbols.length} symbol(s), ${timeframe}, NautilusTrader`,
       });
       setSelectedRunId(summary.id);
       await refreshRuns();
@@ -180,10 +196,12 @@ export function SimPanel() {
     }));
   }, [runDetail]);
 
+  const agg = runDetail?.aggregate ?? null;
+
   return (
-    <div className="flex h-full min-h-0 gap-4 p-4 bg-bg overflow-hidden">
+    <div className="flex h-full min-h-0 gap-3 p-3 overflow-hidden">
       {/* ── left rail: config + run history ── */}
-      <div className="w-72 shrink-0 flex flex-col gap-4 min-h-0">
+      <div className="w-80 shrink-0 flex flex-col gap-3 min-h-0">
         <Card className="shrink-0">
           <CardHeader>
             <CardTitle>Simulation</CardTitle>
@@ -191,45 +209,37 @@ export function SimPanel() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <Field label="Strategy preset">
-              <Select value={preset} onValueChange={setPreset}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={presets.some((p) => p.id === preset) ? preset : ""} onValueChange={setPreset}>
+                <SelectTrigger><SelectValue placeholder="Choose a preset" /></SelectTrigger>
                 <SelectContent>
                   {presets.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {selectedPreset && (
+                <p className="text-caption-1-regular text-text-tertiary">{selectedPreset.description}</p>
+              )}
             </Field>
-            {selectedPreset && (
-              <p className="text-[10px] leading-relaxed text-text-muted -mt-1">
-                {selectedPreset.description}
-              </p>
-            )}
 
-            <Field label={`Symbols (${symbols.length}/12)`}>
-              <div className="flex flex-wrap gap-1 mb-1">
-                {symbols.map((s) => (
-                  <span key={s} className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded bg-surface-2 text-[10px] tabular">
-                    {s}
-                    <button
-                      onClick={() => setSymbols(symbols.filter((x) => x !== s))}
-                      className="text-text-muted hover:text-down"
-                    >
-                      <X size={9} />
-                    </button>
-                  </span>
-                ))}
-              </div>
+            <Field label={`Symbols (${symbols.length} of 12)`}>
+              {symbols.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {symbols.map((s) => (
+                    <SymbolChip key={s} symbol={s} onRemove={() => setSymbols(symbols.filter((x) => x !== s))} />
+                  ))}
+                </div>
+              )}
               <Input
                 value={symbolInput}
-                placeholder="add symbol ⏎"
+                placeholder="Add a symbol and press Enter"
                 onChange={(e) => setSymbolInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addSymbol()}
                 onBlur={addSymbol}
               />
             </Field>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <Field label="Timeframe">
                 <Select value={timeframe} onValueChange={setTimeframe}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -241,86 +251,53 @@ export function SimPanel() {
                 </Select>
               </Field>
               <Field label="Capital ($)">
-                <Input type="number" value={capital} onChange={(e) => setCapital(+e.target.value)} />
+                <Input type="number" className="tabular" value={capital} onChange={(e) => setCapital(+e.target.value)} />
               </Field>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <Field label="Start">
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <Input type="date" className="tabular" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </Field>
               <Field label="End">
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <Input type="date" className="tabular" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </Field>
             </div>
             {(timeframe === "15m" || timeframe === "30m") && (
-              <p className="text-[10px] text-amber-500/80 -mt-1">
-                intraday {"<"}1h data is limited to ~60 days back
+              <p className="text-caption-1-regular text-status-yellow-text">
+                Intraday data under 1h only reaches back about 60 days.
               </p>
             )}
 
-            <Button onClick={startRun} disabled={starting || symbols.length === 0} size="lg" className="mt-1">
-              {starting ? <Loader2 className="animate-spin" /> : <Play />}
-              {starting ? "starting…" : "run simulation"}
+            <Button variant="default" onClick={startRun} disabled={starting || symbols.length === 0}>
+              {starting ? <RiLoader4Line className="animate-spin" /> : <RiPlayFill />}
+              {starting ? "Starting" : "Run simulation"}
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <Card className="flex-1 min-h-0 flex flex-col">
           <CardHeader>
             <CardTitle>Runs</CardTitle>
             <Badge variant="muted">{runs.length}</Badge>
           </CardHeader>
           <div className="flex-1 overflow-y-auto">
             {runs.length === 0 && (
-              <p className="text-[11px] text-text-muted px-3 py-2">no runs yet</p>
+              <EmptyState
+                size="sm"
+                icon={RiFlaskLine}
+                title="No runs yet"
+                description="Finished simulations are listed here."
+              />
             )}
             {runs.map((r) => (
-              <button
+              <RunRow
                 key={r.id}
-                onClick={() => setSelectedRunId(r.id)}
-                className={cn(
-                  "w-full text-left px-3 py-1.5 border-b border-border/40 group transition-colors",
-                  selectedRunId === r.id ? "bg-surface-2" : "hover:bg-surface-1"
-                )}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full shrink-0",
-                      r.status === "running" && "bg-amber-400 animate-pulse",
-                      r.status === "completed" && "bg-up",
-                      r.status === "error" && "bg-down"
-                    )}
-                  />
-                  <span className="text-[11px] truncate flex-1">{r.label}</span>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => { e.stopPropagation(); deleteRun(r.id); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); deleteRun(r.id); } }}
-                    className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-down transition-opacity cursor-pointer"
-                  >
-                    <Trash2 size={10} />
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 pl-3 text-[10px] tabular text-text-muted">
-                  <span>{r.timeframe}</span>
-                  <span>{r.symbols.length} sym</span>
-                  {r.status === "running" ? (
-                    <span className="text-amber-400">
-                      {r.progress.done}/{r.progress.total} {r.progress.current ?? ""}
-                    </span>
-                  ) : r.aggregate ? (
-                    <span className={pnlClass(r.aggregate.avg_return_pct)}>
-                      {r.aggregate.avg_return_pct >= 0 ? "+" : ""}
-                      {r.aggregate.avg_return_pct.toFixed(1)}% · PF {r.aggregate.profit_factor.toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-down">failed</span>
-                  )}
-                </div>
-              </button>
+                run={r}
+                selected={selectedRunId === r.id}
+                onSelect={() => setSelectedRunId(r.id)}
+                onDelete={() => deleteRun(r.id)}
+              />
             ))}
           </div>
         </Card>
@@ -330,75 +307,126 @@ export function SimPanel() {
       <div className="flex-1 min-w-0 overflow-y-auto flex flex-col gap-3">
         {!runDetail && (
           <Card className="flex-1 flex items-center justify-center">
-            <p className="text-text-muted text-sm">configure and run a simulation, or select a past run</p>
+            <EmptyState
+              icon={RiFlaskLine}
+              title="No run selected"
+              description="Configure and run a simulation, or pick a past run from the list."
+            />
           </Card>
         )}
 
         {runDetail?.status === "running" && (
           <Card className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-2 text-text-muted text-sm">
-              <Loader2 size={18} className="animate-spin" />
-              <span>
-                simulating {runDetail.progress.current ?? "…"} ({runDetail.progress.done}/{runDetail.progress.total})
+            <div role="status" aria-live="polite" className="flex flex-col items-center gap-2 text-text-tertiary">
+              <Spinner size={18} />
+              <span className="text-body-2-regular text-text-secondary">
+                Simulating {runDetail.progress.current ?? ""} ({runDetail.progress.done} of {runDetail.progress.total})
               </span>
-              <span className="text-[10px]">NautilusTrader backtest engine</span>
+              <span className="text-caption-1-regular">NautilusTrader backtest engine</span>
             </div>
           </Card>
         )}
 
         {runDetail && runDetail.status !== "running" && (
           <>
-            {/* header strip: run identity + aggregate + view toggle */}
-            <div className="shrink-0 flex items-stretch border border-border rounded-md overflow-hidden bg-surface-1">
-              <div className="px-2.5 py-1.5 border-r border-border/50 min-w-0">
-                <div className="text-[9px] uppercase tracking-wider text-text-muted leading-tight">Run</div>
-                <div className="text-xs leading-tight mt-0.5 truncate max-w-44" title={runDetail.label}>{runDetail.label}</div>
-              </div>
-              <div className="px-2.5 py-1.5 border-r border-border/50">
-                <div className="text-[9px] uppercase tracking-wider text-text-muted leading-tight">Setup</div>
-                <div className="text-xs tabular leading-tight mt-0.5 whitespace-nowrap">
-                  {runDetail.preset.replace("confluence-", "")} · {runDetail.timeframe} · {runDetail.start_date.slice(2)}→{runDetail.end_date.slice(2)}
+            {/* run identity + aggregate + view toggle */}
+            <Card className="shrink-0">
+              <CardHeader>
+                <div className="flex items-center gap-2 min-w-0">
+                  <CardTitle title={runDetail.label}>{runDetail.label}</CardTitle>
+                  <Badge variant="muted" className="tabular">
+                    {runDetail.preset.replace("confluence-", "")} {runDetail.timeframe}
+                  </Badge>
+                  <span className="text-caption-1-regular tabular text-text-tertiary whitespace-nowrap">
+                    {runDetail.start_date} to {runDetail.end_date}
+                  </span>
                 </div>
-              </div>
-              {runDetail.aggregate && [
-                { l: "Avg return", v: `${runDetail.aggregate.avg_return_pct >= 0 ? "+" : ""}${runDetail.aggregate.avg_return_pct.toFixed(2)}%`, c: pnlClass(runDetail.aggregate.avg_return_pct) },
-                { l: "PF", v: runDetail.aggregate.profit_factor.toFixed(2), c: runDetail.aggregate.profit_factor >= 1 ? "text-up" : "text-down" },
-                { l: "Sharpe", v: runDetail.aggregate.avg_sharpe.toFixed(2) },
-                { l: "Max DD", v: `${runDetail.aggregate.avg_max_drawdown_pct.toFixed(1)}%`, c: "text-down" },
-                { l: "Trades · Win", v: `${runDetail.aggregate.total_trades} · ${runDetail.aggregate.win_rate.toFixed(0)}%` },
-              ].map((cell) => (
-                <div key={cell.l} className="px-2.5 py-1.5 border-r border-border/50">
-                  <div className="text-[9px] uppercase tracking-wider text-text-muted leading-tight whitespace-nowrap">{cell.l}</div>
-                  <div className={cn("text-xs tabular leading-tight mt-0.5 whitespace-nowrap", cell.c ?? "text-text-primary")}>{cell.v}</div>
-                </div>
-              ))}
-              <div className="ml-auto flex items-center gap-0.5 px-2">
-                {(["detail", "compare"] as const).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setView(v)}
-                    className={cn(
-                      "px-2 h-6 rounded text-[10px] uppercase tracking-wider transition-colors",
-                      view === v ? "bg-surface-3 text-text-primary" : "text-text-muted hover:text-text-secondary"
-                    )}
+                <ToggleGroup
+                  ariaLabel="Results view"
+                  value={view}
+                  onChange={setView}
+                  options={[
+                    { value: "detail", label: "Results" },
+                    { value: "compare", label: "Compare runs" },
+                  ]}
+                />
+              </CardHeader>
+              {agg && (
+                <CardContent>
+                  <StatGroup>
+                    <Stat
+                      label="Avg return"
+                      value={`${agg.avg_return_pct >= 0 ? "+" : ""}${agg.avg_return_pct.toFixed(2)}%`}
+                      tone={agg.avg_return_pct >= 0 ? "up" : "down"}
+                    />
+                    <Stat
+                      label="Profit factor"
+                      value={agg.profit_factor.toFixed(2)}
+                      tone={agg.profit_factor >= 1 ? "up" : "down"}
+                    />
+                    <Stat label="Sharpe" value={agg.avg_sharpe.toFixed(2)} />
+                    <Stat label="Max drawdown" value={`-${Math.abs(agg.avg_max_drawdown_pct).toFixed(1)}%`} tone="down" />
+                    <Stat label="Trades" value={agg.total_trades} />
+                    <Stat label="Win rate" value={`${agg.win_rate.toFixed(0)}%`} />
+                  </StatGroup>
+                </CardContent>
+              )}
+              {runDetail.error && (
+                <CardContent className="pt-0">
+                  <div className="flex items-start gap-2 text-body-2-regular text-text-secondary">
+                    <RiErrorWarningFill size={16} className="shrink-0 mt-0.5 text-status-rose-text" aria-hidden />
+                    <span>{runDetail.error}</span>
+                  </div>
+                </CardContent>
+              )}
+              {view === "detail" && symbolTabs.length > 0 && (
+                <CardFooter className="h-auto min-h-11 py-2 gap-3 overflow-x-auto">
+                  <span className="text-caption-1-medium text-text-tertiary shrink-0">Symbol</span>
+                  <div
+                    role="radiogroup"
+                    aria-label="Symbol"
+                    className="inline-flex items-center gap-0.5 rounded-2lg bg-segmented-control-background p-0.5"
                   >
-                    {v === "detail" ? "Results" : "Compare runs"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {runDetail.error && (
-              <p className="text-xs text-down bg-down/10 border border-down/20 rounded px-2 py-1.5">
-                {runDetail.error}
-              </p>
-            )}
+                    {symbolTabs.map((t) => {
+                      const active = activeSymbol === t.symbol;
+                      return (
+                        <button
+                          key={t.symbol}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() => t.stats && setActiveSymbol(t.symbol)}
+                          disabled={!t.stats}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 h-6 px-2.5 rounded-md text-body-2-medium tabular whitespace-nowrap transition-[background-color,color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+                            active
+                              ? "bg-segmented-control-selected-background text-text-primary shadow-2xs"
+                              : "text-text-secondary hover:text-text-primary",
+                            !t.stats && "text-text-tertiary cursor-not-allowed hover:text-text-tertiary"
+                          )}
+                        >
+                          {t.symbol}
+                          {t.stats ? (
+                            <span className={cn("text-caption-1-medium", pnlClass(t.stats.total_return_pct))}>
+                              {t.stats.total_return_pct >= 0 ? "+" : ""}
+                              {t.stats.total_return_pct.toFixed(1)}%
+                            </span>
+                          ) : (
+                            <span className="text-caption-1-medium text-status-rose-text">error</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </CardFooter>
+              )}
+            </Card>
 
             {view === "compare" && (
-              <Card className="overflow-hidden">
+              <Card>
                 <CardHeader>
                   <CardTitle>All completed runs</CardTitle>
-                  <Badge variant="muted">sorted by Sharpe</Badge>
+                  <Badge variant="muted">Sorted by Sharpe</Badge>
                 </CardHeader>
                 <div className="overflow-auto">
                   <SimCompareTable
@@ -411,150 +439,141 @@ export function SimPanel() {
             )}
 
             {view === "detail" && (
-            <>
-            {/* symbol tabs */}
-            <div className="flex items-center gap-1 flex-wrap">
-              {symbolTabs.map((t) => (
-                <button
-                  key={t.symbol}
-                  onClick={() => t.stats && setActiveSymbol(t.symbol)}
-                  disabled={!t.stats}
-                  className={cn(
-                    "h-6 px-2 rounded text-[11px] tabular flex items-center gap-1.5 border transition-colors",
-                    activeSymbol === t.symbol
-                      ? "bg-surface-3 border-border text-text-primary"
-                      : t.stats
-                      ? "border-border/50 text-text-secondary hover:bg-surface-1"
-                      : "border-border/30 text-text-muted/50 cursor-not-allowed"
-                  )}
-                >
-                  {t.symbol}
-                  {t.stats ? (
-                    <span className={pnlClass(t.stats.total_return_pct)}>
-                      {t.stats.total_return_pct >= 0 ? "+" : ""}
-                      {t.stats.total_return_pct.toFixed(1)}%
-                    </span>
-                  ) : (
-                    <span className="text-down">err</span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* per-symbol detail */}
-            {chartLoading && (
-              <Card className="h-40 flex items-center justify-center">
-                <Loader2 size={16} className="animate-spin text-text-muted" />
-              </Card>
-            )}
-
-            {chartPayload && !chartLoading && (
               <>
-                <SimStatsGrid stats={chartPayload.stats} />
-
-                <div className="flex gap-3 min-w-0">
-                  <Card className="flex-1 min-w-0">
-                    <CardHeader>
-                      <CardTitle>
-                        {activeSymbol} · {runDetail.timeframe} bars
-                      </CardTitle>
-                      <span className="text-[10px] tabular text-text-muted">
-                        {runDetail.start_date} → {runDetail.end_date}
-                      </span>
-                      <Badge variant="muted">{chartPayload.trades.length} trades</Badge>
-                    </CardHeader>
-                    <CardContent>
-                      <SimChart payload={chartPayload} />
-                    </CardContent>
+                {/* per-symbol detail */}
+                {chartLoading && (
+                  <Card className="h-40 flex items-center justify-center">
+                    <Spinner size={16} />
                   </Card>
+                )}
 
-                  <div className="w-52 shrink-0 flex flex-col gap-3 self-start">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Volume profile</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <VolumeProfilePanel
-                          bins={chartPayload.chart.volume_profile.bins}
-                          volumes={chartPayload.chart.volume_profile.volumes}
-                          poc={chartPayload.chart.volume_profile.poc}
-                          vah={chartPayload.chart.volume_profile.vah}
-                          val={chartPayload.chart.volume_profile.val}
-                          lastPrice={chartPayload.chart.candles.at(-1)?.close}
-                        />
-                      </CardContent>
-                    </Card>
-                    {activeSymbol && <NewsAnalystCard symbol={activeSymbol} />}
-                  </div>
-                </div>
-
-                <div className="flex gap-3 min-w-0 items-start">
-                <Card className="flex-1 min-w-0">
-                  <CardHeader>
-                    <CardTitle>Equity & drawdown</CardTitle>
-                    <span className="ml-auto text-[10px] tabular text-text-muted">
-                      {fmtCurrency(chartPayload.stats.initial_capital)} → {fmtCurrency(chartPayload.stats.final_capital)}
-                    </span>
-                  </CardHeader>
-                  <CardContent>
-                    <EquityCurveChart
-                      equity={chartPayload.equity_curve}
-                      initialCapital={chartPayload.stats.initial_capital}
-                      height={190}
-                      ddHeight={60}
+                {!chartLoading && !chartPayload && activeSymbol && (
+                  <Card>
+                    <EmptyState
+                      icon={RiErrorWarningFill}
+                      title="Chart unavailable"
+                      description={`The result for ${activeSymbol} could not be loaded.`}
+                      action={
+                        <Button onClick={() => setChartNonce((n) => n + 1)}>Retry</Button>
+                      }
                     />
-                  </CardContent>
-                </Card>
+                  </Card>
+                )}
 
-                <Card className="flex-1 min-w-0 overflow-hidden">
-                  <CardHeader>
-                    <CardTitle>Trades</CardTitle>
-                    <Badge variant="muted">{chartPayload.trades.length}</Badge>
-                  </CardHeader>
-                  <div className="overflow-auto max-h-72">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead>entry</TableHead>
-                          <TableHead>exit</TableHead>
-                          <TableHead className="text-right">px</TableHead>
-                          <TableHead className="text-right">qty</TableHead>
-                          <TableHead className="text-right">P&L</TableHead>
-                          <TableHead className="text-right">%</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {chartPayload.trades.map((t, i) => (
-                          <TableRow key={i}>
-                            <TableCell className="text-text-muted whitespace-nowrap">
-                              {t.side === "SELL" && <span className="text-down mr-1">S</span>}
-                              {new Date(t.entry_time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                            </TableCell>
-                            <TableCell className="text-text-muted whitespace-nowrap">
-                              {t.exit_time
-                                ? new Date(t.exit_time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-                                : "—"}
-                            </TableCell>
-                            <TableCell className="text-right tabular whitespace-nowrap">
-                              {t.entry_price.toFixed(2)}<span className="text-text-muted">→</span>{t.exit_price?.toFixed(2) ?? "…"}
-                            </TableCell>
-                            <TableCell className="text-right tabular">{t.quantity.toFixed(0)}</TableCell>
-                            <TableCell className={cn("text-right tabular", pnlClass(t.pnl ?? 0))}>
-                              {t.pnl != null ? fmtCurrency(t.pnl) : "—"}
-                            </TableCell>
-                            <TableCell className={cn("text-right tabular", pnlClass(t.pnl_pct ?? 0))}>
-                              {t.pnl_pct != null ? fmtPct(t.pnl_pct) : "—"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </Card>
-                </div>
+                {chartPayload && !chartLoading && (
+                  <>
+                    <SimStatsGrid stats={chartPayload.stats} />
+
+                    <div className="flex gap-3 min-w-0">
+                      <Card className="flex-1 min-w-0">
+                        <CardHeader>
+                          <CardTitle>
+                            {activeSymbol} {runDetail.timeframe} bars
+                          </CardTitle>
+                          <div className="flex items-center gap-3">
+                            <span className="text-caption-1-regular tabular text-text-tertiary">
+                              {runDetail.start_date} to {runDetail.end_date}
+                            </span>
+                            <Badge variant="muted">{chartPayload.trades.length} trades</Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <SimChart payload={chartPayload} />
+                        </CardContent>
+                      </Card>
+
+                      <div className="w-56 shrink-0 flex flex-col gap-3 self-start">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Volume profile</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <VolumeProfilePanel
+                              bins={chartPayload.chart.volume_profile.bins}
+                              volumes={chartPayload.chart.volume_profile.volumes}
+                              poc={chartPayload.chart.volume_profile.poc}
+                              vah={chartPayload.chart.volume_profile.vah}
+                              val={chartPayload.chart.volume_profile.val}
+                              lastPrice={chartPayload.chart.candles.at(-1)?.close}
+                            />
+                          </CardContent>
+                        </Card>
+                        {activeSymbol && <NewsAnalystCard symbol={activeSymbol} />}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 min-w-0 items-start">
+                      <Card className="flex-1 min-w-0">
+                        <CardHeader>
+                          <CardTitle>Equity and drawdown</CardTitle>
+                          <span className="text-caption-1-regular tabular text-text-tertiary">
+                            {fmtCurrency(chartPayload.stats.initial_capital)} to {fmtCurrency(chartPayload.stats.final_capital)}
+                          </span>
+                        </CardHeader>
+                        <CardContent>
+                          <EquityCurveChart
+                            equity={chartPayload.equity_curve}
+                            initialCapital={chartPayload.stats.initial_capital}
+                            height={190}
+                            ddHeight={60}
+                          />
+                        </CardContent>
+                      </Card>
+
+                      <Card className="flex-1 min-w-0">
+                        <CardHeader>
+                          <CardTitle>Trades</CardTitle>
+                          <Badge variant="muted">{chartPayload.trades.length}</Badge>
+                        </CardHeader>
+                        <div className="overflow-auto max-h-72">
+                          {chartPayload.trades.length === 0 ? (
+                            <EmptyState size="sm" icon={RiFlaskLine} title="No trades" description="This run closed no positions." />
+                          ) : (
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                  <TableHead>Side</TableHead>
+                                  <TableHead>Entry</TableHead>
+                                  <TableHead>Exit</TableHead>
+                                  <TableHead className="text-right">Price</TableHead>
+                                  <TableHead className="text-right">Qty</TableHead>
+                                  <TableHead className="text-right">P&L</TableHead>
+                                  <TableHead className="text-right">Return</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {chartPayload.trades.map((t, i) => (
+                                  <TableRow key={i}>
+                                    <TableCell>
+                                      <Badge variant={t.side === "SELL" ? "down" : "up"}>{t.side === "SELL" ? "Sell" : "Buy"}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-text-tertiary whitespace-nowrap">{fmtStamp(t.entry_time)}</TableCell>
+                                    <TableCell className="text-text-tertiary whitespace-nowrap">
+                                      {t.exit_time ? fmtStamp(t.exit_time) : "n/a"}
+                                    </TableCell>
+                                    <TableCell className="text-right whitespace-nowrap">
+                                      {t.entry_price.toFixed(2)}
+                                      <span className="text-text-tertiary"> to </span>
+                                      {t.exit_price?.toFixed(2) ?? "n/a"}
+                                    </TableCell>
+                                    <TableCell className="text-right">{t.quantity.toFixed(0)}</TableCell>
+                                    <TableCell className={cn("text-right", pnlClass(t.pnl ?? 0))}>
+                                      {t.pnl != null ? fmtCurrency(t.pnl) : "n/a"}
+                                    </TableCell>
+                                    <TableCell className={cn("text-right", pnlClass(t.pnl_pct ?? 0))}>
+                                      {t.pnl_pct != null ? fmtPct(t.pnl_pct) : "n/a"}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          )}
+                        </div>
+                      </Card>
+                    </div>
+                  </>
+                )}
               </>
-            )}
-            </>
             )}
           </>
         )}
@@ -563,10 +582,77 @@ export function SimPanel() {
   );
 }
 
+function RunRow({
+  run: r,
+  selected,
+  onSelect,
+  onDelete,
+}: {
+  run: SimRunSummary;
+  selected: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
+      className={cn(
+        "w-full text-left px-4 py-2 border-b border-separator-border group transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring",
+        selected ? "bg-background-secondary-default" : "hover:bg-background-secondary-hover"
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className={cn(
+            "size-2 rounded-full shrink-0",
+            r.status === "running" && "bg-status-yellow-text animate-pulse",
+            r.status === "completed" && "bg-status-lime-text",
+            r.status === "error" && "bg-status-rose-text"
+          )}
+        />
+        <span className="text-body-2-medium text-text-primary truncate flex-1">{r.label}</span>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Delete run"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-foreground-icon-tertiary hover:text-status-rose-text"
+        >
+          <RiDeleteBinLine />
+        </Button>
+      </div>
+      <div className="flex items-center gap-3 pl-4 text-caption-1-regular tabular text-text-tertiary">
+        <span>{r.timeframe}</span>
+        <span>{r.symbols.length} symbols</span>
+        {r.status === "running" ? (
+          <span className="text-status-yellow-text">
+            {r.progress.done} of {r.progress.total} {r.progress.current ?? ""}
+          </span>
+        ) : r.aggregate ? (
+          <>
+            <span className={pnlClass(r.aggregate.avg_return_pct)}>
+              {r.aggregate.avg_return_pct >= 0 ? "+" : ""}
+              {r.aggregate.avg_return_pct.toFixed(1)}%
+            </span>
+            <span>PF {r.aggregate.profit_factor.toFixed(2)}</span>
+          </>
+        ) : (
+          <span className="text-status-rose-text">Failed</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[10px] text-text-muted uppercase tracking-wider">{label}</label>
+    <div className="flex flex-col gap-1.5 min-w-0">
+      <span className="text-caption-1-medium text-text-tertiary">{label}</span>
       {children}
     </div>
   );

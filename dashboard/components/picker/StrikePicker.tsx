@@ -17,9 +17,9 @@ const TRADE_ORDER: TradeType[] = ["rut", "mars", "marsmax", "space"];
 
 const TRADE_META: Record<TradeType, { label: string; tone: string; dot: string }> = {
   rut:     { label: "RUT",      tone: "text-text-secondary", dot: "bg-text-secondary" },
-  mars:    { label: "Mars",     tone: "text-accent",         dot: "bg-accent" },
-  marsmax: { label: "Mars Max", tone: "text-warning",        dot: "bg-warning" },
-  space:   { label: "Space",    tone: "text-up",             dot: "bg-up" },
+  mars:    { label: "Mars",     tone: "text-accent-500",         dot: "bg-accent-500" },
+  marsmax: { label: "Mars Max", tone: "text-status-yellow-text",        dot: "bg-status-yellow-text" },
+  space:   { label: "Space",    tone: "text-status-lime-text",             dot: "bg-status-lime-text" },
 };
 
 // Pull a Fibonacci floor/ceiling ladder out of recent bars. Mirrors the
@@ -40,7 +40,7 @@ function fibLevelsFrom(bars: Bar[]): number[] {
 }
 
 function describeFibPosition(strike: number, fibs: number[], spot: number): string {
-  if (!fibs.length) return "—";
+  if (!fibs.length) return "n/a";
   const sortedDesc = [...fibs].sort((a, b) => b - a);
   let moneyIdx = sortedDesc.findIndex((p) => p <= spot);
   if (moneyIdx === -1) moneyIdx = sortedDesc.length - 1;
@@ -66,7 +66,7 @@ export function StrikePicker() {
 
   useEffect(() => {
     api.spreadSpecs().then(setSpecs).catch(() => setSpecs(null));
-    // Try the most recent cached scan first — covers the daily 09:30 ET
+    // Try the most recent cached scan first, covers the daily 09:30 ET
     // scheduled run AND any prior manual scan. Falls back to the preflight
     // cache if no scan rows exist yet (cold start).
     api.scansLatest().then((rec) => {
@@ -113,7 +113,7 @@ export function StrikePicker() {
     runScan(pending);
   };
 
-  // Top pick per trade type — already passing all checks.
+  // Top pick per trade type, already passing all checks.
   const picks = useMemo<Record<TradeType, SpreadCandidate | null>>(() => {
     const out = { rut: null, mars: null, marsmax: null, space: null } as Record<TradeType, SpreadCandidate | null>;
     if (!scan) return out;
@@ -128,7 +128,7 @@ export function StrikePicker() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Options · monthly bull-put"
+        eyebrow="Options"
         title="Strike Picker"
         description="One chart, four trade types. Pick the short strike that gives the most premium without crossing the next fib level."
         actions={
@@ -139,7 +139,7 @@ export function StrikePicker() {
                 onChange={(e) => setPending(e.target.value.toUpperCase())}
                 onKeyDown={(e) => { if (e.key === "Enter") onScan(); }}
                 placeholder="ALL"
-                className="h-8 w-20 sm:w-24 uppercase tabular"
+                className="h-8 w-20 sm:w-24 tabular"
               />
             </Field>
             <Field
@@ -151,7 +151,7 @@ export function StrikePicker() {
                     <button
                       type="button"
                       onClick={resetToLive}
-                      className="text-accent hover:underline"
+                      className="text-accent-500 hover:underline"
                     >
                       manual · reset to live{liveBankroll != null ? ` ($${(liveBankroll / 1000).toFixed(0)}k)` : ""}
                     </button>
@@ -174,7 +174,7 @@ export function StrikePicker() {
       />
 
       {error && (
-        <div className="text-xs text-down/80">{error}</div>
+        <div className="text-caption-1-regular text-status-rose-text/80">{error}</div>
       )}
 
       <MonitorMiniStrip />
@@ -234,12 +234,12 @@ export function StrikePicker() {
 function Field({ label, hint, children }: { label: string; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       {children}
       {hint && (
         <span className={cn(
-          "text-[10px] tabular",
-          typeof hint === "string" && hint.startsWith("●") ? "text-up" : "text-text-muted"
+          "text-caption-2-regular tabular",
+          typeof hint === "string" && hint.startsWith("●") ? "text-status-lime-text" : "text-text-tertiary"
         )}>
           {hint}
         </span>
@@ -259,20 +259,20 @@ function PreflightStrip({
 }) {
   const ranAt = preflight?.ran_at ? new Date(preflight.ran_at) : null;
   return (
-    <div className="flex items-baseline justify-between py-3 border-t border-b border-border/40 -mx-1">
+    <div className="flex items-baseline justify-between py-3 border-t border-b border-separator-border -mx-1">
       <div className="flex items-baseline gap-3">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">3rd-Friday pre-flight</span>
-        <span className="text-xs text-text-secondary">
+        <span className="text-caption-2-regular text-text-tertiary">3rd-Friday pre-flight</span>
+        <span className="text-caption-1-regular text-text-secondary">
           {ranAt
             ? `last ran ${ranAt.toLocaleDateString()} at ${ranAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-            : "never run — fires automatically 09:05 ET on the monthly"}
+            : "never run, fires automatically 09:05 ET on the monthly"}
         </span>
       </div>
       <button
         type="button"
         onClick={onRun}
         disabled={running}
-        className="text-[11px] text-accent hover:underline disabled:opacity-50"
+        className="text-caption-1-regular text-accent-500 hover:underline disabled:opacity-50"
       >
         {running ? "Running…" : "Run now"}
       </button>
@@ -283,10 +283,10 @@ function PreflightStrip({
 function EmptyHint() {
   return (
     <div className="py-8 text-center">
-      <p className="text-[12px] text-text-secondary">
+      <p className="text-caption-1-regular text-text-secondary">
         Run a scan to compare RUT, Mars, Mars Max, and Space side by side.
       </p>
-      <p className="text-[11px] text-text-muted mt-1">
+      <p className="text-caption-1-regular text-text-tertiary mt-1">
         Index monthly bull-puts only. On the 3rd Friday of the month.
       </p>
     </div>
@@ -296,10 +296,10 @@ function EmptyHint() {
 function ScanSkeleton() {
   return (
     <div className="grid md:grid-cols-[minmax(0,1fr)_20rem] lg:grid-cols-[minmax(0,1fr)_22rem] gap-4 md:gap-5 animate-pulse">
-      <div className="h-[460px] rounded-md bg-surface-2/40" />
+      <div className="h-[460px] rounded-md bg-background-secondary-default" />
       <div className="flex flex-col gap-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-32 rounded-md bg-surface-2/40" />
+          <div key={i} className="h-32 rounded-md bg-background-secondary-default" />
         ))}
       </div>
     </div>
@@ -311,7 +311,7 @@ function RecommendationStrip({ scan, bankroll }: { scan: SpreadScanResult; bankr
   const rec = scan.recommendation;
   if (!rec) {
     return (
-      <div className="py-3 text-center text-[11px] text-text-muted border-y border-border/30">
+      <div className="py-3 text-center text-caption-1-regular text-text-tertiary border-y border-separator-border">
         No qualifying trade in this chain right now.
       </div>
     );
@@ -321,19 +321,19 @@ function RecommendationStrip({ scan, bankroll }: { scan: SpreadScanResult; bankr
   const sizing = computeSizing(c, bankroll);
 
   return (
-    <section className="py-3 border-y border-border/40">
+    <section className="py-3 border-y border-separator-border">
       <div className="flex items-baseline gap-3 flex-wrap mb-2">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">Take</span>
+        <span className="text-caption-2-regular text-text-tertiary">Take</span>
         <span className={cn("w-1.5 h-1.5 rounded-full translate-y-[-1px]", meta.dot)} />
-        <span className={cn("text-base font-semibold tracking-tight", meta.tone)}>{meta.label}</span>
-        <span className="font-mono text-sm tabular text-text-primary">
-          {c.short_strike}<span className="text-text-muted"> / </span>{c.long_strike}{c.side === "put" ? "P" : "C"}
+        <span className={cn("text-headline-regular font-semibold", meta.tone)}>{meta.label}</span>
+        <span className="tabular text-body-2-regular tabular text-text-primary">
+          {c.short_strike}<span className="text-text-tertiary"> / </span>{c.long_strike}{c.side === "put" ? "P" : "C"}
         </span>
-        <span className="text-[11px] text-text-muted tabular">
+        <span className="text-caption-1-regular text-text-tertiary tabular">
           {formatExpiry(c.expiry)} · {c.dte}d
         </span>
       </div>
-      <div className="flex items-baseline gap-x-6 gap-y-2 flex-wrap text-[11px] tabular">
+      <div className="flex items-baseline gap-x-6 gap-y-2 flex-wrap text-caption-1-regular tabular">
         <Metric label="AROC"   value={`${c.aroc_pct.toFixed(0)}%`} tone="up" />
         <Metric label="Kelly"  value={c.kelly_pct.toFixed(0)} />
         <Metric label="POP"    value={`${c.win_prob_pct.toFixed(0)}%`} />
@@ -341,7 +341,7 @@ function RecommendationStrip({ scan, bankroll }: { scan: SpreadScanResult; bankr
         <Metric label="size"   value={`${sizing.recommendedContracts} ×`} tone="up" />
         <Metric label="Kelly$" value={`$${(sizing.kellyDollars / 1000).toFixed(0)}k`} />
       </div>
-      <p className="text-[11px] text-text-muted leading-relaxed mt-2">{rec.reason}</p>
+      <p className="text-caption-1-regular text-text-tertiary leading-relaxed mt-2">{rec.reason}</p>
     </section>
   );
 }
@@ -349,8 +349,8 @@ function RecommendationStrip({ scan, bankroll }: { scan: SpreadScanResult; bankr
 function Metric({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" }) {
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
-      <span className={cn(tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-primary")}>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
+      <span className={cn(tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text" : "text-text-primary")}>
         {value}
       </span>
     </span>
@@ -381,7 +381,7 @@ function StrikeMap({
 
   const underlyings = Object.keys(byUnderlying);
   if (!underlyings.length) {
-    return <div className="text-sm text-text-muted">No strikes to plot.</div>;
+    return <div className="text-body-2-regular text-text-tertiary">No strikes to plot.</div>;
   }
 
   return (
@@ -440,7 +440,7 @@ function UnderlyingMap({
   const yMin = lo - pad;
   const yMax = hi + pad;
 
-  // SVG geometry — tall + narrow looks chart-like and clean.
+  // SVG geometry, tall + narrow looks chart-like and clean.
   const H = 460;
   const W = 640;
   const padTop = 24;
@@ -448,7 +448,7 @@ function UnderlyingMap({
   const usableH = H - padTop - padBot;
   const priceToY = (p: number) => padTop + (1 - (p - yMin) / (yMax - yMin)) * usableH;
 
-  // Fib level decoration — money line + next-floor reference.
+  // Fib level decoration, money line + next-floor reference.
   const fibSortedDesc = [...fibs].sort((a, b) => b - a);
   const moneyIdx = spot != null ? fibSortedDesc.findIndex((p) => p <= spot) : -1;
 
@@ -456,19 +456,19 @@ function UnderlyingMap({
     <section>
       <div className="flex items-baseline justify-between mb-6">
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
+          <div className="text-caption-2-regular text-text-tertiary mb-1">
             {underlying}
           </div>
-          <div className="text-xl font-semibold tabular tracking-tight">
-            {spot != null ? spot.toFixed(2) : "—"}
+          <div className="text-title-2-regular font-semibold tabular">
+            {spot != null ? spot.toFixed(2) : "n/a"}
           </div>
         </div>
-        <div className="text-[10px] uppercase tracking-wider text-text-muted">
+        <div className="text-caption-2-regular text-text-tertiary">
           short strikes vs. fib
         </div>
       </div>
 
-      <svg
+      <svg aria-hidden="true"
         viewBox={`0 0 ${W} ${H}`}
         className="w-full h-auto max-h-[calc(100vh-22rem)] md:max-h-[60vh]"
         preserveAspectRatio="xMidYMid meet"
@@ -630,7 +630,7 @@ function CandidateRail({
 }) {
   return (
     <div className="flex flex-col">
-      <div className="text-[10px] uppercase tracking-wider text-text-muted pb-2 mb-1 border-b border-border/40">
+      <div className="text-caption-2-regular text-text-tertiary pb-2 mb-1 border-b border-separator-border">
         Compare trade types
       </div>
       {TRADE_ORDER.map((t) => (
@@ -676,12 +676,12 @@ function CandidateCard({
 
   if (!candidate) {
     return (
-      <div className="py-3 px-3 -mx-3 border-t border-border/30 first:border-t-0">
+      <div className="py-3 px-3 -mx-3 border-t border-separator-border first:border-t-0">
         <div className="flex items-center gap-2 mb-1.5">
           <span className={cn("w-1.5 h-1.5 rounded-full", meta.dot)} />
-          <span className={cn("text-[13px]", meta.tone)}>{meta.label}</span>
+          <span className={cn("text-body-2-regular", meta.tone)}>{meta.label}</span>
         </div>
-        <div className="text-[10px] text-text-muted">
+        <div className="text-caption-2-regular text-text-tertiary">
           no qualifying setup{spec?.underlying ? ` on ${spec.underlying}` : ""}
         </div>
       </div>
@@ -690,7 +690,7 @@ function CandidateCard({
 
   const c = candidate;
   const allPass = Object.values(c.passes).every(Boolean);
-  const fibPos = spot != null ? describeFibPosition(c.short_strike, fibs, spot) : "—";
+  const fibPos = spot != null ? describeFibPosition(c.short_strike, fibs, spot) : "n/a";
   const sizing = computeSizing(c, bankroll);
   const chartHref =
     `/chart/${c.symbol}?pinShort=${c.short_strike}&pinLong=${c.long_strike}` +
@@ -701,39 +701,39 @@ function CandidateCard({
       type="button"
       onClick={onSelect}
       className={cn(
-        "text-left py-3 px-3 -mx-3 rounded-md border-t border-border/30 transition-colors first:border-t-0",
-        selected ? "bg-surface-2/50" : "hover:bg-surface-2/30",
+        "text-left py-3 px-3 -mx-3 rounded-md border-t border-separator-border transition-colors first:border-t-0",
+        selected ? "bg-background-secondary-default" : "hover:bg-background-secondary-hover",
       )}
     >
       <div className="flex items-baseline justify-between gap-3 mb-2">
         <div className="flex items-baseline gap-2 min-w-0">
           <span className={cn("w-1.5 h-1.5 rounded-full translate-y-[-2px] shrink-0", meta.dot)} />
-          <span className={cn("text-[13px] font-medium", meta.tone)}>{meta.label}</span>
+          <span className={cn("text-body-2-regular font-medium", meta.tone)}>{meta.label}</span>
           {isRecommended && (
-            <span className="text-[9px] uppercase tracking-wider text-up">pick</span>
+            <span className="text-caption-2-regular text-status-lime-text">pick</span>
           )}
         </div>
-        <span className={cn("text-[10px] uppercase tracking-wider shrink-0",
-          allPass ? "text-up" : "text-down/70")}>
+        <span className={cn("text-caption-2-regular shrink-0",
+          allPass ? "text-status-lime-text" : "text-status-rose-text/70")}>
           {allPass ? "✓" : `${Object.values(c.passes).filter(Boolean).length}/4`}
         </span>
       </div>
 
-      <div className="font-mono text-[13px] tabular text-text-primary mb-2.5">
-        {c.short_strike}<span className="text-text-muted"> / </span>{c.long_strike}
+      <div className="tabular text-body-2-regular tabular text-text-primary mb-2.5">
+        {c.short_strike}<span className="text-text-tertiary"> / </span>{c.long_strike}
       </div>
 
-      <div className="flex items-baseline gap-x-4 gap-y-1.5 flex-wrap text-[11px] tabular">
+      <div className="flex items-baseline gap-x-4 gap-y-1.5 flex-wrap text-caption-1-regular tabular">
         <Chip label="Δ"     value={(c.short_delta * 100).toFixed(0)} />
         <Chip label="AROC"  value={`${c.aroc_pct.toFixed(0)}%`} tone={c.passes.aroc ? "up" : "down"} />
         <Chip label="Kelly" value={c.kelly_pct.toFixed(0)} tone={c.passes.kelly ? undefined : "down"} />
         <Chip label="adj"   value={`${c.adj_distance_pct.toFixed(1)}%`} tone={c.passes.adj_distance ? undefined : "down"} />
       </div>
 
-      <div className="mt-2 text-[10px] text-text-muted">{fibPos}</div>
+      <div className="mt-2 text-caption-2-regular text-text-tertiary">{fibPos}</div>
 
       {selected && (
-        <div className="mt-3 pt-3 border-t border-border/30 flex flex-col gap-2 text-[11px] tabular">
+        <div className="mt-3 pt-3 border-t border-separator-border flex flex-col gap-2 text-caption-1-regular tabular">
           <div className="flex items-baseline gap-x-4 gap-y-1.5 flex-wrap">
             <Chip label="credit"    value={`$${c.credit.toFixed(2)}`} />
             <Chip label="risk"      value={`$${c.max_risk.toFixed(2)}`} />
@@ -742,10 +742,10 @@ function CandidateCard({
           </div>
           <Link
             href={chartHref}
-            className="text-[11px] text-accent hover:underline self-start"
+            className="text-caption-1-regular text-accent-500 hover:underline self-start"
             onClick={(e) => e.stopPropagation()}
           >
-            Pin on chart →
+            Pin on chart
           </Link>
         </div>
       )}
@@ -756,9 +756,9 @@ function CandidateCard({
 function Chip({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" }) {
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       <span className={cn(
-        tone === "up" ? "text-up" : tone === "down" ? "text-down/80" : "text-text-primary"
+        tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text/80" : "text-text-primary"
       )}>
         {value}
       </span>

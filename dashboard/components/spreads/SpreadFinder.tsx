@@ -14,7 +14,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { RefreshCw, CheckCircle2, XCircle, ChevronDown } from "lucide-react";
+import { RiRefreshLine as RefreshCw, RiCheckboxCircleFill as CheckCircle2, RiCloseCircleFill as XCircle, RiArrowDownSLine as ChevronDown } from "@remixicon/react";
 import { useLiveBankroll } from "@/lib/useLiveBankroll";
 import { MonitorMiniStrip } from "@/components/monitor/MonitorMiniStrip";
 
@@ -34,15 +34,15 @@ const TRADE_LABEL: Record<string, string> = {
 };
 const TRADE_TONE: Record<string, string> = {
   rut:     "text-text-secondary",
-  mars:    "text-accent",
-  marsmax: "text-warning",
-  space:   "text-up",
+  mars:    "text-accent-500",
+  marsmax: "text-status-yellow-text",
+  space:   "text-status-lime-text",
 };
 const TRADE_DOT: Record<string, string> = {
   rut:     "bg-text-secondary",
-  mars:    "bg-accent",
-  marsmax: "bg-warning",
-  space:   "bg-up",
+  mars:    "bg-accent-500",
+  marsmax: "bg-status-yellow-text",
+  space:   "bg-status-lime-text",
 };
 
 export function SpreadFinder() {
@@ -125,9 +125,9 @@ export function SpreadFinder() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Options · monthly spread scanner"
+        eyebrow="Options"
         title="Spread Finder"
-        description="Mars · Mars Max · Space · RUT — same trade types as Picker, ranked side-by-side."
+        description="Mars · Mars Max · Space · RUT, same trade types as Picker, ranked side-by-side."
         actions={
           <div className="flex items-end gap-2 flex-wrap">
             <Field label="Symbol">
@@ -136,7 +136,7 @@ export function SpreadFinder() {
                 onChange={(e) => setPending(e.target.value.toUpperCase())}
                 onKeyDown={(e) => { if (e.key === "Enter") onScan(); }}
                 placeholder="ALL"
-                className="h-8 w-24 uppercase tabular"
+                className="h-8 w-24 tabular"
               />
             </Field>
             <Field
@@ -148,7 +148,7 @@ export function SpreadFinder() {
                     <button
                       type="button"
                       onClick={resetToLive}
-                      className="text-accent hover:underline"
+                      className="text-accent-500 hover:underline"
                     >
                       manual · reset to live{liveBankroll != null ? ` ($${(liveBankroll / 1000).toFixed(0)}k)` : ""}
                     </button>
@@ -192,13 +192,13 @@ export function SpreadFinder() {
       <MonitorMiniStrip />
 
       {error && (
-        <div className="text-[11px] text-down/80">{error}</div>
+        <div className="text-caption-1-regular text-status-rose-text/80">{error}</div>
       )}
 
       {!result && !loading && (
-        <div className="py-12 text-center text-sm text-text-secondary">
-          No cached scan yet — the picker hits IBKR for you.
-          <div className="text-xs text-text-muted mt-1.5">
+        <div className="py-12 text-center text-body-2-regular text-text-secondary">
+          No cached scan yet. The picker hits IBKR for you.
+          <div className="text-caption-1-regular text-text-tertiary mt-1.5">
             Daily 09:30 ET fills this in automatically.
           </div>
         </div>
@@ -222,9 +222,9 @@ export function SpreadFinder() {
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
-          className="self-start inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary"
+          className="self-start inline-flex items-center gap-1 text-caption-1-regular text-text-tertiary hover:text-text-secondary"
         >
-          <ChevronDown size={11} className={cn("transition-transform", showAll && "rotate-180")} />
+          <ChevronDown size={14} className={cn("transition-transform", showAll && "rotate-180")} />
           {showAll ? "Hide" : "Show"} all {allCandidates.length} candidates
         </button>
       )}
@@ -241,12 +241,12 @@ export function SpreadFinder() {
 function Field({ label, hint, children }: { label: string; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
       {children}
       {hint && (
         <span className={cn(
-          "text-[10px] tabular",
-          typeof hint === "string" && hint.startsWith("●") ? "text-up" : "text-text-muted"
+          "text-caption-2-regular tabular",
+          typeof hint === "string" && hint.startsWith("●") ? "text-status-lime-text" : "text-text-tertiary"
         )}>
           {hint}
         </span>
@@ -267,17 +267,17 @@ function StatusLine({
     : refreshSec === 1800 ? "every 30 min"
     : "hourly";
   return (
-    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-text-muted">
+    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-caption-1-regular text-text-tertiary">
       <span className="inline-flex items-center gap-1.5">
         <span className={cn(
           "w-1.5 h-1.5 rounded-full",
-          loading ? "bg-warning animate-pulse" : refreshSec > 0 ? "bg-up" : "bg-text-muted"
+          loading ? "bg-status-yellow-text animate-pulse" : refreshSec > 0 ? "bg-status-lime-text" : "bg-foreground-icon-quaternary"
         )} />
-        {loading ? "Scanning…" : refreshSec === 0 ? "Manual" : `Auto · ${mode}`}
+        {loading ? "Scanning…" : refreshSec === 0 ? "Manual" : `Auto, ${mode}`}
       </span>
       {ago && <span>last <span className="text-text-secondary tabular">{ago}</span> ago</span>}
-      {hydratedFromCache && !loading && <span className="text-text-secondary">· from cache</span>}
-      {candidates > 0 && <span>· {candidates} candidates</span>}
+      {hydratedFromCache && !loading && <span className="text-text-secondary">from cache</span>}
+      {candidates > 0 && <span>{candidates} candidates</span>}
     </div>
   );
 }
@@ -296,20 +296,20 @@ function RecommendationRow({ result, bankroll }: { result: SpreadScanResult; ban
     `&pinExpiry=${c.expiry}&pinType=${c.trade_type}&pinSide=${c.side}`;
 
   return (
-    <div className="py-4 border-y border-border/40 flex flex-col gap-3">
+    <div className="py-4 border-y border-separator-border flex flex-col gap-3">
       <div className="flex items-baseline gap-3 flex-wrap">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">Recommended</span>
-        <span className={cn("text-base font-semibold tracking-tight", tone)}>
+        <span className="text-caption-2-regular text-text-tertiary">Recommended</span>
+        <span className={cn("text-headline-regular font-semibold", tone)}>
           {label}
         </span>
-        <span className="font-mono text-sm tabular text-text-primary">
-          {c.short_strike}<span className="text-text-muted"> / </span>{c.long_strike}{c.side === "put" ? "P" : "C"}
+        <span className="tabular text-body-2-regular tabular text-text-primary">
+          {c.short_strike}<span className="text-text-tertiary"> / </span>{c.long_strike}{c.side === "put" ? "P" : "C"}
         </span>
-        <span className="text-[11px] text-text-muted tabular">
+        <span className="text-caption-1-regular text-text-tertiary tabular">
           {formatExpiry(c.expiry)} · {c.dte}d
         </span>
       </div>
-      <div className="flex items-baseline gap-x-6 gap-y-2 flex-wrap text-[11px] tabular">
+      <div className="flex items-baseline gap-x-6 gap-y-2 flex-wrap text-caption-1-regular tabular">
         <Stat label="AROC"   value={`${c.aroc_pct.toFixed(0)}%`} tone="up" />
         <Stat label="Kelly"  value={c.kelly_pct.toFixed(0)} />
         <Stat label="POP"    value={`${c.win_prob_pct.toFixed(0)}%`} />
@@ -317,9 +317,9 @@ function RecommendationRow({ result, bankroll }: { result: SpreadScanResult; ban
         <Stat label="adj %"  value={`${c.adj_distance_pct.toFixed(1)}%`} />
         <Stat label="size"   value={`${sizing.recommendedContracts} ×`} tone="up" />
       </div>
-      <p className="text-[11px] text-text-muted leading-relaxed">{rec.reason}</p>
-      <div className="flex gap-3 text-[11px]">
-        <Link href={chartHref} className="text-accent hover:underline">View on chart →</Link>
+      <p className="text-caption-1-regular text-text-tertiary leading-relaxed">{rec.reason}</p>
+      <div className="flex gap-3 text-caption-1-regular">
+        <Link href={chartHref} className="text-accent-500 hover:underline">View on chart</Link>
       </div>
     </div>
   );
@@ -328,8 +328,8 @@ function RecommendationRow({ result, bankroll }: { result: SpreadScanResult; ban
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" }) {
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
-      <span className={cn(tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-primary")}>
+      <span className="text-caption-2-regular text-text-tertiary">{label}</span>
+      <span className={cn(tone === "up" ? "text-status-lime-text" : tone === "down" ? "text-status-rose-text" : "text-text-primary")}>
         {value}
       </span>
     </span>
@@ -349,18 +349,18 @@ function PicksTable({
 }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
+      <table className="w-full text-caption-1-regular tabular">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-text-muted">
+          <tr className="text-caption-2-regular text-text-tertiary">
             <Th>Trade</Th>
             <Th align="right">Spot</Th>
             <Th align="right">Strikes</Th>
             <Th align="right">Δ</Th>
-            <Th align="right">exit Δ</Th>
+            <Th align="right">Exit Δ</Th>
             <Th align="right">AROC</Th>
             <Th align="right">Kelly</Th>
-            <Th align="right">adj %</Th>
-            <Th align="right">size</Th>
+            <Th align="right">Adj %</Th>
+            <Th align="right">Size</Th>
             <Th align="center">Status</Th>
           </tr>
         </thead>
@@ -409,14 +409,14 @@ function PickRow({
 
   if (!cand) {
     return (
-      <tr className="border-t border-border/30">
+      <tr className="border-t border-separator-border">
         <td className="px-3 py-2.5">
           <span className="inline-flex items-baseline gap-2">
             <span className={cn("w-1.5 h-1.5 rounded-full translate-y-[-2px]", dot)} />
             <span className={tone}>{label}</span>
           </span>
         </td>
-        <td colSpan={9} className="px-3 py-2.5 text-text-muted">
+        <td colSpan={9} className="px-3 py-2.5 text-text-tertiary">
           no qualifying setup{spec ? ` on ${spec.underlying}` : ""}
         </td>
       </tr>
@@ -431,40 +431,40 @@ function PickRow({
 
   return (
     <tr className={cn(
-      "border-t border-border/30 hover:bg-surface-2/30 transition-colors",
-      isRecommended && "bg-accent/[0.04]",
+      "border-t border-separator-border hover:bg-background-secondary-hover transition-colors",
+      isRecommended && "bg-accent-500/[0.04]",
     )}>
       <td className="px-3 py-2.5">
         <Link href={chartHref} className="inline-flex items-baseline gap-2 hover:underline">
           <span className={cn("w-1.5 h-1.5 rounded-full translate-y-[-2px]", dot)} />
           <span className={tone}>{label}</span>
           {isRecommended && (
-            <span className="text-[9px] uppercase tracking-wider text-up">pick</span>
+            <span className="text-caption-2-regular text-status-lime-text">pick</span>
           )}
         </Link>
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary">
-        {spot != null ? spot.toFixed(2) : "—"}
+        {spot != null ? spot.toFixed(2) : "n/a"}
       </td>
-      <td className="px-3 py-2.5 text-right font-mono text-text-primary">
-        {cand.short_strike}<span className="text-text-muted">/</span>{cand.long_strike}
+      <td className="px-3 py-2.5 text-right tabular text-text-primary">
+        {cand.short_strike}<span className="text-text-tertiary">/</span>{cand.long_strike}
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary">
         {(cand.short_delta * 100).toFixed(0)}
       </td>
-      <td className="px-3 py-2.5 text-right text-text-muted">
-        {spec ? Math.round(spec.delta_exit * 100) : "—"}
+      <td className="px-3 py-2.5 text-right text-text-tertiary">
+        {spec ? Math.round(spec.delta_exit * 100) : "n/a"}
       </td>
       <td className={cn("px-3 py-2.5 text-right",
-        cand.passes.aroc ? "text-up" : "text-down/80")}>
+        cand.passes.aroc ? "text-status-lime-text" : "text-status-rose-text/80")}>
         {cand.aroc_pct.toFixed(0)}%
       </td>
       <td className={cn("px-3 py-2.5 text-right",
-        cand.passes.kelly ? "text-text-primary" : "text-down/80")}>
+        cand.passes.kelly ? "text-text-primary" : "text-status-rose-text/80")}>
         {cand.kelly_pct.toFixed(0)}
       </td>
       <td className={cn("px-3 py-2.5 text-right",
-        cand.passes.adj_distance ? "text-text-secondary" : "text-down/80")}>
+        cand.passes.adj_distance ? "text-text-secondary" : "text-status-rose-text/80")}>
         {cand.adj_distance_pct.toFixed(1)}%
       </td>
       <td className="px-3 py-2.5 text-right text-text-secondary">
@@ -472,9 +472,9 @@ function PickRow({
       </td>
       <td className="px-3 py-2.5 text-center">
         {allPass ? (
-          <CheckCircle2 size={13} className="inline text-up" />
+          <CheckCircle2 size={13} className="inline text-status-lime-text" />
         ) : (
-          <XCircle size={13} className="inline text-down/60" />
+          <XCircle size={13} className="inline text-status-rose-text/60" />
         )}
       </td>
     </tr>
@@ -488,15 +488,15 @@ function AllCandidates({
 }: { rows: { type: string; cand: SpreadCandidate }[]; recommendedType?: string }) {
   return (
     <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-[11px] tabular">
+      <table className="w-full text-caption-1-regular tabular">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-text-muted">
+          <tr className="text-caption-2-regular text-text-tertiary">
             <Th>Trade</Th>
             <Th align="right">Strikes</Th>
             <Th align="right">Δ</Th>
             <Th align="right">AROC</Th>
             <Th align="right">Kelly</Th>
-            <Th align="right">adj %</Th>
+            <Th align="right">Adj %</Th>
             <Th align="center">Pass</Th>
           </tr>
         </thead>
@@ -511,8 +511,8 @@ function AllCandidates({
               `&pinExpiry=${cand.expiry}&pinType=${cand.trade_type}&pinSide=${cand.side}`;
             return (
               <tr key={`${type}-${cand.short_strike}-${i}`} className={cn(
-                "border-t border-border/20 hover:bg-surface-2/30",
-                recommendedType === type && "bg-accent/[0.03]"
+                "border-t border-separator-border hover:bg-background-secondary-hover",
+                recommendedType === type && "bg-accent-500/[0.03]"
               )}>
                 <td className="px-3 py-2">
                   <Link href={chartHref} className="inline-flex items-baseline gap-2 hover:underline">
@@ -520,15 +520,15 @@ function AllCandidates({
                     <span className={tone}>{label}</span>
                   </Link>
                 </td>
-                <td className="px-3 py-2 text-right font-mono text-text-primary">
-                  {cand.short_strike}<span className="text-text-muted">/</span>{cand.long_strike}
+                <td className="px-3 py-2 text-right tabular text-text-primary">
+                  {cand.short_strike}<span className="text-text-tertiary">/</span>{cand.long_strike}
                 </td>
                 <td className="px-3 py-2 text-right text-text-secondary">{(cand.short_delta * 100).toFixed(0)}</td>
-                <td className={cn("px-3 py-2 text-right", cand.passes.aroc ? "text-up" : "text-down/80")}>{cand.aroc_pct.toFixed(0)}%</td>
-                <td className={cn("px-3 py-2 text-right", cand.passes.kelly ? "text-text-primary" : "text-down/80")}>{cand.kelly_pct.toFixed(0)}</td>
-                <td className={cn("px-3 py-2 text-right", cand.passes.adj_distance ? "text-text-secondary" : "text-down/80")}>{cand.adj_distance_pct.toFixed(1)}%</td>
+                <td className={cn("px-3 py-2 text-right", cand.passes.aroc ? "text-status-lime-text" : "text-status-rose-text/80")}>{cand.aroc_pct.toFixed(0)}%</td>
+                <td className={cn("px-3 py-2 text-right", cand.passes.kelly ? "text-text-primary" : "text-status-rose-text/80")}>{cand.kelly_pct.toFixed(0)}</td>
+                <td className={cn("px-3 py-2 text-right", cand.passes.adj_distance ? "text-text-secondary" : "text-status-rose-text/80")}>{cand.adj_distance_pct.toFixed(1)}%</td>
                 <td className="px-3 py-2 text-center">
-                  {allPass ? <CheckCircle2 size={12} className="inline text-up" /> : <XCircle size={12} className="inline text-down/60" />}
+                  {allPass ? <CheckCircle2 size={14} className="inline text-status-lime-text" /> : <XCircle size={14} className="inline text-status-rose-text/60" />}
                 </td>
               </tr>
             );

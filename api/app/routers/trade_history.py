@@ -13,7 +13,7 @@ import io
 import json
 import logging
 from datetime import date, datetime, timedelta
-from typing import Any, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
