@@ -1,7 +1,7 @@
 """Historical context for Rule One spreads: what happened to trades like this one.
 
 Backed by the two CSVs that ``scripts/build_spread_history.py`` writes from
-21 years of IBKR bars (see that script for the replay rules and validation).
+26 years of daily index closes (see that script for the data, replay rules and validation).
 Three questions are answered here:
 
   odds()          a trade sits at short delta D with N days left; of the past
@@ -10,7 +10,7 @@ Three questions are answered here:
                   strategy do in that regime versus overall?
   summary()       the full evidence tables for the History page.
 
-Everything is counted from the model's weekly checkpoints, so "exit" means
+Everything is counted from the model's daily checkpoints, so "exit" means
 "the replay would have closed the trade under the course's rules", not a
 real fill. Counts are small for narrow slices; every answer carries ``n``
 so the UI can say so.
@@ -41,7 +41,7 @@ DAYS_BANDS = [("3 weeks out", 18, 24), ("2 weeks out", 11, 17), ("1 week out", 4
 
 DELTA_BAND = 5.0       # +/- delta points for "same spot"
 DELTA_BAND_WIDE = 8.0  # fallback when the narrow band has too few trades
-DAYS_BAND = 4          # +/- days; checkpoints are weekly so this catches one column
+DAYS_BAND = 4          # +/- days around the query; one checkpoint per trade is kept (the closest in days)
 MIN_SAMPLE = 8
 
 
@@ -181,11 +181,15 @@ def odds_grid(strategy: str) -> List[Dict[str, Any]]:
     out = []
     for label, lo_d, hi_d in DAYS_BANDS:
         in_band = [c for c in rows if lo_d <= c["days_left"] <= hi_d]
+        mid = (lo_d + hi_d) / 2
         for lo, hi in DELTA_BINS:
-            cell = {}
+            # One checkpoint per trade: the one nearest the middle of the days band.
+            cell: Dict[str, Dict[str, Any]] = {}
             for c in in_band:
                 if lo <= c["delta"] < hi:
-                    cell.setdefault(c["trade_id"], c)
+                    cur = cell.get(c["trade_id"])
+                    if cur is None or abs(c["days_left"] - mid) < abs(cur["days_left"] - mid):
+                        cell[c["trade_id"]] = c
             t = _tally(list(cell.values()))
             out.append({"days_band": label, "delta_lo": lo, "delta_hi": hi, **t})
     return out

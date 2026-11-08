@@ -100,7 +100,7 @@ export function SpreadHistory() {
         description={
           cov
             ? `${cov.trades} monthly cycles from ${cov.first_entry?.slice(0, 4)} to ${cov.last_entry?.slice(0, 4)}, replayed under the course rules, to show what has moved the odds and what has not.`
-            : "Every monthly cycle since 2005, replayed under the course rules."
+            : "Every monthly cycle since 2000, replayed under the course rules."
         }
         actions={
           <>
@@ -291,7 +291,7 @@ function OddsGridCard({ s }: { s: RegimeStrategySummary }) {
       <CardHeader>
         <div className="flex items-center gap-2">
           <CardTitle>Odds of a later exit, by short delta and time left</CardTitle>
-          <InfoIcon size={12} hint={`Each cell: of the open trades whose short delta sat in that range at a weekly close with that much time left, the share that later hit the delta-${s.exit_delta} or Thursday exit. This is the lookup behind the Exit tab's "past trades in this spot".`} />
+          <InfoIcon size={12} hint={`Each cell: of the open trades whose short delta sat in that range at a daily close with that much time left, the share that later hit the delta-${s.exit_delta} or Thursday exit. This is the lookup behind the Exit tab's "past trades in this spot".`} />
         </div>
       </CardHeader>
       <CardContent className="p-0 overflow-x-auto">
@@ -409,20 +409,23 @@ function MethodCard() {
       </CardHeader>
       <CardContent className="text-body-2-regular text-text-secondary flex flex-col gap-2 max-w-3xl">
         <p>
-          Weekly SPX, RUT and VIX closes from IBKR since 2004. Every third Friday a spread is opened for the next
-          monthly expiry at the first 5-point strike that clears the strategy&apos;s distance floor and delta cap,
-          $10 wide. At each weekly close it is closed if the short delta reaches the exit threshold, on the Thursday
-          before expiry if the index is within the buffer, and otherwise held to settlement.
+          Daily SPX and RUT closes from 2000 (Yahoo), VIX closes from Cboe and RVX closes from FRED and Cboe
+          (RVX starts in 2004; before that RUT vol is VIX × 1.33). Every third Friday a spread is opened for the
+          next monthly expiry at the first 5-point strike that clears the strategy&apos;s distance floor and delta
+          cap, $10 wide. At each daily close it is closed if the short delta reaches the exit threshold, on the
+          Thursday before expiry if the index is within the buffer, and otherwise held to settlement at the
+          expiry-day open. Cycles whose modeled credit is under $0.05 are not traded.
         </p>
         <p>
           Deltas and credits come from Black-Scholes with a put-skew overlay calibrated to the live SPX chain on
-          6 Nov 2026 (within about one vol point and 5% of quoted mids). RUT vol is VIX × 1.33. The course&apos;s AROC and
-          Kelly checks are not applied, because they turn on cents the model cannot promise.
+          6 Nov 2026 (within about one vol point and 5% of quoted mids). The course&apos;s AROC and Kelly checks are
+          not applied, because they turn on cents the model cannot promise.
         </p>
         <p>
-          Checks: over the last five years the weekly replay agrees with a daily replay on 54 to 56 of 57 cycles per
-          strategy, and the 2012 to 2023 exit counts land at 8, 11 and 11 against the course&apos;s own 8, 9 and 9. Treat
-          exit and win counts as the reliable part and dollar returns as directional.
+          Checks: the 2012 to 2023 exit counts land at 5, 11 and 9 against the course&apos;s own 8, 9 and 9 for RUT,
+          Mars and Mars Max. Checking every close instead of every Friday matters: the weekly version of this
+          replay showed spreads riding to a full loss in crash weeks that a daily check would have closed days
+          earlier. Treat exit and win counts as the reliable part and dollar returns as directional.
         </p>
       </CardContent>
     </Card>

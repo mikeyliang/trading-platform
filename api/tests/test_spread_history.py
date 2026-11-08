@@ -69,13 +69,14 @@ def test_normalize_strategy_accepts_app_spellings():
 # history dataset
 # ---------------------------------------------------------------------------
 
-def test_dataset_covers_every_strategy_since_2005():
+def test_dataset_covers_every_strategy_since_2000():
     cov = hist.coverage()
-    assert cov["first_entry"] == "2005-10-21"
-    assert cov["trades"] >= 990
+    assert cov["first_entry"] == "2000-03-17"
+    assert cov["trades"] >= 1250
     for sid in model.STRATEGIES:
         rows = hist.closed_trades(sid)
-        assert 240 <= len(rows) <= 260, sid
+        # 320 monthly cycles 2000-03 .. 2026-10; RUT skips the dozen cycles that paid under $0.05
+        assert 300 <= len(rows) <= 330, sid
         assert all(r["outcome"] in {"win", "delta_exit", "last_day_exit", "partial_loss", "max_loss"} for r in rows)
 
 
