@@ -42,8 +42,33 @@ async function del<T>(path: string): Promise<T> {
   return res.json();
 }
 
+export type DataSource = "web" | "gateway" | "none";
+
+export interface DataHealth {
+  web_api: {
+    enabled: boolean;
+    authenticated: boolean;
+    account_id: string | null;
+    lst_expires_at: string | null;
+    last_ok_at: string | null;
+    last_error: string | null;
+    last_error_at: string | null;
+    requests: number;
+  };
+  gateway_connected: boolean;
+  sources: Record<string, { source: DataSource; at: string | null }>;
+}
+
+export interface HealthResponse {
+  status: string;
+  ib_connected: boolean;
+  mode: string;
+  mock_mode: boolean;
+  data?: DataHealth;
+}
+
 export const api = {
-  health: () => get<{ status: string; ib_connected: boolean; mode: string; mock_mode: boolean }>("/health"),
+  health: () => get<HealthResponse>("/health"),
   account: () => get<AccountInfo>("/api/account"),
 
   // market

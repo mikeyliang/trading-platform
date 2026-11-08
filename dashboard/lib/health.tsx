@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { api } from "@/lib/api";
+import { api, type DataHealth } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import type { AccountInfo } from "@/types";
 
@@ -10,6 +10,7 @@ export interface HealthState {
   ib_connected: boolean;
   mode: string;
   mock_mode: boolean;
+  data?: DataHealth;
 }
 
 interface HealthContextValue {
@@ -47,6 +48,9 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         ib_connected: wsHealth.ib_connected,
         mode: wsHealth.mode,
         mock_mode: wsHealth.mock_mode,
+        // The WS snapshot does not carry the data-source block; keep the
+        // last REST value so the settings page stays populated.
+        data: restHealth?.data,
       };
     }
     return restHealth;

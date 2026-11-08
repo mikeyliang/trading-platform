@@ -74,6 +74,27 @@ class Settings(BaseSettings):
     # attempts"). 8s leaves plenty of headroom.
     ibkr_flex_slice_delay_sec: float = 8.0
 
+    # IBKR Web API (api.ibkr.com) over OAuth 1.0a. When enabled, account,
+    # positions, quotes, history and option chains come from here first and
+    # fall back to the Gateway; the tape, depth and bot orders stay on
+    # ib_async. Credentials come from Client Portal > Settings > OAuth; see
+    # docs/ibkr-web-api.md for the setup.
+    ibkr_web_enabled: bool = False
+    ibkr_web_base_url: str = "https://api.ibkr.com/v1/api"
+    ibkr_web_consumer_key: str = ""
+    ibkr_web_access_token: str = ""
+    ibkr_web_access_token_secret: str = ""
+    ibkr_web_dh_prime: str = ""
+    ibkr_web_signature_key_fp: str = ""
+    ibkr_web_encryption_key_fp: str = ""
+    ibkr_web_realm: str = "limited_poa"
+    # Pin the account when the login owns several; empty picks the first.
+    ibkr_web_account_id: str = ""
+    # Chain discovery probes this many expiry months, and a chain for one
+    # expiry covers this many strikes either side of spot.
+    ibkr_web_chain_months: int = 6
+    ibkr_web_chain_window: int = 12
+
     @property
     def cors_origins(self) -> List[str]:
         return [s.strip() for s in self.cors_origins_raw.split(",") if s.strip()]
