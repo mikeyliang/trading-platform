@@ -17,8 +17,9 @@ Replay rules (same as the course and the live exit monitor):
     buffer of the strike; otherwise hold to settlement
   * return on risk = (credit - cost to close) / (width - credit)
 
-Data: weekly SPX, RUT and VIX bars 2004-2026 (IBKR caps daily history at
-five years, so weekly is what gives 21 years). RUT vol = VIX x 1.33.
+Data: weekly SPX, RUT, VIX and RVX bars 2004-2026 (IBKR caps daily history
+at five years, so weekly is what gives 21 years). RUT vol = RVX where it
+exists (Nov 2007 on), VIX x 1.33 before that.
 
 Run ``python scripts/build_spread_history.py --validate`` to also replay the
 last five years on daily bars with RVX and print how often the weekly and
@@ -176,10 +177,23 @@ def replay(spec: StrategySpec, bars: List[Bar], vols: Dict[date, float], weekly:
     return trades, checkpoints
 
 
+def rut_vol_map() -> Dict[date, float]:
+    """RUT vol: real weekly RVX where IBKR has it (Nov 2007 on), VIX x 1.33 before.
+
+    RVX averaged 1.29 x VIX over 2007-2026, so the proxy is close on average
+    but overstates RUT premium in calm years; the real series is used wherever
+    it exists.
+    """
+    rvx = _vol_map("rvx_w", True)
+    out = {d: v * RUT_VOL_RATIO for d, v in _vol_map("vix_w", True).items()}
+    out.update(rvx)
+    return out
+
+
 def build() -> Tuple[list, list]:
     weekly = {"SPX": _load_bars("spx_w", True), "RUT": _load_bars("rut_w", True)}
     vix_w = _vol_map("vix_w", True)
-    vols = {"SPX": vix_w, "RUT": _vol_map("vix_w", True, RUT_VOL_RATIO)}
+    vols = {"SPX": vix_w, "RUT": rut_vol_map()}
     trades, cps = [], []
     for spec in STRATEGIES.values():
         t, c = replay(spec, weekly[spec.underlying], vols[spec.underlying], True, vix=vix_w)
