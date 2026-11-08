@@ -25,7 +25,7 @@ interface Props {
 
 // Equity-curve area chart with a synchronized drawdown subpane underneath.
 // The drawdown series is computed from the running peak so the chart works
-// for any equity_curve payload — server doesn't have to send it pre-computed.
+// for any equity_curve payload, server doesn't have to send it pre-computed.
 export function EquityCurveChart({
   equity,
   initialCapital,
@@ -162,7 +162,7 @@ export function EquityCurveChart({
 
   if (!equity.length) {
     return (
-      <div className="text-[11px] text-text-muted text-center py-8">
+      <div className="text-caption-1-regular text-text-tertiary text-center py-8">
         No equity data
       </div>
     );
@@ -172,17 +172,17 @@ export function EquityCurveChart({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="border border-border rounded-md overflow-hidden bg-bg">
-        <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+      <div className="border border-separator-border rounded-md overflow-hidden bg-background-full">
+        <div className="flex items-center gap-3 px-3 h-6 border-b border-separator-border">
+          <span className="text-caption-2-regular text-text-tertiary">
             Equity
           </span>
-          <span className="text-[10px] tabular text-text-muted">
+          <span className="text-caption-2-regular tabular text-text-tertiary">
             {fmtCurrency(stats?.first ?? 0)} → {fmtCurrency(stats?.last ?? 0)}
           </span>
           <span
-            className={`ml-auto text-[10px] tabular ${
-              retPct >= 0 ? "text-up" : "text-down"
+            className={`ml-auto text-caption-2-regular tabular ${
+              retPct >= 0 ? "text-status-lime-text" : "text-status-rose-text"
             }`}
           >
             {fmtPct(retPct)}
@@ -191,13 +191,13 @@ export function EquityCurveChart({
         <div ref={eqRef} style={{ height }} className="w-full" />
       </div>
 
-      <div className="border border-border rounded-md overflow-hidden bg-bg">
-        <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+      <div className="border border-separator-border rounded-md overflow-hidden bg-background-full">
+        <div className="flex items-center gap-3 px-3 h-6 border-b border-separator-border">
+          <span className="text-caption-2-regular text-text-tertiary">
             Drawdown
           </span>
-          <span className="ml-auto text-[10px] tabular text-down">
-            max {stats ? fmtPct(stats.maxDd) : "—"}
+          <span className="ml-auto text-caption-2-regular tabular text-status-rose-text">
+            max {stats ? fmtPct(stats.maxDd) : "n/a"}
           </span>
         </div>
         <div ref={ddRef} style={{ height: ddHeight }} className="w-full" />

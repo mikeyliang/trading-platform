@@ -1,11 +1,11 @@
 import * as React from "react";
-import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
+import { RiArrowDownSLine as ChevronDown, RiArrowUpSLine as ChevronUp, RiExpandUpDownLine as ChevronsUpDown } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
     <div className="relative w-full overflow-auto">
-      <table ref={ref} className={cn("w-full caption-bottom text-xs", className)} {...props} />
+      <table ref={ref} className={cn("w-full caption-bottom text-body-2-medium", className)} {...props} />
     </div>
   )
 );
@@ -13,7 +13,7 @@ Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
   ({ className, ...props }, ref) => (
-    <thead ref={ref} className={cn("sticky top-0 z-10 bg-surface", className)} {...props} />
+    <thead ref={ref} className={cn("sticky top-0 z-10 bg-background-secondary-default shadow-[0_1px_0_0_var(--color-separator-border)]", className)} {...props} />
   )
 );
 TableHeader.displayName = "TableHeader";
@@ -27,7 +27,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("border-b border-border/50 transition-colors hover:bg-surface-2 data-[state=selected]:bg-surface-2", className)}
+      className={cn("border-b border-separator-border transition-colors hover:bg-background-secondary-hover data-[state=selected]:bg-accent-50 dark:data-[state=selected]:bg-accent-950/40", className)}
       {...props}
     />
   )
@@ -39,7 +39,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
     <th
       ref={ref}
       className={cn(
-        "h-6 px-2 text-left align-middle font-normal text-[10px] uppercase tracking-wider text-text-muted border-b border-border",
+        "h-8 px-3 text-left align-middle text-caption-1-medium text-text-tertiary whitespace-nowrap",
         className
       )}
       {...props}
@@ -50,14 +50,14 @@ TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn("px-2 py-1 align-middle", className)} {...props} />
+    <td ref={ref} className={cn("px-3 h-9 align-middle text-text-primary tabular [&:has([role=checkbox])]:pr-0", className)} {...props} />
   )
 );
 TableCell.displayName = "TableCell";
 
 const TableEmpty = ({ colSpan, children }: { colSpan: number; children: React.ReactNode }) => (
   <tr>
-    <td colSpan={colSpan} className="text-center py-10 text-text-muted text-[11px]">
+    <td colSpan={colSpan} className="text-center py-10 text-text-tertiary text-caption-1-regular">
       {children}
     </td>
   </tr>
@@ -73,7 +73,7 @@ export interface SortState<K extends string = string> {
 /**
  * Header cell that toggles sort state. Click cycles asc → desc → asc on the
  * same column; clicking a new column adopts the column's `defaultDirection`
- * (numeric columns default to desc — most users want "biggest first").
+ * (numeric columns default to desc, most users want "biggest first").
  */
 interface SortableTableHeadProps<K extends string>
   extends Omit<React.ThHTMLAttributes<HTMLTableCellElement>, "onClick"> {
@@ -97,7 +97,7 @@ function SortableTableHead<K extends string>({
   const direction = active ? sort!.direction : null;
   return (
     <TableHead
-      className={cn(align === "right" && "text-right", className)}
+      className={cn("group/th", align === "right" && "text-right", className)}
       aria-sort={active ? (direction === "asc" ? "ascending" : "descending") : "none"}
       {...props}
     >
@@ -107,18 +107,18 @@ function SortableTableHead<K extends string>({
         className={cn(
           "inline-flex items-center gap-0.5 select-none transition-colors hover:text-text-primary",
           align === "right" && "flex-row-reverse",
-          active && "text-accent"
+          active && "text-text-primary"
         )}
       >
         <span>{children}</span>
         {active ? (
           direction === "asc" ? (
-            <ChevronUp size={10} className="shrink-0" />
+            <ChevronUp size={14} className="shrink-0" />
           ) : (
-            <ChevronDown size={10} className="shrink-0" />
+            <ChevronDown size={14} className="shrink-0" />
           )
         ) : (
-          <ChevronsUpDown size={10} className="shrink-0 opacity-30" />
+          <ChevronsUpDown size={14} className="shrink-0 opacity-0 group-hover/th:opacity-40" />
         )}
       </button>
     </TableHead>

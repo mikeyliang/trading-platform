@@ -17,21 +17,33 @@ interface LogoProps {
 export function Logo({ symbol, size = 24, className }: LogoProps) {
   const url = logoUrlForSymbol(symbol);
   const [errored, setErrored] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  // The initials sit underneath until the image has actually decoded, so a
+  // slow or blocked logo host never shows the browser's broken-image glyph.
   const useImg = !!url && !errored;
+  const showImg = useImg && loaded;
 
   return (
     <div
       className={cn(
-        "shrink-0 rounded-md overflow-hidden flex items-center justify-center select-none",
+        "relative shrink-0 overflow-hidden flex items-center justify-center select-none",
         className
       )}
       style={{
         width: size,
         height: size,
-        background: useImg ? "#ffffff" : hashedColor(symbol),
+        background: showImg ? "var(--color-on-fill)" : hashedColor(symbol),
       }}
     >
-      {useImg ? (
+      {!showImg && (
+        <span
+          className="font-semibold text-text-white"
+          style={{ fontSize: Math.max(9, size * 0.42) }}
+        >
+          {symbol.slice(0, 2)}
+        </span>
+      )}
+      {useImg && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={url!}
@@ -39,16 +51,10 @@ export function Logo({ symbol, size = 24, className }: LogoProps) {
           width={size}
           height={size}
           loading="lazy"
+          onLoad={() => setLoaded(true)}
           onError={() => setErrored(true)}
-          className="object-contain w-full h-full"
+          className={cn("absolute inset-0 object-contain w-full h-full", showImg ? "opacity-100" : "opacity-0")}
         />
-      ) : (
-        <span
-          className="font-semibold text-white"
-          style={{ fontSize: Math.max(9, size * 0.42) }}
-        >
-          {symbol.slice(0, 2)}
-        </span>
       )}
     </div>
   );

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 
 from ..models.schemas import OptionChain, SpreadScanResponse, SpreadSpec
 from ..nautilus import ib_options
-from ..services import scan_store, spread_finder
+from ..services import market_source, scan_store, spread_finder
 
 router = APIRouter(prefix="/api/options", tags=["options"])
 
@@ -32,7 +32,7 @@ async def chain(
         description="YYYYMMDD; omit for expirations+strikes only.",
     ),
 ) -> OptionChain:
-    raw = await ib_options.get_chain(symbol, expiration)
+    raw = await market_source.chain(symbol, expiration)
     return OptionChain(**raw)
 
 

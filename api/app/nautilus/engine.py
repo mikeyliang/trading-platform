@@ -8,6 +8,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 
+from dataclasses import fields as dc_fields
+
 from ..models.schemas import (
     BacktestRequest, BacktestResult, BacktestTrade,
     OrderSide, StrategyInfo, StrategyStatus,
@@ -132,7 +134,7 @@ class TradingEngine:
             if strategy_id in self._runners:
                 await self._runners[strategy_id].stop()
             cfg_kwargs = {k: v for k, v in s.params.items()
-                          if k in BullPutSpreadConfig.__dataclass_fields__}
+                          if k in {f.name for f in dc_fields(BullPutSpreadConfig)}}
             cfg = BullPutSpreadConfig(symbol=s.symbols[0], **cfg_kwargs)
             runner = BullPutSpreadStrategy(strategy_id, cfg)
             await runner.start()
@@ -193,6 +195,7 @@ class TradingEngine:
 
         # simulate trades
         capital = request.initial_capital
+        # pylint: disable=unsubscriptable-object  # position is a dict whenever it is read
         position: Optional[Dict] = None
         trades: List[BacktestTrade] = []
         equity_curve = [{"time": bars[0]["time"] if bars else 0, "value": capital}]

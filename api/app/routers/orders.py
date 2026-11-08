@@ -21,6 +21,7 @@ from ..config import settings
 from ..models.schemas import AccountSummary, Order, OrderSide, Position, SpreadPosition, Trade
 from ..nautilus import ib_options
 from ..nautilus.ib_node import ib_node
+from ..services import market_source
 
 logger = logging.getLogger(__name__)
 
@@ -98,12 +99,15 @@ async def get_positions():
     # latest_positions() is unreliable when InstrumentProvider rejects
     # option contracts.
     try:
-        raw = await ib_options.get_positions()
+        raw = await market_source.positions()
     except Exception as e:  # noqa: BLE001
-        logger.warning("get_positions failed at ib_async read: %s", e)
+        logger.warning("get_positions failed: %s", e)
         return []
     try:
-        raw = await _refresh_position_marks(raw)
+        # Web API rows already carry IBKR's own mark; only Gateway rows need
+        # the ib_async snapshot refresh.
+        if not raw or raw[0].get("source") != "web":
+            raw = await _refresh_position_marks(raw)
     except Exception as e:  # noqa: BLE001
         # Mark refresh is best-effort — fall through with stale marks
         # rather than 500ing the dashboard's positions table.
@@ -165,23 +169,18 @@ def get_trades():
     ),
 )
 async def get_account() -> AccountSummary:
-    if ib_node.is_connected:
-        acct = await ib_options.get_account_summary()
-        if acct is None:
-            # Fall back to the NT-sourced view so the dashboard stays populated
-            # if the ib_async client briefly drops while NT is still up.
-            acct = ib_node.latest_account()
-        positions = await ib_options.get_positions()
-        if positions:
+    acct = await market_source.account_summary()
+    if acct:
+        positions = await market_source.positions()
+        if positions and positions[0].get("source") != "web":
             from ..main import _refresh_position_marks  # local to avoid cycle at import
             positions = await _refresh_position_marks(positions)
         upnl = sum(float(p.get("unrealized_pnl", 0)) for p in positions)
-        if acct:
-            merged = {
-                **_EMPTY_ACCOUNT,
-                **acct,
-                "unrealized_pnl": round(upnl, 2),
-                "mode": acct.get("mode") or settings.trading_mode,
-            }
-            return AccountSummary(**merged)
+        merged = {
+            **_EMPTY_ACCOUNT,
+            **acct,
+            "unrealized_pnl": round(upnl, 2),
+            "mode": acct.get("mode") or settings.trading_mode,
+        }
+        return AccountSummary(**merged)
     return AccountSummary(**{**_EMPTY_ACCOUNT, "mode": settings.trading_mode})

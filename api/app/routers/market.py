@@ -19,6 +19,7 @@ from ..nautilus.ib_client_base import (
     clear_subscription_error, get_subscription_error,
 )
 from ..nautilus.ib_node import ib_node
+from ..services import market_source
 from ..nautilus.mock.data import (
     SECTORS, generate_historical_bars, get_all_symbols, simulate_tick,
 )
@@ -135,6 +136,12 @@ async def get_bars(
 
 async def _fetch_bars(symbol: str, timeframe: str, days: int, cache_key: tuple):
     ttl = _BARS_TTL.get(timeframe, 300)
+    web_bars = await market_source.web_bars(symbol, timeframe, days)
+    if web_bars:
+        clear_subscription_error(symbol)
+        resp = {"symbol": symbol, "timeframe": timeframe, "bars": web_bars, "source": "web"}
+        _bars_cache.set(cache_key, resp, ttl_seconds=ttl)
+        return resp
     if ib_node.is_connected:
         bars = await ib_options.get_bars(symbol, timeframe, days)
         if bars:
@@ -190,6 +197,10 @@ async def _resolve_quote(sym: str) -> Dict[str, Any]:
     that yields a real ``last`` is remembered for ~5 minutes so a transient
     miss doesn't blank the dashboard.
     """
+    web = await market_source.web_quote(sym)
+    if _is_useful_quote(web):
+        _remember_quote(sym, web)
+        return web
     if ib_node.is_connected:
         await ib_node.ensure_subscribed(sym)
         live = ib_node.latest_quote(sym)

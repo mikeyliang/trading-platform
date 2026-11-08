@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-export type Mood = "🚀" | "👍" | "😐" | "👎" | "💀";
+// Stored mood vocabulary (the API persists these five code points). The UI
+// renders the word for each one; see MOOD_LABEL in the journal page.
+export type Mood = "\u{1F680}" | "\u{1F44D}" | "\u{1F610}" | "\u{1F44E}" | "\u{1F480}";
 
 export interface JournalEntry {
   id: string;

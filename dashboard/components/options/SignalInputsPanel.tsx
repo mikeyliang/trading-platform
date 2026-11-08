@@ -10,7 +10,7 @@ interface Props {
 }
 
 /**
- * "Inputs to verdict" — exposes every signal the algorithm consumed so the
+ * "Inputs to verdict", exposes every signal the algorithm consumed so the
  * user can audit the call. Each row is one signal: name + live value +
  * one-word interpretation + a dot indicating whether it's currently
  * scoring (●), neutral (○), or pushing against the position (◇).
@@ -25,14 +25,14 @@ export function SignalInputsPanel({ result }: Props) {
   // instead of crashing the whole audit column.
   if (!s || !s.chart_tf) {
     return (
-      <div className="rounded-md border border-border bg-surface">
-        <div className="flex items-baseline gap-2 px-3 h-7 border-b border-border/60">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+      <div className="rounded-md border border-separator-border bg-background-primary-default">
+        <div className="flex items-baseline gap-2 px-3 h-7 border-b border-separator-border">
+          <span className="text-caption-2-regular text-text-tertiary">
             Signals
           </span>
         </div>
-        <div className="p-3 text-[11px] text-text-muted">
-          Signal inputs unavailable — try refreshing the analyzer.
+        <div className="p-3 text-caption-1-regular text-text-tertiary">
+          Signal inputs unavailable. Try refreshing the analyzer.
         </div>
       </div>
     );
@@ -48,12 +48,12 @@ export function SignalInputsPanel({ result }: Props) {
   // Helpers for tagging signal disposition.
   const dot = (mood: "fires-for" | "fires-against" | "neutral" | "warn") =>
     mood === "fires-for"
-      ? <span className="text-up">●</span>
+      ? <span className="text-status-lime-text">●</span>
       : mood === "fires-against"
-      ? <span className="text-down">●</span>
+      ? <span className="text-status-rose-text">●</span>
       : mood === "warn"
-      ? <span className="text-warning">●</span>
-      : <span className="text-text-muted">○</span>;
+      ? <span className="text-status-yellow-text">●</span>
+      : <span className="text-text-tertiary">○</span>;
 
   // Per-row interpretation logic mirrors the backend's scoring rules.
   const rsiDaily = s.daily.rsi;
@@ -76,7 +76,7 @@ export function SignalInputsPanel({ result }: Props) {
     : macdHist > 0
       ? (bullishPos ? "fires-for" : "fires-against")
       : (bearishPos ? "fires-for" : "fires-against");
-  const macdLabel = macdHist == null ? "—" : macdHist > 0 ? "positive" : "negative";
+  const macdLabel = macdHist == null ? "n/a" : macdHist > 0 ? "positive" : "negative";
 
   const smi = s.chart_tf.smi;
   const smiSig = s.chart_tf.smi_signal;
@@ -88,7 +88,7 @@ export function SignalInputsPanel({ result }: Props) {
       ? (bullishPos ? "fires-for" : "warn")
       : "neutral";
   const smiLabel = smi == null
-    ? "—"
+    ? "n/a"
     : smi >= 40 ? "overbought"
     : smi <= -40 ? "oversold"
     : smiSig != null && smi > smiSig ? "above signal"
@@ -157,7 +157,7 @@ export function SignalInputsPanel({ result }: Props) {
     {
       name: "Chronos forecast",
       source: "5d model",
-      value: er == null ? "—" : `${er >= 0 ? "+" : ""}${er.toFixed(2)}% (±${band?.toFixed(1)}%)`,
+      value: er == null ? "n/a" : `${er >= 0 ? "+" : ""}${er.toFixed(2)}% (±${band?.toFixed(1)}%)`,
       label: er == null ? "unavailable"
         : er >= 3 ? "strong bullish"
         : er >= 0.5 ? "mild bullish"
@@ -170,14 +170,14 @@ export function SignalInputsPanel({ result }: Props) {
     {
       name: "MACD hist",
       source: tf,
-      value: macdHist == null ? "—" : `${macdHist >= 0 ? "+" : ""}${macdHist.toFixed(3)}`,
+      value: macdHist == null ? "n/a" : `${macdHist >= 0 ? "+" : ""}${macdHist.toFixed(3)}`,
       label: macdLabel,
       mood: macdMood,
     },
     {
       name: "SMI",
       source: tf,
-      value: smi == null ? "—" : `${smi.toFixed(1)}${smiSig != null ? ` / ${smiSig.toFixed(1)}` : ""}`,
+      value: smi == null ? "n/a" : `${smi.toFixed(1)}${smiSig != null ? ` / ${smiSig.toFixed(1)}` : ""}`,
       label: smiLabel,
       mood: smiMood,
     },
@@ -185,9 +185,9 @@ export function SignalInputsPanel({ result }: Props) {
       name: "VWAP",
       source: tf,
       value: !isIntradayTF ? "n/a daily" :
-        vwap && vwap > 0 ? `${vwap.toFixed(2)} (${vwapDiffPct! >= 0 ? "+" : ""}${vwapDiffPct!.toFixed(2)}%)` : "—",
+        vwap && vwap > 0 ? `${vwap.toFixed(2)} (${vwapDiffPct! >= 0 ? "+" : ""}${vwapDiffPct!.toFixed(2)}%)` : "n/a",
       label: !isIntradayTF ? "intraday only" :
-        vwapDiffPct == null ? "—" :
+        vwapDiffPct == null ? "n/a" :
         Math.abs(vwapDiffPct) < 0.3 ? "near vwap" :
         vwapDiffPct > 0 ? "above vwap" : "below vwap",
       mood: vwapMood,
@@ -195,15 +195,15 @@ export function SignalInputsPanel({ result }: Props) {
     {
       name: "EMA stack",
       source: "daily",
-      value: `9>${s.daily.ema9?.toFixed(2) ?? "—"} 21>${s.daily.ema21?.toFixed(2) ?? "—"} 200>${s.daily.ema200?.toFixed(2) ?? "—"}`,
+      value: `9>${s.daily.ema9?.toFixed(2) ?? "n/a"} 21>${s.daily.ema21?.toFixed(2) ?? "n/a"} 200>${s.daily.ema200?.toFixed(2) ?? "n/a"}`,
       label: emaAligned ? "aligned up" : emaInverse ? "inverted" : "mixed",
       mood: emaMood,
     },
     {
       name: "IV vs RV30",
       source: "vol context",
-      value: `${(s.iv * 100).toFixed(1)}% / ${ivRv != null ? `${ivRv.toFixed(2)}×` : "—"}`,
-      label: ivRv == null ? "—" :
+      value: `${(s.iv * 100).toFixed(1)}% / ${ivRv != null ? `${ivRv.toFixed(2)}×` : "n/a"}`,
+      label: ivRv == null ? "n/a" :
         ivRv >= 1.3 ? "rich" :
         ivRv <= 0.8 ? "cheap" : "fair",
       mood: ivMood,
@@ -218,8 +218,8 @@ export function SignalInputsPanel({ result }: Props) {
     {
       name: "|Δ|",
       source: "greeks",
-      value: absD == null ? "—" : absD.toFixed(3),
-      label: absD == null ? "—" :
+      value: absD == null ? "n/a" : absD.toFixed(3),
+      label: absD == null ? "n/a" :
         absD >= 0.65 ? "deep ITM" :
         absD >= 0.40 ? "near money" :
         absD >= 0.25 ? "OTM" : "far OTM",
@@ -229,8 +229,8 @@ export function SignalInputsPanel({ result }: Props) {
 
   return (
     <Card>
-      <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">
+      <div className="flex items-center gap-2 px-3 h-8 border-b border-separator-border">
+        <span className="text-caption-2-regular text-text-tertiary">
           Inputs to verdict
         </span>
         <InfoIcon
@@ -238,18 +238,18 @@ export function SignalInputsPanel({ result }: Props) {
           hint={
             <div className="flex flex-col gap-1">
               <div className="font-medium mb-0.5">Signal disposition</div>
-              <div><span className="text-up">●</span> aligned — pushes score toward keep/hold</div>
-              <div><span className="text-down">●</span> against — pushes score toward close</div>
-              <div><span className="text-warning">●</span> caution — flags a risk but doesn't change direction</div>
-              <div><span className="text-text-muted">○</span> neutral — no scoring effect right now</div>
+              <div><span className="text-status-lime-text">●</span> aligned, pushes score toward keep/hold</div>
+              <div><span className="text-status-rose-text">●</span> against, pushes score toward close</div>
+              <div><span className="text-status-yellow-text">●</span> caution, flags a risk but doesn&apos;t change direction</div>
+              <div><span className="text-text-tertiary">○</span> neutral, no scoring effect right now</div>
             </div>
           }
         />
       </div>
       <CardContent className="p-0">
-        <table className="w-full border-collapse text-[11px] tabular">
+        <table className="w-full border-collapse text-caption-1-regular tabular">
           <thead>
-            <tr className="text-text-muted text-[9px] uppercase tracking-wider">
+            <tr className="text-text-tertiary text-caption-2-regular">
               <th className="text-left px-3 py-1 font-medium w-4">·</th>
               <th className="text-left px-3 py-1 font-medium">Signal</th>
               <th className="text-left px-3 py-1 font-medium">Source</th>
@@ -262,21 +262,21 @@ export function SignalInputsPanel({ result }: Props) {
               <tr
                 key={r.name}
                 className={cn(
-                  "border-t border-border/40",
-                  i % 2 === 1 && "bg-surface-2/30"
+                  "border-t border-separator-border",
+                  i % 2 === 1 && "bg-background-secondary-default"
                 )}
               >
                 <td className="px-3 py-1.5">{dot(r.mood)}</td>
                 <td className="px-3 py-1.5 text-text-primary">{r.name}</td>
-                <td className="px-3 py-1.5 text-text-muted text-[10px]">{r.source}</td>
+                <td className="px-3 py-1.5 text-text-tertiary text-caption-2-regular">{r.source}</td>
                 <td className="px-3 py-1.5 text-right text-text-primary">{r.value}</td>
                 <td
                   className={cn(
-                    "px-3 py-1.5 text-[10px]",
-                    r.mood === "fires-for" && "text-up",
-                    r.mood === "fires-against" && "text-down",
-                    r.mood === "warn" && "text-warning",
-                    r.mood === "neutral" && "text-text-muted"
+                    "px-3 py-1.5 text-caption-2-regular",
+                    r.mood === "fires-for" && "text-status-lime-text",
+                    r.mood === "fires-against" && "text-status-rose-text",
+                    r.mood === "warn" && "text-status-yellow-text",
+                    r.mood === "neutral" && "text-text-tertiary"
                   )}
                 >
                   {r.label}

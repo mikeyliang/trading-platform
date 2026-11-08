@@ -7,7 +7,7 @@ import { samplePriceAxis, expiryIntrinsicCurve, type PnlInputs } from "@/lib/bs"
 interface Props {
   spot: number;
   strike: number;
-  /** Years to expiry — drives the BS pricer for the "today" curve. */
+  /** Years to expiry, drives the BS pricer for the "today" curve. */
   dteYears: number;
   iv: number;
   isCall: boolean;
@@ -25,7 +25,7 @@ const H = 60;
 const PAD_Y = 6;
 
 /**
- * Minimalist P/L-at-expiry sparkline. No axes, no interaction — just the
+ * Minimalist P/L-at-expiry sparkline. No axes, no interaction, just the
  * intrinsic-value curve split into profit (green) / loss (red) about the
  * zero line, with faint spot, strike, and break-even markers. Designed to
  * sit inside a "best pick" card and read at a glance.

@@ -1,196 +1,187 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: BoardUI (by request) · redesign: full
+ * nav: BoardUI floating sidebar on the page ground, 56px top bar, 28px status strip · signature: the book of spreads, one table with each short leg's delta against its exit trigger · states: loading, empty, error, full · modes: light+dark
+ * axes: light/grotesk-sans/cool · posture: restrained · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V4 · weakest: R, the chart card and the positions card both wanted toolbars; the chart keeps one, the positions table takes a tab row */
+@import "../styles/globals.css";
+@plugin "tailwindcss-animate";
 
+/* ───────────────────────────────────────────────────────────────────────────
+   The desk's own tokens, every one a BoardUI semantic token under another
+   name, so the trading components keep their class vocabulary while the
+   whole surface rides BoardUI's light and dark palettes.
+   ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  --bg: #0a0a0a;
-  --surface: #111111;
-  --surface-2: #1a1a1a;
-  --surface-3: #222222;
-  --border: #2c2c2c;
+  --c-accent-fg: var(--color-accent-600);
+  --c-up: var(--color-status-lime-text);
+  --c-up-soft: var(--color-status-lime-background);
+  --c-down: var(--color-status-rose-text);
+  --c-down-soft: var(--color-status-rose-background);
+  --c-warning: var(--color-status-yellow-text);
+  --c-warning-soft: var(--color-status-yellow-background);
+  --c-amber: var(--color-status-orange-text);
+
+  /* Chart chrome, read by lib/chartTheme.ts at chart creation. */
+  --chart-bg: var(--color-background-primary-default);
+  --chart-grid: color-mix(in srgb, var(--color-text-primary) 6%, var(--color-background-primary-default));
+  --chart-axis: color-mix(in srgb, var(--color-text-primary) 12%, var(--color-background-primary-default));
+  --chart-crosshair: var(--color-text-tertiary);
+  --chart-axis-text: var(--color-text-tertiary);
+  --chart-text: var(--color-text-primary);
+}
+.dark {
+  --c-accent-fg: var(--color-accent-400);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@theme inline {
+  --color-bg: var(--color-background-full);
+  --color-surface: var(--color-background-primary-default);
+  --color-surface-2: var(--color-background-secondary-default);
+  --color-surface-3: var(--color-background-tertiary-default);
+  --color-border: var(--color-border-button-default);
+  --color-border-strong: var(--color-separator-border-strong);
+  --color-text-muted: var(--color-text-tertiary);
+  --color-accent: var(--color-accent-500);
+  --color-accent-fg: var(--c-accent-fg);
+  --color-up: var(--c-up);
+  --color-up-soft: var(--c-up-soft);
+  --color-down: var(--c-down);
+  --color-down-soft: var(--c-down-soft);
+  --color-warning: var(--c-warning);
+  --color-warning-soft: var(--c-warning-soft);
+  --color-amber: var(--c-amber);
+  --color-on-fill: var(--color-text-white);
+  --color-ink: var(--color-text-primary);
+
+  --shadow-pop: var(--shadow-dropdown);
+  --shadow-ring: 0 0 0 1px var(--color-border-button-default);
+  --shadow-bar: inset 0 0 0 2px var(--color-separator-border-strong);
+  --shadow-thumb: var(--shadow-2xs);
 }
 
+@theme {
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
+  /* Series palette for the price and indicator charts. Tuned to read on
+     both BoardUI surfaces; chrome (grid, axis, text) comes from tokens. */
+  --color-chart-candle-up: #26a69a;
+  --color-chart-candle-down: #ef5350;
+  --color-chart-ema-fast: #3392ff;
+  --color-chart-ema-slow: #a78bfa;
+  --color-chart-vwap: #facc15;
+  --color-chart-rsi: #22d3ee;
+  --color-chart-macd-line: #3392ff;
+  --color-chart-macd-signal: #f59e0b;
+  --color-chart-smi-line: #3392ff;
+  --color-chart-smi-signal: #f59e0b;
+  --color-chart-forecast-cone: #38bdf8;
+  --color-chart-forecast-chronos: #38bdf8;
+  --color-chart-forecast-momentum: #fb923c;
+  --color-chart-forecast-meanrev: #34d399;
+  --color-chart-forecast-martingale: #94a3b8;
+  --color-chart-ref-strike: #fbbf24;
+  --color-chart-ref-be: #38bdf8;
+  --color-chart-ref-sigma: #38bdf8;
+  --color-chart-pnl-today: #7dd3fc;
+  --color-chart-pnl-halfway: #38bdf8;
+  --color-chart-pnl-expiry: #0ea5e9;
+  --color-chart-pnl-profit: #10b981;
+  --color-chart-pnl-loss: #f43f5e;
+  --color-chart-pnl-target: #d946ef;
+
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-slide-up: slide-up 180ms ease-out;
+  --animate-accordion-down: accordion-down 200ms ease-out;
+  --animate-accordion-up: accordion-up 200ms ease-out;
+  @keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes slide-up { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+  @keyframes accordion-down { from { height: 0 } to { height: var(--radix-accordion-content-height) } }
+  @keyframes accordion-up { from { height: var(--radix-accordion-content-height) } to { height: 0 } }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Layout: a one-screen trading desk. Fixed shell (sidebar, top bar, status
+   strip), scrolling panels inside.
+   ─────────────────────────────────────────────────────────────────────────── */
 html,
 body {
-  background-color: var(--bg);
-  color: #f4f4f5;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 13px;
   height: 100%;
   overflow: hidden;
+  overflow-x: clip;
 }
-
-/* custom scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #2c2c2c;
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3c3c3c;
-}
-
-/* number font for prices */
-.tabular {
+body {
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
 }
 
-/* chat markdown styling — terse, matches dark theme */
-.prose-chat {
-  font-size: 12px;
-  line-height: 1.55;
-  color: #d4d4d8;
+/* Figures: tabular Inter, so a column of prices lines up. */
+.tabular,
+.figure {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum", "ss01";
 }
+
+/* Labels inside a pill or chip centre on their cap height. */
+.cap {
+  line-height: 1;
+  text-box: trim-both cap alphabetic;
+}
+
+/* Section label: a step smaller, sentence case. */
+.caption {
+  font-size: var(--text-caption-1-medium);
+  line-height: var(--text-caption-1-medium--line-height);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/* Scrollbars: thin, themed. */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-background-tertiary-default); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-background-quaternary-default); background-clip: padding-box; }
+::selection { background: color-mix(in srgb, var(--color-accent-500) 25%, transparent); }
+
+/* chat markdown styling */
+.prose-chat { font-size: 13px; line-height: 1.55; color: var(--color-text-secondary); }
 .prose-chat p { margin: 0 0 0.5em 0; }
 .prose-chat p:last-child { margin-bottom: 0; }
-.prose-chat strong { color: #f4f4f5; font-weight: 600; }
-.prose-chat em { color: #d4d4d8; }
-.prose-chat code {
-  background: #1a1a1a;
-  border: 1px solid #2c2c2c;
-  border-radius: 3px;
-  padding: 0 4px;
-  font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  color: #f4f4f5;
-}
-.prose-chat pre {
-  background: #0a0a0a;
-  border: 1px solid #2c2c2c;
-  border-radius: 4px;
-  padding: 8px;
-  margin: 0.5em 0;
-  overflow-x: auto;
-}
-.prose-chat pre code {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  font-size: 11px;
-}
-.prose-chat ul, .prose-chat ol {
-  margin: 0.25em 0 0.5em 0;
-  padding-left: 1.25em;
-}
+.prose-chat strong { color: var(--color-text-primary); font-weight: 600; }
+.prose-chat em { color: var(--color-text-secondary); }
+.prose-chat code { background: var(--color-background-secondary-default); border: 1px solid var(--color-border-button-default); border-radius: 4px; padding: 0 4px; font-size: 12px; font-family: var(--font-mono); color: var(--color-text-primary); }
+.prose-chat pre { background: var(--color-background-secondary-default); border: 1px solid var(--color-border-button-default); border-radius: 10px; padding: 8px 12px; margin: 0.5em 0; overflow-x: auto; }
+.prose-chat pre code { background: transparent; border: 0; padding: 0; font-size: 12px; }
+.prose-chat ul, .prose-chat ol { margin: 0.25em 0 0.5em 0; padding-left: 1.25em; }
 .prose-chat li { margin: 0.15em 0; }
-.prose-chat a { color: #3b82f6; text-decoration: underline; }
-.prose-chat h1, .prose-chat h2, .prose-chat h3 {
-  color: #f4f4f5;
-  font-weight: 600;
-  margin: 0.5em 0 0.25em 0;
-  font-size: 12px;
-}
-.prose-chat hr {
-  border: 0;
-  border-top: 1px solid #2c2c2c;
-  margin: 0.75em 0;
-}
-.prose-chat blockquote {
-  border-left: 2px solid #2c2c2c;
-  padding-left: 0.75em;
-  margin: 0.5em 0;
-  color: #a1a1aa;
-}
+.prose-chat a { color: var(--color-accent-fg); text-decoration: underline; }
+.prose-chat h1, .prose-chat h2, .prose-chat h3 { color: var(--color-text-primary); font-weight: 600; margin: 0.5em 0 0.25em 0; font-size: 13px; }
+.prose-chat hr { border: 0; border-top: 1px solid var(--color-separator-border); margin: 0.75em 0; }
+.prose-chat blockquote { border-left: 2px solid var(--color-border-button-hover); padding-left: 0.75em; margin: 0.5em 0; color: var(--color-text-secondary); }
 
-/* Range slider — minimal, IBKR-ish. Track color is set inline via the
-   `background` style on the input (so the filled portion picks up the
-   per-slider accent). This block styles the thumb so it looks the same
-   across browsers and matches the dark theme. */
-input[type="range"].slider-range {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
-}
-input[type="range"].slider-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #f4f4f5;
-  border: 1px solid #1f1f23;
-  cursor: grab;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
-}
-input[type="range"].slider-range::-webkit-slider-thumb:active {
-  cursor: grabbing;
-  transform: scale(1.1);
-}
-input[type="range"].slider-range::-moz-range-thumb {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #f4f4f5;
-  border: 1px solid #1f1f23;
-  cursor: grab;
-}
+/* Range slider. Track color is set inline via the `background` style on the
+   input (so the filled portion picks up the per-slider accent). */
+input[type="range"].slider-range { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 999px; outline: none; cursor: pointer; }
+input[type="range"].slider-range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 999px; background: var(--color-background-primary-default); border: 1px solid var(--color-border-button-hover); box-shadow: var(--shadow-xs); cursor: grab; }
+input[type="range"].slider-range::-webkit-slider-thumb:active { cursor: grabbing; }
+input[type="range"].slider-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 999px; background: var(--color-background-primary-default); border: 1px solid var(--color-border-button-hover); cursor: grab; }
 
-/* Scenario sliders (P&L profile redesign) — a transparent native range
-   layered over a custom-drawn track + thumb so we get reliable drag/keyboard
-   behaviour while controlling every pixel of the visuals in React. The thumb
-   is a full-height invisible hit target (easy to grab); the visible thumb is
-   a sibling div positioned at the value %. */
-input[type="range"].pnl-scrub {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  outline: none;
-  cursor: grab;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-}
+/* Scenario sliders (P&L profile): a transparent native range layered over a
+   custom-drawn track + thumb. */
+input[type="range"].pnl-scrub { -webkit-appearance: none; appearance: none; background: transparent; outline: none; cursor: grab; width: 100%; height: 100%; margin: 0; }
 input[type="range"].pnl-scrub:active { cursor: grabbing; }
-input[type="range"].pnl-scrub::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  cursor: grab;
-}
+input[type="range"].pnl-scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; background: transparent; border: none; cursor: grab; }
 input[type="range"].pnl-scrub::-webkit-slider-thumb:active { cursor: grabbing; }
-input[type="range"].pnl-scrub::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border: none;
-  background: transparent;
-  cursor: grab;
-}
+input[type="range"].pnl-scrub::-moz-range-thumb { width: 22px; height: 22px; border: none; background: transparent; cursor: grab; }
 input[type="range"].pnl-scrub::-moz-range-track { background: transparent; }
 
-/* Shimmer skeleton — a subtle gradient sweep across loading placeholders.
-   Reads as "data is on the way" without the jarring opacity pulse. */
-@keyframes shimmer {
-  0%   { background-position: -800px 0; }
-  100% { background-position: 800px 0; }
+/* Loading skeleton: a flat secondary block. */
+.skeleton { background-color: var(--color-background-secondary-default); border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
-.skeleton {
-  background-color: #1a1a1a;
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.04) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 800px 100%;
-  background-repeat: no-repeat;
-  animation: shimmer 1.6s ease-in-out infinite;
-  border-radius: 4px;
+
+/* Tailwind v4 defaults borders to currentColor; the desk's hairlines are
+   always the separator token unless a class says otherwise. */
+@layer base {
+  *, ::before, ::after { border-color: var(--color-separator-border); }
 }

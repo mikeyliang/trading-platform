@@ -21,7 +21,7 @@ from .nautilus.ib_node import ib_node
 from .nautilus.ib_orders import orders_client
 from .services.black_scholes import bs_price
 from .routers import agent, agent_tools, agents, analyze, backtest, chat, depth, fundamentals, logos, market, monitor as monitor_router, okw, option_analyzer, options, orders, scans, strategies, ticks, trade_history, watchlist
-from .services import db, scheduler as job_scheduler
+from .services import db, ibkr_web, market_source, scheduler as job_scheduler
 from .ws.manager import manager
 from .ws.trades import trades_channel
 
@@ -285,12 +285,20 @@ async def lifespan(app: FastAPI):
     bot_engine.resume_if_running()
     mock_task = asyncio.create_task(_mock_price_broadcaster())
     status_task = asyncio.create_task(_status_broadcaster())
+    # IBKR Web API: open the OAuth session now so the first dashboard poll
+    # is served from it, then keep the brokerage session alive.
+    web = ibkr_web.client()
+    if web.available:
+        asyncio.create_task(web.ensure_session())
+    web_task = asyncio.create_task(web.run_keepalive())
     job_scheduler.start()
     try:
         yield
     finally:
         mock_task.cancel()
         status_task.cancel()
+        web_task.cancel()
+        await web.aclose()
         await job_scheduler.shutdown()
         await ib_node.stop()
         await ib_options.shutdown()
@@ -434,6 +442,7 @@ def health_check():
         "mode": settings.trading_mode,
         "mock_mode": settings.mock_mode,
         "ws_connections": manager.connection_count,
+        "data": market_source.health(),
     }
 
 

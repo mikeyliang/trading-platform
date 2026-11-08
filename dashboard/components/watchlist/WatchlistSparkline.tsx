@@ -56,5 +56,5 @@ export function WatchlistSparkline({ symbol, width = 100, height = 24 }: Props) 
   if (values.length < 2) {
     return <div style={{ width, height }} aria-hidden />;
   }
-  return <Sparkline data={values} width={width} height={height} />;
+  return <Sparkline data={values} width={width} height={height} showLast />;
 }

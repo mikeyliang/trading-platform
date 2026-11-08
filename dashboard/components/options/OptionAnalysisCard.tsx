@@ -28,14 +28,14 @@ interface Props {
 const VISIBLE_BARS_DEFAULT = 60;
 
 /**
- * Option-contract chart — same visual language as the main TradingChart so
+ * Option-contract chart, same visual language as the main TradingChart so
  * the analyzer page feels like one product, not two.
  *
  *  - Top OHLCV-style header with hover-driven option mid / change pill /
  *    EMA9 / EMA21 / RV30. Replaces the previous thin one-line strip.
  *  - Price pane uses *delta candles*: each bar is open=prev-close,
  *    close=current synthetic price. No wicks (the BS-replay has no
- *    intra-bar high/low) — body alone shows the bar-over-bar move,
+ *    intra-bar high/low), body alone shows the bar-over-bar move,
  *    coloured up/down. Much denser than the previous line + matches the
  *    underlying chart's bar look.
  *  - A change-magnitude histogram parks at the bottom 18% of the price
@@ -47,7 +47,7 @@ const VISIBLE_BARS_DEFAULT = 60;
  *
  * IMPORTANT (still surfaced in the header tooltip): prices are a
  * Black-Scholes replay using the option's *current* IV, not historical
- * mids — it's "what this option would have been worth as the underlying
+ * mids, it's "what this option would have been worth as the underlying
  * moved, if IV stayed where it is now."
  */
 export function OptionAnalysisCard({ result }: Props) {
@@ -55,7 +55,13 @@ export function OptionAnalysisCard({ result }: Props) {
   // `prices` is canonical; fall back to the legacy synthetic_prices field.
   const ocPrices = oc?.prices ?? oc?.synthetic_prices ?? [];
   if (!oc || ocPrices.length === 0) return null;
+  return <OptionAnalysisCardBody result={result} oc={oc} ocPrices={ocPrices} />;
+}
 
+type OptionChartData = NonNullable<OptionAnalyzeResult["option_chart"]>;
+
+// Hooks live here, below the empty guard, so their order never changes.
+function OptionAnalysisCardBody({ result, oc, ocPrices }: Props & { oc: OptionChartData; ocPrices: number[] }) {
   const isReal = oc.source === "ibkr";
   const N = ocPrices.length;
   // Real bars carry their own timestamps; the modeled replay aligns to the
@@ -102,26 +108,26 @@ export function OptionAnalysisCard({ result }: Props) {
 
   return (
     <div
-      className="flex flex-col rounded-md border border-border bg-surface overflow-hidden shrink-0"
+      className="flex flex-col rounded-md border border-separator-border bg-background-primary-default overflow-hidden shrink-0"
       style={{ minHeight: 680 }}
     >
-      <div className="flex items-center gap-2 px-3 h-8 border-b border-border/60 bg-surface">
+      <div className="flex items-center gap-2 px-3 h-8 border-b border-separator-border bg-background-primary-default">
         <HintLabel
-          className="text-[10px] uppercase tracking-wider text-text-muted"
+          className="text-caption-2-regular text-text-tertiary"
           hint={
             <div className="flex flex-col gap-1">
               <div className="font-medium">Option price & indicators</div>
               {isReal ? (
                 <div>
-                  Real <em>IBKR option bars</em> ({oc.bar_size} MIDPOINT) — the
+                  Real <em>IBKR option bars</em> ({oc.bar_size} MIDPOINT), the
                   contract&apos;s actual quoted price history. IBKR serves option
                   history intraday only (no daily bars), capped at ~81 days back.
                 </div>
               ) : (
                 <div>
                   No real IBKR bars for this contract, so prices are a{" "}
-                  <em>Black-Scholes replay</em> using the option&apos;s current IV
-                  — what it <em>would</em> have been worth as the underlying moved,
+                  <em>Black-Scholes replay</em> using the option&apos;s current IV,
+                  what it <em>would</em> have been worth as the underlying moved,
                   if IV stayed at today&apos;s level.
                 </div>
               )}
@@ -134,27 +140,27 @@ export function OptionAnalysisCard({ result }: Props) {
         >
           Option contract
         </HintLabel>
-        <span className="ml-auto text-[10px] tabular text-text-muted">
+        <span className="ml-auto text-caption-2-regular tabular text-text-tertiary">
           BS replay · IV-as-of-now
         </span>
       </div>
 
-      {/* TradingChart-style OHLCV strip — hover-driven, falls back to last bar. */}
-      <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-border/60 bg-surface shrink-0 flex-wrap">
+      {/* TradingChart-style OHLCV strip, hover-driven, falls back to last bar. */}
+      <div className="flex items-center gap-3 md:gap-5 px-3 min-h-10 py-1 border-b border-separator-border bg-background-primary-default shrink-0 flex-wrap">
         <div className="flex items-baseline gap-2">
-          <span className="font-medium text-sm text-text-primary tracking-tight">
+          <span className="font-medium text-body-2-regular text-text-primary">
             {result.strike}
             {result.right}
           </span>
-          <span className="text-[10px] tabular text-text-muted">
+          <span className="text-caption-2-regular tabular text-text-tertiary">
             {fmtExp(result.expiry)}
           </span>
           {isReal ? (
             <span
-              className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-300/90 cursor-help"
+              className="text-caption-2-regular px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-300/90 cursor-help"
               title={
                 `Real IBKR option bars (${oc.bar_size} MIDPOINT). ${N} bars of the ` +
-                "contract's actual quoted price history — IBKR serves option history " +
+                "contract's actual quoted price history, IBKR serves option history " +
                 "intraday only (no daily bars), so this is the finest/longest real " +
                 "series available, ~81 days back."
               }
@@ -163,32 +169,32 @@ export function OptionAnalysisCard({ result }: Props) {
             </span>
           ) : (
             <span
-              className="text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/10 text-amber-300/90 cursor-help"
+              className="text-caption-2-regular px-1 py-0.5 rounded bg-status-orange-background text-status-orange-text cursor-help"
               title={
                 "Modeled, not traded history. This contract has no real IBKR bars, so " +
                 "the series is a Black-Scholes replay of the underlying's moves" +
                 (result.vol_context?.iv_source === "calibrated_to_mark"
-                  ? ` at IV ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}% — calibrated so the right edge equals the live mark $${fmt(result.option.mid ?? display.px)}` +
+                  ? ` at IV ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}%, calibrated so the right edge equals the live mark $${fmt(result.option.mid ?? display.px)}` +
                     (result.vol_context.market_iv
                       ? ` (IBKR model IV ${((result.vol_context.market_iv) * 100).toFixed(1)}%)`
                       : "")
                   : result.vol_context?.iv_source === "ibkr_model"
                   ? ` at IBKR's model IV ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}% (no live quote to calibrate against)`
                   : result.vol_context?.iv_source === "realized_vol"
-                  ? ` at realized vol ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}% — no quote or IBKR IV available, using RV30 as the proxy`
-                  : " at a default 35% IV — no market data available")
+                  ? ` at realized vol ${((result.vol_context.iv ?? 0) * 100).toFixed(1)}%, no quote or IBKR IV available, using RV30 as the proxy`
+                  : " at a default 35% IV, no market data available")
               }
             >
               modeled
             </span>
           )}
-          <span className="text-base tabular font-medium text-text-primary">
+          <span className="text-headline-regular tabular font-medium text-text-primary">
             ${fmt(display.px)}
           </span>
           <span
             className={cn(
-              "text-[11px] tabular leading-none px-1.5 py-0.5 rounded",
-              positive ? "text-up bg-up/10" : "text-down bg-down/10",
+              "text-caption-1-regular tabular leading-none px-1.5 py-0.5 rounded",
+              positive ? "text-status-lime-text bg-status-lime-background" : "text-status-rose-text bg-status-rose-background",
             )}
           >
             {positive ? "+" : ""}
@@ -196,12 +202,12 @@ export function OptionAnalysisCard({ result }: Props) {
             {display.chgPct.toFixed(2)}%
           </span>
           {hover && (
-            <span className="text-[10px] tabular text-text-muted ml-1">
+            <span className="text-caption-2-regular tabular text-text-tertiary ml-1">
               {formatBarTime(display.time)}
             </span>
           )}
         </div>
-        <div className="hidden md:flex items-center gap-3 text-[10px] uppercase tracking-wider text-text-muted">
+        <div className="hidden md:flex items-center gap-3 text-caption-2-regular text-text-tertiary">
           <span style={{ color: CHART.ema.fast }}>
             EMA9 <OhlcVal n={display.ema9} />
           </span>
@@ -211,18 +217,18 @@ export function OptionAnalysisCard({ result }: Props) {
           <span style={{ color: CHART.forecast.meanrev }}>
             RV30{" "}
             <OhlcVal n={display.rv30 * 100} />
-            <span className="text-text-muted">%</span>
+            <span className="text-text-tertiary">%</span>
           </span>
           <span
             className={cn(
               "ml-2",
-              periodPct >= 0 ? "text-up" : "text-down",
+              periodPct >= 0 ? "text-status-lime-text" : "text-status-rose-text",
               "font-medium",
             )}
           >
             {periodPct >= 0 ? "+" : ""}
             {periodPct.toFixed(1)}%{" "}
-            <span className="text-text-muted normal-case tracking-normal">
+            <span className="text-text-tertiary normal-case tracking-normal">
               · {Math.min(N, VISIBLE_BARS_DEFAULT)} bars
             </span>
           </span>
@@ -337,7 +343,7 @@ function Panes({
     });
     priceChartRef.current = priceChart;
 
-    // Vol subpane — RV30 over time with a horizontal reference line at
+    // Vol subpane, RV30 over time with a horizontal reference line at
     // the current IV. This is the closest we get to "IV over time"
     // without paid historical-IV data: realized vol IS the underlying's
     // moving statistical analog of IV, so its trajectory tells you
@@ -365,7 +371,7 @@ function Panes({
     });
     macdChartRef.current = macdChart;
 
-    // Delta candles — open = previous close, close = current synthetic
+    // Delta candles, open = previous close, close = current synthetic
     // price. No wicks (we don't have intra-bar high/low for the BS
     // replay), so high = max(o,c), low = min(o,c). The body alone tells
     // the bar's directional story.
@@ -380,7 +386,7 @@ function Panes({
       priceLineStyle: LineStyle.Dotted,
     });
 
-    // Change-magnitude histogram — |c - o|, signed by direction. Stands
+    // Change-magnitude histogram, |c - o|, signed by direction. Stands
     // in for volume so the bottom of the price pane reads "movement,
     // bar by bar" the same way TradingChart's volume strip does.
     changeHistRef.current = priceChart.addHistogramSeries({
@@ -407,7 +413,7 @@ function Panes({
     });
 
     // RV30 lives on its own subpane (volChart) now. Solid line at full
-    // weight — this is the chart that answers "is today's IV high or
+    // weight, this is the chart that answers "is today's IV high or
     // low vs realized?". Y-axis values are percentage points (× 100).
     volSeriesRef.current = volChart.addLineSeries({
       color: CHART.forecast.meanrev,
@@ -416,7 +422,7 @@ function Panes({
       lastValueVisible: true,
       priceFormat: { type: "price", precision: 1, minMove: 0.1 },
     });
-    // Current IV as a horizontal reference line — the user can see at
+    // Current IV as a horizontal reference line, the user can see at
     // a glance whether RV30 has been above or below the option's IV
     // through the visible window.
     const ivPct = currentIv * 100;
@@ -668,11 +674,11 @@ function Panes({
 
   return (
     <>
-      {/* Price pane — dominant, with contract label watermark. shrink-0
+      {/* Price pane, dominant, with contract label watermark. shrink-0
           so flex-column parents don't squash it to 0 on mount. */}
-      <div className="relative bg-bg shrink-0" style={{ height: 440 }}>
+      <div className="relative bg-background-full shrink-0" style={{ height: 440 }}>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-0">
-          <span className="text-[88px] font-medium text-text-muted/[0.04] tracking-[0.2em]">
+          <span className="text-[88px] font-medium text-text-tertiary/[0.04]">
             {contractLabel}
           </span>
         </div>
@@ -688,7 +694,7 @@ function Panes({
         ]}
         rightTone={tonedRv30VsIv(rv30[rv30.length - 1], currentIv)}
         containerRef={volContainerRef}
-        title="True historical IV needs paid data (not available). RV30 — realized volatility of the underlying over the trailing 30 bars — is the standard proxy. When RV30 line is below the dashed IV reference, today's IV is rich vs what the underlying has actually been doing (sellers' favor). When above, IV is cheap (buyers' favor)."
+        title="True historical IV needs paid data (not available). RV30, realized volatility of the underlying over the trailing 30 bars, is the standard proxy. When RV30 line is below the dashed IV reference, today's IV is rich vs what the underlying has actually been doing (sellers' favor). When above, IV is cheap (buyers' favor)."
       />
       <Subpane
         label="RSI"
@@ -728,11 +734,11 @@ function Subpane({
   title?: string;
 }) {
   return (
-    <div className="border-t border-border bg-bg shrink-0" style={{ height: 140 }} title={title}>
-      <div className="flex items-center gap-3 px-3 h-6 border-b border-border/60">
-        <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
-        <span className="text-[10px] tabular text-text-muted">{params}</span>
-        <div className="ml-auto flex items-center gap-3 text-[10px] tabular text-text-muted">
+    <div className="border-t border-separator-border bg-background-full shrink-0" style={{ height: 140 }} title={title}>
+      <div className="flex items-center gap-3 px-3 h-6 border-b border-separator-border">
+        <span className="text-caption-2-regular text-text-tertiary">{label}</span>
+        <span className="text-caption-2-regular tabular text-text-tertiary">{params}</span>
+        <div className="ml-auto flex items-center gap-3 text-caption-2-regular tabular text-text-tertiary">
           {legend.map((l) => (
             <span key={l.label} className="flex items-center gap-1">
               <span className="w-2 h-0.5 inline-block" style={{ backgroundColor: l.color }} />
@@ -749,7 +755,7 @@ function Subpane({
   );
 }
 
-// "RV30 65% / IV 24% (rich)" — same right-side readout pattern as the
+// "RV30 65% / IV 24% (rich)", same right-side readout pattern as the
 // other subpane headers. Tone signals the trader's edge: when IV ≫ RV
 // option premium is rich (good for sellers, bad for buyers).
 function tonedRv30VsIv(rv30: number | undefined, currentIv: number) {
@@ -758,7 +764,7 @@ function tonedRv30VsIv(rv30: number | undefined, currentIv: number) {
   const ivPct = currentIv * 100;
   const ratio = ivPct > 0 && rvPct > 0 ? ivPct / rvPct : 1;
   const label = ratio >= 1.3 ? "rich" : ratio <= 0.8 ? "cheap" : "fair";
-  const cls = ratio >= 1.3 ? "text-down" : ratio <= 0.8 ? "text-up" : "text-text-secondary";
+  const cls = ratio >= 1.3 ? "text-status-rose-text" : ratio <= 0.8 ? "text-status-lime-text" : "text-text-secondary";
   return {
     value: `RV ${rvPct.toFixed(0)}% / IV ${ivPct.toFixed(0)}% · ${label}`,
     cls,
@@ -768,14 +774,14 @@ function tonedRv30VsIv(rv30: number | undefined, currentIv: number) {
 function tonedLast(series: number[], hi: number, lo: number) {
   const v = series[series.length - 1];
   if (!Number.isFinite(v)) return null;
-  const cls = v >= hi ? "text-down" : v <= lo ? "text-up" : "text-text-secondary";
+  const cls = v >= hi ? "text-status-rose-text" : v <= lo ? "text-status-lime-text" : "text-text-secondary";
   return { value: v.toFixed(0), cls };
 }
 function tonedDelta(a: number, b: number) {
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
   return {
     value: `${a.toFixed(3)} / ${b.toFixed(3)}`,
-    cls: a - b >= 0 ? "text-up" : "text-down",
+    cls: a - b >= 0 ? "text-status-lime-text" : "text-status-rose-text",
   };
 }
 
@@ -786,9 +792,9 @@ function OhlcVal({
   n: number;
   compact?: boolean;
 }) {
-  if (!Number.isFinite(n)) return <span className="tabular text-text-muted">—</span>;
+  if (!Number.isFinite(n)) return <span className="tabular text-text-tertiary">n/a</span>;
   return (
-    <span className="normal-case tracking-normal text-[11px] tabular text-text-secondary">
+    <span className="normal-case tracking-normal text-caption-1-regular tabular text-text-secondary">
       {compact ? fmtCompact(n) : fmt(n)}
     </span>
   );
