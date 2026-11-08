@@ -410,6 +410,8 @@ app.include_router(ticks.router)
 app.include_router(agent_tools.router)
 app.include_router(agent.router)
 app.include_router(trade_history.router)
+from .routers import regime  # noqa: E402  (router registration only)
+app.include_router(regime.router)
 
 
 @app.get(

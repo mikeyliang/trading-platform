@@ -285,6 +285,11 @@ export const api = {
   preflightRun: () => post<PreflightSnapshot>("/api/monitor/preflight/run", {}),
   scheduledJobs: () => get<{ jobs: ScheduledJob[] }>("/api/monitor/jobs"),
 
+  // regime context + historical odds for Rule One spreads (21-year replay)
+  regimeNow: (symbol: string) => get<RegimeNow>(`/api/regime/now?symbol=${encodeURIComponent(symbol)}`),
+  regimeOpenSpreads: () => get<RegimeOpenSpreads>("/api/regime/open-spreads"),
+  regimeSummary: () => get<RegimeSummary>("/api/regime/summary"),
+
   // multi-agent debate (TradingAgents)
   agentsStatus: () => get<{ installed: boolean; has_openai_key: boolean; has_anthropic_key: boolean; has_google_key: boolean }>("/api/agents/status"),
   agentsAnalyze: (symbol: string, trade_date?: string) =>
@@ -1514,4 +1519,138 @@ export interface BotGate {
   validated: boolean;
   run: { id: string; label: string; aggregate: SimAggregate; finished_at: string } | null;
   criteria: string;
+}
+
+// ── regime context + historical odds ───────────────────────────────────
+export type SpreadStrategyId = "rut" | "mars" | "marsmax" | "space";
+export type SpreadOutcome = "win" | "delta_exit" | "last_day_exit" | "partial_loss" | "max_loss";
+
+export interface HistoryTally {
+  n: number;
+  exited: number;
+  held_to_loss: number;
+  wins: number;
+  non_win_pct: number | null;
+  exit_pct: number | null;
+  avg_ror_pct: number | null;
+}
+
+export interface HistoryOdds extends HistoryTally {
+  strategy: SpreadStrategyId | null;
+  query: { delta: number; days_left: number };
+  band: { delta: number; days: number; widened: boolean };
+  thin: boolean;
+  examples: {
+    entry: string;
+    date: string;
+    delta: number;
+    cushion_pct: number;
+    outcome: SpreadOutcome;
+    ror: number | null;
+  }[];
+}
+
+export interface RegimeLive {
+  underlying: "RUT" | "SPX";
+  spot: number | null;
+  avg_50d: number | null;
+  trend: "up" | "down" | null;
+  vix: number | null;
+  vix_week_ago: number | null;
+  vix_bucket: string | null;
+  rvx: number | null;
+  index_vol: number | null;
+  live: boolean;
+  as_of: string;
+}
+
+export interface RegimeStrategyStats {
+  strategy: SpreadStrategyId;
+  label: string;
+  vix_bucket: string | null;
+  trend: "up" | "down" | null;
+  overall: HistoryTally;
+  same_vix: HistoryTally | null;
+  same_trend: HistoryTally | null;
+  same_regime: HistoryTally | null;
+  downtrend_p: number;
+  finding: string;
+}
+
+export interface HistoryCoverage {
+  trades: number;
+  first_entry: string | null;
+  last_entry: string | null;
+}
+
+export interface RegimeNow {
+  symbol: string;
+  underlying: "RUT" | "SPX" | null;
+  live: RegimeLive | null;
+  coverage?: HistoryCoverage;
+  strategies: RegimeStrategyStats[];
+}
+
+export interface OpenSpreadContext {
+  id: string;
+  source: "monitor" | "okw";
+  symbol: string;
+  strategy: SpreadStrategyId | string | null;
+  strategy_label: string;
+  expiry: string | null;            // YYYY-MM-DD
+  last_trade_day: string | null;    // YYYY-MM-DD
+  days_left: number | null;
+  short_strike: number;
+  long_strike: number;
+  contracts: number;
+  spot: number | null;
+  cushion_pct: number | null;
+  delta: number | null;
+  delta_source: "chain" | "model" | "none";
+  exit_delta: number | null;
+  headroom: number | null;
+  status: "safe" | "warning" | "trigger" | "unknown";
+  last_day_buffer_pct: number | null;
+  last_day_line: number | null;
+  history: HistoryOdds | null;
+}
+
+export interface RegimeOpenSpreads {
+  as_of: string;
+  spreads: OpenSpreadContext[];
+  coverage: HistoryCoverage;
+}
+
+export interface OddsGridCell extends HistoryTally {
+  days_band: string;
+  delta_lo: number;
+  delta_hi: number;
+}
+
+export interface RegimeStrategySummary {
+  id: SpreadStrategyId;
+  label: string;
+  underlying: "RUT" | "SPX";
+  exit_delta: number;
+  overall: HistoryTally;
+  by_vix: ({ bucket: string } & HistoryTally)[];
+  by_trend: ({ trend: "up" | "down" } & HistoryTally)[];
+  downtrend_p: number;
+  odds_grid: OddsGridCell[];
+  non_wins: {
+    entry: string;
+    expiry: string;
+    outcome: SpreadOutcome;
+    vix: number;
+    trend: "up" | "down";
+    ror: number | null;
+    entry_delta: number;
+    distance_pct: number;
+  }[];
+  finding: string;
+}
+
+export interface RegimeSummary {
+  coverage: HistoryCoverage;
+  strategies: RegimeStrategySummary[];
 }

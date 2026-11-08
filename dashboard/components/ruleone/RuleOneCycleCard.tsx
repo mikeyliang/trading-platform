@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type RuleOneCandidate, type RuleOneCycle } from "@/lib/api";
+import Link from "next/link";
+import { api, type RegimeNow, type RuleOneCandidate, type RuleOneCycle } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { RiLoader4Line as Loader2 } from "@remixicon/react";
 
@@ -27,6 +28,7 @@ const TICK_MS = 15_000;
 
 export function RuleOneCycleCard({ symbol }: Props) {
   const [cycle, setCycle] = useState<RuleOneCycle | null>(null);
+  const [regime, setRegime] = useState<RegimeNow | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshed, setRefreshed] = useState<number>(Date.now());
   const [, forceTick] = useState(0);
@@ -39,8 +41,12 @@ export function RuleOneCycleCard({ symbol }: Props) {
       inFlight.current = true;
       if (mode === "user") setLoading(true);
       try {
-        const r = await api.ruleoneCycle(symbol);
+        const [r, g] = await Promise.all([
+          api.ruleoneCycle(symbol),
+          api.regimeNow(symbol).catch(() => null),
+        ]);
         setCycle(r);
+        setRegime(g);
         setRefreshed(Date.now());
       } catch {
         // Background failure: keep last-good silently. Initial/user failure:
@@ -108,6 +114,7 @@ export function RuleOneCycleCard({ symbol }: Props) {
         <div className="px-3.5 pb-3">
           <DatesGrid cycle={cycle} />
           <div className="my-2.5 h-px bg-separator-border" />
+          <RegimeRows regime={regime} />
           {cycle.scanner_error ? (
             <div className="text-caption-2-regular text-status-rose-text tabular py-1">
               Scanner error · {cycle.scanner_error}
@@ -183,6 +190,89 @@ function Row({
         {date ? formatShortDate(date) : "n/a"}
       </span>
       <span className="text-right text-text-tertiary">{suffix ?? ""}</span>
+    </>
+  );
+}
+
+/**
+ * Where VIX and the trend sit today, and how this strategy did on past
+ * entries made in the same spot (21-year replay, see Monitor › History).
+ */
+function RegimeRows({ regime }: { regime: RegimeNow | null }) {
+  if (!regime || regime.strategies.length === 0) return null;
+  const live = regime.live;
+  const hasLive = !!live?.live;
+  const vixLabel = live?.vix != null ? `VIX ${live.vix.toFixed(1)}` : "VIX n/a";
+  const trendLabel =
+    live?.trend === "up" ? "above its 50-day average" : live?.trend === "down" ? "below its 50-day average" : "trend unavailable";
+  const trendShort = live?.trend === "up" ? "above 50d" : live?.trend === "down" ? "below 50d" : "trend n/a";
+  const vixMove =
+    live?.vix != null && live.vix_week_ago != null
+      ? live.vix - live.vix_week_ago
+      : null;
+  return (
+    <>
+      <div className="grid grid-cols-[42px_1fr] gap-x-2 gap-y-1 text-caption-1-regular tabular">
+        <span className="text-caption-2-regular text-text-secondary">REGIME</span>
+        {hasLive ? (
+          <span
+            className="text-text-primary truncate"
+            title={`${vixLabel}${vixMove != null ? ` (${vixMove > 0 ? "+" : ""}${vixMove.toFixed(1)} over the last week)` : ""}, index ${trendLabel}`}
+          >
+            {vixLabel}
+            {vixMove != null && Math.abs(vixMove) >= 2 && (
+              <span className={cn(vixMove > 0 ? "text-status-rose-text" : "text-status-lime-text")}>
+                {" "}{vixMove > 0 ? "+" : ""}{vixMove.toFixed(1)} wk
+              </span>
+            )}
+            <span className="text-text-tertiary"> · {trendShort}</span>
+          </span>
+        ) : (
+          <span className="text-text-tertiary">no live VIX or trend</span>
+        )}
+        {regime.strategies.map((st) => {
+          const same = st.same_regime ?? st.same_vix ?? st.same_trend;
+          const bad = same ? same.exited + same.held_to_loss : null;
+          return (
+            <RegimeLine
+              key={st.strategy}
+              label={STRATEGY_LABELS[st.strategy as RuleOneCandidate["strategy_id"]] ?? st.label}
+              text={
+                same && hasLive
+                  ? `${bad} of ${same.n} here · ${Math.round(st.overall.non_win_pct ?? 0)}% overall`
+                  : `${Math.round(st.overall.non_win_pct ?? 0)}% of ${st.overall.n} went wrong`
+              }
+              title={
+                same && hasLive
+                  ? `${bad} of ${same.n} past ${st.label} entries made with VIX ${st.vix_bucket} and the index ${trendLabel} went wrong, against ${Math.round(st.overall.non_win_pct ?? 0)}% of all ${st.overall.n} since 2005.`
+                  : `${Math.round(st.overall.non_win_pct ?? 0)}% of ${st.overall.n} ${st.label} cycles since 2005 went wrong.`
+              }
+              tone={
+                same && hasLive && same.n >= 8
+                  ? (same.non_win_pct ?? 0) > (st.overall.non_win_pct ?? 0) * 1.3
+                    ? "text-status-yellow-text"
+                    : "text-text-primary"
+                  : "text-text-secondary"
+              }
+            />
+          );
+        })}
+      </div>
+      <div className="mt-1.5 text-caption-2-regular text-text-tertiary">
+        <Link href="/monitor/history" className="hover:text-text-secondary transition-colors">
+          how past entries in this regime did →
+        </Link>
+      </div>
+      <div className="my-2.5 h-px bg-separator-border" />
+    </>
+  );
+}
+
+function RegimeLine({ label, text, title, tone }: { label: string; text: string; title: string; tone: string }) {
+  return (
+    <>
+      <span className="text-caption-2-regular text-text-secondary">{label}</span>
+      <span className={cn("truncate", tone)} title={title}>{text}</span>
     </>
   );
 }

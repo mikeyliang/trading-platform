@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton, TableSkeletonRows } from "@/components/ui/skeleton";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { RiRefreshLine as RefreshCw, RiShieldCheckLine as ShieldIcon, RiErrorWarningFill as ErrorIcon } from "@remixicon/react";
+import { SpreadHistoryCard } from "./SpreadHistoryCard";
 
 const STATUS_META: Record<MonitorEntry["status"], { label: string; tone: string; badge: "up" | "warning" | "down" | "muted" }> = {
   safe:    { label: "Safe",         tone: "text-status-lime-text",   badge: "up" },
@@ -141,6 +142,8 @@ export function ExitMonitor() {
         </CardContent>
         <Footer jobs={jobs} lastRun={snap?.last_run ?? null} />
       </Card>
+
+      <SpreadHistoryCard />
     </PageShell>
   );
 }
