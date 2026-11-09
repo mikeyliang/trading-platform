@@ -48,6 +48,9 @@ SPECS = {
                  aroc=0.64, kelly_min=0.32, kelly_loss=0.25, ref_width=25.0),
     'marsmax': dict(id='marsmax', delta_cap=0.14, min_distance=0.09, exit_delta=0.42, buffer=0.02,
                     aroc=0.93, kelly_min=0.32, kelly_loss=0.33, ref_width=10.0),
+    # Space is the S&P 500 sleeve: use it with Market(underlying='yahoo_GSPC', vol='spx') and SPX chains.
+    'space': dict(id='space', delta_cap=0.12, min_distance=0.05, exit_delta=0.32, buffer=0.02,
+                  aroc=0.74, kelly_min=0.44, kelly_loss=0.25, ref_width=25.0),
 }
 SIDS = ('rut', 'mars', 'marsmax')
 
@@ -96,7 +99,7 @@ def bs_put_delta(spot, strike, vol, years):
 class Market:
     """RUT daily bars and the RUT vol index (RVX, else 1.33 x VIX), forward filled, as the model engine loads them."""
 
-    def __init__(self, data_dir, underlying='yahoo_RUT'):
+    def __init__(self, data_dir, underlying='yahoo_RUT', vol='rut'):
         self.dir = data_dir
         rows = self._rows(underlying)
         self.dates, self.close, self.open, self.low = [], {}, {}, {}
@@ -111,10 +114,13 @@ class Market:
                 self.open[d] = float(r['Open'])
             if r.get('Low', '') not in ('', '.'):
                 self.low[d] = float(r['Low'])
-        vol = {d: v * 1.33 for d, v in self._closes('cboe_VIX').items()}
-        rvx = self._closes('fred_RVXCLS')
-        rvx.update(self._closes('cboe_RVX'))
-        vol.update(rvx)
+        if vol == 'spx':                                   # the S&P 500: VIX as it is
+            vol = self._closes('cboe_VIX')
+        else:
+            vol = {d: v * 1.33 for d, v in self._closes('cboe_VIX').items()}
+            rvx = self._closes('fred_RVXCLS')
+            rvx.update(self._closes('cboe_RVX'))
+            vol.update(rvx)
         self.V, last = [], None
         for d in self.dates:
             last = vol.get(d, last)
@@ -236,6 +242,11 @@ class SynthChains:
     def iv(self, v, S, k, T):
         c = self.c0 / math.sqrt(max(T * 365, self.dmin)) * (v / 0.23) ** self.gamma
         return self.a * v + c * max(0.0, math.log(S / k))
+
+    def expiries(self, d):
+        """Every Friday in the next 100 days (the model can price any date)."""
+        f = d + timedelta(days=(4 - d.weekday()) % 7 or 7)
+        return [f + timedelta(days=7 * n) for n in range(14)]
 
     def spread_mid(self, S, v, T, k, width):
         return put_price(S, k, self.iv(v, S, k, T), T) - put_price(S, k - width, self.iv(v, S, k - width, T), T)
@@ -455,7 +466,10 @@ def _leg(ch, k, S, T, last_iv, last_half):
     return put_price(S, k, last_iv, T), last_half, bs_put_delta(S, k, last_iv, T), last_iv, True
 
 
-def one_trade(mkt, chains, sid, entry_tf, expiry, i0, ix, wing=WING, fill=FILL_ENGINE, exit_delta=None, picker=None):
+def one_trade(mkt, chains, sid, entry_tf, expiry, i0, ix, wing=WING, fill=FILL_ENGINE, exit_delta=None, picker=None,
+              exit_scale=1.0, settle='open', thursday=True):
+    """One spread from entry to exit. exit_scale multiplies the delta trigger; settle='close' is for PM-settled
+    expiries; thursday=False turns the day-before-expiry rule off."""
     spec = SPECS[sid]
     dates = mkt.dates
     d0 = dates[i0]
@@ -487,7 +501,7 @@ def one_trade(mkt, chains, sid, entry_tf, expiry, i0, ix, wing=WING, fill=FILL_E
     c_in = fill['entry_share'] * (hs + hl) + fill['entry_fixed'] + 2 * COMM
     ivs = float(ch.iv[j]) if ch.iv[j] == ch.iv[j] else v0 / 100
     ivl = float(ch.iv[jl]) if ch.iv[jl] == ch.iv[jl] else ivs
-    xd = spec['exit_delta'] if exit_delta is None else exit_delta
+    xd = (spec['exit_delta'] if exit_delta is None else exit_delta) * exit_scale
     base.update(short_strike=K, long_strike=Kl, width=width, credit=credit, risk=risk, entry_delta=float(ch.pd[j]),
                 spot=ch.S, cost_in=c_in, half_in=hs + hl, ref_credit=info.get('ref_credit'),
                 ref_interp=info.get('ref_interp'), aroc=info.get('aroc'), dte=dte, forced=bool(info.get('forced')))
@@ -502,7 +516,7 @@ def one_trade(mkt, chains, sid, entry_tf, expiry, i0, ix, wing=WING, fill=FILL_E
         T = max((expiry - d).days, 1) / 365
         kind = None
         if i == ix:
-            s_px = mkt.open.get(d, px)
+            s_px = mkt.open.get(d, px) if settle == 'open' else px
             gross = credit - max(K - s_px, 0.0) + max(Kl - s_px, 0.0)
             pnl = gross - c_in
             S = s_px
@@ -528,7 +542,7 @@ def one_trade(mkt, chains, sid, entry_tf, expiry, i0, ix, wing=WING, fill=FILL_E
             gross = pnl = credit - liab
             if delta is not None and delta > xd:
                 kind = 'delta_exit'
-            elif last and px < K * (1 + spec['buffer']):
+            elif last and thursday and px < K * (1 + spec['buffer']):
                 kind = 'thursday'
             if kind:
                 h_out = hs + hl
@@ -630,6 +644,8 @@ def account(mkt, trades, size=1 / 3, start=None, end=None, start_cash=100000.0, 
             add = []
             for t in new:
                 m = flag_mult if (mkt.mdd12(t['entry']) or 0) < -0.15 else 1.0
+                if 'size_mult' in t:                       # optional per-trade tilt, same 50% ceiling
+                    m = min(m * t['size_mult'], 0.5 / size)
                 w = 1.0 if weights is None else weights[t['strategy']] * 3
                 n = max(nlv_pre, 0.0) * size / 9 * m * w / (t['risk'] * 100)
                 add.append((t, n))

@@ -7,6 +7,9 @@ option quotes, next to the same replay on the price model, so the two can be com
   account simulation.
 - `run_real.py`: extracts slim per-year parquet from the raw daily strike files, finds the newest unbroken
   window of data, runs both replays and writes `result.json`, `summary.txt` and `trades.pkl`.
+- `improve_real.py`: one-change-at-a-time tests against the same base on recorded quotes: entry-day chain
+  readings (richness vs the model, skew, term slope, implied minus realised) and sizing on them with a
+  month-shuffle placebo, which passing strike to sell, exit triggers, days to expiry, and the S&P 500 sleeve.
 
 ```
 python run_real.py --strikes <data>/strikes --cache <data>/parquet/slim \
