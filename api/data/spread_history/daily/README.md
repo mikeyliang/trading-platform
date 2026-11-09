@@ -127,3 +127,13 @@ FRED values as published (blank/'.' dropped). Yahoo rows end 2026-11-06 (today's
 | yahoo_SPHB.csv | yfinance SPHB (Close unadjusted, Adj Close for dividends/splits) | 2011-05-05 | 2026-11-06 | 3901 | daily, same day |
 | yahoo_SPLV.csv | yfinance SPLV (Close unadjusted, Adj Close for dividends/splits) | 2011-05-05 | 2026-11-06 | 3901 | daily, same day |
 | yahoo_EEM.csv | yfinance EEM (Close unadjusted, Adj Close for dividends/splits) | 2003-04-14 | 2026-11-06 | 5931 | daily, same day |
+
+## CFTC Traders in Financial Futures positioning (added 2026-11-09, batch 2 group 2)
+
+Date = report date (Tuesday positions). Columns: open_interest and long/short for dealers, asset managers, leveraged funds and other reportables (spread positions omitted).
+
+| File | Source | First | Last | Rows | Publication lag |
+|---|---|---|---|---|---|
+| cftc_tff_VIX.csv | https://www.cftc.gov/files/dea/history/fin_fut_txt_2006_2016.zip + fut_fin_txt_2017..2026.zip, Traders in Financial Futures, futures only, code 1170E1 | 2006-08-29 | 2026-11-03 | 1024 | weekly; positions as of Tuesday, published Friday 3:30pm ET (3 days later; delayed by holidays/shutdowns) |
+| cftc_tff_RTY.csv | https://www.cftc.gov/files/dea/history/fin_fut_txt_2006_2016.zip + fut_fin_txt_2017..2026.zip, Traders in Financial Futures, futures only, codes 239742 (CME E-mini, 2006-08 and 2017-) and 23977A (ICE mini, 2008-07..2018-06); overlap 2017-18 has one row per code | 2006-06-13 | 2026-11-03 | 1117 | weekly; positions as of Tuesday, published Friday 3:30pm ET (3 days later; delayed by holidays/shutdowns) |
+| cftc_tff_ES.csv | https://www.cftc.gov/files/dea/history/fin_fut_txt_2006_2016.zip + fut_fin_txt_2017..2026.zip, Traders in Financial Futures, futures only, code 13874A | 2006-06-13 | 2026-11-03 | 1065 | weekly; positions as of Tuesday, published Friday 3:30pm ET (3 days later; delayed by holidays/shutdowns) |
