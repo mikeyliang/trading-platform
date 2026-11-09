@@ -145,3 +145,13 @@ Daily settlement of the front (VX1) and second (VX2) monthly VIX futures, with e
 | File | Source | First | Last | Rows | Publication lag |
 |---|---|---|---|---|---|
 | cfe_VX_term.csv | Cboe CFE per-contract VX settlements: cdn.cboe.com/data/us/futures/market_statistics/historical_data/VX/VX_<expiry>.csv (2013-) and cdn.cboe.com/resources/futures/archive/volume-and-price/CFE_<M><YY>_VX.csv (2004-2013); front = nearest expiry after the trade date | 2004-03-26 | 2026-11-06 | 5694 | daily, same evening |
+
+## Margin debt, news sentiment and geopolitical risk (added 2026-11-09, batch 2 group 4)
+
+Not available: NAAIM Exposure Index (moved to subscription-only on 1 Aug 2026); CNN Fear and Greed (endpoint blocks automated requests).
+
+| File | Source | First | Last | Rows | Publication lag |
+|---|---|---|---|---|---|
+| finra_MARGIN.csv | https://www.finra.org/sites/default/files/2021-03/margin-statistics.xlsx (monthly, $ millions; Date = month end) | 1997-01-31 | 2026-09-30 | 357 | monthly, about 3 weeks after month end |
+| sffed_NEWS_SENTIMENT.csv | https://www.frbsf.org/wp-content/uploads/news_sentiment_data.xlsx (Data sheet) | 1980-01-01 | 2026-11-01 | 17088 | daily, updated weekly, about 1 week behind |
+| gpr_DAILY.csv | https://www.matteoiacoviello.com/gpr_files/data_gpr_daily_recent.xls (Caldara-Iacoviello daily GPR, acts/threats, 7/30-day averages, event labels) | 1985-01-01 | 2026-11-02 | 15281 | daily, updated weekly or so, a few days behind |
