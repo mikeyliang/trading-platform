@@ -1,0 +1,7 @@
+out*/
+*.parquet
+*.pkl
+*.json.gz
+result.json
+summary.txt
+__pycache__/
