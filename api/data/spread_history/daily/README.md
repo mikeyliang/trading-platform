@@ -137,3 +137,11 @@ Date = report date (Tuesday positions). Columns: open_interest and long/short fo
 | cftc_tff_VIX.csv | https://www.cftc.gov/files/dea/history/fin_fut_txt_2006_2016.zip + fut_fin_txt_2017..2026.zip, Traders in Financial Futures, futures only, code 1170E1 | 2006-08-29 | 2026-11-03 | 1024 | weekly; positions as of Tuesday, published Friday 3:30pm ET (3 days later; delayed by holidays/shutdowns) |
 | cftc_tff_RTY.csv | https://www.cftc.gov/files/dea/history/fin_fut_txt_2006_2016.zip + fut_fin_txt_2017..2026.zip, Traders in Financial Futures, futures only, codes 239742 (CME E-mini, 2006-08 and 2017-) and 23977A (ICE mini, 2008-07..2018-06); overlap 2017-18 has one row per code | 2006-06-13 | 2026-11-03 | 1117 | weekly; positions as of Tuesday, published Friday 3:30pm ET (3 days later; delayed by holidays/shutdowns) |
 | cftc_tff_ES.csv | https://www.cftc.gov/files/dea/history/fin_fut_txt_2006_2016.zip + fut_fin_txt_2017..2026.zip, Traders in Financial Futures, futures only, code 13874A | 2006-06-13 | 2026-11-03 | 1065 | weekly; positions as of Tuesday, published Friday 3:30pm ET (3 days later; delayed by holidays/shutdowns) |
+
+## VIX futures term structure (added 2026-11-09, batch 2 group 3)
+
+Daily settlement of the front (VX1) and second (VX2) monthly VIX futures, with each contract's final settlement date (taken from the file name, or for archive files the last trade date). Contracts before March 2007 were quoted at 10x VIX and are divided by 10. Rows with settle 0 are dropped. Archive files for F/G/H/J/Z 2004 and J/N/U 2005 do not exist (quarterly listings then).
+
+| File | Source | First | Last | Rows | Publication lag |
+|---|---|---|---|---|---|
+| cfe_VX_term.csv | Cboe CFE per-contract VX settlements: cdn.cboe.com/data/us/futures/market_statistics/historical_data/VX/VX_<expiry>.csv (2013-) and cdn.cboe.com/resources/futures/archive/volume-and-price/CFE_<M><YY>_VX.csv (2004-2013); front = nearest expiry after the trade date | 2004-03-26 | 2026-11-06 | 5694 | daily, same evening |
