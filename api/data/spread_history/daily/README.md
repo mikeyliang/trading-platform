@@ -65,3 +65,65 @@ Cboe strategy indices are real-option-price benchmarks (PutWrite, Iron Condor, B
 | fred_BAA10Y.csv | Moody's Baa minus 10y Treasury (credit spread, full history) | https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAA10Y | 10212 | 1986-01-02 | 2026-11-05 |
 | fred_AAA10Y.csv | Moody's Aaa minus 10y Treasury | https://fred.stlouisfed.org/graph/fredgraph.csv?id=AAA10Y | 10959 | 1983-01-03 | 2026-11-05 |
 | squeeze_DIX_GEX.csv | SqueezeMetrics dark-pool index and dealer gamma exposure | https://squeezemetrics.com/monitor/static/DIX.csv | 3904 | 2011-05-02 | 2026-11-06 |
+
+## Macro, cross-asset and extra Cboe vol (added 2026-11-09, batch 2 group 1)
+
+FRED values as published (blank/'.' dropped). Yahoo rows end 2026-11-06 (today's partial bar removed). BAMLH0A0HYM2EY skipped: FRED serves only 3 years.
+
+| File | Source | First | Last | Rows | Publication lag |
+|---|---|---|---|---|---|
+| fred_ICSA.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA | 1967-01-07 | 2026-10-31 | 3122 | weekly, Thursday for the week ending prior Saturday |
+| fred_CCSA.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=CCSA | 1967-01-07 | 2026-10-24 | 3121 | weekly, Thursday, one week behind ICSA |
+| fred_USEPUINDXD.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=USEPUINDXD | 1985-01-01 | 2026-11-08 | 15287 | daily, next day |
+| fred_WLEMUINDXD.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=WLEMUINDXD | 1985-01-01 | 2026-11-08 | 15287 | daily, next day |
+| fred_WALCL.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL | 2002-12-18 | 2026-11-04 | 1247 | weekly, Thursday for Wednesday |
+| fred_RRPONTSYD.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=RRPONTSYD | 2003-02-07 | 2026-11-06 | 3363 | daily, same day |
+| fred_WTREGEN.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=WTREGEN | 2002-12-18 | 2026-11-04 | 1247 | weekly, Thursday for Wednesday |
+| fred_DTWEXBGS.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTWEXBGS | 2006-01-02 | 2026-10-30 | 5222 | daily, about 1 week (weekly H.10 release) |
+| fred_DCOILWTICO.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO | 1986-01-02 | 2026-11-03 | 9537 | daily, ~1-2 days |
+| fred_SAHMREALTIME.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=SAHMREALTIME | 1959-12-01 | 2026-10-01 | 802 | monthly, with the jobs report (first Friday) |
+| fred_UMCSENT.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=UMCSENT | 1952-11-01 | 2026-09-01 | 677 | monthly, final at month end (prelim mid-month) |
+| fred_DFII10.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFII10 | 2003-01-02 | 2026-11-05 | 5966 | daily, next day |
+| fred_DGS2.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2 | 1976-06-01 | 2026-11-05 | 12605 | daily, next day |
+| fred_DGS10.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10 | 1962-01-02 | 2026-11-05 | 16197 | daily, next day |
+| fred_KCFSI.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=KCFSI | 1990-02-01 | 2026-10-01 | 441 | monthly, early following month |
+| cboe_DSPX.csv | https://cdn.cboe.com/api/global/us_indices/daily_prices/DSPX_History.csv | 2014-06-19 | 2026-11-06 | 3116 | daily, same day |
+| cboe_VXD.csv | https://cdn.cboe.com/api/global/us_indices/daily_prices/VXD_History.csv | 2009-09-18 | 2026-11-06 | 4311 | daily, same day |
+| cboe_VXEEM.csv | https://cdn.cboe.com/api/global/us_indices/daily_prices/VXEEM_History.csv | 2011-03-16 | 2026-11-06 | 3932 | daily, same day |
+| cboe_OVX.csv | https://cdn.cboe.com/api/global/us_indices/daily_prices/OVX_History.csv | 2009-09-18 | 2026-11-06 | 4309 | daily, same day |
+| cboe_GVZ.csv | https://cdn.cboe.com/api/global/us_indices/daily_prices/GVZ_History.csv | 2009-09-18 | 2026-11-06 | 4309 | daily, same day |
+| cboe_VXTLT.csv | https://cdn.cboe.com/api/global/us_indices/daily_prices/VXTLT_History.csv | 2004-01-02 | 2026-11-06 | 5737 | daily, same day |
+| cboe_BXR.csv | https://cdn.cboe.com/api/global/us_indices/daily_prices/BXR_History.csv (Cboe Russell 2000 strategy index; exact construction per Cboe) | 2000-12-29 | 2026-11-06 | 6499 | daily, same day |
+| cboe_BXRD.csv | https://cdn.cboe.com/api/global/us_indices/daily_prices/BXRD_History.csv (Cboe Russell 2000 strategy index; exact construction per Cboe) | 2001-01-31 | 2026-11-06 | 6478 | daily, same day |
+| cboe_WPTR.csv | https://cdn.cboe.com/api/global/us_indices/daily_prices/WPTR_History.csv (Cboe Russell 2000 strategy index; exact construction per Cboe) | 2011-02-28 | 2026-11-06 | 3945 | daily, same day |
+| yahoo_RSP.csv | yfinance RSP (Close unadjusted, Adj Close for dividends/splits) | 2003-05-01 | 2026-11-06 | 5919 | daily, same day |
+| yahoo_SPY.csv | yfinance SPY (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_IWM.csv | yfinance IWM (Close unadjusted, Adj Close for dividends/splits) | 2000-05-26 | 2026-11-06 | 6652 | daily, same day |
+| yahoo_IWN.csv | yfinance IWN (Close unadjusted, Adj Close for dividends/splits) | 2000-07-28 | 2026-11-06 | 6609 | daily, same day |
+| yahoo_IWO.csv | yfinance IWO (Close unadjusted, Adj Close for dividends/splits) | 2000-07-28 | 2026-11-06 | 6609 | daily, same day |
+| yahoo_MDY.csv | yfinance MDY (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_QQQ.csv | yfinance QQQ (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_XLY.csv | yfinance XLY (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_XLP.csv | yfinance XLP (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_XLU.csv | yfinance XLU (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_XLF.csv | yfinance XLF (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_XLK.csv | yfinance XLK (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_XLI.csv | yfinance XLI (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_XLE.csv | yfinance XLE (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_XLB.csv | yfinance XLB (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_XLV.csv | yfinance XLV (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6753 | daily, same day |
+| yahoo_KRE.csv | yfinance KRE (Close unadjusted, Adj Close for dividends/splits) | 2006-06-22 | 2026-11-06 | 5127 | daily, same day |
+| yahoo_SMH.csv | yfinance SMH (Close unadjusted, Adj Close for dividends/splits) | 2000-06-05 | 2026-11-06 | 6647 | daily, same day |
+| yahoo_JNK.csv | yfinance JNK (Close unadjusted, Adj Close for dividends/splits) | 2007-12-04 | 2026-11-06 | 4762 | daily, same day |
+| yahoo_TLT.csv | yfinance TLT (Close unadjusted, Adj Close for dividends/splits) | 2002-07-30 | 2026-11-06 | 6109 | daily, same day |
+| yahoo_SHY.csv | yfinance SHY (Close unadjusted, Adj Close for dividends/splits) | 2002-07-30 | 2026-11-06 | 6109 | daily, same day |
+| yahoo_GLD.csv | yfinance GLD (Close unadjusted, Adj Close for dividends/splits) | 2004-11-18 | 2026-11-06 | 5527 | daily, same day |
+| yahoo_UUP.csv | yfinance UUP (Close unadjusted, Adj Close for dividends/splits) | 2007-03-01 | 2026-11-06 | 4955 | daily, same day |
+| yahoo_HGF.csv | yfinance HG=F (Close unadjusted, Adj Close for dividends/splits) | 2000-08-30 | 2026-11-06 | 6577 | daily, same day |
+| yahoo_CLF.csv | yfinance CL=F (Close unadjusted, Adj Close for dividends/splits) | 2000-08-23 | 2026-11-06 | 6581 | daily, same day |
+| yahoo_TNX.csv | yfinance ^TNX (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6747 | daily, same day |
+| yahoo_IRX.csv | yfinance ^IRX (Close unadjusted, Adj Close for dividends/splits) | 2000-01-03 | 2026-11-06 | 6747 | daily, same day |
+| yahoo_BTC-USD.csv | yfinance BTC-USD (Close unadjusted, Adj Close for dividends/splits) | 2014-09-17 | 2026-11-08 | 4436 | daily, same day |
+| yahoo_SPHB.csv | yfinance SPHB (Close unadjusted, Adj Close for dividends/splits) | 2011-05-05 | 2026-11-06 | 3901 | daily, same day |
+| yahoo_SPLV.csv | yfinance SPLV (Close unadjusted, Adj Close for dividends/splits) | 2011-05-05 | 2026-11-06 | 3901 | daily, same day |
+| yahoo_EEM.csv | yfinance EEM (Close unadjusted, Adj Close for dividends/splits) | 2003-04-14 | 2026-11-06 | 5931 | daily, same day |
