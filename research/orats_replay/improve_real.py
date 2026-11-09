@@ -13,6 +13,10 @@ return, drawdown, Sharpe and profit factor:
   D  earlier or later delta exits, and the Thursday rule off
   E  other days to expiry from the same entry days
   F  Space on real S&P 500 quotes (needs the SPX slim files; skipped when they are missing)
+  G  entry gates with fixed thresholds (index already below its 60-day high, inverted term structure, implied below
+     realised), as a skip or at half size, and the x1.5 size-up after a 15% yearly fall switched off
+  H  other exits: take profit, a stop on the buyback value, an earlier delta trigger
+  I  combinations of the pieces that each helped, at 33% and 50% size
 
 Reads the slim parquet built by run_real.py (builds it when --strikes is given). Everything it writes stays in --out:
 summary.txt and result.json hold aggregates only.
@@ -53,13 +57,13 @@ def pooled(recs, offs=OFFS, sids=R.SIDS):
     return [r for s in sids for o in offs for r in recs.get((s, o), ())]
 
 
-def acct(mkt, trades, start, end, size=1 / 3, weights=None):
+def acct(mkt, trades, start, end, size=1 / 3, weights=None, mdd=1.5):
     tr = sorted((dict(r) for r in trades if r['kind'] != 'skip'), key=lambda r: (r['entry'], r['strategy']))
     for r in tr:
         r.pop('_last', None)
     if not tr:
         return None
-    out, info = R.account(mkt, tr, size, start, end, weights=weights)
+    out, info = R.account(mkt, tr, size, start, end, weights=weights, mdd_mult=mdd)
     return dict(R.acct_stats(out, 100000.0), **info)
 
 
@@ -239,6 +243,38 @@ def placebo(ts, draws, seed=7):
         if w and s / w >= real - 1e-12:
             ge += 1
     return ge / draws
+
+
+# ------------------------------------------------------------------ G: fixed entry gates
+GATES = (('RUT 5%+ below its 60-day high', lambda f: f.get('dd60', 0) < -0.05),
+         ('RUT 8%+ below its 60-day high', lambda f: f.get('dd60', 0) < -0.08),
+         ('next month IV below this month (inverted)', lambda f: f.get('term', 0) < 0),
+         ('implied vol below 20-day realised', lambda f: f.get('iv_rv', 0) < 0),
+         ('5%+ below high AND inverted', lambda f: f.get('dd60', 0) < -0.05 and f.get('term', 0) < 0),
+         ('5%+ below high OR inverted', lambda f: f.get('dd60', 0) < -0.05 or f.get('term', 0) < 0),
+         ('5%+ below high AND RVX rank under 0.8', lambda f: f.get('dd60', 0) < -0.05 and f.get('rvx_rank', 1) < 0.8))
+
+
+def gate_apply(trades, dayfeat, test, mult):
+    """Trades whose entry day trips the gate get size x mult (0 = left out). The readings are entry-day only."""
+    out = []
+    for r in trades:
+        if r['kind'] == 'skip':
+            continue
+        if test(dayfeat.get(r['entry'], {})):
+            if mult > 0:
+                out.append(dict(r, size_mult=mult))
+        else:
+            out.append(r)
+    return out
+
+
+def exp_of(trades):
+    tr = [r for r in trades if r['kind'] != 'skip']
+    if not tr:
+        return dict(n=0)
+    lo = [r for r in tr if r['pnl'] <= 0]
+    return dict(n=len(tr), exp=100 * sum(r['pnl'] / r['risk'] for r in tr) / len(tr), loss_pct=100 * len(lo) / len(tr))
 
 
 # ------------------------------------------------------------------ C: where on the chain to sell
@@ -559,6 +595,81 @@ def main():
         except Exception as e:  # noqa: BLE001
             say('Space block failed: %r' % (e,))
         save()
+
+    # ---- G: fixed entry gates (thresholds set before looking, so they work from the first trade)
+    dayfeat = {}
+    for r in base_tr:
+        f = {k: v for k, v in r.get('feat', {}).items() if k in ('dd60', 'term', 'iv_rv', 'atm_rvx', 'rvx_rank', 'skew')}
+        dayfeat.setdefault(r['entry'], {}).update(f)
+    say('\n== G. ENTRY GATES WITH FIXED THRESHOLDS (entry-day readings only; base strikes and exits)')
+    say('   gated = trades the gate would touch; then the account when those are left out, or run at half size')
+    res['G'] = {}
+    ac = acct(mkt, traded, start, end, mdd=None)
+    say(aline('base', base_acc))
+    say(aline('base, no x1.5 size-up after a 15% yearly fall', ac))
+    res['G']['no_sizeup'] = RR.slim_acc(ac) if ac else None
+    for tag, test in GATES:
+        hit = [r for r in traded if test(dayfeat.get(r['entry'], {}))]
+        rest = [r for r in traded if not test(dayfeat.get(r['entry'], {}))]
+        eh, er = exp_of(hit), exp_of(rest)
+        say('%s' % tag)
+        if not eh['n']:
+            say('   never tripped in this window')
+            continue
+        say('   gated n %3d exp %+6.2f loss%% %5.1f | others n %3d exp %+6.2f loss%% %5.1f' % (
+            eh['n'], eh['exp'], eh['loss_pct'], er.get('n', 0), er.get('exp', 0.0), er.get('loss_pct', 0.0)))
+        res['G'][tag] = dict(gated=eh, others=er)
+        for mtag, m in (('skip', 0.0), ('half size', 0.5)):
+            ac = acct(mkt, gate_apply(traded, dayfeat, test, m), start, end)
+            say(aline('   %s' % mtag, ac))
+            res['G'][tag][mtag] = RR.slim_acc(ac) if ac else None
+    save()
+
+    # ---- H: other exits on the base strikes
+    say('\n== H. OTHER EXITS (base strikes; take profit = close once that share of the credit is earned; value stop =')
+    say('   close when the spread costs that many times the credit to buy back; delta exit stays on unless noted)')
+    res['H'] = {}
+    hvars = [('take profit 50%', dict(take_profit=0.5)), ('take profit 75%', dict(take_profit=0.75)),
+             ('take profit 90%', dict(take_profit=0.9)),
+             ('value stop 2x credit', dict(stop_mult=2.0)), ('value stop 3x credit', dict(stop_mult=3.0)),
+             ('value stop 4x credit', dict(stop_mult=4.0)),
+             ('value stop 3x, no delta exit', dict(stop_mult=3.0, exit_scale=9.0)),
+             ('exit x0.67 + take profit 75%', dict(exit_scale=2 / 3, take_profit=0.75)),
+             ('exit x0.5 (15/18/21)', dict(exit_scale=0.5))]
+    for tag, kw in hvars:
+        tr = pooled(R.replay_all(mkt, real, start, end, OFFS, **kw))
+        st = R.trade_stats(tr)
+        ac = acct(mkt, tr, start, end)
+        say(tline(tag, st))
+        say(aline('   account', ac))
+        res['H'][tag] = dict(trades=slim_t(st), account=RR.slim_acc(ac) if ac else None)
+    save()
+
+    # ---- I: combinations of the pieces that each helped
+    say('\n== I. COMBINATIONS (33% size, then 50% size; gate = half size when RUT is 5%+ below its 60-day high;\n   size-up = the x1.5 after a 15% yearly fall)')
+    res['I'] = {}
+    gate5 = GATES[0][1]
+    combos = [('course strike, exit x0.67, wing $100', dict(exit_scale=2 / 3, wing=100.0)),
+              ('course strike, exit x0.67, wing $75', dict(exit_scale=2 / 3, wing=75.0)),
+              ('delta 0.08, base exit, wing $55', dict(picker=picker_delta(0.08))),
+              ('delta 0.08, exit x0.67, wing $55', dict(picker=picker_delta(0.08), exit_scale=2 / 3)),
+              ('delta 0.08, exit x0.67, wing $100', dict(picker=picker_delta(0.08), exit_scale=2 / 3, wing=100.0)),
+              ('delta 0.10, exit x0.67, wing $100', dict(picker=picker_delta(0.10), exit_scale=2 / 3, wing=100.0)),
+              ('delta 0.10, exit x0.67, wing $55', dict(picker=picker_delta(0.10), exit_scale=2 / 3)),
+              ('delta 0.06, exit x0.67, wing $100', dict(picker=picker_delta(0.06), exit_scale=2 / 3, wing=100.0))]
+    for tag, kw in combos:
+        tr = pooled(R.replay_all(mkt, real, start, end, OFFS, **kw))
+        st = R.trade_stats(tr)
+        say(tline(tag, st))
+        row = dict(trades=slim_t(st))
+        gated = gate_apply(tr, dayfeat, gate5, 0.5)
+        for gtag, tset, mdd in (('', tr, 1.5), (' + gate', gated, 1.5), (' + gate, no size-up', gated, None)):
+            for size in (1 / 3, 0.5):
+                ac = acct(mkt, tset, start, end, size=size, mdd=mdd)
+                say(aline('   %d%%%s' % (round(size * 100), gtag), ac))
+                row['%d%s' % (round(size * 100), gtag)] = RR.slim_acc(ac) if ac else None
+        res['I'][tag] = row
+    save()
 
     if not fake:
         say('\nRussell data-quality counters:', dict(real.stats))

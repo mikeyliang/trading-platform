@@ -508,9 +508,10 @@ def _leg(ch, k, S, T, last_iv, last_half):
 
 
 def one_trade(mkt, chains, sid, entry_tf, expiry, i0, ix, wing=WING, fill=FILL_ENGINE, exit_delta=None, picker=None,
-              exit_scale=1.0, settle='open', thursday=True):
+              exit_scale=1.0, settle='open', thursday=True, stop_mult=None, take_profit=None):
     """One spread from entry to exit. exit_scale multiplies the delta trigger; settle='close' is for PM-settled
-    expiries; thursday=False turns the day-before-expiry rule off."""
+    expiries; thursday=False turns the day-before-expiry rule off. stop_mult closes when the spread costs that many
+    times the credit to buy back; take_profit closes once that share of the credit is earned (both legs quoted)."""
     spec = SPECS[sid]
     dates = mkt.dates
     d0 = dates[i0]
@@ -567,6 +568,7 @@ def one_trade(mkt, chains, sid, entry_tf, expiry, i0, ix, wing=WING, fill=FILL_E
             cd = chains.chain(d, ex, v0, exact=True)      # the same listed expiry as at entry
             S = cd.S if cd is not None else px
             last = i == ix - 1
+            quoted = False
             if cd is None:
                 flags['noday'] += 1
                 delta = None
@@ -580,9 +582,14 @@ def one_trade(mkt, chains, sid, entry_tf, expiry, i0, ix, wing=WING, fill=FILL_E
                 if f1 or f2:
                     flags['fallback'] += 1
                 liab = min(max(ms - ml, 0.0), width) if (f1 or f2) else ms - ml
+                quoted = not (f1 or f2)
             gross = pnl = credit - liab
             if delta is not None and delta > xd:
                 kind = 'delta_exit'
+            elif stop_mult and cd is not None and liab >= stop_mult * credit:
+                kind = 'value_stop'
+            elif take_profit and quoted and liab <= (1 - take_profit) * credit:
+                kind = 'take_profit'
             elif last and thursday and px < K * (1 + spec['buffer']):
                 kind = 'thursday'
             if kind:
@@ -606,7 +613,7 @@ def refill(recs, fill):
             out.append(r)
             continue
         c_in = fill['entry_share'] * r['half_in'] + fill['entry_fixed'] + 2 * COMM
-        c_out = (fill['exit_share'] * r['half_out'] + fill['exit_slip'] + 2 * COMM) if r['kind'] in ('delta_exit', 'thursday') else 0.0
+        c_out = (fill['exit_share'] * r['half_out'] + fill['exit_slip'] + 2 * COMM) if not r['kind'].startswith('expired') else 0.0
         pnl = max(r['gross'] - c_in - c_out, -r['risk'])
         out.append(dict(r, cost_in=c_in, cost_out=c_out, pnl=pnl, ror=pnl / r['risk']))
     return out
