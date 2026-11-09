@@ -43,3 +43,25 @@ Notes: FRED only serves the last 3 years of the ICE BofA spreads (BAMLH0A0HYM2, 
 | yahoo_IEF.csv | yfinance ticker IEF (full history, auto_adjust=False) | 6109 | 2002-07-30 | 2026-11-06 |
 | yahoo_MOVE.csv | yfinance ticker ^MOVE (full history, auto_adjust=False) | 5932 | 2002-11-12 | 2026-11-06 |
 | yahoo_VXN.csv | yfinance ticker ^VXN (full history, auto_adjust=False) | 6487 | 2001-01-23 | 2026-11-06 |
+
+## Option-strategy benchmarks, correlation, credit and dealer gamma (added 2026-11-09)
+
+Cboe strategy indices are real-option-price benchmarks (PutWrite, Iron Condor, Butterfly etc.) useful for checking the option-pricing model; values are index levels as published. Early CNDR/BFLY/RXM/PPUT rows from 1986 are Cboe backfill. Baa/Aaa spreads fill the pre-2023 gap in the ICE BofA series. DIX/GEX columns are as published by SqueezeMetrics (free CSV).
+
+| File | What | Source | Rows | First | Last |
+|---|---|---|---|---|---|
+| cboe_PUT.csv | S&P 500 PutWrite (ATM puts, cash-secured) | https://cdn.cboe.com/api/global/us_indices/daily_prices/PUT_History.csv | 5001 | 1991-03-04 | 2026-11-06 |
+| cboe_CNDR.csv | S&P 500 Iron Condor index | https://cdn.cboe.com/api/global/us_indices/daily_prices/CNDR_History.csv | 10169 | 1986-06-20 | 2026-11-06 |
+| cboe_BXM.csv | S&P 500 BuyWrite | https://cdn.cboe.com/api/global/us_indices/daily_prices/BXM_History.csv | 6195 | 2002-03-22 | 2026-11-06 |
+| cboe_WPUT.csv | S&P 500 weekly PutWrite | https://cdn.cboe.com/api/global/us_indices/daily_prices/WPUT_History.csv | 5223 | 2006-01-31 | 2026-11-06 |
+| cboe_PPUT.csv | S&P 500 5% put protection | https://cdn.cboe.com/api/global/us_indices/daily_prices/PPUT_History.csv | 10163 | 1986-06-30 | 2026-11-06 |
+| cboe_CLL.csv | S&P 500 95-110 collar | https://cdn.cboe.com/api/global/us_indices/daily_prices/CLL_History.csv | 4538 | 2008-08-26 | 2026-11-06 |
+| cboe_BFLY.csv | S&P 500 iron butterfly | https://cdn.cboe.com/api/global/us_indices/daily_prices/BFLY_History.csv | 10169 | 1986-06-20 | 2026-11-06 |
+| cboe_PUTR.csv | Russell 2000 PutWrite | https://cdn.cboe.com/api/global/us_indices/daily_prices/PUTR_History.csv | 6478 | 2001-01-31 | 2026-11-06 |
+| cboe_RXM.csv | Russell 2000 BuyWrite | https://cdn.cboe.com/api/global/us_indices/daily_prices/RXM_History.csv | 10169 | 1986-06-20 | 2026-11-06 |
+| cboe_VIX1D.csv | 1-day VIX | https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX1D_History.csv | 1126 | 2022-05-13 | 2026-11-06 |
+| cboe_COR3M.csv | 3-month implied correlation | https://cdn.cboe.com/api/global/us_indices/daily_prices/COR3M_History.csv | 5230 | 2006-01-03 | 2026-11-06 |
+| cboe_COR1M.csv | 1-month implied correlation | https://cdn.cboe.com/api/global/us_indices/daily_prices/COR1M_History.csv | 5245 | 2006-01-03 | 2026-11-06 |
+| fred_BAA10Y.csv | Moody's Baa minus 10y Treasury (credit spread, full history) | https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAA10Y | 10212 | 1986-01-02 | 2026-11-05 |
+| fred_AAA10Y.csv | Moody's Aaa minus 10y Treasury | https://fred.stlouisfed.org/graph/fredgraph.csv?id=AAA10Y | 10959 | 1983-01-03 | 2026-11-05 |
+| squeeze_DIX_GEX.csv | SqueezeMetrics dark-pool index and dealer gamma exposure | https://squeezemetrics.com/monitor/static/DIX.csv | 3904 | 2011-05-02 | 2026-11-06 |
