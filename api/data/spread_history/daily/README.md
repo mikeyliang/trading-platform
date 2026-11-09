@@ -19,3 +19,27 @@ Yahoo ^RVX returned no data (use cboe_RVX.csv or fred_RVXCLS.csv).
 | yahoo_RUT.csv | yfinance ticker ^RUT (start 2000-01-01, auto_adjust=False) | 6753 | 2000-01-03 | 2026-11-06 |
 | yahoo_VIX.csv | yfinance ticker ^VIX (start 2000-01-01, auto_adjust=False) | 6755 | 2000-01-03 | 2026-11-06 |
 | yahoo_VIX3M.csv | yfinance ticker ^VIX3M (start 2000-01-01, auto_adjust=False) | 5111 | 2006-07-17 | 2026-11-06 |
+
+## Fear-gauge and credit history (added 2026-11-09)
+
+Date/Close per observation (blank and '.' values dropped); AAII is Date,Bullish,Neutral,Bearish; Yahoo files are OHLC.
+Notes: FRED only serves the last 3 years of the ICE BofA spreads (BAMLH0A0HYM2, BAMLC0A4CBBB) because of licensing. Cboe's put/call files stop on 2019-10-04. STLFSI4, NFCI and ANFCI are weekly. CNN Fear & Greed was not downloaded: the endpoint blocks automated requests (HTTP 418).
+
+| File | Source | Rows | First | Last |
+|---|---|---|---|---|
+| fred_BAMLH0A0HYM2.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2 | 786 | 2023-11-07 | 2026-11-05 |
+| fred_BAMLC0A4CBBB.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLC0A4CBBB | 786 | 2023-11-07 | 2026-11-05 |
+| fred_STLFSI4.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=STLFSI4 | 1714 | 1993-12-31 | 2026-10-30 |
+| fred_NFCI.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=NFCI | 2913 | 1971-01-08 | 2026-10-30 |
+| fred_ANFCI.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=ANFCI | 2913 | 1971-01-08 | 2026-10-30 |
+| fred_T10Y3M.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y3M | 11215 | 1982-01-04 | 2026-11-06 |
+| fred_T10Y2Y.csv | https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y2Y | 12606 | 1976-06-01 | 2026-11-06 |
+| cboe_PC_TOTAL.csv | https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/totalpc.csv (P/C Ratio column) | 3253 | 2006-11-01 | 2019-10-04 |
+| cboe_PC_EQUITY.csv | https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/equitypc.csv (P/C Ratio column) | 3253 | 2006-11-01 | 2019-10-04 |
+| cboe_PC_INDEX.csv | https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/indexpc.csv (P/C Ratio column) | 3253 | 2006-11-01 | 2019-10-04 |
+| aaii_SENTIMENT.csv | https://www.aaii.com/files/surveys/sentiment.xls (weekly) | 2048 | 1987-07-24 | 2026-11-05 |
+| yahoo_HYG.csv | yfinance ticker HYG (full history, auto_adjust=False) | 4927 | 2007-04-11 | 2026-11-06 |
+| yahoo_LQD.csv | yfinance ticker LQD (full history, auto_adjust=False) | 6109 | 2002-07-30 | 2026-11-06 |
+| yahoo_IEF.csv | yfinance ticker IEF (full history, auto_adjust=False) | 6109 | 2002-07-30 | 2026-11-06 |
+| yahoo_MOVE.csv | yfinance ticker ^MOVE (full history, auto_adjust=False) | 5932 | 2002-11-12 | 2026-11-06 |
+| yahoo_VXN.csv | yfinance ticker ^VXN (full history, auto_adjust=False) | 6487 | 2001-01-23 | 2026-11-06 |
