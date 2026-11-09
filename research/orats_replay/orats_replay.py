@@ -287,20 +287,47 @@ ORATS_COLS = ['ticker', 'tradeDate', 'expirDate', 'dte', 'strike', 'stockPrice',
               'putVolume', 'expiryTod']
 
 
+# Sane range of each numeric column. A few raw rows carry overflow garbage (21-digit integers); anything outside
+# its range, non-finite or not a number is stored as missing and counted.
+ORATS_RANGE = dict(dte=(-10, 5000), strike=(0, 1e6), stockPrice=(0, 1e6), spotPrice=(0, 1e6), putBidPrice=(0, 1e6),
+                   putValue=(0, 1e6), putAskPrice=(0, 1e6), callBidPrice=(0, 1e6), callAskPrice=(0, 1e6),
+                   putMidIv=(0, 1000), smvVol=(0, 1000), delta=(-0.001, 1.001), putOpenInterest=(0, 1e10),
+                   putVolume=(0, 1e10))
+_NUM_IX = [(i, c) + ORATS_RANGE[c] for i, c in enumerate(ORATS_COLS) if c in ORATS_RANGE]
+
+
+def _clean_row(row, bad):
+    for i, c, lo, hi in _NUM_IX:
+        v = row[i]
+        if v is None:
+            continue
+        try:
+            f = float(v)
+        except (TypeError, ValueError, OverflowError):
+            f = NAN
+        if not (lo <= f <= hi):                # also catches nan and inf
+            bad[c] = bad.get(c, 0) + 1
+            f = None
+        row[i] = f
+    return row
+
+
 def _extract_day(args):
     path, tickers = args
     try:
         with gzip.open(path, 'rt') as f:
             rows = json.load(f).get('data', [])
     except Exception as e:  # noqa: BLE001
-        return path, None, str(e)
-    keep = [[r.get(c) for c in ORATS_COLS] for r in rows if r.get('ticker') in tickers]
-    return path, keep, None
+        return path, None, str(e), {}
+    bad = {}
+    keep = [_clean_row([r.get(c) for c in ORATS_COLS], bad) for r in rows if r.get('ticker') in tickers]
+    return path, keep, None, bad
 
 
 def extract(strikes_dir, out_dir, tickers=('RUT',), years=None, procs=4):
     """strikes/<YYYY>/<YYYY-MM-DD>.json.gz -> <out_dir>/<TICKER>_<YYYY>.parquet (slim columns). Skips years already
-    built unless the raw folder has newer files."""
+    built unless the raw folder has newer files. Out-of-range numbers are stored as missing; the count per column is
+    reported in the returned status."""
     import pandas as pd
     from multiprocessing import Pool
     os.makedirs(out_dir, exist_ok=True)
@@ -317,17 +344,25 @@ def extract(strikes_dir, out_dir, tickers=('RUT',), years=None, procs=4):
             done[ydir] = (len(files), 'cached')
             continue
         jobs = [(os.path.join(strikes_dir, ydir, f), set(tickers)) for f in files]
-        rows, bad = [], 0
+        rows, bad, badv = [], 0, Counter()
         with Pool(procs) as pool:
-            for _p, keep, err in pool.imap_unordered(_extract_day, jobs, chunksize=4):
+            for _p, keep, err, bv in pool.imap_unordered(_extract_day, jobs, chunksize=4):
                 if err:
                     bad += 1
                 else:
                     rows.extend(keep)
+                    badv.update(bv)
         df = pd.DataFrame(rows, columns=ORATS_COLS)
+        for c in ORATS_RANGE:
+            df[c] = pd.to_numeric(df[c], errors='coerce').astype('float64')
+        for c in ('ticker', 'tradeDate', 'expirDate', 'expiryTod'):
+            df[c] = df[c].astype(str)
         for t, p in outs.items():
             df[df.ticker == t].to_parquet(p, compression='zstd', index=False)
-        done[ydir] = (len(files), 'built, %d unreadable' % bad)
+        note = 'built, %d unreadable' % bad
+        if badv:
+            note += ', out-of-range values dropped: ' + ', '.join('%s %d' % kv for kv in sorted(badv.items()))
+        done[ydir] = (len(files), note)
     return done
 
 
@@ -350,7 +385,10 @@ class OratsChains:
             df = pd.read_parquet(p)
             for c in ('strike', 'stockPrice', 'spotPrice', 'putBidPrice', 'putAskPrice', 'putMidIv', 'smvVol', 'delta',
                       'putOpenInterest'):
-                df[c] = pd.to_numeric(df[c], errors='coerce')
+                df[c] = pd.to_numeric(df[c], errors='coerce').astype('float64')
+                if c in ORATS_RANGE:
+                    lo, hi = ORATS_RANGE[c]
+                    df[c] = df[c].where((df[c] >= lo) & (df[c] <= hi))
             df['tradeDate'] = df['tradeDate'].astype(str).str[:10]
             df['expirDate'] = df['expirDate'].astype(str).str[:10]
             for (td, ex), g in df.groupby(['tradeDate', 'expirDate'], sort=False):
@@ -454,8 +492,11 @@ def _leg(ch, k, S, T, last_iv, last_half):
     if ch is not None:
         j = ch.at(k)
         if j >= 0 and ch.mid[j] == ch.mid[j]:
-            return (float(ch.mid[j]), float(ch.ask[j] - ch.bid[j]) / 2, float(ch.pd[j]),
-                    float(ch.iv[j]) if ch.iv[j] == ch.iv[j] and ch.iv[j] > 0 else last_iv, False)
+            iv = float(ch.iv[j]) if ch.iv[j] == ch.iv[j] and ch.iv[j] > 0 else last_iv
+            dl = float(ch.pd[j])
+            if dl != dl:                                # quoted but no delta on the row: use the model delta
+                dl = bs_put_delta(S, k, iv, T)
+            return float(ch.mid[j]), float(ch.ask[j] - ch.bid[j]) / 2, dl, iv, False
         iv = ch.iv_at(k)
         if iv != iv:
             iv = last_iv
