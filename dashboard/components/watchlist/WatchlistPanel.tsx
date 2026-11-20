@@ -150,7 +150,8 @@ export function WatchlistPanel() {
               const q = quotes[item.symbol];
               const changePct = q?.change_pct ?? item.change_pct ?? null;
               const last = q?.last ?? item.last;
-              const dir = changePct == null ? "flat" : changePct > 0 ? "up" : changePct < 0 ? "down" : "flat";
+              // Direction follows what is printed: a change that rounds to 0.00% is flat.
+              const dir = changePct == null || Math.abs(changePct) < 0.005 ? "flat" : changePct > 0 ? "up" : "down";
               const active = item.symbol === activeSymbol;
 
               return (
