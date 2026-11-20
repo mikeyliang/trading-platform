@@ -25,8 +25,11 @@ const STATUS_BADGE: Record<OpenSpreadContext["status"], { label: string; variant
   unknown: { label: "No delta",     variant: "muted" },
 };
 
-export const spreadKey = (symbol: string, short: number, long: number) =>
-  `${symbol.toUpperCase()}-${Math.round(short)}-${Math.round(long)}`;
+// Expiry is part of the identity: the same strikes in two months are two
+// spreads with their own cushion, days left and odds. The monitor sends
+// YYYYMMDD and the odds endpoint YYYY-MM-DD, so compare digits only.
+export const spreadKey = (symbol: string, expiry: string | null | undefined, short: number, long: number) =>
+  `${symbol.toUpperCase()}-${(expiry ?? "").replace(/\D/g, "")}-${Math.round(short)}-${Math.round(long)}`;
 
 /** Open spreads with their historical odds, refreshed every minute while visible. */
 export function useOpenSpreadOdds() {
@@ -72,7 +75,7 @@ export function SpreadHistoryCard({
   exclude: Set<string>;
 }) {
   const { data, error, loading, load } = odds;
-  const spreads = (data?.spreads ?? []).filter((x) => !exclude.has(spreadKey(x.symbol, x.short_strike, x.long_strike)));
+  const spreads = (data?.spreads ?? []).filter((x) => !exclude.has(spreadKey(x.symbol, x.expiry, x.short_strike, x.long_strike)));
   const cov = data?.coverage;
   const initial = !data && !error;
   if (!initial && !error && spreads.length === 0) return null;

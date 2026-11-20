@@ -59,11 +59,13 @@ function BannerImpl({
     // A quiet row, not a coloured block: the icon carries the tone, the text
     // stays neutral, and it sits on the same surface as every other panel.
     <div
-      role="status"
       className="flex items-center gap-3 pl-3 pr-1.5 h-10 rounded-2xl border border-border-button-default bg-background-primary-default text-body-2-regular shrink-0 animate-fade-in"
     >
       <Icon size={16} className={cn("shrink-0", apiDown ? "text-status-rose-text" : "text-status-yellow-text")} />
-      <div className="flex-1 flex items-center gap-2 min-w-0">
+      {/* Only the label and message are announced; the ticking "checked ago"
+          stays outside the live region so a screen reader does not repeat it
+          every second during an outage. */}
+      <div role="status" className="flex-1 flex items-center gap-2 min-w-0">
         <span className="text-body-2-medium text-text-primary shrink-0">{label}</span>
         <span className="text-text-secondary truncate">{message}</span>
       </div>

@@ -90,11 +90,11 @@ export function ExitMonitor() {
   const odds = useOpenSpreadOdds();
   const byKey = useMemo(() => {
     const m = new Map<string, OpenSpreadContext>();
-    for (const x of odds.data?.spreads ?? []) m.set(spreadKey(x.symbol, x.short_strike, x.long_strike), x);
+    for (const x of odds.data?.spreads ?? []) m.set(spreadKey(x.symbol, x.expiry, x.short_strike, x.long_strike), x);
     return m;
   }, [odds.data]);
   const shown = useMemo(
-    () => new Set(entries.map((e) => spreadKey(e.symbol, e.short_strike, e.long_strike))),
+    () => new Set(entries.map((e) => spreadKey(e.symbol, e.expiry, e.short_strike, e.long_strike))),
     [entries]
   );
   const cov = odds.data?.coverage;
@@ -157,7 +157,7 @@ export function ExitMonitor() {
           ) : (
             <SpreadsTable historyHint={cov ? `${cov.trades.toLocaleString()} replayed monthly cycles since ${cov.first_entry?.slice(0, 4)}. Past trades of the same strategy within 5 delta points at the same time to expiry, and how many later hit the delta or Thursday exit.` : undefined}>
               {entries.map((e) => (
-                <Row key={e.spread_id} entry={e} ctx={byKey.get(spreadKey(e.symbol, e.short_strike, e.long_strike))} />
+                <Row key={e.spread_id} entry={e} ctx={byKey.get(spreadKey(e.symbol, e.expiry, e.short_strike, e.long_strike))} />
               ))}
             </SpreadsTable>
           )}

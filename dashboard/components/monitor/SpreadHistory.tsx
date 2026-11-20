@@ -257,7 +257,7 @@ function TrendCard({ s }: { s: RegimeStrategySummary }) {
       ? "Entries below the average went wrong more often, by more than luck explains."
       : p < 0.1
         ? "Entries below the average went wrong a little more often, but luck could explain the gap."
-        : "The gap between the two is the size luck alone produces, so trend is not worth filtering on.";
+        : "No reliable evidence that entries below the average go wrong more often.";
   return (
     <Card className="shrink-0 flex flex-col">
       <CardHeader>

@@ -423,7 +423,7 @@ function StatsCard({ stats, loading }: { stats: TradeStats | null; loading: bool
     <Card className="shrink-0">
       <CardContent>
         <StatGroup>
-          <Stat label="Trades" value={loading ? <Skeleton className="h-4 w-16" /> : String(stats?.total_trades ?? 0)} />
+          <Stat label="Trades" value={loading ? <Skeleton className="h-4 w-16" /> : stats ? String(stats.total_trades) : "n/a"} />
           <Stat
             label="Win rate"
             value={value((s) => (s.win_rate * 100).toFixed(1) + "%")}
