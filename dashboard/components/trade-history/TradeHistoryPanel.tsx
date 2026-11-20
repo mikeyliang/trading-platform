@@ -376,8 +376,8 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
               title={activeFilterCount > 0 ? "No trades match your filters" : "No trades yet"}
               description={
                 activeFilterCount > 0
-                  ? "Try clearing filters or widening the symbol search."
-                  : "Trade rows will appear here as orders fill."
+                  ? "Try clearing filters."
+                  : "Fills show here as orders fill."
               }
               action={activeFilterCount > 0 ? <Button onClick={clearAll}>Clear filters</Button> : undefined}
             />
@@ -605,7 +605,7 @@ function EquityCurveChart({
         title={emptyHint ? "No P&L to chart" : "Equity curve will appear here"}
         description={
           emptyHint
-            ? "No realized P&L in the filtered set, try widening filters or switch back to the table."
+            ? "No realized P&L in this filter."
             : "Once trades close with realized P&L the equity curve will plot here."
         }
       />

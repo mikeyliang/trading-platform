@@ -22,7 +22,7 @@ export function PageHeader({ title, eyebrow, description, actions, className }: 
         <h1 className="text-title-3-semibold text-text-primary truncate">{title}</h1>
         {sub && <p className="text-body-2-regular text-text-secondary">{sub}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+      {actions && <div className="flex items-center gap-2 min-w-0 max-w-full">{actions}</div>}
     </div>
   );
 }

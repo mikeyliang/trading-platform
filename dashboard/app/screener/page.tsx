@@ -179,7 +179,7 @@ export default function ScreenerPage() {
     <PageShell>
       <PageHeader
         title="Screener"
-        description="Fundamentals across the curated universe. Click a symbol to chart it."
+        description="Fundamentals across the watch universe."
         actions={countChip}
       />
 
@@ -310,7 +310,7 @@ export default function ScreenerPage() {
                   <EmptyState
                     icon={ErrorDot}
                     title="Fundamentals failed to load"
-                    description="The fundamentals service did not answer. Retry when the API is back."
+                    description="The fundamentals service did not answer."
                     action={
                       <div className="flex items-center gap-2">
                         <Badge variant="down">Error</Badge>
@@ -331,7 +331,7 @@ export default function ScreenerPage() {
                     title={data.length === 0 ? "No fundamentals yet" : "No matches"}
                     description={
                       data.length === 0
-                        ? "The universe returned no rows. Try again once the data service has warmed up."
+                        ? "No rows yet. Try again shortly."
                         : "Nothing in the universe passes every filter. Remove one to widen the net."
                     }
                     action={

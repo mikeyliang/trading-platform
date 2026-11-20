@@ -18,7 +18,7 @@ export default function TradeHistoryPage() {
     <PageShell>
       <PageHeader
         title="Trades"
-        description="Every fill from IBKR with its realized P&L, newest first."
+        description="Every IBKR fill with realized P&L."
       />
       <TradeHistoryPanel />
       <TradeAnalysisPanel />

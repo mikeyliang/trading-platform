@@ -15,7 +15,6 @@ import {
 import {
   RiDashboardLine,
   RiSettings4Line,
-  RiBarChartBoxLine,
   RiFileListLine,
   RiBookOpenLine,
   RiPulseLine,
@@ -40,7 +39,6 @@ const PAGES = [
   { label: "Home",        href: "/",                    icon: RiDashboardLine, keywords: "dashboard overview board" },
   { label: "Exit",        href: "/monitor/exit",        icon: RiPulseLine,        keywords: "monitor open spreads delta trigger" },
   { label: "Tracker",     href: "/monitor/tracker",     icon: RiFileListLine,        keywords: "okw log positions" },
-  { label: "Performance", href: "/monitor/performance", icon: RiBarChartBoxLine,       keywords: "analytics equity curve sharpe drawdown" },
   { label: "Insights",    href: "/monitor/insights",    icon: RiLightbulbLine,       keywords: "patterns review lessons" },
   { label: "Journal",     href: "/journal",            icon: RiBookOpenLine,        keywords: "notes reflection review mood" },
   { label: "Analyzer",    href: "/monitor/analyzer",    icon: RiCalculatorLine,      keywords: "options position spread payoff greeks" },

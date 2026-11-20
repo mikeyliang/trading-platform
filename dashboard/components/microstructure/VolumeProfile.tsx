@@ -93,8 +93,7 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
                 <div
                   key={i}
                   className={cn(
-                    "relative grid grid-cols-[64px_1fr_72px] items-center h-5 px-3 text-caption-1-regular tabular border-b border-separator-border",
-                    (inVA || isPoc) && "bg-status-blue-background"
+                    "relative grid grid-cols-[64px_1fr_72px] items-center h-5 px-3 text-caption-1-regular tabular"
                   )}
                 >
                   <span className={cn(isPoc ? "text-text-primary text-caption-1-medium" : "text-text-secondary")}>{b.price_mid.toFixed(2)}</span>
@@ -102,7 +101,7 @@ export function VolumeProfile({ symbol, defaultTimeframe = "15m", defaultDays = 
                     <span
                       className={cn(
                         "h-2.5 rounded-sm",
-                        isPoc ? "bg-accent-500" : inVA ? "bg-status-blue-text/50" : "bg-foreground-icon-tertiary/40"
+                        isPoc ? "bg-accent-500" : inVA ? "bg-foreground-icon-tertiary/60" : "bg-foreground-icon-tertiary/25"
                       )}
                       style={{ width: `${Math.max(2, w)}%` }}
                     />

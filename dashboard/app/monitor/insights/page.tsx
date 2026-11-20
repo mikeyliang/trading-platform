@@ -141,10 +141,10 @@ export default function InsightsPage() {
     <PageShell>
       <PageHeader
         title="Insights"
-        description="Every AI verdict and forecast you have run, tracked over time."
+        description="AI verdicts and forecasts, scored over time."
         actions={
           <>
-            <Button variant="secondary" size="icon" onClick={load} title="Refresh" aria-label="Refresh">
+            <Button variant="ghost" size="icon" onClick={load} title="Reload" aria-label="Reload">
               <RefreshCw className={cn(loading && "animate-spin")} />
             </Button>
             <Button
@@ -208,12 +208,10 @@ function ForecastTrackCard({
     <Card className="shrink-0">
       <CardHeader>
         <CardTitle>Forecast track record</CardTitle>
-        {c && (
-          <div className="flex items-center gap-1.5">
-            <Badge variant="muted" className="tabular">{c.logged} logged</Badge>
-            <Badge variant="up" className="tabular">{c.scored} scored</Badge>
-            <Badge variant="warning" className="tabular">{c.pending} pending</Badge>
-          </div>
+        {c && c.logged > 0 && (
+          <span className="text-caption-1-regular text-text-tertiary tabular">
+            {c.scored} of {c.logged} scored
+          </span>
         )}
       </CardHeader>
       <CardContent>
@@ -224,14 +222,11 @@ function ForecastTrackCard({
             <Skeleton className="h-3 w-1/2" />
           </div>
         ) : !hasScored ? (
-          <div className="flex items-start gap-2 text-body-2-regular text-text-secondary">
-            <Clock size={16} className="text-status-yellow-text mt-0.5 shrink-0" aria-hidden="true" />
-            <div>
-              <span className="text-text-primary text-body-2-medium">{c?.pending ?? 0} forecasts logged, accumulating.</span>{" "}
-              Each prediction is scored against the realised close once its horizon elapses
-              (nightly, or press Score forecasts to backfill now). Per-model
-              accuracy appears here as soon as the first horizon completes.
-            </div>
+          <div className="flex items-center gap-2 text-body-2-regular text-text-secondary">
+            <Clock size={16} className="text-foreground-icon-tertiary shrink-0" aria-hidden="true" />
+            {c?.pending
+              ? `${c.pending} forecast${c.pending === 1 ? "" : "s"} waiting for their horizon. Accuracy per model shows here once the first is scored.`
+              : "No forecasts yet. Accuracy per model shows here once the first is scored."}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -348,7 +343,7 @@ function VerdictTimeline({
       <CardHeader>
         <div className="flex items-center gap-2 min-w-0">
           <CardTitle>AI verdicts</CardTitle>
-          {runs && <Badge variant="muted" className="tabular">{count}</Badge>}
+          {runs && count > 0 && <span className="text-caption-1-regular text-text-tertiary tabular">{count}</span>}
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -366,7 +361,7 @@ function VerdictTimeline({
           <EmptyState
             icon={Brain}
             title="No AI runs yet"
-            description="Open a contract in the analyzer and run the AI agents. Verdicts land here as a portfolio-wide log you can revisit without re-spending tokens."
+            description="Run the AI read on a contract and it is kept here."
           />
         ) : (
           <ul className="flex flex-col">

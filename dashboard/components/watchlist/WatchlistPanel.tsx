@@ -204,7 +204,7 @@ export function WatchlistPanel() {
             icon={Eye}
             size="sm"
             title="Nothing watched yet"
-            description="Add RUT, SPX or any symbol to see its quote and a 60-day trend here."
+            description="Add RUT, SPX or any symbol."
             action={
               <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
                 <Plus /> Add symbol

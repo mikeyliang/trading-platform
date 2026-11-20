@@ -76,7 +76,7 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
         <div className="flex items-center gap-2 min-w-0">
           <CardTitle>Tape</CardTitle>
           <span className="text-caption-1-medium text-text-tertiary tabular">{symbol}</span>
-          <Badge variant={streaming ? "up" : "muted"}>{streaming ? "Live" : "Snapshot"}</Badge>
+          {streaming && !unavailable && <Badge variant="up">Live</Badge>}
         </div>
         {stats.ratio != null && (
           <div className="flex items-center gap-2 text-caption-1-medium text-text-tertiary tabular">
@@ -93,7 +93,7 @@ export function TimeAndSales({ symbol, maxRows = 120, largePrintThreshold = 1000
         <EmptyState
           icon={Receipt}
           title="No tick-by-tick subscription"
-          description="Time and sales needs an IBKR streaming bundle (e.g. US Securities Snapshot, ~$10/mo non-pro). Enable it in IBKR Client Portal under Market Data Subscriptions."
+          description="Needs an IBKR streaming bundle (about $10/mo)."
         />
       ) : (
         <>

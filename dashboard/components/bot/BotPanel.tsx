@@ -198,7 +198,7 @@ export function BotPanel() {
                   </span>
                 </span>
               ) : (
-                <span>No completed sim validates {preset} on {timeframe}. Run one on the Simulate page first.</span>
+                <span>Not validated on {timeframe} yet. Run it on Simulate first.</span>
               )}
             </div>
 
@@ -285,12 +285,12 @@ export function BotPanel() {
             {!running && (!gate?.validated || (snap && snap.trade_count > 0)) && (
               <div className="flex items-center justify-between gap-2">
                 {!gate?.validated ? (
-                  <Button variant="secondary" size="sm" onClick={() => start(true)}>
+                  <Button variant="ghost" size="sm" onClick={() => start(true)}>
                     Start anyway
                   </Button>
                 ) : <span />}
                 {snap && snap.trade_count > 0 && (
-                  <Button variant="secondary" size="sm" onClick={reset}>
+                  <Button variant="ghost" size="sm" onClick={reset}>
                     Reset paper account
                   </Button>
                 )}
@@ -299,9 +299,7 @@ export function BotPanel() {
           </CardContent>
           <CardFooter className="h-auto py-3">
             <p className="text-caption-1-regular text-text-tertiary">
-              Paper execution only. Fills are simulated at bar close with slippage, on the
-              same signal engine the simulator validates. Live order routing stays off
-              until paper results earn it.
+              Paper only. Fills at bar close with slippage.
             </p>
           </CardFooter>
         </Card>
@@ -358,7 +356,7 @@ export function BotPanel() {
             <EmptyState
               icon={RiRobot2Line}
               title="No bot yet"
-              description="Configure the paper bot on the left and start it to see account figures here."
+              description="Start the paper bot on the left."
             />
           )}
           {snap?.last_error && (
@@ -378,7 +376,9 @@ export function BotPanel() {
             <Card className="shrink-0">
               <CardHeader>
                 <CardTitle>Open positions</CardTitle>
-                <Badge variant="muted">{positions.length} of {snap?.config?.max_positions ?? "n/a"}</Badge>
+                {snap?.config?.max_positions != null && (
+                  <span className="text-caption-1-regular text-text-tertiary tabular">{positions.length} of {snap.config.max_positions}</span>
+                )}
               </CardHeader>
               {positions.length === 0 ? (
                 <EmptyState
@@ -449,7 +449,7 @@ export function BotPanel() {
             <Card className="shrink-0">
               <CardHeader>
                 <CardTitle>Closed trades</CardTitle>
-                <Badge variant="muted">{snap?.trade_count ?? 0}</Badge>
+                {!!snap?.trade_count && <span className="text-caption-1-regular text-text-tertiary tabular">{snap.trade_count}</span>}
               </CardHeader>
               {(snap?.closed_trades.length ?? 0) === 0 ? (
                 <EmptyState
@@ -516,7 +516,7 @@ export function BotPanel() {
                   size="sm"
                   icon={RiFileList3Line}
                   title={logFilter === "all" ? "No activity yet" : "Nothing in this filter"}
-                  description={logFilter === "all" ? "Every entry, exit and news block lands here." : undefined}
+                  description={logFilter === "all" ? "Entries, exits and news blocks show here." : undefined}
                 />
               )}
               {decisions.map((d, i) => (

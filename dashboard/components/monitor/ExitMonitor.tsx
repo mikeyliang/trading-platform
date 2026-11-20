@@ -102,12 +102,11 @@ export function ExitMonitor() {
   return (
     <PageShell>
       <PageHeader
-        title="Exit monitor"
-        description="Every open credit spread, its short delta against the exit trigger, and what past trades in the same spot went on to do."
+        title="Exit"
+        description="Open spreads against their exit trigger."
         actions={
-          <Button onClick={refresh} disabled={loading} variant="secondary">
+          <Button onClick={refresh} disabled={loading} variant="ghost" size="icon" aria-label="Refresh" title="Refresh">
             <RefreshCw className={loading ? "animate-spin" : ""} />
-            {loading ? "Refreshing" : "Refresh now"}
           </Button>
         }
       />
@@ -151,8 +150,8 @@ export function ExitMonitor() {
           ) : entries.length === 0 ? (
             <EmptyState
               icon={ShieldIcon}
-              title="No open spreads to watch"
-              description="When you open a credit spread it appears here and the monitor tracks its delta every 5 minutes during market hours."
+              title="No open spreads"
+              description="New credit spreads show here and are checked every 5 minutes."
             />
           ) : (
             <SpreadsTable historyHint={cov ? `${cov.trades.toLocaleString()} replayed monthly cycles since ${cov.first_entry?.slice(0, 4)}. Past trades of the same strategy within 5 delta points at the same time to expiry, and how many later hit the delta or Thursday exit.` : undefined}>

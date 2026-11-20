@@ -73,7 +73,7 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
         <div className="flex items-center gap-2 min-w-0">
           <CardTitle>Depth</CardTitle>
           <span className="text-caption-1-medium text-text-tertiary tabular">{symbol}</span>
-          <Badge variant={streaming ? "up" : "muted"}>{streaming ? "Live" : "Snapshot"}</Badge>
+          {streaming && !empty && <Badge variant="up">Live</Badge>}
         </div>
         {imb != null && (
           <Badge variant={imbVariant} className="tabular">
@@ -86,7 +86,7 @@ export function DeepBook({ symbol, rows = 10 }: Props) {
         <EmptyState
           icon={Layers}
           title="No depth subscription"
-          description="Level 2 requires an IBKR market-depth bundle. For SPY/QQQ try NYSE ArcaBook ($3/mo non-pro); for NASDAQ-listed names try TotalView ($9/mo)."
+          description="Needs an IBKR depth bundle, such as NYSE ArcaBook ($3/mo)."
         />
       ) : !snap ? (
         <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-4">

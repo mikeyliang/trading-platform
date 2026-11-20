@@ -13,6 +13,8 @@ const nextConfig = {
     return [
       { source: "/monitor/journal", destination: "/journal", permanent: false },
       { source: "/monitor/history", destination: "/odds", permanent: false },
+      // Performance repeated Home (account, positions) and Trades (fills).
+      { source: "/monitor/performance", destination: "/trade/history", permanent: false },
     ];
   },
   async rewrites() {

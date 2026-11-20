@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { cn, fmt, fmtPct, fmtSigned, pnlClass } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
   const { health } = useHealth();
   const chatAvailable = useChatAvailable();
 
+  const pathname = usePathname();
+  // The chart already heads Home and the chart page with this quote.
+  const chartOnPage = pathname === "/" || !!pathname?.startsWith("/chart");
   const mode = health?.mode?.toUpperCase() ?? "PAPER";
   const q = quotes[activeSymbol];
 
@@ -43,7 +47,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
         <Kbd className="hidden sm:inline-flex">⌘K</Kbd>
       </button>
 
-      <ActiveQuote symbol={activeSymbol} quote={q} />
+      {!chartOnPage && <ActiveQuote symbol={activeSymbol} quote={q} />}
 
       <div className="ml-auto flex items-center gap-2">
         {/* Header chips only when all is well: when IBKR is down the banner

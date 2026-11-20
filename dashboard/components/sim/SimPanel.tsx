@@ -205,7 +205,6 @@ export function SimPanel() {
         <Card className="shrink-0">
           <CardHeader>
             <CardTitle>Simulation</CardTitle>
-            <Badge variant="muted">NautilusTrader</Badge>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <Field label="Strategy preset">
@@ -218,7 +217,9 @@ export function SimPanel() {
                 </SelectContent>
               </Select>
               {selectedPreset && (
-                <p className="text-caption-1-regular text-text-tertiary">{selectedPreset.description}</p>
+                <p className="text-caption-1-regular text-text-tertiary line-clamp-2" title={selectedPreset.description}>
+                  {selectedPreset.description}
+                </p>
               )}
             </Field>
 
@@ -279,7 +280,7 @@ export function SimPanel() {
         <Card className="flex-1 min-h-0 flex flex-col">
           <CardHeader>
             <CardTitle>Runs</CardTitle>
-            <Badge variant="muted">{runs.length}</Badge>
+            {runs.length > 0 && <span className="text-caption-1-regular text-text-tertiary tabular">{runs.length}</span>}
           </CardHeader>
           <div className="flex-1 overflow-y-auto">
             {runs.length === 0 && (
@@ -306,25 +307,24 @@ export function SimPanel() {
       {/* ── results ── */}
       <div className="flex-1 min-w-0 overflow-y-auto flex flex-col gap-3">
         {!runDetail && (
-          <Card className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center">
             <EmptyState
               icon={RiFlaskLine}
               title="No run selected"
-              description="Configure and run a simulation, or pick a past run from the list."
+              description="Run one, or pick a past run."
             />
-          </Card>
+          </div>
         )}
 
         {runDetail?.status === "running" && (
-          <Card className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center">
             <div role="status" aria-live="polite" className="flex flex-col items-center gap-2 text-text-tertiary">
               <Spinner size={18} />
               <span className="text-body-2-regular text-text-secondary">
                 Simulating {runDetail.progress.current ?? ""} ({runDetail.progress.done} of {runDetail.progress.total})
               </span>
-              <span className="text-caption-1-regular">NautilusTrader backtest engine</span>
             </div>
-          </Card>
+          </div>
         )}
 
         {runDetail && runDetail.status !== "running" && (

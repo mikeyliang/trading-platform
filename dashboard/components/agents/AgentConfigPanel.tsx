@@ -102,11 +102,10 @@ export function AgentConfigPanel({ config, onChange, open, onToggle }: Props) {
         className="w-full flex items-center justify-between gap-3 px-4 h-11 hover:bg-background-secondary-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-body-semibold text-text-primary">Agent configuration</span>
-          <Badge variant="muted" className="tabular">
+          <span className="text-body-semibold text-text-primary">Setup</span>
+          <span className="text-caption-1-regular text-text-tertiary tabular truncate">
             {focusedCount} of {Object.keys(AGENT_LABELS).length} agents
-          </Badge>
-          <Badge variant="muted" className="tabular">{config.streamingSpeedMs}ms per agent</Badge>
+          </span>
         </div>
         <span className="inline-flex items-center gap-1 text-caption-1-medium text-text-tertiary shrink-0">
           {open ? "Hide" : "Show"}

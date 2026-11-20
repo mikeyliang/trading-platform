@@ -99,8 +99,8 @@ export function SpreadHistory() {
         title="Spread odds"
         description={
           cov
-            ? `${cov.trades.toLocaleString()} monthly cycles, ${cov.first_entry?.slice(0, 4)} to ${cov.last_entry?.slice(0, 4)}, replayed under the course rules: what has moved the odds and what has not.`
-            : "Every monthly cycle since 2000, replayed under the course rules."
+            ? `${cov.trades.toLocaleString()} monthly cycles replayed, ${cov.first_entry?.slice(0, 4)} to ${cov.last_entry?.slice(0, 4)}.`
+            : "Monthly cycles since 2000, replayed."
         }
         actions={
           <>

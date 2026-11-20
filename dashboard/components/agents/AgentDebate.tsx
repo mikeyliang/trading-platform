@@ -8,8 +8,6 @@ import {
   RiPlayFill,
   RiLoader4Line,
   RiErrorWarningFill,
-  RiCheckboxCircleFill,
-  RiCloseCircleFill,
   RiStockLine,
   RiNewspaperLine,
   RiCalculatorLine,
@@ -25,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Skeleton, Spinner } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/skeleton";
 import {
   AgentConfigPanel,
   type AgentConfig,
@@ -312,8 +310,8 @@ export function AgentDebate() {
   return (
     <PageShell>
       <PageHeader
-        title="Multi-agent debate"
-        description="Eight LLM analysts debate one ticker and end with a portfolio manager decision."
+        title="Agents"
+        description="Eight AI analysts debate one ticker."
         actions={
           <div className="flex items-end gap-3 flex-wrap">
             <Field label="Ticker">
@@ -356,7 +354,7 @@ export function AgentDebate() {
         onToggle={() => setConfigOpen((v) => !v)}
       />
 
-      {config.showAgentChips && railItems.length > 0 && (
+      {config.showAgentChips && (loading || result) && railItems.length > 0 && (
         <AgentStatusRail items={railItems} />
       )}
 
@@ -379,10 +377,7 @@ export function AgentDebate() {
           <div role="status" aria-live="polite" className="flex flex-col items-center gap-2 py-10 px-6 text-center">
             <Spinner size={18} />
             <span className="text-body-medium text-text-primary">Running the debate</span>
-            <span className="text-body-2-regular text-text-tertiary max-w-md">
-              This takes 30 to 90 seconds depending on model and rounds. Each analyst makes one or two
-              LLM calls, then the bull and bear debate runs for up to the configured number of rounds.
-            </span>
+            <span className="text-body-2-regular text-text-tertiary">Usually 30 to 90 seconds.</span>
           </div>
         </Card>
       )}
@@ -448,62 +443,30 @@ function StatusCard({
   status: AgentsStatus | null;
   hasAnyLLMKey: boolean;
 }) {
-  // The body already explains a problem; the header chip only says when all is well.
-  const badge = status && status.installed && hasAnyLLMKey ? <Badge variant="up">Ready</Badge> : null;
-
+  // Quiet row only when something blocks a run; nothing when all is well.
+  if (!status || (status.installed && hasAnyLLMKey)) return null;
+  const notInstalled = !status.installed;
   return (
-    <Card className="shrink-0">
-      <CardHeader>
-        <CardTitle>TradingAgents service</CardTitle>
-        {badge}
-      </CardHeader>
-      <CardContent>
-        {!status ? (
-          <div className="flex items-center gap-3" role="status" aria-label="Checking TradingAgents availability">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-5 w-24" />
-          </div>
-        ) : !status.installed ? (
-          <div className="flex items-start gap-2 text-body-2-regular text-text-secondary">
-            <RiErrorWarningFill size={16} className="shrink-0 mt-0.5 text-status-rose-text" aria-hidden />
-            <div>
-              <div className="text-body-2-medium text-text-primary">TradingAgents is not installed</div>
-              <div>
-                Run <code className="tabular">pip install -e ../tradingagents</code> in the api service to enable it.
-              </div>
-            </div>
-          </div>
-        ) : !hasAnyLLMKey ? (
-          <div className="flex items-start gap-2 text-body-2-regular text-text-secondary">
-            <RiErrorWarningFill size={16} className="shrink-0 mt-0.5 text-status-yellow-text" aria-hidden />
-            <div>
-              <div className="text-body-2-medium text-text-primary">No LLM API key configured</div>
-              <div>
-                Set <code className="tabular">OPENAI_API_KEY</code>, <code className="tabular">ANTHROPIC_API_KEY</code> or{" "}
-                <code className="tabular">GOOGLE_API_KEY</code> in <code className="tabular">services/api/.env</code> and restart the API.
-              </div>
-            </div>
-          </div>
+    <div
+      role="status"
+      className="flex items-center gap-3 px-3 h-10 rounded-2xl border border-border-button-default bg-background-primary-default text-body-2-regular shrink-0"
+    >
+      <RiErrorWarningFill
+        size={16}
+        className={cn("shrink-0", notInstalled ? "text-status-rose-text" : "text-status-yellow-text")}
+        aria-hidden
+      />
+      <span className="text-body-2-medium text-text-primary shrink-0">
+        {notInstalled ? "Agents not installed" : "No LLM key"}
+      </span>
+      <span className="text-text-tertiary truncate">
+        {notInstalled ? (
+          <>Run <code className="tabular">pip install -e ../tradingagents</code> in the API service.</>
         ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-caption-1-medium text-text-tertiary">Keys</span>
-            <KeyChip label="OpenAI" present={status.has_openai_key} />
-            <KeyChip label="Anthropic" present={status.has_anthropic_key} />
-            <KeyChip label="Google" present={status.has_google_key} />
-          </div>
+          <>Set an OpenAI, Anthropic or Google key in <code className="tabular">services/api/.env</code>.</>
         )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function KeyChip({ label, present }: { label: string; present: boolean }) {
-  return (
-    <Badge variant={present ? "up" : "muted"}>
-      {present ? <RiCheckboxCircleFill size={14} aria-hidden /> : <RiCloseCircleFill size={14} aria-hidden />}
-      {label}
-    </Badge>
+      </span>
+    </div>
   );
 }
 

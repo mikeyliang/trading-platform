@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useHealth } from "@/lib/health";
 import { useStore } from "@/lib/store";
 import { PageHeader, PageShell } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RiRefreshLine } from "@remixicon/react";
-import { cn, fmtCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const FEEDS: [string, string][] = [
   ["account", "Account"],
@@ -25,17 +23,8 @@ function sourceLabel(source?: string) {
 }
 
 export default function SettingsPage() {
-  const { health, account, lastCheckedAt, apiReachable, refetch } = useHealth();
-  const { wsConnected, activeSymbol, activeTimeframe } = useStore();
-  const [theme, setTheme] = useState("Dark");
-  useEffect(() => {
-    const read = () => setTheme(document.documentElement.classList.contains("dark") ? "Dark" : "Light");
-    read();
-    const obs = new MutationObserver(read);
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
-
+  const { health, lastCheckedAt, apiReachable, refetch } = useHealth();
+  const { wsConnected } = useStore();
   const mode = (health?.mode ?? "n/a").toUpperCase();
   const ibOk = !!health?.ib_connected;
   const data = health?.data;
@@ -48,11 +37,10 @@ export default function SettingsPage() {
     <PageShell>
       <PageHeader
         title="Settings"
-        description="Runtime status, account binding and session preferences. Values are read-only for now."
+        description="Connections and where each feed comes from."
         actions={
-          <Button variant="secondary" onClick={() => refetch()}>
+          <Button variant="ghost" size="icon" onClick={() => refetch()} aria-label="Check again" title="Check again">
             <RiRefreshLine />
-            Refresh
           </Button>
         }
       />
@@ -60,7 +48,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Card>
           <CardHeader>
-            <CardTitle>Runtime</CardTitle>
+            <CardTitle>Connection</CardTitle>
             <span className="text-caption-1-regular tabular text-text-tertiary">
               {lastCheckedAt ? `Checked ${new Date(lastCheckedAt).toLocaleTimeString()}` : "Not checked yet"}
             </span>
@@ -76,35 +64,7 @@ export default function SettingsPage() {
                 value={apiReachable === false ? "Unreachable" : "OK"}
                 valueClass={apiReachable === false ? "text-status-rose-text" : "text-status-lime-text"}
               />
-              <Row label="Mock data" value={health?.mock_mode ? "On" : "Off"} />
-            </Rows>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-            {!account && <Badge variant="outline">No binding</Badge>}
-          </CardHeader>
-          <CardContent className="p-0">
-            <Rows>
-              <Row label="Equity" value={account ? fmtCurrency(account.equity ?? 0) : "n/a"} mono />
-              <Row label="Buying power" value={account ? fmtCurrency(account.buying_power ?? 0) : "n/a"} mono />
-              <Row label="Balance" value={account ? fmtCurrency(account.balance ?? 0) : "n/a"} mono />
-              <Row
-                label="Unrealized P&L"
-                value={account ? fmtCurrency(account.unrealized_pnl ?? 0) : "n/a"}
-                valueClass={pnlColor(account?.unrealized_pnl ?? 0)}
-                mono
-              />
-              <Row
-                label="Realized P&L"
-                value={account ? fmtCurrency(account.realized_pnl ?? 0) : "n/a"}
-                valueClass={pnlColor(account?.realized_pnl ?? 0)}
-                mono
-              />
-              <Row label="Trades" value={account ? String(account.total_trades) : "n/a"} mono />
-              <Row label="Win rate" value={account ? `${Number(account.win_rate).toFixed(1)}%` : "n/a"} mono />
+              {health?.mock_mode && <Row label="Mock data" value="On" valueClass="text-status-yellow-text" />}
             </Rows>
           </CardContent>
         </Card>
@@ -133,27 +93,12 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Session</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Rows>
-              <Row label="Active symbol" value={activeSymbol} mono />
-              <Row label="Active timeframe" value={activeTimeframe} mono />
-              <Row label="Theme" value={theme} />
-              <Row label="Density" value="Compact" />
-            </Rows>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>Shortcuts</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Rows>
               <Row label="Command palette" value={<Kbd>⌘K</Kbd>} />
               <Row label="AI co-pilot" value={<Kbd>⌘J</Kbd>} />
-              <Row label="Toggle chart" value="n/a" />
             </Rows>
           </CardContent>
         </Card>
@@ -191,10 +136,4 @@ function Kbd({ children }: { children: React.ReactNode }) {
       {children}
     </kbd>
   );
-}
-
-function pnlColor(n: number): string {
-  if (n > 0) return "text-status-lime-text";
-  if (n < 0) return "text-status-rose-text";
-  return "text-text-primary";
 }

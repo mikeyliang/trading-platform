@@ -185,6 +185,9 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           )}
         </div>
 
+        {/* Side and type filters only earn their space on a long book. */}
+        {positions.length > 8 && (
+        <>
         <FilterGroup
           label="Side"
           value={side}
@@ -207,6 +210,8 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           ]}
           onChange={(v) => setKind(v as KindFilter)}
         />
+        </>
+        )}
 
         {activeFilterCount > 0 && (
           <button
@@ -229,7 +234,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           <EmptyState
             icon={Briefcase}
             title="No open positions"
-            description="Positions sync from IBKR Gateway as soon as you have any open."
+            description="They show here as soon as you open one."
           />
         ) : filteredPositions.length === 0 ? (
           <FilterEmpty
@@ -248,7 +253,7 @@ export const PositionsPanel = memo(function PositionsPanel({ symbolFilter: initi
           <EmptyState
             icon={Layers}
             title="No open spreads"
-            description="Open RUT or SPX on the chart. The Rule One cycle card shows the next short strike for each strategy."
+            description="The Rule One card on RUT or SPX shows the next strike."
             action={
               <Link
                 href="/chart/RUT"
@@ -556,16 +561,7 @@ function KindPill({ kind }: { kind: PositionKind }) {
     leg: "text-text-secondary",
   };
   const label = kind === "stock" ? "Stock" : kind === "option" ? "Option" : "Leg";
-  return (
-    <span
-      className={cn(
-        "text-caption-1-medium px-1.5 h-5 rounded-md inline-flex items-center bg-background-tertiary-default",
-        styles[kind],
-      )}
-    >
-      {label}
-    </span>
-  );
+  return <span className={cn("text-body-2-regular", styles[kind])}>{label}</span>;
 }
 
 type SpreadSortKey =
@@ -645,19 +641,20 @@ function SpreadsTable({ spreads }: { spreads: Spread[] }) {
                 </span>
               </TableCell>
               <TableCell>
-                <Badge variant="accent">{s.spread_type}</Badge>
+                <span className="text-text-secondary">{s.spread_type}</span>
               </TableCell>
               <TableCell className="tabular text-text-secondary">{formatExpiry(s.expiry)}</TableCell>
               <TableCell className="tabular">
-                <span className="text-status-rose-text">{s.long_strike}</span>
+                {/* Strikes are levels, not gains or losses: plain text, short first. */}
+                <span>{s.short_strike}</span>
                 <span className="text-text-tertiary mx-1">/</span>
-                <span className="text-status-lime-text">{s.short_strike}</span>
+                <span className="text-text-secondary">{s.long_strike}</span>
               </TableCell>
               <TableCell className="text-right tabular">{s.quantity}</TableCell>
 
-              <TableCell className="text-right tabular text-status-lime-text">{fmt(s.credit_received)}</TableCell>
-              <TableCell className="text-right tabular text-status-lime-text">{fmtCurrency(s.max_profit)}</TableCell>
-              <TableCell className="text-right tabular text-status-rose-text">
+              <TableCell className="text-right tabular">{fmt(s.credit_received)}</TableCell>
+              <TableCell className="text-right tabular">{fmtCurrency(s.max_profit)}</TableCell>
+              <TableCell className="text-right tabular text-text-secondary">
                 {fmtCurrency(-Math.abs(s.max_loss))}
               </TableCell>
             </TableRow>
@@ -731,7 +728,7 @@ function TradesTable({ trades }: { trades: Trade[] }) {
                 )}
               </TableCell>
               <TableCell>
-                <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
+                <span className="text-text-secondary">{t.side === "BUY" ? "Buy" : t.side === "SELL" ? "Sell" : t.side}</span>
               </TableCell>
               <TableCell className="text-right tabular">{t.quantity}</TableCell>
 
