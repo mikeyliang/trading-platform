@@ -1,7 +1,7 @@
 "use client";
 
 import { useStore } from "@/lib/store";
-import { cn, fmt, fmtPct, pnlClass } from "@/lib/utils";
+import { cn, fmt, fmtPct, fmtSigned, pnlClass } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Kbd } from "@/components/base/kbd/kbd";
@@ -46,7 +46,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
       <ActiveQuote symbol={activeSymbol} quote={q} />
 
       <div className="ml-auto flex items-center gap-2">
-        <ConnectionPill />
+        {/* Header chips only when all is well: when IBKR is down the banner
+            below says so once, and the footer keeps the per-link dots. */}
+        {health?.ib_connected && <ConnectionPill />}
         <Badge variant={mode === "LIVE" ? "warning" : "muted"} title={mode === "LIVE" ? "Real money" : "Paper account"}>
           {mode === "LIVE" ? "Live" : "Paper"}
         </Badge>
@@ -96,12 +98,7 @@ function ActiveQuote({
       <span className="text-text-primary text-body-2-medium">{last != null ? fmt(last, 2) : "n/a"}</span>
       {(change != null || changePct != null) && (
         <span className={cn(pnlClass(change ?? changePct ?? 0))}>
-          {change != null && (
-            <>
-              {change >= 0 ? "+" : ""}
-              {fmt(change, 2)}{" "}
-            </>
-          )}
+          {change != null && <>{fmtSigned(change, 2)} </>}
           {changePct != null && `(${fmtPct(changePct)})`}
         </span>
       )}

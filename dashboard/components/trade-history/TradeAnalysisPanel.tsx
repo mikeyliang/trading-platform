@@ -70,13 +70,9 @@ export const TradeAnalysisPanel = memo(function TradeAnalysisPanel() {
   } else if (loading && !data) {
     body = <LoadingSkeleton />;
   } else if (!data || isEmpty(data)) {
-    body = (
-      <EmptyState
-        icon={RiPulseLine}
-        title="No analysis yet"
-        description="Close some trades with realized P&L and the best, worst and biggest show up here."
-      />
-    );
+    // Nothing closed yet: the stats band above already says "0 trades", so
+    // an empty card here would only repeat it.
+    return null;
   } else {
     body = (
       <CardContent>
@@ -120,8 +116,8 @@ export const TradeAnalysisPanel = memo(function TradeAnalysisPanel() {
   return (
     <Card className="shrink-0">
       <CardHeader>
-        <CardTitle>Trade analysis</CardTitle>
-        <span className="text-caption-1-regular text-text-tertiary">Realized P&L, refreshed every minute</span>
+        <CardTitle>Standouts</CardTitle>
+        <span className="text-caption-1-regular text-text-tertiary">From realized P&L</span>
       </CardHeader>
       {body}
     </Card>

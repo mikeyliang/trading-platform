@@ -6,9 +6,7 @@ const MONITOR_TABS = [
   { href: "/monitor/exit",        label: "Exit" },
   { href: "/monitor/tracker",     label: "Tracker" },
   { href: "/monitor/performance", label: "Performance" },
-  { href: "/monitor/history",     label: "History" },
   { href: "/monitor/insights",    label: "Insights" },
-  { href: "/monitor/journal",     label: "Journal" },
 ];
 
 export default function MonitorLayout({ children }: { children: React.ReactNode }) {

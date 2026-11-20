@@ -7,13 +7,11 @@ import { cn, fmt } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { InfoIcon } from "@/components/ui/info-icon";
 import { TableSkeletonRows } from "@/components/ui/skeleton";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
   RiRefreshLine as RefreshCw,
-  RiHistoryLine as HistoryIcon,
   RiErrorWarningFill as ErrorIcon,
   RiArrowRightUpLine as ArrowUpRight,
 } from "@remixicon/react";
@@ -27,12 +25,11 @@ const STATUS_BADGE: Record<OpenSpreadContext["status"], { label: string; variant
   unknown: { label: "No delta",     variant: "muted" },
 };
 
-/**
- * Every open spread (exit monitor + OKW tracker) with the one number the
- * exit monitor cannot give: of the past trades that sat at this delta with
- * this much time left, how many went on to hit an exit.
- */
-export function SpreadHistoryCard() {
+export const spreadKey = (symbol: string, short: number, long: number) =>
+  `${symbol.toUpperCase()}-${Math.round(short)}-${Math.round(long)}`;
+
+/** Open spreads with their historical odds, refreshed every minute while visible. */
+export function useOpenSpreadOdds() {
   const [data, setData] = useState<RegimeOpenSpreads | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,15 +54,34 @@ export function SpreadHistoryCard() {
     return () => clearInterval(id);
   }, [load]);
 
-  const spreads = data?.spreads ?? [];
+  return { data, error, loading, load };
+}
+
+/**
+ * Open spreads the exit monitor is not already showing (trades logged in the
+ * Tracker), with the one number the monitor cannot give: of the past trades
+ * that sat at this delta with this much time left, how many went on to hit
+ * an exit. Spreads the monitor shows get their odds inline in its table, so
+ * this card only appears when there is something left to say.
+ */
+export function SpreadHistoryCard({
+  odds,
+  exclude,
+}: {
+  odds: ReturnType<typeof useOpenSpreadOdds>;
+  exclude: Set<string>;
+}) {
+  const { data, error, loading, load } = odds;
+  const spreads = (data?.spreads ?? []).filter((x) => !exclude.has(spreadKey(x.symbol, x.short_strike, x.long_strike)));
   const cov = data?.coverage;
   const initial = !data && !error;
+  if (!initial && !error && spreads.length === 0) return null;
 
   return (
     <Card className="shrink-0">
       <CardHeader>
         <div className="flex items-center gap-2 min-w-0">
-          <CardTitle>What history says</CardTitle>
+          <CardTitle>Tracker spreads</CardTitle>
           <InfoIcon
             size={12}
             hint={
@@ -102,12 +118,6 @@ export function SpreadHistoryCard() {
               Retry
             </Button>
           </div>
-        ) : spreads.length === 0 ? (
-          <EmptyState
-            icon={HistoryIcon}
-            title="No open spreads to compare"
-            description="Spreads the bot opened and trades logged in the Tracker both show up here with their historical odds."
-          />
         ) : (
           <HistoryTable>
             {spreads.map((s) => (
@@ -121,10 +131,10 @@ export function SpreadHistoryCard() {
           {cov ? `${cov.trades} replayed cycles, ${cov.first_entry?.slice(0, 4)} to ${cov.last_entry?.slice(0, 4)}` : ""}
         </span>
         <Link
-          href="/monitor/history"
+          href="/odds"
           className="flex items-center gap-0.5 text-caption-1-medium text-accent-600 hover:underline"
         >
-          Full history <ArrowUpRight size={14} aria-hidden="true" />
+          Spread odds <ArrowUpRight size={14} aria-hidden="true" />
         </Link>
       </CardFooter>
     </Card>
@@ -159,7 +169,7 @@ function Row({ s }: { s: OpenSpreadContext }) {
   const badge = STATUS_BADGE[s.status];
   const h = s.history;
   return (
-    <TableRow>
+    <TableRow className="h-14">
       <TableCell className="whitespace-nowrap">
         <div className="flex flex-col">
           <span className="tabular">
@@ -168,8 +178,7 @@ function Row({ s }: { s: OpenSpreadContext }) {
             {fmt(s.long_strike, 0)}
           </span>
           <span className="text-caption-1-medium text-text-tertiary">
-            {s.strategy_label} · {s.contracts} contract{s.contracts === 1 ? "" : "s"}
-            {s.source === "okw" ? " · tracker" : ""}
+            {s.strategy_label}, {s.contracts} contract{s.contracts === 1 ? "" : "s"}
           </span>
         </div>
       </TableCell>
@@ -213,7 +222,7 @@ function Row({ s }: { s: OpenSpreadContext }) {
   );
 }
 
-function Odds({ h }: { h: HistoryOdds | null }) {
+export function Odds({ h }: { h: HistoryOdds | null }) {
   if (!h || h.n === 0) {
     return <span className="text-caption-1-regular text-text-tertiary">No comparable past trades.</span>;
   }
@@ -228,13 +237,12 @@ function Odds({ h }: { h: HistoryOdds | null }) {
           {wentWrong} of {h.n}
         </span>
         <span className="text-caption-1-regular text-text-secondary truncate">
-          later hit an exit{h.held_to_loss > 0 ? " or expired in the money" : ""}
+          later exited{h.held_to_loss > 0 ? " or lost" : ""}
         </span>
       </div>
       <div className="text-caption-1-regular text-text-tertiary tabular truncate">
         Same strategy, delta ±{h.band.delta}, {h.query.days_left}d ±{h.band.days}
-        {h.thin ? " · few matches, read loosely" : h.band.widened ? " · band widened to find matches" : ""}
-        {h.avg_ror_pct != null ? ` · avg return ${h.avg_ror_pct >= 0 ? "+" : ""}${h.avg_ror_pct.toFixed(0)}% of risk` : ""}
+        {h.thin ? ", few matches, read loosely" : h.band.widened ? ", band widened to find matches" : ""}
       </div>
     </div>
   );

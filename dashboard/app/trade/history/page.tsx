@@ -6,22 +6,23 @@ import { FlexBackfillCard } from "@/components/trade-history/FlexBackfillCard";
 import { TradeAnalysisPanel } from "@/components/trade-history/TradeAnalysisPanel";
 import { TradeHistoryPanel } from "@/components/trade-history/TradeHistoryPanel";
 
-// The one history page: Flex backfill, the analysis strip and the filled
-// trade log. /trade-history redirects here so the old deep links keep working.
+// The one trade log: what you came for (stats, filters, the fills) first,
+// standouts below it, and the Flex import, a setup task, folded away at the
+// bottom. /trade-history redirects here so old deep links keep working.
 export default function TradeHistoryPage() {
   useEffect(() => {
-    document.title = "Trade history";
+    document.title = "Trades";
   }, []);
 
   return (
     <PageShell>
       <PageHeader
-        title="Trade history"
-        description="Fills from IBKR Flex, realized P&L analysis and the full trade log."
+        title="Trades"
+        description="Every fill from IBKR with its realized P&L, newest first."
       />
-      <FlexBackfillCard />
-      <TradeAnalysisPanel />
       <TradeHistoryPanel />
+      <TradeAnalysisPanel />
+      <FlexBackfillCard />
     </PageShell>
   );
 }

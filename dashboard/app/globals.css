@@ -30,6 +30,11 @@
 }
 .dark {
   --c-accent-fg: var(--color-accent-400);
+  /* BoardUI's dark tertiary is the same neutral-800 as the card surface, so
+     every track, input and icon tile drawn with it vanished inside a card
+     (meter tracks on Exit and Odds, symbol inputs, empty-state tiles). One
+     step lighter keeps them visible without competing with content. */
+  --color-background-tertiary-default: color-mix(in oklab, var(--color-neutral-700) 55%, var(--color-neutral-800));
 }
 
 @theme inline {

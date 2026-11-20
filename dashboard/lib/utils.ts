@@ -28,7 +28,17 @@ export function fmtPct(n: number | null | undefined, showSign = true): string {
   if (n == null || !Number.isFinite(n)) return "n/a";
   const s = Math.abs(n).toFixed(2) + "%";
   if (!showSign) return s;
+  // A value that rounds to zero gets no sign, so a flat day never reads "-0.00%".
+  if (Number(s.slice(0, -1)) === 0) return s;
   return (n >= 0 ? "+" : "-") + s;
+}
+
+/** Signed number with a fixed number of decimals: "+1.25", "-0.40", "0.00". */
+export function fmtSigned(n: number | null | undefined, decimals = 2): string {
+  if (n == null || !Number.isFinite(n)) return "n/a";
+  const abs = fmt(Math.abs(n), decimals);
+  if (Number(Math.abs(n).toFixed(decimals)) === 0) return abs;
+  return (n > 0 ? "+" : "-") + abs;
 }
 
 export function fmtCompact(n: number | null | undefined): string {

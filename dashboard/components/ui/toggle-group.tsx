@@ -15,6 +15,9 @@ interface ToggleGroupProps<T extends string = string> {
   className?: string;
   size?: "sm" | "xs";
   ariaLabel?: string;
+  /** Set when the control sits on the page ground rather than inside a card:
+   * in dark the plain track is the same colour as the ground and vanishes. */
+  onGround?: boolean;
 }
 
 // BoardUI segmented control (components/base/segmented-control): a tertiary
@@ -26,13 +29,18 @@ export function ToggleGroup<T extends string = string>({
   className,
   size = "sm",
   ariaLabel,
+  onGround = false,
 }: ToggleGroupProps<T>) {
   const seg = size === "xs" ? "h-5 px-2 text-caption-1-medium" : "h-6 px-2.5 text-body-2-medium";
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className={cn("inline-flex items-center gap-0.5 rounded-2lg bg-segmented-control-background p-0.5", className)}
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-2lg p-0.5",
+        onGround ? "bg-background-primary-default border border-border-button-default" : "bg-segmented-control-background",
+        className
+      )}
     >
       {options.map((opt) => {
         const active = opt.value === value;
@@ -48,7 +56,9 @@ export function ToggleGroup<T extends string = string>({
               "inline-flex items-center justify-center rounded-md transition-[background-color,color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
               seg,
               active
-                ? "bg-segmented-control-selected-background text-text-primary shadow-2xs"
+                ? onGround
+                  ? "bg-background-tertiary-hover text-text-primary shadow-2xs"
+                  : "bg-segmented-control-selected-background text-text-primary shadow-2xs"
                 : "text-text-secondary hover:text-text-primary"
             )}
           >

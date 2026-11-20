@@ -1,9 +1,9 @@
 import { SpreadHistory } from "@/components/monitor/SpreadHistory";
 
 export const metadata = {
-  title: "History · Monitor",
+  title: "Spread odds",
 };
 
-export default function MonitorHistoryPage() {
+export default function OddsPage() {
   return <SpreadHistory />;
 }
