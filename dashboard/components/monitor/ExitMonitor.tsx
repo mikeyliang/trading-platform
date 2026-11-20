@@ -81,7 +81,7 @@ export function ExitMonitor() {
     }
   };
 
-  const entries = Array.isArray(snap?.entries) ? snap!.entries : [];
+  const entries = useMemo(() => (Array.isArray(snap?.entries) ? snap!.entries : []), [snap]);
   const initialLoading = !snap && !error;
 
   // History odds for every open spread, matched to the monitor's rows so the

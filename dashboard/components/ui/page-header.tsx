@@ -15,8 +15,10 @@ interface PageHeaderProps {
 export function PageHeader({ title, eyebrow, description, actions, className }: PageHeaderProps) {
   const sub = description ?? eyebrow;
   return (
-    <div className={cn("flex items-end justify-between gap-4 px-1", className)}>
-      <div className="min-w-0 flex flex-col gap-0.5">
+    // Wraps instead of squeezing: on a phone the actions drop below the
+    // title rather than crushing the description into one word per line.
+    <div className={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-3 px-1", className)}>
+      <div className="min-w-0 flex-1 basis-[min(100%,320px)] flex flex-col gap-0.5">
         <h1 className="text-title-3-semibold text-text-primary truncate">{title}</h1>
         {sub && <p className="text-body-2-regular text-text-secondary">{sub}</p>}
       </div>

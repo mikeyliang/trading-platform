@@ -50,6 +50,8 @@ export function fmtCompact(n: number | null | undefined): string {
 
 export function pnlClass(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "text-text-secondary";
+  // Anything that prints as 0.00 stays neutral, so a flat line is never green.
+  if (Math.abs(n) < 0.005) return "text-text-secondary";
   if (n > 0) return "text-status-lime-text";
   if (n < 0) return "text-status-rose-text";
   return "text-text-secondary";

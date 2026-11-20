@@ -485,10 +485,8 @@ function PositionsTable({ positions, kinds }: { positions: Position[]; kinds: Po
                     <span className="inline-flex items-center gap-1.5">
                       <span className="group-hover:text-accent-600 transition-colors">{p.symbol}</span>
                       {p.is_option && (
-                        <span className={cn(
-                          "text-caption-2-regular font-medium leading-4",
-                          p.right === "C" ? "text-status-lime-text" : "text-status-rose-text",
-                        )}>
+                        // Call or put is the contract, not a gain or loss, so it stays neutral.
+                        <span className="text-caption-2-regular font-medium leading-4 text-text-tertiary">
                           {p.right === "C" ? "Call" : "Put"}
                         </span>
                       )}
