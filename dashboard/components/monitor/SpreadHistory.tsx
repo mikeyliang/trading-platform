@@ -96,16 +96,16 @@ export function SpreadHistory() {
   return (
     <PageShell>
       <PageHeader
-        title="History"
+        title="Spread odds"
         description={
           cov
-            ? `${cov.trades} monthly cycles from ${cov.first_entry?.slice(0, 4)} to ${cov.last_entry?.slice(0, 4)}, replayed under the course rules, to show what has moved the odds and what has not.`
-            : "Every monthly cycle since 2000, replayed under the course rules."
+            ? `${cov.trades.toLocaleString()} monthly cycles replayed, ${cov.first_entry?.slice(0, 4)} to ${cov.last_entry?.slice(0, 4)}.`
+            : "Monthly cycles since 2000, replayed."
         }
         actions={
           <>
-            <ToggleGroup options={STRATEGY_OPTIONS} value={strategy} onChange={setStrategy} ariaLabel="Strategy" />
-            <Button variant="secondary" size="icon" onClick={load} disabled={loading} title="Refresh" aria-label="Refresh">
+            <ToggleGroup options={STRATEGY_OPTIONS} value={strategy} onChange={setStrategy} ariaLabel="Strategy" onGround />
+            <Button variant="ghost" size="icon" onClick={load} disabled={loading} title="Reload" aria-label="Reload">
               <RefreshCw className={cn(loading && "animate-spin")} />
             </Button>
           </>
@@ -241,15 +241,25 @@ function VixCard({ s }: { s: RegimeStrategySummary }) {
 }
 
 // ── trend at entry ───────────────────────────────────────────────────
+// Two rates side by side as meters on one shared scale, with the strategy's
+// overall rate marked, so "no reliable difference" is visible at a glance.
 function TrendCard({ s }: { s: RegimeStrategySummary }) {
   const up = s.by_trend.find((t) => t.trend === "up");
   const down = s.by_trend.find((t) => t.trend === "down");
+  const overall = s.overall.non_win_pct ?? 0;
   const p = s.downtrend_p;
   const verdict =
     p < 0.05 ? "Significant" : p < 0.1 ? "Suggestive, not conclusive" : "No reliable difference";
   const tone = p < 0.05 ? "down" : p < 0.1 ? "warning" : "muted";
+  const scaleMax = Math.max(10, Math.ceil(Math.max(up?.non_win_pct ?? 0, down?.non_win_pct ?? 0, overall) / 10) * 10 + 10);
+  const plain =
+    p < 0.05
+      ? "Entries below the average went wrong more often, by more than luck explains."
+      : p < 0.1
+        ? "Entries below the average went wrong a little more often, but luck could explain the gap."
+        : "No reliable evidence that entries below the average go wrong more often.";
   return (
-    <Card className="shrink-0">
+    <Card className="shrink-0 flex flex-col">
       <CardHeader>
         <div className="flex items-center gap-2">
           <CardTitle>Trend at entry</CardTitle>
@@ -257,26 +267,43 @@ function TrendCard({ s }: { s: RegimeStrategySummary }) {
         </div>
         <Badge variant={tone}>{verdict}</Badge>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <StatGroup cols={2}>
-          <TrendStat label="Above 10-week avg" t={up} />
-          <TrendStat label="Below 10-week avg" t={down} />
-        </StatGroup>
-        <div className="text-caption-1-regular text-text-tertiary tabular">p = {p.toFixed(2)}</div>
+      <CardContent className="flex flex-col gap-5 flex-1">
+        <TrendMeter label="Above 10-week average" t={up} max={scaleMax} overall={overall} />
+        <TrendMeter label="Below 10-week average" t={down} max={scaleMax} overall={overall} />
+        <div className="flex items-center gap-2 text-caption-1-regular text-text-tertiary">
+          <span className="h-3 w-0.5 rounded-full bg-text-primary" aria-hidden />
+          All cycles, {fmt(overall, 0)}%
+        </div>
+        <p className="mt-auto text-caption-1-regular text-text-tertiary">
+          {plain} <span className="tabular">p = {p.toFixed(2)}</span>
+        </p>
       </CardContent>
     </Card>
   );
 }
 
-function TrendStat({ label, t }: { label: string; t: HistoryTally | undefined }) {
-  if (!t) return <Stat label={label} value="n/a" size="lg" />;
+function TrendMeter({ label, t, max, overall }: { label: string; t: HistoryTally | undefined; max: number; overall: number }) {
+  const pct = t?.non_win_pct ?? null;
   return (
-    <Stat
-      label={label}
-      value={`${fmt(t.non_win_pct, 0)}%`}
-      hint={`${t.exited + t.held_to_loss} of ${t.n} went wrong`}
-      size="lg"
-    />
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-body-2-medium text-text-secondary">{label}</span>
+        <span className="tabular">
+          <span className="text-headline-semibold text-text-primary">{pct != null ? `${fmt(pct, 0)}%` : "n/a"}</span>
+          {t && <span className="text-caption-1-regular text-text-tertiary ml-2">{t.exited + t.held_to_loss} of {t.n}</span>}
+        </span>
+      </div>
+      <div className="relative h-2 rounded-full bg-background-secondary-default">
+        {pct != null && (
+          <div className="absolute inset-y-0 left-0 rounded-full bg-accent-500" style={{ width: `${Math.min(100, (pct / max) * 100)}%` }} />
+        )}
+        <div
+          className="absolute -inset-y-1 w-0.5 -ml-px rounded-full bg-text-primary"
+          style={{ left: `${Math.min(100, (overall / max) * 100)}%` }}
+          title={`All cycles: ${fmt(overall, 0)}%`}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -313,26 +340,20 @@ function OddsGridCard({ s }: { s: RegimeStrategySummary }) {
                   const pct = g?.exit_pct;
                   const thin = (g?.n ?? 0) < 8;
                   return (
-                    <TableCell key={bin} className="text-right tabular">
+                    <TableCell key={bin} className="p-1 text-right tabular">
                       {g && g.n > 0 ? (
-                        <div className="flex flex-col items-end">
-                          <span
-                            className={cn(
-                              thin
-                                ? "text-text-tertiary"
-                                : (pct ?? 0) >= 50
-                                  ? "text-status-rose-text"
-                                  : (pct ?? 0) >= 25
-                                    ? "text-status-yellow-text"
-                                    : "text-text-primary"
-                            )}
-                          >
+                        <div
+                          className="flex flex-col items-end rounded-lg px-2 py-1"
+                          style={thin ? undefined : { backgroundColor: heat(pct ?? 0) }}
+                          title={`${fmt(pct, 0)}% of ${g.n} later exited`}
+                        >
+                          <span className={cn("text-body-2-medium", thin ? "text-text-tertiary" : "text-text-primary")}>
                             {fmt(pct, 0)}%
                           </span>
-                          <span className="text-caption-1-regular text-text-tertiary">n={g.n}</span>
+                          <span className={cn("text-caption-2-regular", thin ? "text-text-tertiary" : "text-text-primary opacity-60")}>n={g.n}</span>
                         </div>
                       ) : (
-                        <span className="text-text-tertiary">–</span>
+                        <span className="px-2 text-text-tertiary">n/a</span>
                       )}
                     </TableCell>
                   );
@@ -344,11 +365,22 @@ function OddsGridCard({ s }: { s: RegimeStrategySummary }) {
       </CardContent>
       <CardFooter>
         <span className="text-caption-1-regular text-text-tertiary">
-          Grey cells have fewer than 8 trades. Yellow from 25%, red from 50%.
+          Deeper shade, more of those trades later hit an exit. Unshaded cells have fewer than 8 trades.
+        </span>
+        <span className="ml-auto flex items-center gap-2 text-caption-1-regular text-text-tertiary tabular" aria-hidden>
+          0%
+          <span className="h-2 w-24 rounded-full" style={{ background: `linear-gradient(to right, ${heat(0)}, ${heat(100)})` }} />
+          100%
         </span>
       </CardFooter>
     </Card>
   );
+}
+
+// One hue for one measure: rose at an opacity that grows with the exit rate.
+function heat(pct: number): string {
+  const a = Math.round(6 + (Math.max(0, Math.min(100, pct)) / 100) * 52);
+  return `color-mix(in oklab, var(--color-status-rose-text) ${a}%, transparent)`;
 }
 
 // ── every trade that went wrong ──────────────────────────────────────

@@ -34,8 +34,8 @@ function MicrostructureContent() {
   return (
     <PageShell>
       <PageHeader
-        title="Market microstructure"
-        description="Depth, tape, volume by price and open interest for one symbol."
+        title="Depth"
+        description="Order book, tape and volume for one symbol."
         actions={
           <form
             className="flex items-center gap-2"

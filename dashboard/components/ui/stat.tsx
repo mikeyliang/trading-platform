@@ -41,11 +41,20 @@ interface StatGroupProps {
 }
 
 export function StatGroup({ children, className, cols }: StatGroupProps) {
-  const colStyle = cols
-    ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
-    : { gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" };
+  // Columns hold from the small breakpoint up; on a phone every group folds
+  // to two columns so labels like "Near trigger" are not cut off.
+  const colStyle = {
+    "--stat-cols": cols ? `repeat(${cols}, minmax(0, 1fr))` : "repeat(auto-fit, minmax(120px, 1fr))",
+  } as React.CSSProperties;
   return (
-    <div style={colStyle} className={cn("grid gap-y-3 [&>*]:px-4 [&>*]:border-l [&>*]:border-separator-border-strong [&>*:first-child]:pl-0 [&>*:first-child]:border-l-0", className)}>
+    <div
+      style={colStyle}
+      className={cn(
+        "grid gap-y-3 [&>*]:px-4 [&>*]:border-l [&>*]:border-separator-border-strong [&>*:first-child]:pl-0 [&>*:first-child]:border-l-0",
+        "grid-cols-2 sm:grid-cols-(--stat-cols) max-sm:[&>*:nth-child(odd)]:pl-0 max-sm:[&>*:nth-child(odd)]:border-l-0",
+        className
+      )}
+    >
       {children}
     </div>
   );

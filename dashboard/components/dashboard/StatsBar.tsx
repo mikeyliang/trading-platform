@@ -84,7 +84,6 @@ export const StatsBar = memo(function StatsBar() {
         {account ? (
           <>
             <Signed value={realized} />
-            <Hint>Closed trades</Hint>
           </>
         ) : (
           <Empty />
@@ -111,7 +110,6 @@ export const StatsBar = memo(function StatsBar() {
                 {trades} {trades === 1 ? "trade" : "trades"}
               </span>
             </div>
-            <WinMeter pct={trades > 0 ? winRate : null} />
           </>
         ) : (
           <Empty />
@@ -122,7 +120,6 @@ export const StatsBar = memo(function StatsBar() {
         {account ? (
           <>
             <Value muted>{fmtCurrency(account.buying_power ?? 0)}</Value>
-            <Hint>{account.mode ? `${account.mode.toUpperCase() === "LIVE" ? "Live" : "Paper"} account` : "Available"}</Hint>
           </>
         ) : (
           <Empty />
@@ -280,25 +277,3 @@ function Signed({ value }: { value: number }) {
   );
 }
 
-// 4px meter: fill = win rate, track = the status background, hairline tick
-// at 50% so "above / below a coin flip" reads without a number.
-function WinMeter({ pct }: { pct: number | null }) {
-  const v = pct == null ? 0 : Math.max(0, Math.min(100, pct));
-  const tone =
-    pct == null ? "bg-foreground-icon-quaternary" : v >= 50 ? "bg-status-lime-text" : v >= 30 ? "bg-status-yellow-text" : "bg-status-rose-text";
-  const track =
-    pct == null ? "bg-background-tertiary-default" : v >= 50 ? "bg-status-lime-background" : v >= 30 ? "bg-status-yellow-background" : "bg-status-rose-background";
-  return (
-    <div
-      role="meter"
-      aria-label="Win rate"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={pct == null ? undefined : Math.round(v)}
-      className={cn("relative h-1 w-full max-w-[120px] mt-1.5 rounded-full overflow-hidden", track)}
-    >
-      <div className={cn("absolute inset-y-0 left-0 rounded-full", tone)} style={{ width: `${v}%` }} />
-      <div className="absolute inset-y-0 left-1/2 w-px bg-background-primary-default" aria-hidden />
-    </div>
-  );
-}

@@ -259,7 +259,7 @@ function RegimeRows({ regime }: { regime: RegimeNow | null }) {
         })}
       </div>
       <div className="mt-1.5 text-caption-2-regular text-text-tertiary">
-        <Link href="/monitor/history" className="hover:text-text-secondary transition-colors">
+        <Link href="/odds" className="hover:text-text-secondary transition-colors">
           how past entries in this regime did →
         </Link>
       </div>

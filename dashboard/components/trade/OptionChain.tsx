@@ -152,10 +152,10 @@ export function OptionChain() {
   return (
     <PageShell>
       <PageHeader
-        title={`${symbol} option chain`}
+        title={`${symbol} chain`}
         description={chain?.underlying_price
           ? `Spot ${chain.underlying_price.toFixed(2)}, ${rows.length} strikes loaded`
-          : "Bid, ask, delta and IV per strike. Click a strike to pin it on the chart."}
+          : "Click a strike to pin it on the chart."}
         actions={
           loading ? (
             <Badge variant="muted">Loading</Badge>
@@ -293,7 +293,7 @@ export function OptionChain() {
           <EmptyState
             icon={ErrorDot}
             title="Chain failed to load"
-            description="IBKR did not answer the chain request. Retry once the gateway is back."
+            description="IBKR did not answer."
             action={
               <Button variant="secondary" size="sm" onClick={retry}>
                 <Refresh />
@@ -307,7 +307,7 @@ export function OptionChain() {
           <EmptyState
             icon={ListIcon}
             title="No strikes loaded"
-            description="Nothing came back for this expiry yet. The chain may still be hydrating from IBKR."
+            description="Nothing for this expiry yet."
             action={
               <Button variant="secondary" size="sm" onClick={retry}>
                 <Refresh />

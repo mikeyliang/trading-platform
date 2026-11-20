@@ -228,7 +228,7 @@ function AnalyzerContent() {
     <PageShell>
       <PageHeader
         title="Options position analyzer"
-        description="Greeks, probability, P/L profile and model reads for one contract."
+        description="Greeks, odds and P/L for one contract."
         actions={
           <>
             {loading && <Spinner size={16} />}
@@ -371,7 +371,7 @@ function AnalyzerContent() {
           <EmptyState
             icon={Search}
             title="Pick an expiry and strike"
-            description="Choose a contract above to see Greeks, EMA and the P/L profile."
+            description="Choose a contract above."
           />
         </Card>
       ) : !result ? (
@@ -720,7 +720,7 @@ function AnalysisBody({
             {result.decay_profile && result.decay_profile.length > 0 ? (
               <PnlDecayChart data={result.decay_profile} height={260} />
             ) : (
-              <EmptyState size="sm" icon={TrendingDown} title="No decay profile" description="The backend did not return a P/L over time series for this contract." />
+              <EmptyState size="sm" icon={TrendingDown} title="No decay profile" description="No P/L over time for this contract." />
             )}
           </TabsContent>
 

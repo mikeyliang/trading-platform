@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  RiArrowDownSLine,
   RiArrowRightSLine,
   RiCheckboxBlankCircleLine,
   RiCheckboxCircleFill,
@@ -53,6 +54,9 @@ export function FlexBackfillCard() {
   // Force re-render every second while a cooldown is active so the
   // "retry in Xs" label counts down without our event loop polling.
   const [tick, setTick] = useState(0);
+  // Importing is a setup chore, not something you read every visit, so the
+  // card is one summary row until opened. It opens itself while a pull runs.
+  const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!status?.cooldown_sec) return;
     const id = setInterval(() => setTick((t) => t + 1), 1000);
@@ -168,24 +172,52 @@ export function FlexBackfillCard() {
 
   const blocked = pulling || cooldownLive > 0 || !status?.configured;
 
+  const expanded = open || pulling || !!pullError || !!statusError;
+  const configured = !!status?.configured;
+  const summary = statusError && !status
+    ? `Status unavailable: ${statusError}`
+    : statusLoading && !status
+    ? "Checking"
+    : !configured
+      ? "Not set up. Add IBKR_FLEX_TOKEN and IBKR_FLEX_QUERY_ID to the API environment to import past fills."
+      : status?.total_rows
+        ? `${status.total_rows.toLocaleString()} rows, ${status.earliest ? fmtIsoDate(status.earliest) : "n/a"} to ${status.latest ? fmtIsoDate(status.latest) : "n/a"}`
+        : "Set up, nothing imported yet";
+
   return (
     <Card className="shrink-0">
-      <CardHeader>
-        <div className="flex items-center gap-2 min-w-0">
-          <CardTitle>IBKR Flex backfill</CardTitle>
-          {status && <ConfiguredBadge configured={status.configured} queryId={status.query_id} />}
-        </div>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={refreshStatus}
-          disabled={statusLoading}
-          aria-label="Refresh status"
+      <CardHeader className={cn(!expanded && "border-b-0")}>
+        <button
+          type="button"
+          onClick={() => configured && setOpen((v) => !v)}
+          aria-expanded={expanded}
+          disabled={!configured}
+          className="flex items-center gap-2 min-w-0 flex-1 text-left outline-none rounded-md focus-visible:ring-2 focus-visible:ring-border-focus-ring disabled:cursor-default"
         >
-          <RiRefreshLine className={statusLoading ? "animate-spin" : ""} />
-        </Button>
+          <CardTitle className="shrink-0">Import from IBKR Flex</CardTitle>
+          <span className="text-caption-1-regular text-text-tertiary truncate tabular">{summary}</span>
+        </button>
+        {statusError && !status && (
+          <Button variant="ghost" size="sm" onClick={refreshStatus}>
+            <RiRefreshLine />
+            Retry
+          </Button>
+        )}
+        {configured && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={expanded ? "Hide import controls" : "Show import controls"}
+          >
+            {expanded ? "Hide" : "Import"}
+            <RiArrowDownSLine className={cn("transition-transform", expanded && "rotate-180")} />
+          </Button>
+        )}
       </CardHeader>
 
+      {expanded && configured && (
+      <>
       <CardContent className="flex flex-col gap-3">
         {statusLoading && !status ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" role="status" aria-label="Loading Flex status">
@@ -271,20 +303,9 @@ export function FlexBackfillCard() {
           )}
         </Button>
       </CardFooter>
+      </>
+      )}
     </Card>
-  );
-}
-
-function ConfiguredBadge({
-  configured, queryId,
-}: { configured: boolean; queryId: string | null }) {
-  if (!configured) {
-    return <Badge variant="warning">Not configured</Badge>;
-  }
-  return (
-    <Badge variant="up" className="tabular" title="IBKR Flex token and query id configured">
-      Query {queryId ?? "n/a"}
-    </Badge>
   );
 }
 

@@ -92,7 +92,7 @@ export default function JournalPage() {
     <PageShell className="!overflow-hidden">
       <PageHeader
         title="Journal"
-        description="Setups, post-trade reviews and daily reflections, kept in this browser."
+        description="Notes and reviews, saved in this browser."
         actions={
           <Button variant="default" onClick={create}>
             <Plus />
@@ -117,7 +117,7 @@ export default function JournalPage() {
           <EmptyState
             icon={BookOpen}
             title="No journal entries yet"
-            description="Start logging thoughts on setups, post-trade reviews, or daily reflections."
+            description="Write down a setup or a review."
             action={
               <Button variant="default" onClick={create}>
                 <Plus />
@@ -256,7 +256,7 @@ export default function JournalPage() {
                 <EmptyState
                   icon={EntryIcon}
                   title="Pick an entry"
-                  description="Select an entry on the left to read it, or start a new one."
+                  description="Pick one on the left, or start a new one."
                   action={
                     <Button variant="secondary" onClick={create}>
                       <Plus />

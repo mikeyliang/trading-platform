@@ -15,7 +15,6 @@ import {
 import {
   RiDashboardLine,
   RiSettings4Line,
-  RiBarChartBoxLine,
   RiFileListLine,
   RiBookOpenLine,
   RiPulseLine,
@@ -29,6 +28,7 @@ import {
   RiFlaskLine,
   RiRobot2Line,
   RiHistoryLine,
+  RiPercentLine,
   RiLayoutColumnLine,
   RiBrainLine,
 } from "@remixicon/react";
@@ -39,9 +39,8 @@ const PAGES = [
   { label: "Home",        href: "/",                    icon: RiDashboardLine, keywords: "dashboard overview board" },
   { label: "Exit",        href: "/monitor/exit",        icon: RiPulseLine,        keywords: "monitor open spreads delta trigger" },
   { label: "Tracker",     href: "/monitor/tracker",     icon: RiFileListLine,        keywords: "okw log positions" },
-  { label: "Performance", href: "/monitor/performance", icon: RiBarChartBoxLine,       keywords: "analytics equity curve sharpe drawdown" },
   { label: "Insights",    href: "/monitor/insights",    icon: RiLightbulbLine,       keywords: "patterns review lessons" },
-  { label: "Journal",     href: "/monitor/journal",     icon: RiBookOpenLine,        keywords: "notes reflection review mood" },
+  { label: "Journal",     href: "/journal",            icon: RiBookOpenLine,        keywords: "notes reflection review mood" },
   { label: "Analyzer",    href: "/monitor/analyzer",    icon: RiCalculatorLine,      keywords: "options position spread payoff greeks" },
   { label: "Agents",      href: "/agents",              icon: RiBrainLine,  keywords: "debate ai bull bear verdict" },
   { label: "Screener",    href: "/screener",            icon: RiEqualizerLine,          keywords: "filter sector market cap pe dividend rule one" },
@@ -49,7 +48,8 @@ const PAGES = [
   { label: "Chain",       href: "/trade/chain",         icon: RiLayoutColumnLine,          keywords: "options chain strikes expiry" },
   { label: "Simulate",    href: "/backtest",            icon: RiFlaskLine,    keywords: "backtest strategy presets runs" },
   { label: "Bot",         href: "/bot",                 icon: RiRobot2Line,             keywords: "automation paper trading decisions" },
-  { label: "History",     href: "/trade/history",       icon: RiHistoryLine,           keywords: "trades fills flex backfill analysis" },
+  { label: "Trades",      href: "/trade/history",       icon: RiHistoryLine,           keywords: "history fills flex backfill analysis realized" },
+  { label: "Odds",        href: "/odds",                icon: RiPercentLine,           keywords: "spread history regime vix replay cycles went wrong" },
   { label: "Settings",    href: "/settings",            icon: RiSettings4Line,        keywords: "configuration theme account" },
 ];
 

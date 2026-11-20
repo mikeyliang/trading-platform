@@ -8,6 +8,15 @@
 const API_TARGET = process.env.API_PROXY_TARGET || "http://trading-api:8000";
 
 const nextConfig = {
+  // Old addresses from before the nav cleanup keep working.
+  async redirects() {
+    return [
+      { source: "/monitor/journal", destination: "/journal", permanent: false },
+      { source: "/monitor/history", destination: "/odds", permanent: false },
+      // Performance repeated Home (account, positions) and Trades (fills).
+      { source: "/monitor/performance", destination: "/trade/history", permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       { source: "/api/:path*", destination: `${API_TARGET}/api/:path*` },

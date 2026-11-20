@@ -500,7 +500,7 @@ function EmptyChat({ available, onPick }: { available: boolean; onPick: (s: stri
       <EmptyState
         icon={RiChat3Line}
         title="Ask the co-pilot"
-        description="Strategies, params or the last backtest. It sees your current page, positions and watchlist."
+        description="It sees this page, your positions and watchlist."
         className="py-4"
       />
       <div className="flex flex-col gap-1.5">

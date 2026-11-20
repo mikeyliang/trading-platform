@@ -90,10 +90,11 @@ export function AgentHistory({ history, onSelect, onClear, currentId }: Props) {
       <CardHeader>
         <div className="flex items-center gap-2 min-w-0">
           <CardTitle>Prior runs</CardTitle>
-          <Badge variant="muted" className="tabular">
-            {filtered.length}
-            {query ? ` of ${history.length}` : ""}
-          </Badge>
+          {history.length > 0 && (
+            <span className="text-caption-1-regular text-text-tertiary tabular">
+              {query ? `${filtered.length} of ${history.length}` : history.length}
+            </span>
+          )}
         </div>
         {history.length > 0 && (
           <div className="flex items-center gap-2">

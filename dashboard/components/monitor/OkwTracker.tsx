@@ -79,8 +79,8 @@ export function OkwTracker() {
   return (
     <PageShell>
       <PageHeader
-        title="Trade tracker"
-        description="Log placed RUT, Mars, Mars max and Space spreads. Mirrors the Options Kelly Workbook columns."
+        title="Tracker"
+        description="Spreads you placed, in workbook columns."
         actions={
           <Button onClick={() => setShowAdd((v) => !v)} variant="default">
             <Plus /> {showAdd ? "Hide form" : "Add trade"}
@@ -136,7 +136,7 @@ export function OkwTracker() {
             <EmptyState
               icon={LedgerIcon}
               title={statusFilter ? `No ${statusFilter} trades` : "No trades logged yet"}
-              description={statusFilter ? "Try another status filter." : "Add a trade after you place one to keep a running workbook."}
+              description={statusFilter ? "Try another status filter." : "Add a spread after you place it."}
               action={
                 !statusFilter && !showAdd ? (
                   <Button variant="secondary" onClick={() => setShowAdd(true)}>

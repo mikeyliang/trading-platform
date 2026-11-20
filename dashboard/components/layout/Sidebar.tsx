@@ -5,11 +5,13 @@ import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import {
   RiBookOpenLine,
+  RiBrainLine,
   RiDashboardLine,
   RiEqualizerLine,
   RiFlaskLine,
   RiHistoryLine,
   RiLayoutColumnLine,
+  RiPercentLine,
   RiPulseLine,
   RiRobot2Line,
   RiSettings4Line,
@@ -32,8 +34,10 @@ interface NavGroup {
   items: NavEntry[];
 }
 
-// Three groups, mirroring how a session runs: watch the book, look for the
-// next trade, then study. Settings is pinned to the bottom.
+// Four groups, mirroring how a session runs: watch the book, look for the
+// next trade, study what works, then review what happened. Every label means
+// one thing: the replayed spread odds and the filled-trade log used to share
+// the name "History". Settings is pinned to the bottom.
 const groups: NavGroup[] = [
   {
     name: "Desk",
@@ -53,10 +57,17 @@ const groups: NavGroup[] = [
   {
     name: "Study",
     items: [
+      { href: "/odds", icon: RiPercentLine, label: "Odds" },
       { href: "/backtest", icon: RiFlaskLine, label: "Simulate" },
+      { href: "/agents", icon: RiBrainLine, label: "Agents" },
       { href: "/bot", icon: RiRobot2Line, label: "Bot" },
-      { href: "/trade/history", icon: RiHistoryLine, label: "History" },
-      { href: "/monitor/journal", icon: RiBookOpenLine, label: "Journal" },
+    ],
+  },
+  {
+    name: "Review",
+    items: [
+      { href: "/trade/history", icon: RiHistoryLine, label: "Trades" },
+      { href: "/journal", icon: RiBookOpenLine, label: "Journal" },
     ],
   },
 ];
@@ -130,7 +141,7 @@ function Wordmark() {
 function isActive(path: string | null, href: string) {
   if (!path) return false;
   if (href === "/") return path === "/" || path.startsWith("/chart");
-  if (href === "/monitor") return path.startsWith("/monitor") && !path.startsWith("/monitor/journal");
+  if (href === "/monitor") return path.startsWith("/monitor");
   return path === href || path.startsWith(href);
 }
 

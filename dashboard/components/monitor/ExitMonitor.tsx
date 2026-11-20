@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api, type MonitorEntry, type MonitorSnapshot, type ScheduledJob } from "@/lib/api";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { api, type MonitorEntry, type MonitorSnapshot, type OpenSpreadContext, type ScheduledJob } from "@/lib/api";
 import { ws } from "@/lib/ws";
 import type { WSMessage } from "@/types";
 import { toast } from "@/components/ui/toaster";
@@ -15,7 +16,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton, TableSkeletonRows } from "@/components/ui/skeleton";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { RiRefreshLine as RefreshCw, RiShieldCheckLine as ShieldIcon, RiErrorWarningFill as ErrorIcon } from "@remixicon/react";
-import { SpreadHistoryCard } from "./SpreadHistoryCard";
+import { InfoIcon } from "@/components/ui/info-icon";
+import { Odds, SpreadHistoryCard, spreadKey, useOpenSpreadOdds } from "./SpreadHistoryCard";
 
 const STATUS_META: Record<MonitorEntry["status"], { label: string; tone: string; badge: "up" | "warning" | "down" | "muted" }> = {
   safe:    { label: "Safe",         tone: "text-status-lime-text",   badge: "up" },
@@ -79,18 +81,32 @@ export function ExitMonitor() {
     }
   };
 
-  const entries = Array.isArray(snap?.entries) ? snap!.entries : [];
+  const entries = useMemo(() => (Array.isArray(snap?.entries) ? snap!.entries : []), [snap]);
   const initialLoading = !snap && !error;
+
+  // History odds for every open spread, matched to the monitor's rows so the
+  // book is one table: delta against its trigger, and what past trades in
+  // the same spot went on to do.
+  const odds = useOpenSpreadOdds();
+  const byKey = useMemo(() => {
+    const m = new Map<string, OpenSpreadContext>();
+    for (const x of odds.data?.spreads ?? []) m.set(spreadKey(x.symbol, x.expiry, x.short_strike, x.long_strike), x);
+    return m;
+  }, [odds.data]);
+  const shown = useMemo(
+    () => new Set(entries.map((e) => spreadKey(e.symbol, e.expiry, e.short_strike, e.long_strike))),
+    [entries]
+  );
+  const cov = odds.data?.coverage;
 
   return (
     <PageShell>
       <PageHeader
-        title="Exit monitor"
-        description="Watches every open credit spread and flags it when the short leg's delta crosses the exit threshold for its trade type."
+        title="Exit"
+        description="Open spreads against their exit trigger."
         actions={
-          <Button onClick={refresh} disabled={loading} variant="secondary">
+          <Button onClick={refresh} disabled={loading} variant="ghost" size="icon" aria-label="Refresh" title="Refresh">
             <RefreshCw className={loading ? "animate-spin" : ""} />
-            {loading ? "Refreshing" : "Refresh now"}
           </Button>
         }
       />
@@ -103,17 +119,22 @@ export function ExitMonitor() {
             <CardTitle>Open spreads</CardTitle>
             {snap && <Badge variant="muted" className="tabular">{entries.length}</Badge>}
           </div>
-          {error && snap && (
-            <Badge variant="down">
-              <ErrorIcon size={14} aria-hidden="true" />
-              Stale, last refresh failed
-            </Badge>
-          )}
+          <div className="flex items-center gap-3">
+            {error && snap && (
+              <Badge variant="down">
+                <ErrorIcon size={14} aria-hidden="true" />
+                Stale, last refresh failed
+              </Badge>
+            )}
+            <Link href="/odds" className="text-caption-1-medium text-accent-600 hover:underline">
+              All spread odds
+            </Link>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {initialLoading ? (
             <SpreadsTable>
-              <TableSkeletonRows rows={3} cols={8} widths={["w-24", "w-16", "w-16", "w-full", "w-10", "w-10", "w-10", "w-8"]} />
+              <TableSkeletonRows rows={3} cols={6} widths={["w-24", "w-16", "w-full", "w-12", "w-12", "w-full"]} />
             </SpreadsTable>
           ) : error && !snap ? (
             <div className="flex flex-col items-center gap-3 py-12">
@@ -129,13 +150,13 @@ export function ExitMonitor() {
           ) : entries.length === 0 ? (
             <EmptyState
               icon={ShieldIcon}
-              title="No open spreads to watch"
-              description="When you open a credit spread it appears here and the monitor tracks its delta every 5 minutes during market hours."
+              title="No open spreads"
+              description="New credit spreads show here and are checked every 5 minutes."
             />
           ) : (
-            <SpreadsTable>
+            <SpreadsTable historyHint={cov ? `${cov.trades.toLocaleString()} replayed monthly cycles since ${cov.first_entry?.slice(0, 4)}. Past trades of the same strategy within 5 delta points at the same time to expiry, and how many later hit the delta or Thursday exit.` : undefined}>
               {entries.map((e) => (
-                <Row key={e.spread_id} entry={e} />
+                <Row key={e.spread_id} entry={e} ctx={byKey.get(spreadKey(e.symbol, e.expiry, e.short_strike, e.long_strike))} />
               ))}
             </SpreadsTable>
           )}
@@ -143,7 +164,7 @@ export function ExitMonitor() {
         <Footer jobs={jobs} lastRun={snap?.last_run ?? null} />
       </Card>
 
-      <SpreadHistoryCard />
+      <SpreadHistoryCard odds={odds} exclude={shown} />
     </PageShell>
   );
 }
@@ -176,19 +197,22 @@ function SummaryCard({ snap, loading }: { snap: MonitorSnapshot | null; loading:
   );
 }
 
-function SpreadsTable({ children }: { children: React.ReactNode }) {
+function SpreadsTable({ children, historyHint }: { children: React.ReactNode; historyHint?: string }) {
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           <TableHead>Spread</TableHead>
-          <TableHead>Type</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="min-w-[220px]">Delta scale</TableHead>
-          <TableHead className="text-right">Short delta</TableHead>
-          <TableHead className="text-right">Exit at</TableHead>
-          <TableHead className="text-right">Headroom</TableHead>
-          <TableHead className="text-right">Contracts</TableHead>
+          <TableHead className="min-w-[200px]">Short delta against exit</TableHead>
+          <TableHead className="text-right">Cushion</TableHead>
+          <TableHead className="text-right">Days left</TableHead>
+          <TableHead className="min-w-[240px]">
+            <span className="inline-flex items-center gap-1">
+              Past trades in this spot
+              {historyHint && <InfoIcon hint={historyHint} />}
+            </span>
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>{children}</TableBody>
@@ -196,61 +220,92 @@ function SpreadsTable({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Row({ entry }: { entry: MonitorEntry }) {
+function Row({ entry, ctx }: { entry: MonitorEntry; ctx?: OpenSpreadContext }) {
   const meta = STATUS_META[entry.status];
   const trigger = entry.exit_delta;
   const current = entry.current_delta;
   // Position the marker on a 0..50 delta scale.
   const pct = current != null ? Math.min(100, (current / 50) * 100) : 0;
   const triggerPct = Math.min(100, (trigger / 50) * 100);
+  const fill = entry.status === "trigger" ? "bg-status-rose-text" : entry.status === "warning" ? "bg-status-yellow-text" : "bg-status-lime-text";
 
   return (
-    <TableRow>
+    <TableRow className="h-14">
       <TableCell className="whitespace-nowrap">
-        {entry.symbol} {entry.short_strike}
-        <span className="text-text-tertiary"> / </span>
-        {entry.long_strike}
+        <div className="flex flex-col">
+          <span className="tabular">
+            {entry.symbol} {entry.short_strike}
+            <span className="text-text-tertiary"> / </span>
+            {entry.long_strike}
+          </span>
+          <span className="text-caption-1-medium text-text-tertiary">
+            {entry.spread_type}, {entry.quantity} contract{entry.quantity === 1 ? "" : "s"}
+          </span>
+        </div>
       </TableCell>
-      <TableCell className="text-text-secondary">{entry.spread_type}</TableCell>
       <TableCell>
         <Badge variant={meta.badge}>{meta.label}</Badge>
       </TableCell>
       <TableCell>
-        <div className="relative h-5" aria-label={`short delta ${current ?? "n/a"}, exit at ${trigger}`}>
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-background-tertiary-default" />
-          <div
-            className="absolute top-0.5 bottom-0.5 w-px bg-status-rose-text"
-            style={{ left: `${triggerPct}%` }}
-            title={`exit at delta ${trigger}`}
-          />
-          {current != null && (
+        <div className="flex items-center gap-3">
+          <div className="relative h-5 flex-1 min-w-[96px]" aria-label={`short delta ${current ?? "n/a"}, exit at ${trigger}`}>
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-background-tertiary-default" />
+            {current != null && (
+              <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full opacity-40", fill)} style={{ width: `${pct}%` }} />
+            )}
             <div
-              className={cn(
-                "absolute top-1/2 size-2.5 rounded-full ring-2 ring-background-primary-default",
-                entry.status === "trigger" ? "bg-status-rose-text" : entry.status === "warning" ? "bg-status-yellow-text" : "bg-status-lime-text"
-              )}
-              style={{ left: `${pct}%`, transform: "translate(-50%, -50%)" }}
+              className="absolute top-0 bottom-0 w-0.5 -ml-px rounded-full bg-status-rose-text"
+              style={{ left: `${triggerPct}%` }}
+              title={`exit at delta ${trigger}`}
             />
-          )}
+            {current != null && (
+              <div
+                className={cn("absolute top-1/2 size-2.5 rounded-full ring-2 ring-background-primary-default", fill)}
+                style={{ left: `${pct}%`, transform: "translate(-50%, -50%)" }}
+              />
+            )}
+          </div>
+          <span className="tabular whitespace-nowrap text-right w-[72px] shrink-0">
+            <span className={meta.tone}>{current != null ? current.toFixed(1) : "n/a"}</span>
+            <span className="text-text-tertiary"> / {trigger}</span>
+          </span>
         </div>
       </TableCell>
-      <TableCell className={cn("text-right", meta.tone)}>{current != null ? current.toFixed(1) : "n/a"}</TableCell>
-      <TableCell className="text-right text-text-secondary">{trigger}</TableCell>
-      <TableCell className={cn("text-right", meta.tone)}>{entry.headroom != null ? entry.headroom.toFixed(1) : "n/a"}</TableCell>
-      <TableCell className="text-right text-text-secondary">{entry.quantity}</TableCell>
+      <TableCell className="text-right tabular">
+        {ctx?.cushion_pct != null ? (
+          <span className={cn(ctx.cushion_pct < (ctx.last_day_buffer_pct ?? 2) ? "text-status-rose-text" : "text-text-primary")}>
+            {ctx.cushion_pct.toFixed(1)}%
+          </span>
+        ) : (
+          <span className="text-text-tertiary">n/a</span>
+        )}
+      </TableCell>
+      <TableCell className="text-right tabular">
+        {ctx?.days_left != null ? ctx.days_left : <span className="text-text-tertiary">n/a</span>}
+      </TableCell>
+      <TableCell>
+        {ctx ? <Odds h={ctx.history} /> : <span className="text-caption-1-regular text-text-tertiary">Loading odds</span>}
+      </TableCell>
     </TableRow>
   );
 }
 
+// Plain words for the footer: when it last looked and whether it will look
+// again on its own. Job ids are for the logs, not the desk.
 function Footer({ jobs, lastRun }: { jobs: ScheduledJob[]; lastRun: string | null }) {
-  const scheduled = Array.isArray(jobs) && jobs.length > 0;
+  const job = Array.isArray(jobs) ? jobs.find((j) => j.id.includes("exit")) : undefined;
+  const next = job?.next_run_time ? new Date(job.next_run_time) : null;
   return (
     <CardFooter className="justify-between">
       <span className="text-caption-1-medium text-text-tertiary tabular">
-        Last checked {lastRun ? new Date(lastRun).toLocaleTimeString() : "never"}
+        Last checked {lastRun ? new Date(lastRun).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "never"}
       </span>
-      <span className="text-caption-1-medium text-text-tertiary truncate">
-        {scheduled ? `Scheduled: ${jobs.map((j) => j.id).join(", ")}` : "No jobs scheduled"}
+      <span className="text-caption-1-medium text-text-tertiary truncate tabular">
+        {job
+          ? next && !Number.isNaN(next.getTime())
+            ? `Checks every 5 minutes in market hours, next at ${next.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+            : "Checks every 5 minutes in market hours"
+          : "Automatic checks are off"}
       </span>
     </CardFooter>
   );

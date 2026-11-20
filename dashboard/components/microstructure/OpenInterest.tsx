@@ -109,9 +109,7 @@ export function OpenInterestByStrike({ symbol }: Props) {
           <CardTitle>Open interest</CardTitle>
           <span className="text-caption-1-medium text-text-tertiary tabular">{symbol}</span>
         </div>
-        {expirations.length === 0 ? (
-          <span className="text-caption-1-medium text-text-tertiary">Expiry n/a</span>
-        ) : expirations.length <= SEGMENTED_MAX ? (
+        {expirations.length === 0 ? null : expirations.length <= SEGMENTED_MAX ? (
           <ToggleGroup
             size="xs"
             ariaLabel="Expiry"
@@ -141,7 +139,7 @@ export function OpenInterestByStrike({ symbol }: Props) {
           ))}
         </div>
       ) : rows.length === 0 || (callOI === 0 && putOI === 0) ? (
-        <EmptyState icon={Sigma} title="No open interest" description="The chain returned no open-interest values for this expiry." />
+        <EmptyState icon={Sigma} title="No open interest" description="None returned for this expiry." />
       ) : (
         <div className="flex-1 overflow-auto">
           {/* Header: calls on the left mirror, strike centre, puts on the right */}

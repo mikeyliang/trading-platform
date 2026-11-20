@@ -376,8 +376,8 @@ export const TradeHistoryPanel = memo(function TradeHistoryPanel() {
               title={activeFilterCount > 0 ? "No trades match your filters" : "No trades yet"}
               description={
                 activeFilterCount > 0
-                  ? "Try clearing filters or widening the symbol search."
-                  : "Trade rows will appear here as orders fill."
+                  ? "Try clearing filters."
+                  : "Fills show here as orders fill."
               }
               action={activeFilterCount > 0 ? <Button onClick={clearAll}>Clear filters</Button> : undefined}
             />
@@ -413,42 +413,43 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // --- stats card ----------------------------------------------------------------
 
 function StatsCard({ stats, loading }: { stats: TradeStats | null; loading: boolean }) {
-  const v = (fn: (s: TradeStats) => string) => (stats ? fn(stats) : "n/a");
+  // With nothing closed, ratios are undefined, not zero: show n/a in neutral
+  // instead of a red "0.0%" win rate.
+  const has = !!stats && stats.total_trades > 0;
+  const v = (fn: (s: TradeStats) => string) => (stats && has ? fn(stats) : "n/a");
   const value = (fn: (s: TradeStats) => string) => (loading ? <Skeleton className="h-4 w-16" /> : v(fn));
+  const sign = (n: number) => (n > 0 ? "up" : n < 0 ? "down" : "default");
   return (
     <Card className="shrink-0">
       <CardContent>
         <StatGroup>
-          <Stat label="Trades" value={value((s) => String(s.total_trades))} />
+          <Stat label="Trades" value={loading ? <Skeleton className="h-4 w-16" /> : stats ? String(stats.total_trades) : "n/a"} />
           <Stat
             label="Win rate"
             value={value((s) => (s.win_rate * 100).toFixed(1) + "%")}
-            tone={
-              stats
-                ? stats.win_rate >= 0.5
-                  ? "up"
-                  : stats.win_rate >= 0.3
-                  ? "warning"
-                  : "down"
-                : "default"
-            }
+            hint={has && stats ? `${stats.winning_trades} won, ${stats.losing_trades} lost` : undefined}
           />
-          <Stat label="Wins and losses" value={value((s) => `${s.winning_trades} / ${s.losing_trades}`)} />
           <Stat
             label="Total P&L"
-            value={value((s) => fmtCurrency(s.total_pnl))}
-            tone={stats ? (stats.total_pnl > 0 ? "up" : stats.total_pnl < 0 ? "down" : "default") : "default"}
+            value={value((s) => signedCurrency(s.total_pnl))}
+            tone={has && stats ? sign(stats.total_pnl) : "default"}
           />
           <Stat
-            label="Avg P&L"
-            value={value((s) => fmtCurrency(s.avg_pnl))}
-            tone={stats ? (stats.avg_pnl > 0 ? "up" : stats.avg_pnl < 0 ? "down" : "default") : "default"}
+            label="Avg per trade"
+            value={value((s) => signedCurrency(s.avg_pnl))}
+            tone={has && stats ? sign(stats.avg_pnl) : "default"}
           />
           <Stat label="Profit factor" value={value((s) => fmt(s.profit_factor, 2))} />
         </StatGroup>
       </CardContent>
     </Card>
   );
+}
+
+function signedCurrency(n: number): string {
+  const s = fmtCurrency(Math.abs(n));
+  if (Math.abs(n) < 0.005) return s;
+  return (n > 0 ? "+" : "-") + s;
 }
 
 // --- table -------------------------------------------------------------------
@@ -487,12 +488,15 @@ function TradeHistoryTable({ trades }: { trades: TradeHistoryRecord[] }) {
 }
 
 function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
+  // A log is read by date, so the date is the cell and "how long ago" is the
+  // hover, not the other way round.
   const time = useMemo(() => {
     const d = new Date(t.timestamp);
-    if (Number.isNaN(d.getTime())) return { rel: "n/a", abs: t.timestamp };
+    if (Number.isNaN(d.getTime())) return { label: t.timestamp, title: t.timestamp };
+    const sameYear = d.getFullYear() === new Date().getFullYear();
     return {
-      rel: formatDistanceToNow(d, { addSuffix: true }),
-      abs: d.toLocaleString(),
+      label: d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) }),
+      title: `${d.toLocaleString()}, ${formatDistanceToNow(d, { addSuffix: true })}`,
     };
   }, [t.timestamp]);
 
@@ -502,8 +506,8 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
 
   return (
     <TableRow>
-      <TableCell className="text-text-tertiary whitespace-nowrap" title={time.abs}>
-        {time.rel}
+      <TableCell className="text-text-secondary whitespace-nowrap tabular" title={time.title}>
+        {time.label}
       </TableCell>
       <TableCell>
         <div className="inline-flex items-center gap-1.5">
@@ -511,26 +515,26 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
           <NoteIndicator note={contract.note} />
         </div>
       </TableCell>
-      <TableCell>
-        <Badge variant={t.side === "BUY" ? "up" : "down"}>{t.side === "BUY" ? "Buy" : t.side === "SELL" ? "Sell" : t.side}</Badge>
+      {/* Side is a fact, not a verdict: selling a put spread is the trade,
+          so it stays neutral instead of red. */}
+      <TableCell className="text-text-secondary">
+        {t.side === "BUY" ? "Buy" : t.side === "SELL" ? "Sell" : t.side}
       </TableCell>
       <TableCell className="text-right">{fmt(t.quantity, 0)}</TableCell>
       <TableCell className="text-right">{fmt(t.price, 2)}</TableCell>
       <TableCell className={cn("text-right", pnl != null ? pnlClass(pnl) : "text-text-tertiary")}>
         {pnl != null ? (
-          <span className="inline-flex items-baseline gap-1 justify-end">
-            {fmtCurrency(pnl)}
+          <span className="inline-flex items-baseline gap-1.5 justify-end">
+            {signedCurrency(pnl)}
             {pnlPct != null && (
-              <span className="text-caption-1-regular text-text-tertiary">
-                ({fmtPct(pnlPct)})
-              </span>
+              <span className="text-caption-1-regular text-text-tertiary">{fmtPct(pnlPct)}</span>
             )}
           </span>
         ) : (
-          "n/a"
+          <span className="sr-only">No realized P&amp;L</span>
         )}
       </TableCell>
-      <TableCell className="text-text-tertiary">{t.strategy ?? "n/a"}</TableCell>
+      <TableCell className="text-text-secondary">{t.strategy ?? ""}</TableCell>
       <TableCell>
         <StatusBadge status={t.status} />
       </TableCell>
@@ -538,27 +542,19 @@ function TradeRow({ trade: t }: { trade: TradeHistoryRecord }) {
   );
 }
 
+// Filled and closed are the normal case and read as plain text; only the
+// exceptions (partial, pending, cancelled, rejected) earn a chip.
 function StatusBadge({ status }: { status: TradeStatus }) {
-  const variant: React.ComponentProps<typeof Badge>["variant"] = (() => {
-    switch (status) {
-      case "FILLED":
-        return "up";
-      case "CLOSED":
-        return "accent";
-      case "PARTIALLY_FILLED":
-        return "warning";
-      case "PENDING":
-        return "muted";
-      case "CANCELLED":
-        return "outline";
-      case "REJECTED":
-        return "down";
-      default:
-        return "default";
-    }
+  const label = (() => {
+    const l = status.replace(/_/g, " ").toLowerCase();
+    return l.charAt(0).toUpperCase() + l.slice(1);
   })();
-  const label = status.replace(/_/g, " ").toLowerCase();
-  return <Badge variant={variant}>{label.charAt(0).toUpperCase() + label.slice(1)}</Badge>;
+  if (status === "FILLED" || status === "CLOSED") {
+    return <span className="text-text-tertiary">{label}</span>;
+  }
+  const variant: React.ComponentProps<typeof Badge>["variant"] =
+    status === "PARTIALLY_FILLED" ? "warning" : status === "REJECTED" ? "down" : "muted";
+  return <Badge variant={variant}>{label}</Badge>;
 }
 
 // --- loading -----------------------------------------------------------------
@@ -609,7 +605,7 @@ function EquityCurveChart({
         title={emptyHint ? "No P&L to chart" : "Equity curve will appear here"}
         description={
           emptyHint
-            ? "No realized P&L in the filtered set, try widening filters or switch back to the table."
+            ? "No realized P&L in this filter."
             : "Once trades close with realized P&L the equity curve will plot here."
         }
       />

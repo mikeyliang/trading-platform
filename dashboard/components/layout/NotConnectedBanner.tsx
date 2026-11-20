@@ -51,20 +51,22 @@ function BannerImpl({
 }) {
   const label = apiDown ? "API offline" : "IBKR offline";
   const message = apiDown
-    ? "The trading API is unreachable. The backend container may be down."
-    : "IBKR Gateway is offline. Log in via VNC (port 5900) and the dashboard reconnects on its own.";
+    ? "The trading API can't be reached. The backend container may be down."
+    : "Log in to IBKR Gateway over VNC (port 5900). Quotes, chains and positions come back on their own.";
   const Icon = apiDown ? WifiOff : AlertTriangle;
 
   return (
-    <div className={cn(
-      "flex items-center gap-3 px-3 h-9 rounded-2lg text-body-2-regular shrink-0 animate-fade-in",
-      apiDown ? "bg-status-rose-background" : "bg-status-yellow-background",
-    )}>
+    // A quiet row, not a coloured block: the icon carries the tone, the text
+    // stays neutral, and it sits on the same surface as every other panel.
+    <div
+      className="flex items-center gap-3 pl-3 pr-1.5 h-10 rounded-2xl border border-border-button-default bg-background-primary-default text-body-2-regular shrink-0 animate-fade-in"
+    >
       <Icon size={16} className={cn("shrink-0", apiDown ? "text-status-rose-text" : "text-status-yellow-text")} />
-      <div className="flex-1 flex items-center gap-2 min-w-0">
-        <span className={cn("text-body-2-medium", apiDown ? "text-status-rose-text" : "text-status-yellow-text")}>
-          {label}
-        </span>
+      {/* Only the label and message are announced; the ticking "checked ago"
+          stays outside the live region so a screen reader does not repeat it
+          every second during an outage. */}
+      <div role="status" className="flex-1 flex items-center gap-2 min-w-0">
+        <span className="text-body-2-medium text-text-primary shrink-0">{label}</span>
         <span className="text-text-secondary truncate">{message}</span>
       </div>
       {lastCheckedAt && (
